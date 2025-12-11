@@ -1,14 +1,14 @@
 const { Router } = require('express');
-const auth = require('../middleware/auth');
-const role = require('../middleware/role');
+const { authenticate } = require('../middleware/auth');
+const { requireRole } = require('../middleware/role');
 const pricingController = require('../controllers/pricingController');
-const { roles } = require('../config/constants');
+const { ROLES } = require('../config/constants');
 
 const router = Router();
 
 router.get('/', pricingController.listPlans);
-router.post('/', auth, role([roles.SUPER_ADMIN]), pricingController.createPlan);
-router.put('/:id', auth, role([roles.SUPER_ADMIN]), pricingController.updatePlan);
+router.post('/', authenticate, requireRole(ROLES.SUPER_ADMIN), pricingController.createPlan);
+router.put('/:id', authenticate, requireRole(ROLES.SUPER_ADMIN), pricingController.updatePlan);
 
 module.exports = router;
 

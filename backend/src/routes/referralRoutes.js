@@ -1,30 +1,31 @@
 const { Router } = require('express');
 const referralController = require('../controllers/referralController');
-const { authenticate } = require('../middleware/auth');
-const { requireSuperAdmin, requireRole } = require('../middleware/role');
+const { authenticate, optionalAuth } = require('../middleware/auth');
+const { requireRole } = require('../middleware/role');
+const { ROLES } = require('../config/constants');
 
 const router = Router();
 
-// Public route
+// Public route for verifying a referral code (e.g., during registration)
 router.post('/verify', referralController.verifyCode);
 
 // Authenticated routes
 router.use(authenticate);
 
-// User's own referral code
+// Tenant/Distributor/Salesman can get their own referral code
 router.get('/my-code', referralController.getMyCode);
 
-// Admin routes
-const adminRouter = Router();
-adminRouter.use(requireSuperAdmin);
-
-adminRouter.get('/codes', referralController.listCodes);
-adminRouter.post('/codes', referralController.createCode);
-adminRouter.get('/rewards', referralController.listRewards);
-adminRouter.post('/rewards/:id/approve', referralController.approveReward);
-adminRouter.get('/analytics', referralController.getAnalytics);
-
-router.use('/admin', adminRouter);
+// Admin routes for managing all referral codes and rewards
+router.use(requireRole(ROLES.SUPER_ADMIN));
+router.get('/', referralController.listCodes);
+router.post('/', referralController.createCode);
+router.get('/:id', referralController.getReferralCodeById);
+router.put('/:id', referralController.updateReferralCode);
+router.delete('/:id', referralController.deleteReferralCode);
+router.get('/rewards', referralController.listRewards);
+router.get('/rewards/:id', referralController.getReferralRewardById);
+router.post('/rewards/:id/approve', referralController.approveReward);
+router.get('/analytics', referralController.getAnalytics);
 
 module.exports = router;
 

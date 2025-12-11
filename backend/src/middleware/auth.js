@@ -21,12 +21,17 @@ const authenticate = async (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Check if token is in Redis (session validation)
+    // Check if token is in Redis (session validation) - optional if Redis is not available
     const userId = decoded.user_id || decoded.id || decoded.sub;
     const sessionKey = `session:${userId}:${decoded.jti}`;
     const session = await redisClient.get(sessionKey);
 
-    if (!session) {
+    // If Redis is not available, skip session validation but log a warning
+    if (!redisClient.isConnected() && session === null) {
+      logger.warn('Redis not available - skipping session validation for user:', userId);
+      // Continue without session validation if Redis is down
+    } else if (redisClient.isConnected() && !session) {
+      // Only reject if Redis is connected but session doesn't exist
       return res.status(401).json({
         success: false,
         message: 'Session expired or invalid',
@@ -73,10 +78,19 @@ const optionalAuth = async (req, res, next) => {
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const sessionKey = `session:${decoded.user_id}:${decoded.jti}`;
-      const session = await redisClient.get(sessionKey);
       
-      if (session) {
+      // If Redis is available, check session; otherwise just verify JWT
+      if (redisClient.isConnected()) {
+        const sessionKey = `session:${decoded.user_id}:${decoded.jti}`;
+        const session = await redisClient.get(sessionKey);
+        if (session) {
+          req.user = decoded;
+          req.user_id = decoded.user_id || decoded.id || decoded.sub;
+          req.tenant_id = decoded.tenant_id;
+          req.role = decoded.role;
+        }
+      } else {
+        // Redis not available, just use JWT
         req.user = decoded;
         req.user_id = decoded.user_id || decoded.id || decoded.sub;
         req.tenant_id = decoded.tenant_id;

@@ -14,7 +14,7 @@ module.exports = {
 
       const codes = await ReferralCode.findAll({
         where,
-        order: [['created_at', 'DESC']],
+        order: [['createdAt', 'DESC']],
       });
 
       res.json({ codes });
@@ -155,8 +155,11 @@ module.exports = {
 
       const rewards = await ReferralReward.findAll({
         where,
-        include: [{ model: Tenant, attributes: ['id', 'company_name'] }],
-        order: [['created_at', 'DESC']],
+        include: [
+          { model: Tenant, attributes: ['id', 'company_name'], foreignKey: 'referee_tenant_id' },
+          { model: ReferralCode, attributes: ['id', 'code'] },
+        ],
+        order: [['createdAt', 'DESC']],
       });
 
       res.json({ rewards });
@@ -176,8 +179,7 @@ module.exports = {
 
       await reward.update({
         reward_status: 'approved',
-        approved_by: req.user.id,
-        approved_at: new Date(),
+        payment_date: new Date(),
       });
 
       res.json({ reward });
@@ -192,7 +194,7 @@ module.exports = {
       const where = {};
 
       if (startDate && endDate) {
-        where.created_at = { [Op.between]: [new Date(startDate), new Date(endDate)] };
+        where.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
       }
 
       const totalRewards = await ReferralReward.count({ where });
@@ -211,6 +213,73 @@ module.exports = {
           conversionRate: parseFloat(conversionRate.toFixed(2)),
         },
       });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async getReferralCodeById(req, res, next) {
+    try {
+      const { id } = req.params;
+      const referralCode = await ReferralCode.findByPk(id);
+
+      if (!referralCode) {
+        return res.status(404).json({ message: 'Referral code not found' });
+      }
+
+      res.json(referralCode);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async updateReferralCode(req, res, next) {
+    try {
+      const { id } = req.params;
+      const referralCode = await ReferralCode.findByPk(id);
+
+      if (!referralCode) {
+        return res.status(404).json({ message: 'Referral code not found' });
+      }
+
+      await referralCode.update(req.body);
+      res.json(referralCode);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async deleteReferralCode(req, res, next) {
+    try {
+      const { id } = req.params;
+      const referralCode = await ReferralCode.findByPk(id);
+
+      if (!referralCode) {
+        return res.status(404).json({ message: 'Referral code not found' });
+      }
+
+      await referralCode.update({ is_active: false });
+      res.json({ message: 'Referral code deactivated' });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async getReferralRewardById(req, res, next) {
+    try {
+      const { id } = req.params;
+      const reward = await ReferralReward.findByPk(id, {
+        include: [
+          { model: Tenant, attributes: ['id', 'company_name'] },
+          { model: ReferralCode, attributes: ['id', 'code'] },
+        ],
+      });
+
+      if (!reward) {
+        return res.status(404).json({ message: 'Referral reward not found' });
+      }
+
+      res.json(reward);
     } catch (err) {
       next(err);
     }

@@ -1,12 +1,16 @@
 const { Router } = require('express');
-const upload = require('../config/multer');
-const auth = require('../middleware/auth');
-const tenant = require('../middleware/tenant');
+const { upload } = require('../config/multer');
+const { authenticate } = require('../middleware/auth');
+const { setTenantContext, requireTenant } = require('../middleware/tenant');
 const fileController = require('../controllers/fileController');
 
 const router = Router();
 
-router.post('/upload', auth, tenant, upload.single('file'), fileController.upload);
+router.use(authenticate);
+router.use(setTenantContext);
+router.use(requireTenant);
+
+router.post('/upload', upload.single('file'), fileController.upload);
 
 module.exports = router;
 

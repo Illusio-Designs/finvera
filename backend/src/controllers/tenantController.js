@@ -3,7 +3,7 @@ const { Tenant } = require('../models');
 module.exports = {
   async getProfile(req, res, next) {
     try {
-      const tenant = await Tenant.findByPk(req.tenantId);
+      const tenant = await Tenant.findByPk(req.tenant_id);
       if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
       return res.json(tenant);
     } catch (err) {
@@ -13,7 +13,7 @@ module.exports = {
 
   async updateProfile(req, res, next) {
     try {
-      const tenant = await Tenant.findByPk(req.tenantId);
+      const tenant = await Tenant.findByPk(req.tenant_id);
       if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
       await tenant.update(req.body);
       return res.json(tenant);
