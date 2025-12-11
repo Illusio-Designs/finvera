@@ -22,7 +22,8 @@ const authenticate = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Check if token is in Redis (session validation)
-    const sessionKey = `session:${decoded.user_id}:${decoded.jti}`;
+    const userId = decoded.user_id || decoded.id || decoded.sub;
+    const sessionKey = `session:${userId}:${decoded.jti}`;
     const session = await redisClient.get(sessionKey);
 
     if (!session) {
@@ -32,9 +33,9 @@ const authenticate = async (req, res, next) => {
       });
     }
 
-    // Attach user info to request
+    // Attach user info to request (handle multiple field names)
     req.user = decoded;
-    req.user_id = decoded.user_id;
+    req.user_id = decoded.user_id || decoded.id || decoded.sub;
     req.tenant_id = decoded.tenant_id;
     req.role = decoded.role;
 
@@ -77,7 +78,7 @@ const optionalAuth = async (req, res, next) => {
       
       if (session) {
         req.user = decoded;
-        req.user_id = decoded.user_id;
+        req.user_id = decoded.user_id || decoded.id || decoded.sub;
         req.tenant_id = decoded.tenant_id;
         req.role = decoded.role;
       }

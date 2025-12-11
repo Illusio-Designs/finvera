@@ -29,7 +29,7 @@ module.exports = (sequelize, DataTypes) => {
     BillWiseDetail.belongsTo(models.Tenant, { foreignKey: 'tenant_id' });
     BillWiseDetail.belongsTo(models.Voucher, { foreignKey: 'voucher_id' });
     BillWiseDetail.belongsTo(models.Ledger, { foreignKey: 'ledger_id' });
-    BillWiseDetail.hasMany(models.BillAllocation, { foreignKey: 'bill_id' });
+    BillWiseDetail.hasMany(models.BillAllocation, { foreignKey: 'bill_wise_detail_id' });
   };
 
   return BillWiseDetail;
