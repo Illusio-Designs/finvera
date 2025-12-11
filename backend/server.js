@@ -33,7 +33,7 @@ async function startServer() {
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM signal received: closing HTTP server');
   await sequelize.close();
-  if (redisClient.isOpen) {
+  if (redisClient && redisClient.isConnected()) {
     await redisClient.quit();
   }
   process.exit(0);
@@ -42,7 +42,7 @@ process.on('SIGTERM', async () => {
 process.on('SIGINT', async () => {
   logger.info('SIGINT signal received: closing HTTP server');
   await sequelize.close();
-  if (redisClient.isOpen) {
+  if (redisClient && redisClient.isConnected()) {
     await redisClient.quit();
   }
   process.exit(0);

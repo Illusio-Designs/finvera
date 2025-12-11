@@ -1,12 +1,16 @@
 const { Router } = require('express');
-const auth = require('../middleware/auth');
-const tenant = require('../middleware/tenant');
+const { authenticate } = require('../middleware/auth');
+const { setTenantContext, requireTenant } = require('../middleware/tenant');
 const tenantController = require('../controllers/tenantController');
 
 const router = Router();
 
-router.get('/profile', auth, tenant, tenantController.getProfile);
-router.put('/profile', auth, tenant, tenantController.updateProfile);
+router.use(authenticate);
+router.use(setTenantContext);
+router.use(requireTenant);
+
+router.get('/profile', tenantController.getProfile);
+router.put('/profile', tenantController.updateProfile);
 
 module.exports = router;
 

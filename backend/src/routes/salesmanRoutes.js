@@ -1,12 +1,13 @@
 const { Router } = require('express');
 const salesmanController = require('../controllers/salesmanController');
 const { authenticate } = require('../middleware/auth');
-const { requireSuperAdmin } = require('../middleware/role');
+const { requireRole } = require('../middleware/role');
+const { ROLES } = require('../config/constants');
 
 const router = Router();
 
 router.use(authenticate);
-router.use(requireSuperAdmin);
+router.use(requireRole(ROLES.SUPER_ADMIN));
 
 router.get('/', salesmanController.list);
 router.post('/', salesmanController.create);

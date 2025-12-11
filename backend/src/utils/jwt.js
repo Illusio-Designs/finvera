@@ -52,8 +52,10 @@ async function signTokens(userData) {
     const expirySeconds = 7 * 24 * 60 * 60; // 7 days in seconds
     await redisClient.setEx(sessionKey, expirySeconds, JSON.stringify(sessionData));
   } catch (error) {
-    logger.error('Failed to store session in Redis:', error);
     // Continue even if Redis fails (graceful degradation)
+    if (redisClient.isConnected()) {
+      logger.error('Failed to store session in Redis:', error);
+    }
   }
 
   return {
@@ -96,7 +98,10 @@ async function getSession(userId, jti) {
     const session = await redisClient.get(sessionKey);
     return session ? JSON.parse(session) : null;
   } catch (error) {
-    logger.error('Failed to get session from Redis:', error);
+    // If Redis is not connected, return null (session validation will be skipped)
+    if (redisClient.isConnected()) {
+      logger.error('Failed to get session from Redis:', error);
+    }
     return null;
   }
 }
@@ -111,10 +116,14 @@ async function revokeSession(userId, jti) {
   try {
     const sessionKey = `session:${userId}:${jti}`;
     await redisClient.del(sessionKey);
-    logger.info(`Session revoked for user ${userId}, jti ${jti}`);
+    if (redisClient.isConnected()) {
+      logger.info(`Session revoked for user ${userId}, jti ${jti}`);
+    }
     return true;
   } catch (error) {
-    logger.error('Failed to revoke session from Redis:', error);
+    if (redisClient.isConnected()) {
+      logger.error('Failed to revoke session from Redis:', error);
+    }
     return false;
   }
 }
