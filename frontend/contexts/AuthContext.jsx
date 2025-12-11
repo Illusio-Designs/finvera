@@ -27,7 +27,9 @@ export const AuthProvider = ({ children }) => {
       } catch (e) {
         console.error('Error parsing user data:', e);
         Cookies.remove('token');
+        Cookies.remove('refreshToken');
         Cookies.remove('user');
+        Cookies.remove('jti');
       }
     }
     setLoading(false);
@@ -36,9 +38,16 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password, userType = 'client') => {
     try {
       const response = await authAPI.login({ email, password });
-      const { token, user: userData } = response.data.data;
+      const { user: userData, accessToken, refreshToken, jti } = response.data;
       
-      Cookies.set('token', token, { expires: 7 });
+      // Store tokens and user data
+      Cookies.set('token', accessToken, { expires: 7 });
+      if (refreshToken) {
+        Cookies.set('refreshToken', refreshToken, { expires: 30 });
+      }
+      if (jti) {
+        Cookies.set('jti', jti, { expires: 7 });
+      }
       Cookies.set('user', JSON.stringify(userData), { expires: 7 });
       
       setUser(userData);
@@ -46,7 +55,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Login failed',
+        message: error.response?.data?.message || error.message || 'Login failed',
       };
     }
   };
@@ -54,9 +63,16 @@ export const AuthProvider = ({ children }) => {
   const register = async (data) => {
     try {
       const response = await authAPI.register(data);
-      const { token, user: userData } = response.data.data;
+      const { user: userData, accessToken, refreshToken, jti } = response.data;
       
-      Cookies.set('token', token, { expires: 7 });
+      // Store tokens and user data
+      Cookies.set('token', accessToken, { expires: 7 });
+      if (refreshToken) {
+        Cookies.set('refreshToken', refreshToken, { expires: 30 });
+      }
+      if (jti) {
+        Cookies.set('jti', jti, { expires: 7 });
+      }
       Cookies.set('user', JSON.stringify(userData), { expires: 7 });
       
       setUser(userData);
@@ -64,20 +80,55 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Registration failed',
+        message: error.response?.data?.message || error.message || 'Registration failed',
       };
     }
   };
 
   const logout = async () => {
     try {
-      await authAPI.logout();
+      const jti = Cookies.get('jti');
+      if (jti) {
+        await authAPI.logout({ jti });
+      }
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
       Cookies.remove('token');
+      Cookies.remove('refreshToken');
       Cookies.remove('user');
+      Cookies.remove('jti');
       setUser(null);
+    }
+  };
+
+  const refreshToken = async () => {
+    try {
+      const refreshTokenValue = Cookies.get('refreshToken');
+      if (!refreshTokenValue) {
+        throw new Error('No refresh token available');
+      }
+
+      const response = await authAPI.refresh({ refreshToken: refreshTokenValue });
+      const { accessToken, refreshToken: newRefreshToken, jti } = response.data.data || response.data;
+      
+      Cookies.set('token', accessToken, { expires: 7 });
+      if (newRefreshToken) {
+        Cookies.set('refreshToken', newRefreshToken, { expires: 30 });
+      }
+      if (jti) {
+        Cookies.set('jti', jti, { expires: 7 });
+      }
+      
+      return { success: true, accessToken };
+    } catch (error) {
+      // Refresh failed - logout user
+      Cookies.remove('token');
+      Cookies.remove('refreshToken');
+      Cookies.remove('user');
+      Cookies.remove('jti');
+      setUser(null);
+      return { success: false, error: error.message };
     }
   };
 
@@ -89,6 +140,7 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         logout,
+        refreshToken,
         isAuthenticated: !!user,
       }}
     >
@@ -96,4 +148,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-

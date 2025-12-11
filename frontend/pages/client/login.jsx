@@ -15,16 +15,20 @@ export default function ClientLogin() {
     e.preventDefault();
     setLoading(true);
 
-    const result = await login(email, password, 'client');
-    
-    if (result.success) {
-      toast.success('Login successful!');
-      router.push('/client/dashboard');
-    } else {
-      toast.error(result.message || 'Login failed');
+    try {
+      const result = await login(email, password, 'client');
+      
+      if (result.success) {
+        toast.success('Login successful!');
+        router.push('/client/dashboard');
+      } else {
+        toast.error(result.message || 'Login failed');
+      }
+    } catch (error) {
+      toast.error('An error occurred during login');
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   return (
