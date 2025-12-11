@@ -33,6 +33,10 @@ module.exports = (sequelize, DataTypes) => {
     { tableName: 'subscription_plans', timestamps: true },
   );
 
+  SubscriptionPlan.associate = (models) => {
+    // No associations needed for subscription plans
+  };
+
   return SubscriptionPlan;
 };
 

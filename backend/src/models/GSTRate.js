@@ -7,26 +7,31 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
       },
-      tenant_id: { type: DataTypes.UUID, allowNull: true }, // null for master data
-      hsn_sac_code: { type: DataTypes.STRING(8), allowNull: false },
-      description: DataTypes.STRING(255),
-      gst_rate: { type: DataTypes.DECIMAL(5, 2), allowNull: false }, // 0, 0.25, 3, 5, 12, 18, 28
-      cess_rate: { type: DataTypes.DECIMAL(5, 2), defaultValue: 0 },
-      item_type: {
-        type: DataTypes.STRING(20),
-        defaultValue: 'goods',
-      }, // goods, services
-      is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
-      effective_from: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+      hsn_sac: {
+        type: DataTypes.STRING(10),
+        allowNull: false,
+      },
+      description: DataTypes.TEXT,
+      cgst_rate: DataTypes.DECIMAL(5, 2),
+      sgst_rate: DataTypes.DECIMAL(5, 2),
+      igst_rate: DataTypes.DECIMAL(5, 2),
+      cess_rate: DataTypes.DECIMAL(5, 2),
+      effective_from: DataTypes.DATE,
       effective_to: DataTypes.DATE,
+      is_active: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: true,
+      },
     },
-    { tableName: 'gst_rates', timestamps: true }
+    {
+      tableName: 'gst_rates',
+      timestamps: true,
+    }
   );
 
   GSTRate.associate = (models) => {
-    GSTRate.belongsTo(models.Tenant, { foreignKey: 'tenant_id', required: false });
+    // No associations needed for GST rates
   };
 
   return GSTRate;
 };
-

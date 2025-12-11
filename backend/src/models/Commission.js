@@ -42,6 +42,7 @@ module.exports = (sequelize, DataTypes) => {
     Commission.belongsTo(models.Tenant, { foreignKey: 'tenant_id' });
     Commission.belongsTo(models.Distributor, { foreignKey: 'distributor_id' });
     Commission.belongsTo(models.Salesman, { foreignKey: 'salesman_id' });
+    Commission.belongsTo(models.Payout, { foreignKey: 'payout_id' });
   };
 
   return Commission;

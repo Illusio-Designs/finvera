@@ -10,17 +10,14 @@ module.exports = (sequelize, DataTypes) => {
       tenant_id: { type: DataTypes.UUID, allowNull: false },
       voucher_id: { type: DataTypes.UUID, allowNull: false },
       ledger_id: { type: DataTypes.UUID, allowNull: false },
-      bill_number: { type: DataTypes.STRING(100), allowNull: false },
-      bill_date: { type: DataTypes.DATE, allowNull: false },
-      bill_type: {
-        type: DataTypes.STRING(20),
-        allowNull: false,
-      }, // Debit, Credit
+      bill_number: DataTypes.STRING(100),
+      bill_date: DataTypes.DATE,
       bill_amount: { type: DataTypes.DECIMAL(15, 2), allowNull: false },
-      pending_amount: { type: DataTypes.DECIMAL(15, 2), allowNull: false },
       due_date: DataTypes.DATE,
-      overdue_days: { type: DataTypes.INTEGER, defaultValue: 0 },
-      is_fully_paid: { type: DataTypes.BOOLEAN, defaultValue: false },
+      status: {
+        type: DataTypes.STRING,
+        defaultValue: 'open',
+      },
     },
     { tableName: 'bill_wise_details', timestamps: true }
   );

@@ -41,6 +41,12 @@ module.exports = (sequelize, DataTypes) => {
     Tenant.hasMany(models.AccountGroup, { foreignKey: 'tenant_id' });
     Tenant.hasMany(models.Commission, { foreignKey: 'tenant_id' });
     Tenant.hasMany(models.ReferralReward, { foreignKey: 'referee_tenant_id' });
+    Tenant.hasMany(models.GSTRReturn, { foreignKey: 'tenant_id' });
+    Tenant.hasMany(models.TDSDetail, { foreignKey: 'tenant_id' });
+    Tenant.hasMany(models.EInvoice, { foreignKey: 'tenant_id' });
+    Tenant.hasMany(models.AuditLog, { foreignKey: 'tenant_id' });
+    Tenant.hasMany(models.BillWiseDetail, { foreignKey: 'tenant_id' });
+    Tenant.hasMany(models.VoucherLedgerEntry, { foreignKey: 'tenant_id' });
   };
 
   return Tenant;
