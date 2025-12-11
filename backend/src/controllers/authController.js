@@ -57,10 +57,19 @@ module.exports = {
 
   async refresh(req, res, next) {
     try {
-      const { token } = req.body;
-      if (!token) return res.status(400).json({ message: 'Token required' });
-      // For brevity, reuse login flow by verifying token
-      return res.status(501).json({ message: 'Refresh flow to be implemented' });
+      const { refreshToken } = req.body;
+      if (!refreshToken) {
+        return res.status(400).json({ message: 'Refresh token required' });
+      }
+
+      const { refreshAccessToken } = require('../utils/jwt');
+      const tokens = await refreshAccessToken(refreshToken);
+
+      if (!tokens) {
+        return res.status(401).json({ message: 'Invalid or expired refresh token' });
+      }
+
+      return res.json(tokens);
     } catch (err) {
       return next(err);
     }
