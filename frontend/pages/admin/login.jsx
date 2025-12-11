@@ -15,16 +15,25 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true);
 
-    const result = await login(email, password, 'admin');
-    
-    if (result.success) {
-      toast.success('Login successful!');
-      router.push('/admin/dashboard');
-    } else {
-      toast.error(result.message || 'Login failed');
+    try {
+      const result = await login(email, password, 'admin');
+      
+      if (result.success) {
+        toast.success('Login successful!');
+        // Redirect based on user role
+        if (result.user?.role === 'super_admin' || result.user?.role === 'admin') {
+          router.push('/admin/dashboard');
+        } else {
+          router.push('/client/dashboard');
+        }
+      } else {
+        toast.error(result.message || 'Login failed');
+      }
+    } catch (error) {
+      toast.error('An error occurred during login');
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   return (

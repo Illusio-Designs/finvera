@@ -26,16 +26,28 @@ export default function ClientRegister() {
     e.preventDefault();
     setLoading(true);
 
-    const result = await register(formData);
-    
-    if (result.success) {
-      toast.success('Registration successful!');
-      router.push('/client/dashboard');
-    } else {
-      toast.error(result.message || 'Registration failed');
+    try {
+      // Backend expects: email, password, company_name
+      const registerData = {
+        email: formData.email,
+        password: formData.password,
+        company_name: formData.company_name,
+        full_name: formData.full_name, // Optional, will be set on user
+      };
+
+      const result = await register(registerData);
+      
+      if (result.success) {
+        toast.success('Registration successful!');
+        router.push('/client/dashboard');
+      } else {
+        toast.error(result.message || 'Registration failed');
+      }
+    } catch (error) {
+      toast.error('An error occurred during registration');
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   return (
