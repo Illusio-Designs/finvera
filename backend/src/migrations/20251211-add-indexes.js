@@ -2,44 +2,56 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
+    // Helper function to safely add index
+    const addIndexIfNotExists = async (tableName, fields, options) => {
+      try {
+        await queryInterface.addIndex(tableName, fields, options);
+      } catch (error) {
+        // Ignore error if index already exists
+        if (!error.message.includes('Duplicate key name') && !error.message.includes('already exists')) {
+          throw error;
+        }
+      }
+    };
+
     // Add indexes for frequently queried fields
-    await queryInterface.addIndex('vouchers', ['tenant_id', 'voucher_date'], {
+    await addIndexIfNotExists('vouchers', ['tenant_id', 'voucher_date'], {
       name: 'idx_vouchers_tenant_date',
     });
-    await queryInterface.addIndex('vouchers', ['tenant_id', 'status'], {
+    await addIndexIfNotExists('vouchers', ['tenant_id', 'status'], {
       name: 'idx_vouchers_tenant_status',
     });
-    await queryInterface.addIndex('voucher_ledger_entries', ['tenant_id', 'ledger_id'], {
+    await addIndexIfNotExists('voucher_ledger_entries', ['tenant_id', 'ledger_id'], {
       name: 'idx_vle_tenant_ledger',
     });
-    await queryInterface.addIndex('voucher_ledger_entries', ['voucher_id'], {
+    await addIndexIfNotExists('voucher_ledger_entries', ['voucher_id'], {
       name: 'idx_vle_voucher',
     });
-    await queryInterface.addIndex('ledgers', ['tenant_id', 'account_group_id'], {
+    await addIndexIfNotExists('ledgers', ['tenant_id', 'account_group_id'], {
       name: 'idx_ledgers_tenant_group',
     });
-    await queryInterface.addIndex('ledgers', ['tenant_id', 'ledger_code'], {
+    await addIndexIfNotExists('ledgers', ['tenant_id', 'ledger_code'], {
       name: 'idx_ledgers_tenant_code',
     });
-    await queryInterface.addIndex('bill_wise_details', ['tenant_id', 'ledger_id'], {
+    await addIndexIfNotExists('bill_wise_details', ['tenant_id', 'ledger_id'], {
       name: 'idx_bills_tenant_ledger',
     });
-    await queryInterface.addIndex('bill_wise_details', ['tenant_id', 'status'], {
+    await addIndexIfNotExists('bill_wise_details', ['tenant_id', 'status'], {
       name: 'idx_bills_tenant_status',
     });
-    await queryInterface.addIndex('commissions', ['tenant_id', 'status'], {
+    await addIndexIfNotExists('commissions', ['tenant_id', 'status'], {
       name: 'idx_commissions_tenant_status',
     });
-    await queryInterface.addIndex('commissions', ['distributor_id'], {
+    await addIndexIfNotExists('commissions', ['distributor_id'], {
       name: 'idx_commissions_distributor',
     });
-    await queryInterface.addIndex('commissions', ['salesman_id'], {
+    await addIndexIfNotExists('commissions', ['salesman_id'], {
       name: 'idx_commissions_salesman',
     });
-    await queryInterface.addIndex('gstr_returns', ['tenant_id', 'return_period'], {
+    await addIndexIfNotExists('gstr_returns', ['tenant_id', 'return_period'], {
       name: 'idx_gstr_tenant_period',
     });
-    await queryInterface.addIndex('tds_details', ['tenant_id', 'tds_section'], {
+    await addIndexIfNotExists('tds_details', ['tenant_id', 'tds_section'], {
       name: 'idx_tds_tenant_section',
     });
   },
