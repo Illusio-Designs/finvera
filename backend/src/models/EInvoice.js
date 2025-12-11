@@ -7,23 +7,39 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
       },
-      tenant_id: { type: DataTypes.UUID, allowNull: false },
-      voucher_id: { type: DataTypes.UUID, allowNull: false },
-      irn: { type: DataTypes.STRING(64), unique: true },
-      ack_number: DataTypes.STRING(50),
+      tenant_id: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+          model: 'tenants',
+          key: 'id',
+        },
+      },
+      voucher_id: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+          model: 'vouchers',
+          key: 'id',
+        },
+      },
+      irn: DataTypes.STRING(100),
+      ack_no: DataTypes.STRING(50),
       ack_date: DataTypes.DATE,
       qr_code: DataTypes.TEXT,
-      e_invoice_json: DataTypes.JSON,
+      signed_invoice: DataTypes.TEXT,
+      cancel_reason: DataTypes.STRING(100),
+      cancel_remark: DataTypes.TEXT,
+      canceled_at: DataTypes.DATE,
       status: {
         type: DataTypes.STRING(20),
         defaultValue: 'pending',
-      }, // pending, generated, cancelled, failed
-      error_message: DataTypes.TEXT,
-      cancelled_irn: DataTypes.STRING(64),
-      cancellation_reason: DataTypes.STRING(100),
-      cancellation_date: DataTypes.DATE,
+      },
     },
-    { tableName: 'e_invoices', timestamps: true }
+    {
+      tableName: 'e_invoices',
+      timestamps: true,
+    }
   );
 
   EInvoice.associate = (models) => {
@@ -33,4 +49,3 @@ module.exports = (sequelize, DataTypes) => {
 
   return EInvoice;
 };
-

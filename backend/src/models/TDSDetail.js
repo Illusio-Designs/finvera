@@ -7,22 +7,46 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
       },
-      tenant_id: { type: DataTypes.UUID, allowNull: false },
-      voucher_id: { type: DataTypes.UUID, allowNull: false },
-      ledger_id: { type: DataTypes.UUID, allowNull: false },
-      tds_section: { type: DataTypes.STRING(20), allowNull: false }, // 194C, 194J, etc.
-      tds_rate: { type: DataTypes.DECIMAL(5, 2), allowNull: false },
-      gross_amount: { type: DataTypes.DECIMAL(15, 2), allowNull: false },
-      tds_amount: { type: DataTypes.DECIMAL(15, 2), allowNull: false },
-      net_amount: { type: DataTypes.DECIMAL(15, 2), allowNull: false },
-      payment_date: { type: DataTypes.DATE, allowNull: false },
-      quarter: { type: DataTypes.STRING(10), allowNull: false }, // Q1-2024, Q2-2024, etc.
-      financial_year: { type: DataTypes.STRING(9), allowNull: false }, // 2024-2025
-      pan_of_deductee: DataTypes.STRING(10),
-      certificate_issued: { type: DataTypes.BOOLEAN, defaultValue: false },
-      certificate_number: DataTypes.STRING(50),
+      tenant_id: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+          model: 'tenants',
+          key: 'id',
+        },
+      },
+      voucher_id: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        references: {
+          model: 'vouchers',
+          key: 'id',
+        },
+      },
+      ledger_id: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        references: {
+          model: 'ledgers',
+          key: 'id',
+        },
+      },
+      tds_section: DataTypes.STRING(10),
+      tds_rate: DataTypes.DECIMAL(5, 2),
+      tds_amount: {
+        type: DataTypes.DECIMAL(15, 2),
+        defaultValue: 0,
+      },
+      tds_deducted_date: DataTypes.DATE,
+      payment_date: DataTypes.DATE, // Alias for tds_deducted_date
+      challan_number: DataTypes.STRING(50),
+      challan_date: DataTypes.DATE,
+      voucher_number: DataTypes.STRING, // For display purposes
     },
-    { tableName: 'tds_details', timestamps: true }
+    {
+      tableName: 'tds_details',
+      timestamps: true,
+    }
   );
 
   TDSDetail.associate = (models) => {
@@ -33,4 +57,3 @@ module.exports = (sequelize, DataTypes) => {
 
   return TDSDetail;
 };
-

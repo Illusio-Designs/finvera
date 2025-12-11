@@ -40,6 +40,8 @@ module.exports = (sequelize, DataTypes) => {
     Distributor.hasMany(models.Salesman, { foreignKey: 'distributor_id' });
     Distributor.hasMany(models.Commission, { foreignKey: 'distributor_id' });
     Distributor.hasMany(models.Payout, { foreignKey: 'distributor_id' });
+    Distributor.hasMany(models.Lead, { foreignKey: 'distributor_id' });
+    Distributor.hasMany(models.Target, { foreignKey: 'distributor_id' });
   };
 
   return Distributor;
