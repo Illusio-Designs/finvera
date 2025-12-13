@@ -18,7 +18,8 @@ const sanitizeInput = (req, res, next) => {
 
 function sanitizeObject(obj) {
   for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
+    // Use Object.prototype.hasOwnProperty.call for safer property checking
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
       if (typeof obj[key] === 'string') {
         // Remove HTML tags and escape special characters
         obj[key] = validator.escape(validator.stripLow(obj[key]));
