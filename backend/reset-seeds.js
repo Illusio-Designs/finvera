@@ -10,31 +10,39 @@ async function resetSeeds() {
   try {
     console.log('🔄 Resetting seeders...');
 
+    // Disable foreign key checks temporarily
+    await sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
+
     // Clear seeder tracking
     await sequelize.query('DELETE FROM seeder_meta');
     console.log('✓ Cleared seeder tracking');
 
-    // Clear seeded data in correct order (children first, then parents)
-    // 1. Delete users (child of tenants)
-    await sequelize.query("DELETE FROM users WHERE email = 'Rishi@finvera.com'");
+    // Clear seeded data
+    await sequelize.query("DELETE FROM users WHERE email = 'Rishi@finvera.com' OR id = '20000000-0000-0000-0000-000000000001'");
     console.log('✓ Deleted admin user');
 
-    // 2. Delete account groups (child of tenants)
     await sequelize.query('DELETE FROM account_groups WHERE is_system = true');
     console.log('✓ Deleted account groups');
 
-    // 3. Delete tenants (parent)
-    await sequelize.query("DELETE FROM tenants WHERE company_name = 'System'");
+    await sequelize.query("DELETE FROM tenants WHERE company_name = 'System' OR id = '10000000-0000-0000-0000-000000000001'");
     console.log('✓ Deleted default tenant');
 
-    // 4. Delete subscription plans (independent)
-    await sequelize.query('DELETE FROM subscription_plans');
+    await sequelize.query("DELETE FROM subscription_plans WHERE id IN ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002')");
     console.log('✓ Deleted subscription plans');
+
+    // Re-enable foreign key checks
+    await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
 
     console.log('✅ Reset complete! Restart your server.');
     process.exit(0);
   } catch (error) {
     console.error('❌ Reset failed:', error.message);
+    // Re-enable foreign key checks even on error
+    try {
+      await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
+    } catch (e) {
+      // Ignore
+    }
     process.exit(1);
   }
 }
