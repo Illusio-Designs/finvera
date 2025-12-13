@@ -85,10 +85,29 @@ export default function EditDistributor() {
         is_active: distributor.is_active !== undefined ? distributor.is_active : true,
       });
       
-      // Set territory states
-      if (distributor.territory && Array.isArray(distributor.territory)) {
-        setSelectedStates(distributor.territory);
+      // Set territory states - handle different formats
+      let territoryArray = [];
+      
+      if (distributor.territory) {
+        if (Array.isArray(distributor.territory)) {
+          territoryArray = distributor.territory;
+        } else if (typeof distributor.territory === 'string') {
+          try {
+            const parsed = JSON.parse(distributor.territory);
+            if (Array.isArray(parsed)) {
+              territoryArray = parsed;
+            }
+          } catch (e) {
+            console.error('Failed to parse territory:', e);
+          }
+        } else if (typeof distributor.territory === 'object') {
+          // Handle case where it's already an object
+          territoryArray = Object.values(distributor.territory).filter(v => typeof v === 'string');
+        }
       }
+      
+      console.log('Setting territory states:', territoryArray);
+      setSelectedStates(territoryArray);
     }
   }, [data, setValues]);
 
