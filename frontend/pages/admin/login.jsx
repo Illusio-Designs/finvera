@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
+import { canAccessAdminPortal, getDefaultRedirect, getRoleDisplayName } from '../../lib/roleConfig';
 import toast, { Toaster } from 'react-hot-toast';
 import Link from 'next/link';
 
@@ -19,12 +20,15 @@ export default function AdminLogin() {
       const result = await login(email, password, 'admin');
       
       if (result.success) {
-        // Check if user has admin role
-        if (result.user?.role === 'admin') {
-          toast.success('Welcome Admin!');
-          router.push('/admin/dashboard');
+        const role = result.user?.role;
+        
+        // Check if role can access admin portal
+        if (canAccessAdminPortal(role)) {
+          toast.success(`Welcome ${getRoleDisplayName(role)}!`);
+          const redirectPath = getDefaultRedirect(role, result.user.id);
+          router.push(redirectPath);
         } else {
-          toast.error('Access denied. Admin credentials required.');
+          toast.error('Access denied. Please use the client portal.');
           setLoading(false);
           return;
         }
