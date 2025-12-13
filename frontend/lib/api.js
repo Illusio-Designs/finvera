@@ -102,18 +102,41 @@ export const adminAPI = {
   analytics: {
     revenue: (params) => api.get("/admin/analytics/revenue", { params }),
   },
+  tenants: {
+    list: (params) => api.get("/admin/tenants", { params }),
+    get: (id) => api.get(`/admin/tenants/${id}`),
+    create: (data) => api.post("/admin/tenants", data),
+    update: (id, data) => api.put(`/admin/tenants/${id}`, data),
+    delete: (id) => api.delete(`/admin/tenants/${id}`),
+  },
   distributors: {
     list: (params) => api.get("/admin/distributors", { params }),
+    get: (id) => api.get(`/admin/distributors/${id}`),
     create: (data) => api.post("/admin/distributors", data),
+    update: (id, data) => api.put(`/admin/distributors/${id}`, data),
+    delete: (id) => api.delete(`/admin/distributors/${id}`),
   },
   salesmen: {
     list: (params) => api.get("/admin/salesmen", { params }),
+    get: (id) => api.get(`/admin/salesmen/${id}`),
+    create: (data) => api.post("/admin/salesmen", data),
+    update: (id, data) => api.put(`/admin/salesmen/${id}`, data),
+    delete: (id) => api.delete(`/admin/salesmen/${id}`),
   },
   commissions: {
+    list: (params) => api.get("/admin/commissions", { params }),
+    get: (id) => api.get(`/admin/commissions/${id}`),
     summary: (params) => api.get("/admin/commissions/summary", { params }),
   },
   payouts: {
+    list: (params) => api.get("/admin/payouts", { params }),
+    get: (id) => api.get(`/admin/payouts/${id}`),
     generate: (data) => api.post("/admin/payouts/generate", data),
+  },
+  referrals: {
+    list: (params) => api.get("/admin/referrals", { params }),
+    create: (data) => api.post("/admin/referrals", data),
+    rewards: (params) => api.get("/admin/referrals/rewards", { params }),
   },
 };
 
