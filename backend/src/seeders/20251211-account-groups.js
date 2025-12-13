@@ -14,6 +14,17 @@ module.exports = {
       return;
     }
 
+    // Check if account groups already exist for any tenant
+    const existingGroups = await queryInterface.sequelize.query(
+      'SELECT COUNT(*) as count FROM account_groups WHERE is_system = true',
+      { type: Sequelize.QueryTypes.SELECT }
+    );
+
+    if (existingGroups[0].count > 0) {
+      console.log('System account groups already exist. Skipping seeder.');
+      return;
+    }
+
     // Define all account groups with their hierarchy (parent_code instead of parent_id)
     const accountGroupsData = [
       // 1. ASSETS

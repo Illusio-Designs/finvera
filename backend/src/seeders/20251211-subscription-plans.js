@@ -1,8 +1,26 @@
 'use strict';
 
 module.exports = {
-  async up(queryInterface) {
+  async up(queryInterface, Sequelize) {
     const now = new Date();
+
+    // Check if subscription plans already exist
+    const existingPlans = await queryInterface.sequelize.query(
+      'SELECT id FROM subscription_plans WHERE id IN (?, ?)',
+      {
+        replacements: [
+          '00000000-0000-0000-0000-000000000001',
+          '00000000-0000-0000-0000-000000000002',
+        ],
+        type: Sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    if (existingPlans.length > 0) {
+      console.log('Subscription plans already exist. Skipping seeder.');
+      return;
+    }
+
     await queryInterface.bulkInsert('subscription_plans', [
       {
         id: '00000000-0000-0000-0000-000000000001',
@@ -41,6 +59,8 @@ module.exports = {
         updatedAt: now,
       },
     ]);
+
+    console.log('Subscription plans seeded successfully.');
   },
 
   async down(queryInterface) {
