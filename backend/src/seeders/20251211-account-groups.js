@@ -10,7 +10,6 @@ module.exports = {
     });
 
     if (tenants.length === 0) {
-      console.log('No tenants found. Account groups will be seeded when tenants are created.');
       return;
     }
 
@@ -21,7 +20,6 @@ module.exports = {
     );
 
     if (existingGroups[0].count > 0) {
-      console.log('System account groups already exist. Skipping seeder.');
       return;
     }
 
@@ -1318,7 +1316,7 @@ module.exports = {
       }
     }
 
-    console.log(`Account groups seeded for ${tenants.length} tenant(s).`);
+    console.log(`✓ Account groups created for ${tenants.length} tenant(s)`);
   },
 
   async down(queryInterface) {

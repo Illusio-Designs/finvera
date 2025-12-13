@@ -10,23 +10,21 @@ const path = require('path');
  */
 async function syncDatabase() {
   try {
-    logger.info('Starting database synchronization...');
+    logger.info('🔄 Initializing database...');
 
     // First, authenticate the connection
     await sequelize.authenticate();
-    logger.info('Database connection authenticated.');
 
     // Sync models with alter: true (will alter existing tables to match models)
     // This is safer than force: true which drops tables
     await sequelize.sync({ alter: true });
-    logger.info('Database models synchronized with alter mode.');
 
     // Run seeders
     await runSeeders();
 
-    logger.info('Database synchronization completed successfully.');
+    logger.info('✅ Database ready');
   } catch (error) {
-    logger.error('Error during database synchronization:', error);
+    logger.error('❌ Database initialization failed:', error);
     throw error;
   }
 }
@@ -39,7 +37,6 @@ async function runSeeders() {
     const seedersPath = path.join(__dirname, '../seeders');
     
     if (!fs.existsSync(seedersPath)) {
-      logger.info('No seeders directory found. Skipping seeders.');
       return;
     }
 
@@ -49,14 +46,14 @@ async function runSeeders() {
       .sort(); // Sort to run in order
 
     if (seederFiles.length === 0) {
-      logger.info('No seeder files found.');
       return;
     }
 
-    logger.info(`Found ${seederFiles.length} seeder file(s).`);
-
     // Create a table to track which seeders have been run
     await ensureSeederTable();
+
+    let executedCount = 0;
+    let skippedCount = 0;
 
     for (const file of seederFiles) {
       const seederName = file.replace('.js', '');
@@ -68,12 +65,11 @@ async function runSeeders() {
       );
 
       if (results && results.length > 0) {
-        logger.info(`Seeder ${seederName} already executed. Skipping.`);
+        skippedCount++;
         continue;
       }
 
       // Run the seeder
-      logger.info(`Running seeder: ${seederName}`);
       const seeder = require(path.join(seedersPath, file));
       
       if (typeof seeder.up === 'function') {
@@ -85,15 +81,15 @@ async function runSeeders() {
           { replacements: [seederName, new Date()] }
         );
         
-        logger.info(`Seeder ${seederName} executed successfully.`);
-      } else {
-        logger.warn(`Seeder ${seederName} does not have an 'up' function.`);
+        executedCount++;
       }
     }
 
-    logger.info('All seeders executed successfully.');
+    if (executedCount > 0) {
+      logger.info(`📦 Seeded: ${executedCount} new, ${skippedCount} skipped`);
+    }
   } catch (error) {
-    logger.error('Error running seeders:', error);
+    logger.error('❌ Seeding failed:', error.message);
     // Don't throw error - server should still start even if seeders fail
   }
 }
