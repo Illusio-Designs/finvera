@@ -64,6 +64,7 @@ module.exports = {
         password_hash,
         role: 'salesman',
         full_name,
+        tenant_id: req.tenant_id || null,
       });
 
       const salesman = await Salesman.create({
