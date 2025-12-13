@@ -25,17 +25,17 @@ export default function PricingList() {
     handleSort,
     sort,
     fetchData,
-  } = useTable(pricingAPI.listPlans, {});
+  } = useTable(pricingAPI.list, {});
 
   const handleDelete = async (id) => {
     try {
-      // Note: Delete endpoint may not exist, adjust as needed
-      toast.success('Plan deleted successfully');
+      await pricingAPI.delete(id);
+      toast.success('Plan deactivated successfully');
       fetchData();
       setShowDeleteDialog(false);
       setDeleteId(null);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete plan');
+      toast.error(error.response?.data?.message || 'Failed to deactivate plan');
     }
   };
 
