@@ -66,16 +66,6 @@ export default function SalesmenList() {
         size="sm"
         onClick={(e) => {
           e.stopPropagation();
-          router.push(`/admin/salesmen/${row.id}`);
-        }}
-      >
-        View
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={(e) => {
-          e.stopPropagation();
           router.push(`/admin/salesmen/edit/${row.id}`);
         }}
       >
