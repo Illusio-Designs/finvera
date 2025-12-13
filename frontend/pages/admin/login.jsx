@@ -19,12 +19,14 @@ export default function AdminLogin() {
       const result = await login(email, password, 'admin');
       
       if (result.success) {
-        toast.success('Login successful!');
-        // Redirect based on user role
-        if (result.user?.role === 'super_admin' || result.user?.role === 'admin') {
+        // Check if user has admin role
+        if (result.user?.role === 'admin') {
+          toast.success('Welcome Admin!');
           router.push('/admin/dashboard');
         } else {
-          router.push('/client/dashboard');
+          toast.error('Access denied. Admin credentials required.');
+          setLoading(false);
+          return;
         }
       } else {
         toast.error(result.message || 'Login failed');

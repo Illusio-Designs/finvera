@@ -16,10 +16,18 @@ module.exports = {
         email,
         password_hash,
         tenant_id: tenant.id,
-        role: 'tenant_admin',
+        role: 'user',
       });
       const tokens = await signTokens({ id: user.id, tenant_id: tenant.id, role: user.role });
-      return res.status(201).json({ user: { id: user.id, email, tenant_id: tenant.id }, ...tokens });
+      return res.status(201).json({ 
+        user: { 
+          id: user.id, 
+          email: user.email, 
+          tenant_id: tenant.id, 
+          role: user.role 
+        }, 
+        ...tokens 
+      });
     } catch (err) {
       return next(err);
     }
@@ -37,7 +45,16 @@ module.exports = {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
       const tokens = await signTokens({ id: user.id, tenant_id: user.tenant_id, role: user.role });
-      return res.json({ user: { id: user.id, email, tenant_id: user.tenant_id }, ...tokens });
+      return res.json({ 
+        user: { 
+          id: user.id, 
+          email: user.email, 
+          tenant_id: user.tenant_id, 
+          role: user.role,
+          full_name: user.full_name 
+        }, 
+        ...tokens 
+      });
     } catch (err) {
       return next(err);
     }
