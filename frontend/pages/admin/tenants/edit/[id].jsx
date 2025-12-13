@@ -51,7 +51,7 @@ export default function EditTenant() {
 
   if (loading) {
     return (
-      <ProtectedRoute requiredRole="super_admin">
+      <ProtectedRoute portalType="admin">
         <AdminLayout>
           <div className="flex justify-center items-center h-64">
             <LoadingSpinner size="lg" />
@@ -62,7 +62,7 @@ export default function EditTenant() {
   }
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <AdminLayout title="Edit Tenant - Admin Panel">
         <Toaster />
         <PageLayout

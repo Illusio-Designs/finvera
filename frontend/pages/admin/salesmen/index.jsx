@@ -106,7 +106,7 @@ export default function SalesmenList() {
   );
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <AdminLayout title="Salesmen - Admin Panel">
         <Toaster />
         <PageLayout

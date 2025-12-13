@@ -53,7 +53,7 @@ export default function ReferralsList() {
   ];
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <AdminLayout title="Referrals - Admin Panel">
         <PageLayout
           title="Referral Code Management"

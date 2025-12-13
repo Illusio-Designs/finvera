@@ -64,7 +64,7 @@ export default function NewReferralCode() {
   }, [values.owner_type]);
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <AdminLayout title="Create Referral Code - Admin Panel">
         <Toaster />
         <PageLayout

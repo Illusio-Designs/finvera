@@ -35,7 +35,7 @@ export default function CalculateCommissions() {
   );
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <AdminLayout title="Calculate Commissions - Admin Panel">
         <Toaster />
         <PageLayout

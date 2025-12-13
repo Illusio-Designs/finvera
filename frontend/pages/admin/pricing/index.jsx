@@ -82,7 +82,7 @@ export default function PricingList() {
   );
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <AdminLayout title="Pricing - Admin Panel">
         <Toaster />
         <PageLayout

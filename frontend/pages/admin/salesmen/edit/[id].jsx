@@ -56,7 +56,7 @@ export default function EditSalesman() {
 
   if (loading) {
     return (
-      <ProtectedRoute requiredRole="super_admin">
+      <ProtectedRoute portalType="admin">
         <AdminLayout>
           <div className="flex justify-center items-center h-64">
             <LoadingSpinner size="lg" />
@@ -67,7 +67,7 @@ export default function EditSalesman() {
   }
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <AdminLayout title="Edit Salesman - Admin Panel">
         <Toaster />
         <PageLayout

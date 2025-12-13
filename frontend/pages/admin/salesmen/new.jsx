@@ -40,7 +40,7 @@ export default function NewSalesman() {
   );
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <AdminLayout title="Create Salesman - Admin Panel">
         <Toaster />
         <PageLayout

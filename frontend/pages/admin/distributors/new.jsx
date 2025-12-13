@@ -30,7 +30,7 @@ export default function NewDistributor() {
   );
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <AdminLayout title="Create Distributor - Admin Panel">
         <Toaster />
         <PageLayout

@@ -96,7 +96,7 @@ export default function DistributorsList() {
   );
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <AdminLayout title="Distributors - Admin Panel">
         <Toaster />
         <PageLayout

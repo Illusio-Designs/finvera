@@ -58,7 +58,7 @@ export default function ReferralRewards() {
   ];
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <AdminLayout title="Referral Rewards - Admin Panel">
         <PageLayout
           title="Referral Rewards"

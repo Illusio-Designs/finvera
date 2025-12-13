@@ -24,7 +24,7 @@ export default function CommissionDetails() {
 
   if (loading) {
     return (
-      <ProtectedRoute requiredRole="super_admin">
+      <ProtectedRoute portalType="admin">
         <AdminLayout>
           <div className="flex justify-center items-center h-64">
             <LoadingSpinner size="lg" />
@@ -36,7 +36,7 @@ export default function CommissionDetails() {
 
   if (error || !data) {
     return (
-      <ProtectedRoute requiredRole="super_admin">
+      <ProtectedRoute portalType="admin">
         <AdminLayout>
           <div className="text-center py-12">
             <p className="text-red-600">{error || 'Commission not found'}</p>
@@ -52,7 +52,7 @@ export default function CommissionDetails() {
   const commission = data.data || data;
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <AdminLayout title="Commission Details - Admin Panel">
         <PageLayout
           title="Commission Details"

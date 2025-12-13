@@ -65,7 +65,7 @@ export default function CommissionsList() {
   ];
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <AdminLayout title="Commissions - Admin Panel">
         <PageLayout
           title="Commission Management"

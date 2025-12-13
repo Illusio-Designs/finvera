@@ -61,7 +61,7 @@ export default function EditDistributor() {
 
   if (loading) {
     return (
-      <ProtectedRoute requiredRole="super_admin">
+      <ProtectedRoute portalType="admin">
         <AdminLayout>
           <div className="flex justify-center items-center h-64">
             <LoadingSpinner size="lg" />
@@ -72,7 +72,7 @@ export default function EditDistributor() {
   }
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <AdminLayout title="Edit Distributor - Admin Panel">
         <Toaster />
         <PageLayout
