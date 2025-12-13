@@ -54,34 +54,58 @@ async function runSeeders() {
 
     let executedCount = 0;
     let skippedCount = 0;
+    let currentSeeder = '';
 
     for (const file of seederFiles) {
       const seederName = file.replace('.js', '');
+      currentSeeder = seederName;
       
-      // Check if seeder has already been run
-      const [results] = await sequelize.query(
-        'SELECT * FROM seeder_meta WHERE name = ?',
-        { replacements: [seederName], type: Sequelize.QueryTypes.SELECT }
-      );
-
-      if (results && results.length > 0) {
-        skippedCount++;
-        continue;
-      }
-
-      // Run the seeder
-      const seeder = require(path.join(seedersPath, file));
-      
-      if (typeof seeder.up === 'function') {
-        await seeder.up(sequelize.getQueryInterface(), Sequelize);
-        
-        // Mark seeder as executed
-        await sequelize.query(
-          'INSERT INTO seeder_meta (name, executed_at) VALUES (?, ?)',
-          { replacements: [seederName, new Date()] }
+      try {
+        // Check if seeder has already been run
+        const [results] = await sequelize.query(
+          'SELECT * FROM seeder_meta WHERE name = ?',
+          { replacements: [seederName], type: Sequelize.QueryTypes.SELECT }
         );
+
+        if (results && results.length > 0) {
+          skippedCount++;
+          continue;
+        }
+
+        // Run the seeder
+        logger.info(`  → Running: ${seederName}`);
+        const seeder = require(path.join(seedersPath, file));
         
-        executedCount++;
+        if (typeof seeder.up === 'function') {
+          await seeder.up(sequelize.getQueryInterface(), Sequelize);
+          
+          // Mark seeder as executed
+          await sequelize.query(
+            'INSERT INTO seeder_meta (name, executed_at) VALUES (?, ?)',
+            { replacements: [seederName, new Date()] }
+          );
+          
+          executedCount++;
+        }
+      } catch (seederError) {
+        logger.error(`❌ Seeder '${currentSeeder}' failed:`);
+        logger.error(`   Error: ${seederError.message}`);
+        
+        if (seederError.errors && Array.isArray(seederError.errors)) {
+          seederError.errors.forEach(err => {
+            logger.error(`   - ${err.message || err.type}: ${err.path || ''} (value: ${err.value})`);
+          });
+        }
+        
+        if (seederError.sql) {
+          logger.error(`   SQL: ${seederError.sql.substring(0, 200)}...`);
+        }
+        
+        if (seederError.original) {
+          logger.error(`   Original: ${seederError.original.sqlMessage || seederError.original.message}`);
+        }
+        
+        // Continue with other seeders
       }
     }
 
@@ -89,13 +113,8 @@ async function runSeeders() {
       logger.info(`📦 Seeded: ${executedCount} new, ${skippedCount} skipped`);
     }
   } catch (error) {
-    logger.error('❌ Seeding failed:', error.message || error);
-    if (error.errors) {
-      error.errors.forEach(err => {
-        logger.error(`  - ${err.message || err.type}: ${err.path || ''}`);
-      });
-    }
-    // Don't throw error - server should still start even if seeders fail
+    logger.error('❌ Seeding system error:', error.message);
+    logger.error(error.stack);
   }
 }
 
