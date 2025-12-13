@@ -3,6 +3,7 @@ const app = require('./src/app');
 const sequelize = require('./src/config/database');
 const redisClient = require('./src/config/redis');
 const logger = require('./src/utils/logger');
+const { syncDatabase } = require('./src/utils/dbSync');
 
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -10,12 +11,9 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // Test database connection
 async function startServer() {
   try {
-    // Test database connection
-    await sequelize.authenticate();
-    logger.info('Database connection established successfully.');
-
-    // Sync models (optional - migrations handle schema)
-    // await sequelize.sync({ alter: false });
+    // Sync database (migrations with alter: true and seeders)
+    await syncDatabase();
+    logger.info('Database synchronized successfully.');
 
     // Start server
     app.listen(PORT, () => {
