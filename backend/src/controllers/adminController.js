@@ -42,7 +42,10 @@ module.exports = {
     try {
       const { page = 1, limit = 20, search, is_active } = req.query;
       const offset = (page - 1) * limit;
-      const where = {};
+      const where = {
+        // Exclude system tenant from listing
+        company_name: { [Op.ne]: 'System' }
+      };
 
       if (search) {
         where[Op.or] = [
