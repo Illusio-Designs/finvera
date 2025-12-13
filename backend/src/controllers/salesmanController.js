@@ -25,7 +25,7 @@ module.exports = {
           { model: User, attributes: ['id', 'email'] },
           { model: Distributor, attributes: ['id', 'distributor_code', 'company_name'] },
         ],
-        order: [['created_at', 'DESC']],
+        order: [['createdAt', 'DESC']],
       });
 
       res.json({
