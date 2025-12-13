@@ -29,13 +29,10 @@ module.exports = {
       });
 
       res.json({
-        salesmen: salesmen.rows,
-        pagination: {
-          total: salesmen.count,
-          page: parseInt(page),
-          limit: parseInt(limit),
-          pages: Math.ceil(salesmen.count / limit),
-        },
+        total: salesmen.count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        data: salesmen.rows,
       });
     } catch (err) {
       next(err);
