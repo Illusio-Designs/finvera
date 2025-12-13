@@ -1266,24 +1266,33 @@ module.exports = {
       for (const groupData of accountGroupsData) {
         const parentId = groupData.parentCode ? codeToIdMap[groupData.parentCode] : null;
 
-        await queryInterface.sequelize.query(
-          `INSERT INTO account_groups (tenant_id, group_code, group_name, parent_id, group_type, schedule_iii_category, is_system, createdAt, updatedAt)
-           VALUES (:tenant_id, :group_code, :group_name, :parent_id, :group_type, :schedule_iii_category, :is_system, :createdAt, :updatedAt)`,
-          {
-            replacements: {
-              tenant_id: tenant.id,
-              group_code: groupData.code,
-              group_name: groupData.name,
-              parent_id: parentId,
-              group_type: groupData.type,
-              schedule_iii_category: groupData.category,
-              is_system: true,
-              createdAt: now,
-              updatedAt: now,
-            },
-            type: Sequelize.QueryTypes.INSERT,
-          },
-        );
+        // Build replacements object - only include parent_id if it's not null
+        const replacements = {
+          tenant_id: tenant.id,
+          group_code: groupData.code,
+          group_name: groupData.name,
+          group_type: groupData.type,
+          schedule_iii_category: groupData.category,
+          is_system: true,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        // Build query based on whether parent_id exists
+        let insertQuery;
+        if (parentId) {
+          replacements.parent_id = parentId;
+          insertQuery = `INSERT INTO account_groups (tenant_id, group_code, group_name, parent_id, group_type, schedule_iii_category, is_system, createdAt, updatedAt)
+           VALUES (:tenant_id, :group_code, :group_name, :parent_id, :group_type, :schedule_iii_category, :is_system, :createdAt, :updatedAt)`;
+        } else {
+          insertQuery = `INSERT INTO account_groups (tenant_id, group_code, group_name, parent_id, group_type, schedule_iii_category, is_system, createdAt, updatedAt)
+           VALUES (:tenant_id, :group_code, :group_name, NULL, :group_type, :schedule_iii_category, :is_system, :createdAt, :updatedAt)`;
+        }
+
+        await queryInterface.sequelize.query(insertQuery, {
+          replacements,
+          type: Sequelize.QueryTypes.INSERT,
+        });
 
         // Get the inserted ID by querying
         const [rows] = await queryInterface.sequelize.query(
