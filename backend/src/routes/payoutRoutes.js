@@ -7,13 +7,30 @@ const { ROLES } = require('../config/constants');
 const router = Router();
 
 router.use(authenticate);
-router.use(requireRole(ROLES.SUPER_ADMIN));
 
-router.get('/', payoutController.list);
-router.get('/:id', payoutController.getById);
-router.post('/', payoutController.create);
-router.post('/:id/process', payoutController.process);
-router.put('/:id', payoutController.update);
+// View - accessible by admin portal roles
+router.get('/', 
+  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DISTRIBUTOR, ROLES.SALESMAN),
+  payoutController.list
+);
+router.get('/:id', 
+  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DISTRIBUTOR, ROLES.SALESMAN),
+  payoutController.getById
+);
+
+// Create, process, update - only super_admin and admin
+router.post('/', 
+  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN),
+  payoutController.create
+);
+router.post('/:id/process', 
+  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN),
+  payoutController.process
+);
+router.put('/:id', 
+  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN),
+  payoutController.update
+);
 
 module.exports = router;
 
