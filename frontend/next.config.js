@@ -50,9 +50,25 @@ const nextConfig = {
     ];
   },
   webpack: (config, { isServer }) => {
-    // Fixes for Electron
+    // Fixes for global object in client-side
     if (!isServer) {
-      config.target = 'electron-renderer';
+      // Add polyfill for global
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        global: false,
+      };
+      
+      // Define global for browser
+      config.plugins.push(
+        new (require('webpack').ProvidePlugin)({
+          global: 'global',
+        })
+      );
+      
+      // For Electron builds
+      if (process.env.ELECTRON_BUILD) {
+        config.target = 'electron-renderer';
+      }
     }
     return config;
   },

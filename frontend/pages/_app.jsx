@@ -1,3 +1,4 @@
+import '../polyfills';
 import '../styles/globals.css';
 import { AuthProvider } from '../contexts/AuthContext';
 
