@@ -19,7 +19,14 @@ export default function ClientLogin() {
       const result = await login(email, password, 'client');
       
       if (result.success) {
-        toast.success('Login successful!');
+        // Check if user is NOT an admin
+        if (result.user?.role === 'admin') {
+          toast.error('Please use the admin portal to login.');
+          setLoading(false);
+          return;
+        }
+        
+        toast.success('Welcome!');
         router.push('/client/dashboard');
       } else {
         toast.error(result.message || 'Login failed');
