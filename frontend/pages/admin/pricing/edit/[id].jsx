@@ -16,7 +16,7 @@ import toast, { Toaster } from 'react-hot-toast';
 export default function EditPricingPlan() {
   const router = useRouter();
   const { id } = router.query;
-  const { data, loading, execute } = useApi(() => pricingAPI.getPlan(id), !!id);
+  const { data, loading, execute } = useApi(() => pricingAPI.get(id), !!id);
 
   const { values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting, setValues } = useForm(
     {
@@ -48,7 +48,7 @@ export default function EditPricingPlan() {
           distributor_commission_rate: formValues.distributor_commission_rate ? parseFloat(formValues.distributor_commission_rate) : null,
           renewal_commission_rate: formValues.renewal_commission_rate ? parseFloat(formValues.renewal_commission_rate) : null,
         };
-        await pricingAPI.updatePlan(id, payload);
+        await pricingAPI.update(id, payload);
         toast.success('Plan updated successfully');
         router.push('/admin/pricing');
       } catch (error) {
