@@ -51,20 +51,7 @@ export default function TenantsList() {
     },
   ];
 
-  const actions = (row) => (
-    <div className="flex items-center space-x-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={(e) => {
-          e.stopPropagation();
-          router.push(`/admin/tenants/edit/${row.id}`);
-        }}
-      >
-        Edit
-      </Button>
-    </div>
-  );
+  // No actions for tenant rows - view only
 
   return (
     <ProtectedRoute portalType="admin">
@@ -86,7 +73,6 @@ export default function TenantsList() {
             columns={columns}
             data={tableData?.data || tableData || []}
             loading={loading}
-            actions={actions}
             pagination={pagination}
             onPageChange={handlePageChange}
             onSort={handleSort}
