@@ -17,17 +17,17 @@ async function resetSeeds() {
     await sequelize.query('DELETE FROM seeder_meta');
     console.log('✓ Cleared seeder tracking');
 
-    // Clear seeded data
-    await sequelize.query("DELETE FROM users WHERE email = 'Rishi@finvera.com' OR id = '20000000-0000-0000-0000-000000000001'");
+    // Clear seeded data (by identifying criteria, not IDs)
+    await sequelize.query("DELETE FROM users WHERE email = 'Rishi@finvera.com'");
     console.log('✓ Deleted admin user');
 
     await sequelize.query('DELETE FROM account_groups WHERE is_system = true');
     console.log('✓ Deleted account groups');
 
-    await sequelize.query("DELETE FROM tenants WHERE company_name = 'System' OR id = '10000000-0000-0000-0000-000000000001'");
+    await sequelize.query("DELETE FROM tenants WHERE company_name = 'System'");
     console.log('✓ Deleted default tenant');
 
-    await sequelize.query("DELETE FROM subscription_plans WHERE id IN ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002')");
+    await sequelize.query("DELETE FROM subscription_plans WHERE plan_code IN ('FREE', 'STARTER')");
     console.log('✓ Deleted subscription plans');
 
     // Re-enable foreign key checks

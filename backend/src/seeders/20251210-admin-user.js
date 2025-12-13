@@ -35,7 +35,6 @@ module.exports = {
     // Create admin user
     await queryInterface.bulkInsert('users', [
       {
-        id: '20000000-0000-0000-0000-000000000001',
         tenant_id: tenantId,
         email: 'Rishi@finvera.com',
         password_hash: hashedPassword,
