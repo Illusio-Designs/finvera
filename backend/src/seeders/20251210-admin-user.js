@@ -16,32 +16,18 @@ module.exports = {
       return;
     }
 
-    // Check if admin tenant exists
-    let adminTenant = await queryInterface.sequelize.query(
-      `SELECT id FROM tenants WHERE company_name = 'Finvera Admin'`,
+    // Get the first tenant (admin user will be associated with first tenant)
+    const tenants = await queryInterface.sequelize.query(
+      `SELECT id FROM tenants LIMIT 1`,
       { type: Sequelize.QueryTypes.SELECT }
     );
 
-    let tenantId;
-    if (adminTenant.length === 0) {
-      // Create admin tenant
-      const tenantUuid = '00000000-0000-0000-0000-000000000099';
-      await queryInterface.bulkInsert('tenants', [
-        {
-          id: tenantUuid,
-          company_name: 'Finvera Admin',
-          subscription_plan: 'ADMIN',
-          is_active: true,
-          email: 'admin@finvera.com',
-          createdAt: now,
-          updatedAt: now,
-        },
-      ]);
-      tenantId = tenantUuid;
-      console.log('✓ Admin tenant created');
-    } else {
-      tenantId = adminTenant[0].id;
+    if (tenants.length === 0) {
+      console.log('⚠ No tenants found. Create a tenant first to add admin user.');
+      return;
     }
+
+    const tenantId = tenants[0].id;
 
     // Hash the password
     const hashedPassword = await bcrypt.hash('Rishi@1995', 10);
@@ -67,8 +53,5 @@ module.exports = {
   async down(queryInterface) {
     // Remove admin user
     await queryInterface.bulkDelete('users', { email: 'Rishi@finvera.com' }, {});
-    
-    // Optionally remove admin tenant if no other users are associated
-    await queryInterface.bulkDelete('tenants', { company_name: 'Finvera Admin' }, {});
   },
 };
