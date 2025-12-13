@@ -16,16 +16,45 @@ router.use(authenticate);
 router.get('/my-code', referralController.getMyCode);
 
 // Admin routes for managing all referral codes and rewards
-router.use(requireRole(ROLES.SUPER_ADMIN));
-router.get('/', referralController.listCodes);
-router.post('/', referralController.createCode);
-router.get('/:id', referralController.getReferralCodeById);
-router.put('/:id', referralController.updateReferralCode);
-router.delete('/:id', referralController.deleteReferralCode);
-router.get('/rewards', referralController.listRewards);
-router.get('/rewards/:id', referralController.getReferralRewardById);
-router.post('/rewards/:id/approve', referralController.approveReward);
-router.get('/analytics', referralController.getAnalytics);
+// View - accessible by admin portal roles
+router.get('/', 
+  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DISTRIBUTOR, ROLES.SALESMAN),
+  referralController.listCodes
+);
+router.get('/:id', 
+  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DISTRIBUTOR, ROLES.SALESMAN),
+  referralController.getReferralCodeById
+);
+router.get('/rewards', 
+  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DISTRIBUTOR, ROLES.SALESMAN),
+  referralController.listRewards
+);
+router.get('/rewards/:id', 
+  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DISTRIBUTOR, ROLES.SALESMAN),
+  referralController.getReferralRewardById
+);
+router.get('/analytics', 
+  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN),
+  referralController.getAnalytics
+);
+
+// Create, update, delete, approve - only super_admin and admin
+router.post('/', 
+  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN),
+  referralController.createCode
+);
+router.put('/:id', 
+  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN),
+  referralController.updateReferralCode
+);
+router.delete('/:id', 
+  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN),
+  referralController.deleteReferralCode
+);
+router.post('/rewards/:id/approve', 
+  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN),
+  referralController.approveReward
+);
 
 module.exports = router;
 
