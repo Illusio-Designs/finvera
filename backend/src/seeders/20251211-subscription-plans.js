@@ -14,8 +14,12 @@ module.exports = {
       return;
     }
 
+    const uuid = require('uuid');
+
+    // Insert plans one by one to ensure unique IDs
     await queryInterface.bulkInsert('subscription_plans', [
       {
+        id: uuid.v4(),
         plan_code: 'FREE',
         plan_name: 'Free',
         description: 'Free tier',
@@ -31,7 +35,11 @@ module.exports = {
         createdAt: now,
         updatedAt: now,
       },
+    ]);
+
+    await queryInterface.bulkInsert('subscription_plans', [
       {
+        id: uuid.v4(),
         plan_code: 'STARTER',
         plan_name: 'Starter',
         description: 'Starter plan',

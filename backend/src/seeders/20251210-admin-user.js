@@ -29,12 +29,15 @@ module.exports = {
 
     const tenantId = tenants[0].id;
 
+    const uuid = require('uuid');
+
     // Hash the password
     const hashedPassword = await bcrypt.hash('Rishi@1995', 10);
 
     // Create admin user
     await queryInterface.bulkInsert('users', [
       {
+        id: uuid.v4(),
         tenant_id: tenantId,
         email: 'Rishi@finvera.com',
         password_hash: hashedPassword,
