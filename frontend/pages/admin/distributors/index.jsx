@@ -66,16 +66,6 @@ export default function DistributorsList() {
         size="sm"
         onClick={(e) => {
           e.stopPropagation();
-          router.push(`/admin/distributors/${row.id}`);
-        }}
-      >
-        View
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={(e) => {
-          e.stopPropagation();
           router.push(`/admin/distributors/edit/${row.id}`);
         }}
       >
