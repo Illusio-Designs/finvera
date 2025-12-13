@@ -32,7 +32,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <Layout title="Admin Dashboard - Finvera">
         <Toaster />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

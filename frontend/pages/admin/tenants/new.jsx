@@ -31,7 +31,7 @@ export default function NewTenant() {
   );
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <AdminLayout title="Create Tenant - Admin Panel">
         <Toaster />
         <PageLayout

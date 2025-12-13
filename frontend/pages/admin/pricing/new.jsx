@@ -52,7 +52,7 @@ export default function NewPricingPlan() {
   );
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <AdminLayout title="Create Plan - Admin Panel">
         <Toaster />
         <PageLayout

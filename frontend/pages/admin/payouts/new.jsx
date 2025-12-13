@@ -72,7 +72,7 @@ export default function NewPayout() {
   }, [values.payout_type]);
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <AdminLayout title="Create Payout - Admin Panel">
         <Toaster />
         <PageLayout

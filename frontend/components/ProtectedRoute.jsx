@@ -1,29 +1,66 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
+import { canAccessAdminPortal, canAccessClientPortal } from '../lib/roleConfig';
 
-export default function ProtectedRoute({ children, requiredRole = null }) {
+export default function ProtectedRoute({ children, portalType = null }) {
   const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
+  const [hasChecked, setHasChecked] = useState(false);
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      const path = router.pathname;
-      if (path.startsWith('/admin')) {
-        router.push('/admin/login');
-      } else if (path.startsWith('/client')) {
-        router.push('/client/login');
+    // Prevent running multiple times
+    if (loading || hasChecked) {
+      return;
+    }
+
+    const currentPath = router.pathname;
+    
+    // Skip check for login and register pages
+    if (currentPath.includes('/login') || currentPath.includes('/register')) {
+      setHasChecked(true);
+      return;
+    }
+
+    // Not authenticated - redirect to login
+    if (!isAuthenticated) {
+      if (currentPath.startsWith('/admin')) {
+        router.replace('/admin/login');
+      } else if (currentPath.startsWith('/client')) {
+        router.replace('/client/login');
       } else {
-        router.push('/');
+        router.replace('/');
+      }
+      setHasChecked(true);
+      return;
+    }
+
+    // Authenticated - check portal access
+    if (isAuthenticated && user) {
+      const userRole = user.role;
+      
+      // Check admin portal access
+      if (portalType === 'admin' && !canAccessAdminPortal(userRole)) {
+        console.error('Access denied: User role cannot access admin portal');
+        router.replace('/client/dashboard');
+        setHasChecked(true);
+        return;
+      }
+
+      // Check client portal access
+      if (portalType === 'client' && !canAccessClientPortal(userRole)) {
+        console.error('Access denied: User role cannot access client portal');
+        router.replace('/admin/dashboard');
+        setHasChecked(true);
+        return;
       }
     }
 
-    if (!loading && isAuthenticated && requiredRole && user?.role !== requiredRole) {
-      router.push('/');
-    }
-  }, [loading, isAuthenticated, user, router, requiredRole]);
+    setHasChecked(true);
+  }, [loading, isAuthenticated, user, router.pathname, portalType, hasChecked]);
 
-  if (loading) {
+  // Show loading spinner while checking
+  if (loading || !hasChecked) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
@@ -31,11 +68,17 @@ export default function ProtectedRoute({ children, requiredRole = null }) {
     );
   }
 
+  // Not authenticated
   if (!isAuthenticated) {
     return null;
   }
 
-  if (requiredRole && user?.role !== requiredRole) {
+  // Check portal access
+  if (portalType === 'admin' && !canAccessAdminPortal(user?.role)) {
+    return null;
+  }
+
+  if (portalType === 'client' && !canAccessClientPortal(user?.role)) {
     return null;
   }
 

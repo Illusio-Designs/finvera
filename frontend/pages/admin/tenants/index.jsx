@@ -104,7 +104,7 @@ export default function TenantsList() {
   );
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <AdminLayout title="Tenants - Admin Panel">
         <Toaster />
         <PageLayout

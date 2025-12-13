@@ -59,7 +59,7 @@ export default function PayoutsList() {
   ];
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <AdminLayout title="Payouts - Admin Panel">
         <PageLayout
           title="Payout Management"

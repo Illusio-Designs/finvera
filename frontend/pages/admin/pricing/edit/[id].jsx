@@ -80,7 +80,7 @@ export default function EditPricingPlan() {
 
   if (loading) {
     return (
-      <ProtectedRoute requiredRole="super_admin">
+      <ProtectedRoute portalType="admin">
         <AdminLayout>
           <div className="flex justify-center items-center h-64">
             <LoadingSpinner size="lg" />
@@ -91,7 +91,7 @@ export default function EditPricingPlan() {
   }
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <AdminLayout title="Edit Plan - Admin Panel">
         <Toaster />
         <PageLayout

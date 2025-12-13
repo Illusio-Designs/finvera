@@ -20,7 +20,7 @@ export default function SalesmanPerformance() {
 
   if (salesmanLoading || performanceLoading) {
     return (
-      <ProtectedRoute requiredRole="super_admin">
+      <ProtectedRoute portalType="admin">
         <AdminLayout>
           <div className="flex justify-center items-center h-64">
             <LoadingSpinner size="lg" />
@@ -34,7 +34,7 @@ export default function SalesmanPerformance() {
   const performance = performanceData?.data || performanceData || {};
 
   return (
-    <ProtectedRoute requiredRole="super_admin">
+    <ProtectedRoute portalType="admin">
       <AdminLayout title={`${salesman?.full_name} Performance - Admin Panel`}>
         <PageLayout
           title={`${salesman?.full_name} - Performance`}
