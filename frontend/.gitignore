@@ -35,3 +35,18 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# electron
+/dist
+/dist-electron
+*.dmg
+*.pkg
+*.deb
+*.rpm
+*.AppImage
+*.exe
+*.zip
+electron/assets/*.icns
+electron/assets/*.ico
+electron/assets/*.png
+!electron/assets/.gitkeep
+
