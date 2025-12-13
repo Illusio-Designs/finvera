@@ -1267,6 +1267,8 @@ module.exports = {
       return 0;
     });
 
+    const uuid = require('uuid');
+
     // Insert account groups for each tenant
     for (const tenant of tenants) {
       const codeToIdMap = {}; // Map group codes to their inserted IDs for this tenant
@@ -1274,9 +1276,11 @@ module.exports = {
       // Insert groups in order (parents before children)
       for (const groupData of accountGroupsData) {
         const parentId = groupData.parentCode ? codeToIdMap[groupData.parentCode] : null;
+        const newId = uuid.v4(); // Generate unique ID for this group
 
-        // Build replacements object - only include parent_id if it's not null
+        // Build replacements object
         const replacements = {
+          id: newId,
           tenant_id: tenant.id,
           group_code: groupData.code,
           group_name: groupData.name,
@@ -1291,11 +1295,11 @@ module.exports = {
         let insertQuery;
         if (parentId) {
           replacements.parent_id = parentId;
-          insertQuery = `INSERT INTO account_groups (tenant_id, group_code, group_name, parent_id, group_type, schedule_iii_category, is_system, createdAt, updatedAt)
-           VALUES (:tenant_id, :group_code, :group_name, :parent_id, :group_type, :schedule_iii_category, :is_system, :createdAt, :updatedAt)`;
+          insertQuery = `INSERT INTO account_groups (id, tenant_id, group_code, group_name, parent_id, group_type, schedule_iii_category, is_system, createdAt, updatedAt)
+           VALUES (:id, :tenant_id, :group_code, :group_name, :parent_id, :group_type, :schedule_iii_category, :is_system, :createdAt, :updatedAt)`;
         } else {
-          insertQuery = `INSERT INTO account_groups (tenant_id, group_code, group_name, parent_id, group_type, schedule_iii_category, is_system, createdAt, updatedAt)
-           VALUES (:tenant_id, :group_code, :group_name, NULL, :group_type, :schedule_iii_category, :is_system, :createdAt, :updatedAt)`;
+          insertQuery = `INSERT INTO account_groups (id, tenant_id, group_code, group_name, parent_id, group_type, schedule_iii_category, is_system, createdAt, updatedAt)
+           VALUES (:id, :tenant_id, :group_code, :group_name, NULL, :group_type, :schedule_iii_category, :is_system, :createdAt, :updatedAt)`;
         }
 
         await queryInterface.sequelize.query(insertQuery, {
@@ -1303,16 +1307,8 @@ module.exports = {
           type: Sequelize.QueryTypes.INSERT,
         });
 
-        // Get the inserted ID by querying
-        const [rows] = await queryInterface.sequelize.query(
-          `SELECT id FROM account_groups WHERE tenant_id = :tenant_id AND group_code = :group_code`,
-          {
-            replacements: { tenant_id: tenant.id, group_code: groupData.code },
-            type: Sequelize.QueryTypes.SELECT,
-          },
-        );
-        const insertedId = rows[0]?.id;
-        codeToIdMap[groupData.code] = insertedId;
+        // Store the ID for parent reference
+        codeToIdMap[groupData.code] = newId;
       }
     }
 
