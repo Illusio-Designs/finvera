@@ -89,7 +89,12 @@ async function runSeeders() {
       logger.info(`📦 Seeded: ${executedCount} new, ${skippedCount} skipped`);
     }
   } catch (error) {
-    logger.error('❌ Seeding failed:', error.message);
+    logger.error('❌ Seeding failed:', error.message || error);
+    if (error.errors) {
+      error.errors.forEach(err => {
+        logger.error(`  - ${err.message || err.type}: ${err.path || ''}`);
+      });
+    }
     // Don't throw error - server should still start even if seeders fail
   }
 }
