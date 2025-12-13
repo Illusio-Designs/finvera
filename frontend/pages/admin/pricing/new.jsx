@@ -42,7 +42,7 @@ export default function NewPricingPlan() {
           distributor_commission_rate: formValues.distributor_commission_rate ? parseFloat(formValues.distributor_commission_rate) : null,
           renewal_commission_rate: formValues.renewal_commission_rate ? parseFloat(formValues.renewal_commission_rate) : null,
         };
-        await pricingAPI.createPlan(payload);
+        await pricingAPI.create(payload);
         toast.success('Plan created successfully');
         router.push('/admin/pricing');
       } catch (error) {
