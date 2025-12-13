@@ -62,14 +62,6 @@ export default function TenantDetails() {
             { label: 'Tenants', href: '/admin/tenants' },
             { label: tenant.company_name },
           ]}
-          actions={
-            <Button
-              variant="outline"
-              onClick={() => router.push(`/admin/tenants/edit/${id}`)}
-            >
-              Edit
-            </Button>
-          }
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card title="Company Information">

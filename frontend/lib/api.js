@@ -235,10 +235,11 @@ export const payoutAPI = {
 };
 
 export const pricingAPI = {
-  listPlans: (params) => api.get("/pricing", { params }),
-  createPlan: (data) => api.post("/pricing", data),
-  updatePlan: (id, data) => api.put(`/pricing/${id}`, data),
-  getPlan: (id) => api.get(`/pricing/${id}`),
+  list: (params) => api.get("/pricing", { params }),
+  get: (id) => api.get(`/pricing/${id}`),
+  create: (data) => api.post("/pricing", data),
+  update: (id, data) => api.put(`/pricing/${id}`, data),
+  delete: (id) => api.delete(`/pricing/${id}`),
 };
 
 export const fileAPI = {
