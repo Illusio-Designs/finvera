@@ -6,14 +6,8 @@ module.exports = {
 
     // Check if subscription plans already exist
     const existingPlans = await queryInterface.sequelize.query(
-      'SELECT id FROM subscription_plans WHERE id IN (?, ?)',
-      {
-        replacements: [
-          '00000000-0000-0000-0000-000000000001',
-          '00000000-0000-0000-0000-000000000002',
-        ],
-        type: Sequelize.QueryTypes.SELECT,
-      }
+      "SELECT id FROM subscription_plans WHERE plan_code IN ('FREE', 'STARTER')",
+      { type: Sequelize.QueryTypes.SELECT }
     );
 
     if (existingPlans.length > 0) {
@@ -22,7 +16,6 @@ module.exports = {
 
     await queryInterface.bulkInsert('subscription_plans', [
       {
-        id: '00000000-0000-0000-0000-000000000001',
         plan_code: 'FREE',
         plan_name: 'Free',
         description: 'Free tier',
@@ -39,7 +32,6 @@ module.exports = {
         updatedAt: now,
       },
       {
-        id: '00000000-0000-0000-0000-000000000002',
         plan_code: 'STARTER',
         plan_name: 'Starter',
         description: 'Starter plan',
