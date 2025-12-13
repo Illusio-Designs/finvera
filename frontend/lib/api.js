@@ -122,6 +122,8 @@ export const adminAPI = {
     create: (data) => api.post("/admin/salesmen", data),
     update: (id, data) => api.put(`/admin/salesmen/${id}`, data),
     delete: (id) => api.delete(`/admin/salesmen/${id}`),
+    getPerformance: (id, params) => api.get(`/admin/salesmen/${id}/performance`, { params }),
+    getLeads: (id, params) => api.get(`/admin/salesmen/${id}/leads`, { params }),
   },
   commissions: {
     list: (params) => api.get("/admin/commissions", { params }),
