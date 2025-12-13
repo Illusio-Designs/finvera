@@ -17,7 +17,7 @@ module.exports = {
     // Create a default tenant for the system
     await queryInterface.bulkInsert('tenants', [
       {
-        id: '00000000-0000-0000-0000-000000000001',
+        id: '10000000-0000-0000-0000-000000000001',
         company_name: 'System',
         subscription_plan: '00000000-0000-0000-0000-000000000001', // FREE plan
         is_active: true,
@@ -30,6 +30,6 @@ module.exports = {
   },
 
   async down(queryInterface) {
-    await queryInterface.bulkDelete('tenants', { id: '00000000-0000-0000-0000-000000000001' }, {});
+    await queryInterface.bulkDelete('tenants', { id: '10000000-0000-0000-0000-000000000001' }, {});
   },
 };
