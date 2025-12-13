@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import ProtectedRoute from '../../components/ProtectedRoute';
-import Layout from '../../components/Layout';
+import AdminLayout from '../../components/layouts/AdminLayout';
 import { adminAPI } from '../../lib/api';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -33,9 +33,9 @@ export default function AdminDashboard() {
 
   return (
     <ProtectedRoute portalType="admin">
-      <Layout title="Admin Dashboard - Finvera">
+      <AdminLayout title="Dashboard">
         <Toaster />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-8">Admin Dashboard</h1>
 
           {loading ? (
@@ -94,7 +94,7 @@ export default function AdminDashboard() {
             </>
           )}
         </div>
-      </Layout>
+      </AdminLayout>
     </ProtectedRoute>
   );
 }
