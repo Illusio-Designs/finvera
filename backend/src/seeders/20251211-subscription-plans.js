@@ -17,7 +17,6 @@ module.exports = {
     );
 
     if (existingPlans.length > 0) {
-      console.log('Subscription plans already exist. Skipping seeder.');
       return;
     }
 
@@ -60,7 +59,7 @@ module.exports = {
       },
     ]);
 
-    console.log('Subscription plans seeded successfully.');
+    console.log('✓ Subscription plans: FREE, STARTER');
   },
 
   async down(queryInterface) {

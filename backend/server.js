@@ -13,16 +13,14 @@ async function startServer() {
   try {
     // Sync database (migrations with alter: true and seeders)
     await syncDatabase();
-    logger.info('Database synchronized successfully.');
 
     // Start server
     app.listen(PORT, () => {
-      logger.info(`Server is running on port ${PORT} in ${NODE_ENV} mode`);
-      logger.info(`Health check: http://localhost:${PORT}/health`);
-      logger.info(`API base URL: http://localhost:${PORT}/api`);
+      logger.info(`🚀 Server running on port ${PORT}`);
+      logger.info(`📍 API: http://localhost:${PORT}/api`);
     });
   } catch (error) {
-    logger.error('Unable to start server:', error);
+    logger.error('❌ Server startup failed:', error);
     process.exit(1);
   }
 }

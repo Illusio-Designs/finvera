@@ -13,7 +13,6 @@ module.exports = {
     );
 
     if (existingAdmin.length > 0) {
-      console.log('Admin user already exists. Skipping admin seeder.');
       return;
     }
 
@@ -39,10 +38,9 @@ module.exports = {
         },
       ]);
       tenantId = tenantUuid;
-      console.log('Admin tenant created.');
+      console.log('✓ Admin tenant created');
     } else {
       tenantId = adminTenant[0].id;
-      console.log('Admin tenant already exists.');
     }
 
     // Hash the password
@@ -63,7 +61,7 @@ module.exports = {
       },
     ]);
 
-    console.log('Admin user created successfully.');
+    console.log('✓ Admin user: Rishi@finvera.com');
   },
 
   async down(queryInterface) {
