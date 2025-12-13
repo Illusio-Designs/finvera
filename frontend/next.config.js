@@ -13,6 +13,16 @@ const nextConfig = {
     API_URL: process.env.API_URL || 'http://localhost:3001/api',
     MAIN_DOMAIN: process.env.MAIN_DOMAIN || 'localhost',
   },
+  webpack: (config, { isServer }) => {
+    // Fixes npm packages that depend on `global`
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        global: false,
+      };
+    }
+    return config;
+  },
   async rewrites() {
     // Skip rewrites in Electron build
     if (process.env.ELECTRON_BUILD) {
