@@ -76,7 +76,7 @@ module.exports = {
         target_annual: parseFloat(target_annual) || 0,
       });
 
-      res.status(201).json({ salesman });
+      res.status(201).json(salesman);
     } catch (err) {
       next(err);
     }
@@ -87,7 +87,7 @@ module.exports = {
       const { id } = req.params;
       const salesman = await Salesman.findByPk(id, {
         include: [
-          { model: User, attributes: ['id', 'email'] },
+          { model: User, attributes: ['id', 'email', 'full_name'] },
           { model: Distributor, attributes: ['id', 'distributor_code', 'company_name'] },
         ],
       });
@@ -96,7 +96,7 @@ module.exports = {
         return res.status(404).json({ message: 'Salesman not found' });
       }
 
-      res.json({ salesman });
+      res.json(salesman);
     } catch (err) {
       next(err);
     }
@@ -112,7 +112,7 @@ module.exports = {
       }
 
       await salesman.update(req.body);
-      res.json({ salesman });
+      res.json(salesman);
     } catch (err) {
       next(err);
     }
