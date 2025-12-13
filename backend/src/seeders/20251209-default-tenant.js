@@ -14,9 +14,12 @@ module.exports = {
       return;
     }
 
+    const uuid = require('uuid');
+
     // Create a default tenant for the system
     await queryInterface.bulkInsert('tenants', [
       {
+        id: uuid.v4(),
         company_name: 'System',
         is_active: true,
         createdAt: now,
