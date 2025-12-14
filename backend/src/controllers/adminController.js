@@ -1,4 +1,5 @@
-const { Tenant, User, Distributor, Salesman, Commission, Payout } = require('../models');
+const { User, Distributor, Salesman, Commission, Payout } = require('../models');
+const { TenantMaster } = require('../models/masterModels');
 const { Op } = require('sequelize');
 const { Sequelize } = require('sequelize');
 const logger = require('../utils/logger');
@@ -14,10 +15,10 @@ module.exports = {
         totalCommissions,
         totalPayouts,
       ] = await Promise.all([
-        Tenant.count(),
+        TenantMaster.count(),
         Distributor.count(),
         Salesman.count(),
-        Tenant.count({ where: { is_active: true } }),
+        TenantMaster.count({ where: { is_active: true } }),
         Commission.sum('amount'),
         Payout.sum('total_amount'),
       ]);
@@ -58,7 +59,7 @@ module.exports = {
         where.is_active = is_active === 'true';
       }
 
-      const { count, rows } = await Tenant.findAndCountAll({
+      const { count, rows } = await TenantMaster.findAndCountAll({
         where,
         limit: parseInt(limit),
         offset: parseInt(offset),
@@ -83,7 +84,7 @@ module.exports = {
   async getTenant(req, res, next) {
     try {
       const { id } = req.params;
-      const tenant = await Tenant.findByPk(id, {
+      const tenant = await TenantMaster.findByPk(id, {
         include: [
           {
             association: 'Users',
@@ -119,7 +120,7 @@ module.exports = {
         subscription_plan,
       } = req.body;
 
-      const tenant = await Tenant.create({
+      const tenant = await TenantMaster.create({
         company_name,
         gstin,
         pan,
