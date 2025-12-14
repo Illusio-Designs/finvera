@@ -26,6 +26,11 @@ const adminMenuItems = [
     icon: '👤',
   },
   {
+    label: 'Targets',
+    href: '/admin/targets',
+    icon: '🎯',
+  },
+  {
     divider: true,
   },
   {
