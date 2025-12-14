@@ -39,6 +39,11 @@ module.exports = (sequelize) => {
       defaultValue: 'viewer',
     },
     phone: DataTypes.STRING(15),
+    profile_image: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      comment: 'Path to user profile image',
+    },
     is_active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,

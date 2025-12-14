@@ -3,32 +3,36 @@ import Head from 'next/head';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { useAuth } from '../../contexts/AuthContext';
+import {
+  FiHome, FiUsers, FiBriefcase, FiTarget, FiDollarSign,
+  FiCreditCard, FiGift, FiTag
+} from 'react-icons/fi';
 
-const adminMenuItems = [
+const getAdminMenuItems = () => [
   {
     label: 'Dashboard',
     href: '/admin/dashboard',
-    icon: '📊',
+    icon: FiHome,
   },
   {
     label: 'Tenants',
     href: '/admin/tenants',
-    icon: '🏢',
+    icon: FiBriefcase,
   },
   {
     label: 'Distributors',
     href: '/admin/distributors',
-    icon: '👥',
+    icon: FiUsers,
   },
   {
     label: 'Salesmen',
     href: '/admin/salesmen',
-    icon: '👤',
+    icon: FiUsers,
   },
   {
     label: 'Targets',
     href: '/admin/targets',
-    icon: '🎯',
+    icon: FiTarget,
   },
   {
     divider: true,
@@ -36,17 +40,17 @@ const adminMenuItems = [
   {
     label: 'Commissions',
     href: '/admin/commissions',
-    icon: '💰',
+    icon: FiDollarSign,
   },
   {
     label: 'Payouts',
     href: '/admin/payouts',
-    icon: '💳',
+    icon: FiCreditCard,
   },
   {
     label: 'Referrals',
     href: '/admin/referrals',
-    icon: '🎁',
+    icon: FiGift,
   },
   {
     divider: true,
@@ -54,12 +58,13 @@ const adminMenuItems = [
   {
     label: 'Pricing',
     href: '/admin/pricing',
-    icon: '💵',
+    icon: FiTag,
   },
 ];
 
 export default function AdminLayout({ children, title = 'Admin Panel - Finvera' }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { user } = useAuth();
 
   return (
@@ -70,11 +75,13 @@ export default function AdminLayout({ children, title = 'Admin Panel - Finvera' 
       </Head>
       <div className="min-h-screen bg-gray-50 flex">
         <Sidebar
-          items={adminMenuItems}
+          items={getAdminMenuItems()}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
-        <div className="flex-1 flex flex-col lg:pl-64">
+        <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'}`}>
           <Header
             onMenuClick={() => setSidebarOpen(!sidebarOpen)}
             title={title}
@@ -87,4 +94,3 @@ export default function AdminLayout({ children, title = 'Admin Panel - Finvera' 
     </>
   );
 }
-

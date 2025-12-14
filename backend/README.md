@@ -57,9 +57,6 @@ backend/
    # Run migrations
    npm run migrate
 
-   # Run index migration
-   npx sequelize db:migrate --name add-indexes
-
    # Seed initial data
    npm run seed
    ```

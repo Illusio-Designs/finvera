@@ -12,7 +12,8 @@ export function middleware(request) {
   // Skip if already on correct path to prevent loops
   if (url.pathname.startsWith('/_next') || 
       url.pathname.startsWith('/api') ||
-      url.pathname.startsWith('/static')) {
+      url.pathname.startsWith('/static') ||
+      url.pathname.startsWith('/favicon')) {
     return NextResponse.next();
   }
 
@@ -103,8 +104,9 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public folder
+     * - api routes (handled separately)
+     * - static assets (images, etc.)
      */
-    '/((?!_next/static|_next/image|favicon.ico|public).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api|.*\\.ico|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.svg|.*\\.webp|.*\\.gif).*)',
   ],
 };

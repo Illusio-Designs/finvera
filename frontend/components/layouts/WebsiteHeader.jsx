@@ -1,8 +1,30 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 export default function WebsiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [protocol, setProtocol] = useState('http:');
+  
+  useEffect(() => {
+    // Set protocol only on client side
+    if (typeof window !== 'undefined') {
+      setProtocol(window.location.protocol);
+    }
+  }, []);
+  
+  const getAdminUrl = () => {
+    const domain = process.env.MAIN_DOMAIN?.includes('localhost') 
+      ? 'admin.localhost:3001' 
+      : `admin.${process.env.MAIN_DOMAIN}`;
+    return `${protocol}//${domain}`;
+  };
+  
+  const getClientUrl = () => {
+    const domain = process.env.MAIN_DOMAIN?.includes('localhost') 
+      ? 'client.localhost:3001' 
+      : `client.${process.env.MAIN_DOMAIN}`;
+    return `${protocol}//${domain}`;
+  };
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">
@@ -39,7 +61,7 @@ export default function WebsiteHeader() {
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
             <a
-              href={`${typeof window !== 'undefined' && window.location.protocol}//${process.env.MAIN_DOMAIN?.includes('localhost') ? 'admin.localhost:3001' : `admin.${process.env.MAIN_DOMAIN}`}`}
+              href={getAdminUrl()}
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-600 hover:text-primary-600 transition font-medium"
@@ -47,7 +69,7 @@ export default function WebsiteHeader() {
               Admin Login
             </a>
             <a
-              href={`${typeof window !== 'undefined' && window.location.protocol}//${process.env.MAIN_DOMAIN?.includes('localhost') ? 'client.localhost:3001' : `client.${process.env.MAIN_DOMAIN}`}`}
+              href={getClientUrl()}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition font-medium"
@@ -91,7 +113,7 @@ export default function WebsiteHeader() {
             </Link>
             <div className="pt-4 border-t border-gray-200 space-y-3">
               <a
-                href={`${typeof window !== 'undefined' && window.location.protocol}//${process.env.MAIN_DOMAIN?.includes('localhost') ? 'admin.localhost:3001' : `admin.${process.env.MAIN_DOMAIN}`}`}
+                href={getAdminUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block text-gray-600 hover:text-primary-600 transition font-medium"
@@ -99,7 +121,7 @@ export default function WebsiteHeader() {
                 Admin Login
               </a>
               <a
-                href={`${typeof window !== 'undefined' && window.location.protocol}//${process.env.MAIN_DOMAIN?.includes('localhost') ? 'client.localhost:3001' : `client.${process.env.MAIN_DOMAIN}`}`}
+                href={getClientUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition font-medium text-center"
