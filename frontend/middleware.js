@@ -21,7 +21,7 @@ export function middleware(request) {
     // If not already on admin path, redirect
     if (!url.pathname.startsWith('/admin')) {
       // Redirect /login to /admin/login, / to /admin/dashboard
-      if (url.pathname === '/login') {
+      if (url.pathname === '/login' || url.pathname === '/admin/login') {
         url.pathname = '/admin/login';
       } else if (url.pathname === '/' || url.pathname === '') {
         url.pathname = '/admin/dashboard';

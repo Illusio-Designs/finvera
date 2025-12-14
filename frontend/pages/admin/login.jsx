@@ -14,30 +14,35 @@ export default function AdminLogin() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    if (loading) return; // Prevent double submission
+    
     setLoading(true);
 
     try {
       const result = await login(email, password, 'admin');
       
-      if (result.success) {
+      if (result.success && result.user) {
         const role = result.user?.role;
         
         // Check if role can access admin portal
         if (canAccessAdminPortal(role)) {
           toast.success(`Welcome ${getRoleDisplayName(role)}!`);
           const redirectPath = getDefaultRedirect(role, result.user.id);
-          router.push(redirectPath);
+          // Use replace instead of push to prevent back button issues
+          router.replace(redirectPath);
         } else {
           toast.error('Access denied. Please use the client portal.');
           setLoading(false);
-          return;
         }
       } else {
-        toast.error(result.message || 'Login failed');
+        toast.error(result.message || 'Login failed. Please check your credentials.');
+        setLoading(false);
       }
     } catch (error) {
-      toast.error('An error occurred during login');
-    } finally {
+      console.error('Login error:', error);
+      toast.error(error.message || 'An error occurred during login');
       setLoading(false);
     }
   };

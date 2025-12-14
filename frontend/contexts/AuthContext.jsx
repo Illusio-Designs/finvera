@@ -40,19 +40,26 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.login({ email, password });
       const { user: userData, accessToken, refreshToken, jti } = response.data;
       
-      // Store tokens and user data
-      Cookies.set('token', accessToken, { expires: 7 });
+      // Store tokens and user data with proper cookie settings
+      // Note: For localhost subdomains, cookies work without domain setting
+      const cookieOptions = { 
+        expires: 7,
+        sameSite: 'lax'
+      };
+      
+      Cookies.set('token', accessToken, cookieOptions);
       if (refreshToken) {
-        Cookies.set('refreshToken', refreshToken, { expires: 30 });
+        Cookies.set('refreshToken', refreshToken, { ...cookieOptions, expires: 30 });
       }
       if (jti) {
-        Cookies.set('jti', jti, { expires: 7 });
+        Cookies.set('jti', jti, cookieOptions);
       }
-      Cookies.set('user', JSON.stringify(userData), { expires: 7 });
+      Cookies.set('user', JSON.stringify(userData), cookieOptions);
       
       setUser(userData);
       return { success: true, user: userData };
     } catch (error) {
+      console.error('Login error:', error);
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Login failed',
@@ -65,15 +72,20 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.register(data);
       const { user: userData, accessToken, refreshToken, jti } = response.data;
       
-      // Store tokens and user data
-      Cookies.set('token', accessToken, { expires: 7 });
+      // Store tokens and user data with proper cookie settings
+      const cookieOptions = { 
+        expires: 7,
+        sameSite: 'lax'
+      };
+      
+      Cookies.set('token', accessToken, cookieOptions);
       if (refreshToken) {
-        Cookies.set('refreshToken', refreshToken, { expires: 30 });
+        Cookies.set('refreshToken', refreshToken, { ...cookieOptions, expires: 30 });
       }
       if (jti) {
-        Cookies.set('jti', jti, { expires: 7 });
+        Cookies.set('jti', jti, cookieOptions);
       }
-      Cookies.set('user', JSON.stringify(userData), { expires: 7 });
+      Cookies.set('user', JSON.stringify(userData), cookieOptions);
       
       setUser(userData);
       return { success: true, user: userData };
@@ -112,12 +124,17 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.refresh({ refreshToken: refreshTokenValue });
       const { accessToken, refreshToken: newRefreshToken, jti } = response.data.data || response.data;
       
-      Cookies.set('token', accessToken, { expires: 7 });
+      const cookieOptions = { 
+        expires: 7,
+        sameSite: 'lax'
+      };
+      
+      Cookies.set('token', accessToken, cookieOptions);
       if (newRefreshToken) {
-        Cookies.set('refreshToken', newRefreshToken, { expires: 30 });
+        Cookies.set('refreshToken', newRefreshToken, { ...cookieOptions, expires: 30 });
       }
       if (jti) {
-        Cookies.set('jti', jti, { expires: 7 });
+        Cookies.set('jti', jti, cookieOptions);
       }
       
       return { success: true, accessToken };

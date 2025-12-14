@@ -117,14 +117,14 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Pending Balance */}
-                <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-6 rounded-lg shadow-lg text-white">
+                <div className="bg-gradient-to-br from-primary-500 to-primary-600 p-6 rounded-lg shadow-lg text-white">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-indigo-100 text-sm font-medium">Pending Balance</div>
+                      <div className="text-primary-100 text-sm font-medium">Pending Balance</div>
                       <div className="text-3xl font-bold mt-2">
                         {formatCurrency((stats.total_commissions || 0) - (stats.total_payouts || 0))}
                       </div>
-                      <div className="text-indigo-100 text-xs mt-1">To be paid out</div>
+                      <div className="text-primary-100 text-xs mt-1">To be paid out</div>
                     </div>
                     <div className="text-5xl opacity-20">📊</div>
                   </div>
