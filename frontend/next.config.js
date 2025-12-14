@@ -8,7 +8,8 @@ const nextConfig = {
   },
   trailingSlash: true,
   env: {
-    API_URL: process.env.API_URL || 'http://localhost:3001/api',
+    API_URL: process.env.API_URL || 'http://localhost:3000/api',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api',
     MAIN_DOMAIN: process.env.MAIN_DOMAIN || 'localhost',
   },
   webpack: (config, { isServer, webpack }) => {
@@ -73,7 +74,7 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.API_URL || 'http://localhost:3001/api'}/:path*`,
+        destination: `${process.env.API_URL || 'http://localhost:3000/api'}/:path*`,
       },
     ];
   },
