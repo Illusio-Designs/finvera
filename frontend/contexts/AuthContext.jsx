@@ -37,8 +37,21 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password, userType = 'client') => {
     try {
+      console.log('Attempting login for:', email);
       const response = await authAPI.login({ email, password });
-      const { user: userData, accessToken, refreshToken, jti } = response.data;
+      console.log('Login response:', response);
+      
+      // Handle different response structures
+      const responseData = response.data?.data || response.data;
+      const { user: userData, accessToken, refreshToken, jti } = responseData;
+      
+      if (!userData || !accessToken) {
+        console.error('Invalid response structure:', responseData);
+        return {
+          success: false,
+          message: 'Invalid response from server',
+        };
+      }
       
       // Store tokens and user data with proper cookie settings
       // Note: For localhost subdomains, cookies work without domain setting
@@ -57,12 +70,24 @@ export const AuthProvider = ({ children }) => {
       Cookies.set('user', JSON.stringify(userData), cookieOptions);
       
       setUser(userData);
+      console.log('Login successful for user:', userData);
       return { success: true, user: userData };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+      });
+      
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          error.message || 
+                          'Login failed. Please check your credentials.';
+      
       return {
         success: false,
-        message: error.response?.data?.message || error.message || 'Login failed',
+        message: errorMessage,
       };
     }
   };
