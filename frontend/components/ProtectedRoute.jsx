@@ -16,7 +16,8 @@ export default function ProtectedRoute({ children, portalType = null }) {
 
     const currentPath = router.pathname;
     
-    // Skip check for login and register pages
+    // Skip check for login and register pages - allow viewing even when authenticated
+    // This allows users to see login success messages and console logs
     if (currentPath.includes('/login') || currentPath.includes('/register')) {
       setHasChecked(true);
       return;
