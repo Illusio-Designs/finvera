@@ -38,14 +38,15 @@ module.exports = {
     // Create tenant in master database
     await queryInterface.sequelize.query(
       `INSERT INTO ${masterDbName}.tenant_master 
-       (id, company_name, subdomain, plan, db_name, db_host, db_user, db_password, is_active, createdAt, updatedAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, company_name, subdomain, subscription_plan, email, db_name, db_host, db_user, db_password, is_active, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       {
         replacements: [
           tenantId,
           'System',
           'system',
           'STARTER',
+          'system@finvera.com',
           `finvera_tenant_${tenantId.replace(/-/g, '_')}`,
           process.env.DB_HOST || 'localhost',
           process.env.DB_USER || 'root',
