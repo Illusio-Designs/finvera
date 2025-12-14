@@ -5,7 +5,7 @@ import Header from './Header';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   FiHome, FiUsers, FiBriefcase, FiTarget, FiDollarSign,
-  FiCreditCard, FiGift, FiTag, FiUser, FiHeadphones
+  FiCreditCard, FiGift, FiTag, FiUser, FiHeadphones, FiBarChart2
 } from 'react-icons/fi';
 
 const getAdminMenuItems = (userRole) => {
@@ -64,19 +64,22 @@ const getAdminMenuItems = (userRole) => {
       divider: true,
     },
     {
-      label: 'Commissions',
-      href: '/admin/commissions',
+      label: 'Commissions & Payouts',
+      href: '/admin/commissions-payouts',
       icon: FiDollarSign,
-    },
-    {
-      label: 'Payouts',
-      href: '/admin/payouts',
-      icon: FiCreditCard,
     },
     {
       label: 'Referrals',
       href: '/admin/referrals',
       icon: FiGift,
+    },
+    {
+      divider: true,
+    },
+    {
+      label: 'Reports',
+      href: '/admin/reports',
+      icon: FiBarChart2,
     },
     {
       divider: true,

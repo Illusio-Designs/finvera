@@ -154,6 +154,10 @@ export const adminAPI = {
     get: (id) => api.get(`/admin/payouts/${id}`),
     generate: (data) => api.post("/admin/payouts/generate", data),
   },
+  commissionPayouts: {
+    summary: (params) => api.get("/admin/commissions-payouts/summary", { params }),
+    updateStatus: (role, userId, data) => api.put(`/admin/commissions-payouts/${role}/${userId}/status`, data),
+  },
   referrals: {
     list: (params) => api.get("/admin/referrals", { params }),
     create: (data) => api.post("/admin/referrals", data),
@@ -180,6 +184,34 @@ export const adminAPI = {
     },
     agents: {
       getReviews: (agentId) => api.get(`/support/agents/${agentId}/reviews`),
+    },
+  },
+  reports: {
+    revenue: {
+      total: (params) => api.get("/admin/reports/revenue/total", { params }),
+      comparison: (params) => api.get("/admin/reports/revenue/comparison", { params }),
+      byType: (params) => api.get("/admin/reports/revenue/by-type", { params }),
+      trend: (params) => api.get("/admin/reports/revenue/trend", { params }),
+    },
+    commission: {
+      summary: (params) => api.get("/admin/reports/commission/summary", { params }),
+      distribution: (params) => api.get("/admin/reports/commission/distribution", { params }),
+    },
+    performance: {
+      distributor: (params) => api.get("/admin/reports/performance/distributor", { params }),
+      salesman: (params) => api.get("/admin/reports/performance/salesman", { params }),
+      targets: (params) => api.get("/admin/reports/performance/targets", { params }),
+    },
+    categorization: {
+      distributor: (params) => api.get("/admin/reports/categorization/distributor", { params }),
+      salesman: (params) => api.get("/admin/reports/categorization/salesman", { params }),
+    },
+    tenant: {
+      acquisition: (params) => api.get("/admin/reports/tenant/acquisition", { params }),
+    },
+    summary: {
+      executive: (params) => api.get("/admin/reports/summary/executive", { params }),
+      financial: (params) => api.get("/admin/reports/summary/financial", { params }),
     },
   },
 };
