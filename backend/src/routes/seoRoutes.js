@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const seoController = require('../controllers/seoController');
 const authenticate = require('../middleware/auth');
-const authorize = require('../middleware/role');
+const { authorize } = require('../middleware/role');
 
 // SEO routes (website_manager can manage)
 router.get('/seo', seoController.listSEO);
