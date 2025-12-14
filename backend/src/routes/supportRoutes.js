@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const supportController = require('../controllers/supportController');
-const authenticate = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
 const { authorize } = require('../middleware/role');
 
 // Public routes (clients can create tickets)
