@@ -1,6 +1,8 @@
 require('dotenv').config();
 const app = require('./src/app');
 const sequelize = require('./src/config/database');
+const masterSequelize = require('./src/config/masterDatabase');
+const { initMasterDatabase } = require('./src/config/masterDatabase');
 const redisClient = require('./src/config/redis');
 const logger = require('./src/utils/logger');
 const { syncDatabase } = require('./src/utils/dbSync');
@@ -11,13 +13,26 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // Test database connection
 async function startServer() {
   try {
-    // Sync database (migrations with alter: true and seeders)
+    logger.info('🔄 Initializing databases...');
+    
+    // 1. Initialize Master Database (for tenant metadata)
+    logger.info('📦 Setting up master database for tenant metadata...');
+    await initMasterDatabase();
+    
+    // 2. Sync Main Database (for admin, salesman, distributor, etc.)
+    logger.info('📦 Setting up main database for system models...');
     await syncDatabase();
 
+    logger.info('✅ All databases initialized successfully');
+    
     // Start server
     app.listen(PORT, () => {
-      logger.info(`🚀 Server running on port ${PORT}`);
+      logger.info(`🚀 Server running on port ${PORT} in ${NODE_ENV} mode`);
       logger.info(`📍 API: http://localhost:${PORT}/api`);
+      logger.info(`📊 Databases:`);
+      logger.info(`   - Main DB: ${process.env.DB_NAME || 'finvera_db'} (Admin, Salesman, Distributor, etc.)`);
+      logger.info(`   - Master DB: ${process.env.MASTER_DB_NAME || 'finvera_master'} (Tenant metadata only)`);
+      logger.info(`   - Tenant DBs: Created dynamically per tenant`);
     });
   } catch (error) {
     logger.error('❌ Server startup failed:', error);
@@ -29,6 +44,7 @@ async function startServer() {
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM signal received: closing HTTP server');
   await sequelize.close();
+  await masterSequelize.close();
   if (redisClient && redisClient.isConnected()) {
     await redisClient.quit();
   }
@@ -38,6 +54,7 @@ process.on('SIGTERM', async () => {
 process.on('SIGINT', async () => {
   logger.info('SIGINT signal received: closing HTTP server');
   await sequelize.close();
+  await masterSequelize.close();
   if (redisClient && redisClient.isConnected()) {
     await redisClient.quit();
   }

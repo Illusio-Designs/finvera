@@ -4,11 +4,14 @@ const logger = require('../utils/logger');
 
 /**
  * Master Database Connection
- * This database stores only tenant metadata and configuration
- * Each tenant's actual data is stored in their own separate database
+ * Stores ONLY tenant metadata (tenant_master table)
+ * Admin, salesman, distributor data stays in main database (finvera_db)
+ * Auto-created on server startup
  */
+const masterDbName = process.env.MASTER_DB_NAME || 'finvera_master';
+
 const masterSequelize = new Sequelize(
-  process.env.MASTER_DB_NAME || 'finvera_master',
+  masterDbName,
   process.env.DB_USER || 'root',
   process.env.DB_PASSWORD || '',
   {
@@ -25,14 +28,41 @@ const masterSequelize = new Sequelize(
   },
 );
 
-// Test connection
-masterSequelize
-  .authenticate()
-  .then(() => {
-    logger.info('Master database connection established successfully');
-  })
-  .catch((err) => {
-    logger.error('Unable to connect to master database:', err);
-  });
+/**
+ * Initialize master database
+ * Creates database if it doesn't exist
+ */
+async function initMasterDatabase() {
+  try {
+    // Connect without database name to create it
+    const rootConnection = new Sequelize('', process.env.DB_USER, process.env.DB_PASSWORD, {
+      host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || 3306,
+      dialect: 'mysql',
+      logging: false,
+    });
 
+    // Create master database if it doesn't exist
+    await rootConnection.query(`CREATE DATABASE IF NOT EXISTS \`${masterDbName}\``);
+    await rootConnection.close();
+    
+    logger.info(`Master database '${masterDbName}' ready`);
+
+    // Test connection
+    await masterSequelize.authenticate();
+    logger.info('Master database connection established successfully');
+
+    // Sync tenant_master table
+    const TenantMaster = require('../models/TenantMaster');
+    await TenantMaster.sync({ alter: false });
+    logger.info('Tenant master table synchronized');
+
+  } catch (err) {
+    logger.error('Failed to initialize master database:', err);
+    throw err;
+  }
+}
+
+// Export both connection and init function
 module.exports = masterSequelize;
+module.exports.initMasterDatabase = initMasterDatabase;
