@@ -9,9 +9,7 @@
     "migrate": "sequelize db:migrate",
     "migrate:undo": "sequelize db:migrate:undo",
     "seed": "sequelize db:seed:all",
-    "seed:undo": "sequelize db:seed:undo:all",
-    "db:reset": "node scripts/resetDatabase.js",
-    "db:fix-commissions": "node scripts/fixCommissionsTable.js"
+    "seed:undo": "sequelize db:seed:undo:all"
   },
   "keywords": [],
   "author": "",

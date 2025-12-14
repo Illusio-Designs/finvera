@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
@@ -10,6 +10,22 @@ import {
 } from 'react-icons/fi';
 
 export default function LandingPage() {
+  const [protocol, setProtocol] = useState('http:');
+  
+  useEffect(() => {
+    // Set protocol only on client side
+    if (typeof window !== 'undefined') {
+      setProtocol(window.location.protocol);
+    }
+  }, []);
+  
+  const getClientRegisterUrl = () => {
+    const domain = process.env.MAIN_DOMAIN?.includes('localhost') 
+      ? 'client.localhost:3001' 
+      : `client.${process.env.MAIN_DOMAIN}`;
+    return `${protocol}//${domain}/register`;
+  };
+
   useEffect(() => {
     // Smooth scroll for anchor links
     const handleAnchorClick = (e) => {
@@ -65,7 +81,7 @@ export default function LandingPage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <a
-                  href={`${typeof window !== 'undefined' && window.location.protocol}//${process.env.MAIN_DOMAIN?.includes('localhost') ? 'client.localhost:3001' : `client.${process.env.MAIN_DOMAIN}`}/register`}
+                  href={getClientRegisterUrl()}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group bg-primary-600 text-white px-10 py-4 rounded-xl text-lg font-semibold hover:bg-primary-700 transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1 flex items-center gap-2"
@@ -381,7 +397,7 @@ export default function LandingPage() {
                   </li>
                 </ul>
                 <a
-                  href={`${typeof window !== 'undefined' && window.location.protocol}//${process.env.MAIN_DOMAIN?.includes('localhost') ? 'client.localhost:3001' : `client.${process.env.MAIN_DOMAIN}`}/register`}
+                  href={getClientRegisterUrl()}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block w-full bg-primary-600 text-white text-center py-4 rounded-xl hover:bg-primary-700 transition font-semibold text-lg shadow-lg"
@@ -420,7 +436,7 @@ export default function LandingPage() {
                   </li>
                 </ul>
                 <a
-                  href={`${typeof window !== 'undefined' && window.location.protocol}//${process.env.MAIN_DOMAIN?.includes('localhost') ? 'client.localhost:3001' : `client.${process.env.MAIN_DOMAIN}`}/register`}
+                  href={getClientRegisterUrl()}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block w-full bg-white text-primary-600 text-center py-4 rounded-xl hover:bg-gray-100 transition font-semibold text-lg shadow-lg"
@@ -479,7 +495,7 @@ export default function LandingPage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <a
-                  href={`${typeof window !== 'undefined' && window.location.protocol}//${process.env.MAIN_DOMAIN?.includes('localhost') ? 'client.localhost:3001' : `client.${process.env.MAIN_DOMAIN}`}/register`}
+                  href={getClientRegisterUrl()}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-white text-primary-600 px-10 py-4 rounded-xl text-lg font-semibold hover:bg-gray-100 transition shadow-xl"
