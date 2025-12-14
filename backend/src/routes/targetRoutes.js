@@ -70,4 +70,16 @@ router.get('/salesman/:id',
   targetController.getSalesmanTargets
 );
 
+// Recalculate achieved value for a specific target
+router.post('/:id/recalculate', 
+  requireRole(constants.ROLES.SUPER_ADMIN, constants.ROLES.ADMIN),
+  targetController.recalculateAchieved
+);
+
+// Recalculate achieved values for all targets (optionally filtered by distributor/salesman)
+router.post('/recalculate/all', 
+  requireRole(constants.ROLES.SUPER_ADMIN, constants.ROLES.ADMIN),
+  targetController.recalculateAll
+);
+
 module.exports = router;

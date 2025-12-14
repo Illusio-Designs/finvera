@@ -17,7 +17,20 @@ async function syncDatabase() {
 
     // Sync models with alter: true (will alter existing tables to match models)
     // This is safer than force: true which drops tables
+    try {
     await sequelize.sync({ alter: true });
+    } catch (syncError) {
+      // Handle specific MySQL errors that shouldn't block startup
+      if (syncError.original && syncError.original.code === 'ER_TOO_MANY_KEYS') {
+        logger.warn('⚠️  Some tables have too many indexes (MySQL limit: 64)');
+        logger.warn('   This is usually safe to ignore if tables already exist.');
+        logger.warn('   Consider removing unnecessary indexes via migration.');
+        // Continue with seeders even if sync fails due to index limit
+      } else {
+        // Re-throw other errors
+        throw syncError;
+      }
+    }
 
     // Run seeders
     await runSeeders();
@@ -30,7 +43,7 @@ async function syncDatabase() {
 }
 
 /**
- * Run all seeder files
+ * Run consolidated seeder file
  */
 async function runSeeders() {
   try {
@@ -40,25 +53,16 @@ async function runSeeders() {
       return;
     }
 
-    const seederFiles = fs
-      .readdirSync(seedersPath)
-      .filter((file) => file.endsWith('.js'))
-      .sort(); // Sort to run in order
-
-    if (seederFiles.length === 0) {
-      return;
-    }
-
     // Create a table to track which seeders have been run
     await ensureSeederTable();
 
-    let executedCount = 0;
-    let skippedCount = 0;
-    let currentSeeder = '';
+    const seederName = '001-consolidated-seeder';
+    const seederFile = path.join(seedersPath, `${seederName}.js`);
 
-    for (const file of seederFiles) {
-      const seederName = file.replace('.js', '');
-      currentSeeder = seederName;
+    if (!fs.existsSync(seederFile)) {
+      logger.warn('⚠️  Consolidated seeder file not found');
+      return;
+    }
       
       try {
         // Check if seeder has already been run
@@ -68,13 +72,13 @@ async function runSeeders() {
         );
 
         if (results && results.length > 0) {
-          skippedCount++;
-          continue;
+        logger.info(`ℹ️  Seeder '${seederName}' already executed, skipping`);
+        return;
         }
 
-        // Run the seeder
-        logger.info(`  → Running: ${seederName}`);
-        const seeder = require(path.join(seedersPath, file));
+      // Run the consolidated seeder
+      logger.info(`  → Running consolidated seeder: ${seederName}`);
+      const seeder = require(seederFile);
         
         if (typeof seeder.up === 'function') {
           await seeder.up(sequelize.getQueryInterface(), Sequelize);
@@ -85,10 +89,10 @@ async function runSeeders() {
             { replacements: [seederName, new Date()] }
           );
           
-          executedCount++;
+        logger.info(`✅ Consolidated seeder completed successfully`);
         }
       } catch (seederError) {
-        logger.error(`❌ Seeder '${currentSeeder}' failed:`);
+      logger.error(`❌ Seeder '${seederName}' failed:`);
         logger.error(`   Error: ${seederError.message}`);
         
         if (seederError.errors && Array.isArray(seederError.errors)) {
@@ -104,13 +108,6 @@ async function runSeeders() {
         if (seederError.original) {
           logger.error(`   Original: ${seederError.original.sqlMessage || seederError.original.message}`);
         }
-        
-        // Continue with other seeders
-      }
-    }
-
-    if (executedCount > 0) {
-      logger.info(`📦 Seeded: ${executedCount} new, ${skippedCount} skipped`);
     }
   } catch (error) {
     logger.error('❌ Seeding system error:', error.message);

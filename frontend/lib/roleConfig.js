@@ -54,9 +54,9 @@ export const getDefaultRedirect = (role, userId) => {
     case ROLES.ADMIN:
       return '/admin/dashboard';
     case ROLES.DISTRIBUTOR:
-      return `/admin/distributors/${userId}`;
+      return '/admin/distributors/dashboard';
     case ROLES.SALESMAN:
-      return `/admin/salesmen/${userId}`;
+      return '/admin/salesmen/dashboard';
     case ROLES.ACCOUNTANT:
     case ROLES.USER:
       return '/client/dashboard';

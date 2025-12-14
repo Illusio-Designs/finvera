@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'next/router';
+import { getProfileImageUrl } from '../../lib/imageUtils';
 import {
   FiMenu, FiBell, FiSearch, FiUser, FiSettings,
   FiLogOut, FiChevronDown
@@ -78,12 +79,31 @@ export default function Header({ onMenuClick, title, actions }) {
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 transition"
               >
+                {user?.profile_image ? (
+                  <div className="relative h-8 w-8">
+                    <img
+                      src={getProfileImageUrl(user.profile_image) || ''}
+                      alt={user?.name || user?.email || 'User'}
+                      className="h-8 w-8 rounded-full object-cover border-2 border-primary-200"
+                      onError={(e) => {
+                        // Hide image and show fallback
+                        e.target.style.display = 'none';
+                        const fallback = e.target.nextElementSibling;
+                        if (fallback) fallback.classList.remove('hidden');
+                      }}
+                    />
+                    <div className="hidden h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-sm font-medium absolute top-0 left-0">
+                      {(user?.name?.charAt(0) || user?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()}
+                    </div>
+                  </div>
+                ) : (
                 <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-sm font-medium">
-                  {(user?.name?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()}
+                    {(user?.name?.charAt(0) || user?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()}
                 </div>
+                )}
                 <div className="hidden sm:block text-left">
                   <div className="text-sm font-medium text-gray-900">
-                    {user?.name || user?.email || ''}
+                    {user?.name || user?.full_name || user?.email || 'User'}
                   </div>
                   <div className="text-xs text-gray-500 capitalize">
                     {user?.role || ''}
@@ -96,10 +116,10 @@ export default function Header({ onMenuClick, title, actions }) {
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                   <div className="px-4 py-3 border-b border-gray-200">
                     <div className="text-sm font-medium text-gray-900">
-                      {user.name || user.email}
+                      {user?.name || user?.full_name || user?.email || 'User'}
                     </div>
                     <div className="text-xs text-gray-500 mt-0.5">
-                      {user.email}
+                      {user?.email || ''}
                     </div>
                   </div>
                   <button

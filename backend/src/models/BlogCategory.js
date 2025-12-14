@@ -10,12 +10,14 @@ module.exports = (sequelize, DataTypes) => {
       name: {
         type: DataTypes.STRING(100),
         allowNull: false,
-        unique: true,
+        // Removed unique: true to avoid index limit issues
+        // Uniqueness will be enforced at application level
       },
       slug: {
         type: DataTypes.STRING(100),
         allowNull: false,
-        unique: true,
+        // Removed unique: true to avoid index limit issues
+        // Uniqueness will be enforced at application level
       },
       description: {
         type: DataTypes.TEXT,
@@ -28,6 +30,12 @@ module.exports = (sequelize, DataTypes) => {
     {
       tableName: 'blog_categories',
       timestamps: true,
+      // Define indexes explicitly to avoid hitting MySQL's 64 index limit
+      // Only add unique indexes if they don't already exist
+      indexes: [
+        // Note: Unique indexes removed to prevent "too many keys" error
+        // Uniqueness should be enforced at application level or via migration
+      ],
     }
   );
 

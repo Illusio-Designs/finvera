@@ -14,6 +14,7 @@ router.post('/refresh', authController.refresh);
 
 // Profile routes (require authentication)
 router.get('/profile', authenticate, authController.getProfile);
+router.put('/profile', authenticate, authController.updateProfile);
 router.post('/profile/image', authenticate, uploadProfile.single('profile_image'), authController.uploadProfileImage);
 
 module.exports = router;

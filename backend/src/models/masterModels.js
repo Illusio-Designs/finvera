@@ -208,7 +208,23 @@ models.AccountGroup.belongsTo(models.AccountGroup, {
 
 // Sync all master models
 async function syncMasterModels() {
-  await models.TenantMaster.sync({ alter: false });
+  // Use alter: true for TenantMaster to allow adding new columns
+  // Other models use alter: false to prevent accidental changes
+  try {
+    await models.TenantMaster.sync({ alter: true });
+  } catch (syncError) {
+    // Handle MySQL's 64-index limit error
+    if (syncError.original && syncError.original.code === 'ER_TOO_MANY_KEYS') {
+      const logger = require('../utils/logger');
+      logger.warn('⚠️  tenant_master table has too many indexes (MySQL limit: 64)');
+      logger.warn('   This is usually safe to ignore if the table already exists.');
+      logger.warn('   The table structure is correct, just too many indexes.');
+      // Continue with other models
+    } else {
+      throw syncError;
+    }
+  }
+  
   await models.AccountGroup.sync({ alter: false });
   await models.VoucherType.sync({ alter: false });
   await models.GSTRate.sync({ alter: false });

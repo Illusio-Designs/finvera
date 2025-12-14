@@ -53,6 +53,13 @@ export const AuthProvider = ({ children }) => {
         };
       }
       
+      // Normalize user data to ensure name field is set
+      const normalizedUser = {
+        ...userData,
+        name: userData.name || userData.full_name || userData.email?.split('@')[0] || 'User',
+        full_name: userData.full_name || userData.name || userData.email?.split('@')[0] || 'User',
+      };
+      
       // Store tokens and user data with proper cookie settings
       // Note: For localhost subdomains, cookies work without domain setting
       const cookieOptions = { 
@@ -67,11 +74,11 @@ export const AuthProvider = ({ children }) => {
       if (jti) {
         Cookies.set('jti', jti, cookieOptions);
       }
-      Cookies.set('user', JSON.stringify(userData), cookieOptions);
+      Cookies.set('user', JSON.stringify(normalizedUser), cookieOptions);
       
-      setUser(userData);
-      console.log('Login successful for user:', userData);
-      return { success: true, user: userData };
+      setUser(normalizedUser);
+      console.log('Login successful for user:', normalizedUser);
+      return { success: true, user: normalizedUser };
     } catch (error) {
       console.error('Login error details:', {
         message: error.message,
@@ -174,6 +181,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUser = (userData) => {
+    const updatedUser = { ...user, ...userData };
+    setUser(updatedUser);
+    Cookies.set('user', JSON.stringify(updatedUser), { expires: 7, sameSite: 'lax' });
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -183,6 +196,7 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         refreshToken,
+        updateUser,
         isAuthenticated: !!user,
       }}
     >

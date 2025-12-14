@@ -1,5 +1,7 @@
-const { Salesman, Distributor, Lead, LeadActivity, Commission, Target, Tenant, User } = require('../models');
+const { Salesman, Distributor, Lead, LeadActivity, Commission, Target, User } = require('../models');
+const { TenantMaster } = require('../models/masterModels');
 const { Op } = require('sequelize');
+const { Sequelize } = require('sequelize');
 
 module.exports = {
   async list(req, res, next) {
@@ -58,9 +60,9 @@ module.exports = {
       const password_hash = await bcrypt.hash(password, 10);
       const user = await User.create({
         email,
-        password_hash,
+        password: password_hash,
         role: 'salesman',
-        full_name,
+        name: full_name,
         tenant_id: req.tenant_id || null,
       });
 
@@ -87,7 +89,7 @@ module.exports = {
       const { id } = req.params;
       const salesman = await Salesman.findByPk(id, {
         include: [
-          { model: User, attributes: ['id', 'email', 'full_name'] },
+          { model: User, attributes: ['id', 'email', 'name'] },
           { model: Distributor, attributes: ['id', 'distributor_code', 'company_name'] },
         ],
       });
@@ -148,7 +150,7 @@ module.exports = {
       const totalCommission = commissions.reduce((sum, c) => sum + parseFloat(c.commission_amount), 0);
 
       const leads = await Lead.count({ where: { salesman_id: id } });
-      const customers = await Tenant.count({ where: { salesman_id: id, is_active: true } });
+      const customers = await TenantMaster.count({ where: { salesman_id: id, is_active: true } });
       const conversionRate = leads > 0 ? (customers / leads) * 100 : 0;
 
       // Get targets vs achievement
@@ -192,6 +194,89 @@ module.exports = {
       });
 
       res.json({ leads });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async dashboard(req, res, next) {
+    try {
+      const userId = req.user_id;
+      const salesman = await Salesman.findOne({ where: { user_id: userId } });
+
+      if (!salesman) {
+        return res.status(404).json({ message: 'Salesman not found' });
+      }
+
+      const salesmanId = salesman.id;
+      const now = new Date();
+
+      // Get active targets
+      const targets = await Target.findAll({
+        where: {
+          salesman_id: salesmanId,
+          [Op.or]: [
+            { end_date: { [Op.gte]: now } },
+            { end_date: null },
+          ],
+        },
+        order: [['createdAt', 'DESC']],
+      });
+
+      // Calculate total target, achieved, and left
+      let totalTarget = 0;
+      let totalAchieved = 0;
+      targets.forEach(target => {
+        totalTarget += parseFloat(target.target_value || 0);
+        totalAchieved += parseFloat(target.achieved_value || 0);
+      });
+      const totalLeft = totalTarget - totalAchieved;
+
+      // Get commissions
+      const totalCommissions = await Commission.sum('amount', {
+        where: { salesman_id: salesmanId },
+      });
+
+      const pendingCommissions = await Commission.sum('amount', {
+        where: { salesman_id: salesmanId, status: 'pending' },
+      });
+
+      const approvedCommissions = await Commission.sum('amount', {
+        where: { salesman_id: salesmanId, status: 'approved' },
+      });
+
+      // Get commission list
+      const commissions = await Commission.findAll({
+        where: { salesman_id: salesmanId },
+        order: [['createdAt', 'DESC']],
+        limit: 10,
+      });
+
+      // Get tenants count
+      const totalTenants = await TenantMaster.count({
+        where: { salesman_id: salesmanId },
+      });
+
+      res.json({
+        data: {
+          targets: {
+            total: parseFloat(totalTarget.toFixed(2)),
+            achieved: parseFloat(totalAchieved.toFixed(2)),
+            left: parseFloat(totalLeft.toFixed(2)),
+            percentage: totalTarget > 0 ? parseFloat(((totalAchieved / totalTarget) * 100).toFixed(2)) : 0,
+            list: targets,
+          },
+          commissions: {
+            total: parseFloat(totalCommissions || 0),
+            pending: parseFloat(pendingCommissions || 0),
+            approved: parseFloat(approvedCommissions || 0),
+            list: commissions,
+          },
+          tenants: {
+            total: totalTenants,
+          },
+        },
+      });
     } catch (err) {
       next(err);
     }

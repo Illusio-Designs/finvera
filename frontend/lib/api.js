@@ -96,6 +96,15 @@ export const authAPI = {
   login: (data) => api.post("/auth/login", data),
   logout: (data) => api.post("/auth/logout", data),
   refresh: (data) => api.post("/auth/refresh", data),
+  getProfile: () => api.get("/auth/profile"),
+  updateProfile: (data) => api.put("/auth/profile", data),
+  uploadProfileImage: (formData) => {
+    return api.post("/auth/profile/image", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
 };
 
 // Tenant API (not in backend docs, keeping for backward compatibility)
@@ -123,6 +132,7 @@ export const adminAPI = {
     create: (data) => api.post("/admin/distributors", data),
     update: (id, data) => api.put(`/admin/distributors/${id}`, data),
     delete: (id) => api.delete(`/admin/distributors/${id}`),
+    dashboard: () => api.get("/admin/distributors/dashboard"),
   },
   salesmen: {
     list: (params) => api.get("/admin/salesmen", { params }),
@@ -132,6 +142,7 @@ export const adminAPI = {
     delete: (id) => api.delete(`/admin/salesmen/${id}`),
     getPerformance: (id, params) => api.get(`/admin/salesmen/${id}/performance`, { params }),
     getLeads: (id, params) => api.get(`/admin/salesmen/${id}/leads`, { params }),
+    dashboard: () => api.get("/admin/salesmen/dashboard"),
   },
   commissions: {
     list: (params) => api.get("/admin/commissions", { params }),
@@ -156,6 +167,20 @@ export const adminAPI = {
     delete: (id) => api.delete(`/admin/targets/${id}`),
     getDistributorTargets: (id) => api.get(`/admin/targets/distributor/${id}`),
     getSalesmanTargets: (id) => api.get(`/admin/targets/salesman/${id}`),
+    recalculate: (id) => api.post(`/admin/targets/${id}/recalculate`),
+    recalculateAll: (params) => api.post("/admin/targets/recalculate/all", null, { params }),
+  },
+  support: {
+    tickets: {
+      list: (params) => api.get("/support/tickets", { params }),
+      get: (id) => api.get(`/support/tickets/${id}`),
+      assign: (id, data) => api.put(`/support/tickets/${id}/assign`, data),
+      updateStatus: (id, data) => api.put(`/support/tickets/${id}/status`, data),
+      addMessage: (id, data) => api.post(`/support/tickets/${id}/messages`, data),
+    },
+    agents: {
+      getReviews: (agentId) => api.get(`/support/agents/${agentId}/reviews`),
+    },
   },
 };
 

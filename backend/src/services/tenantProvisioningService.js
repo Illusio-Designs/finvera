@@ -44,6 +44,16 @@ class TenantProvisioningService {
       const dbUser = this.generateDatabaseUser(subdomain);
       const dbPassword = this.generateSecurePassword();
       
+      // Determine acquisition category
+      let acquisitionCategory = 'organic'; // Default: direct from website
+      if (distributor_id) {
+        acquisitionCategory = 'distributor';
+      } else if (salesman_id) {
+        acquisitionCategory = 'salesman';
+      } else if (referred_by || referral_type) {
+        acquisitionCategory = 'referral';
+      }
+
       // Create tenant record in master database
       const tenant = await TenantMaster.create({
         company_name,
@@ -63,6 +73,7 @@ class TenantProvisioningService {
         distributor_id,
         referred_by,
         referral_type,
+        acquisition_category: acquisitionCategory,
         db_name: dbName,
         db_host: process.env.DB_HOST || 'localhost',
         db_port: parseInt(process.env.DB_PORT) || 3306,
