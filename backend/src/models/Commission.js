@@ -39,7 +39,7 @@ module.exports = (sequelize, DataTypes) => {
   );
 
   Commission.associate = (models) => {
-    Commission.belongsTo(models.Tenant, { foreignKey: 'tenant_id' });
+    // tenant_id is stored as UUID, references master.tenant_master (no FK constraint)
     Commission.belongsTo(models.Distributor, { foreignKey: 'distributor_id' });
     Commission.belongsTo(models.Salesman, { foreignKey: 'salesman_id' });
     Commission.belongsTo(models.Payout, { foreignKey: 'payout_id' });
