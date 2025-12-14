@@ -15,6 +15,8 @@ const reportRoutes = require('./reportRoutes');
 const gstRoutes = require('./gstRoutes');
 const tdsRoutes = require('./tdsRoutes');
 const eInvoiceRoutes = require('./eInvoiceRoutes');
+const blogRoutes = require('./blogRoutes');
+const seoRoutes = require('./seoRoutes');
 
 const router = Router();
 
@@ -34,6 +36,8 @@ router.use('/reports', reportRoutes);
 router.use('/gst', gstRoutes);
 router.use('/tds', tdsRoutes);
 router.use('/einvoice', eInvoiceRoutes);
+router.use('/', blogRoutes);
+router.use('/', seoRoutes);
 
 router.get('/health', (req, res) => res.json({ status: 'ok' }));
 
