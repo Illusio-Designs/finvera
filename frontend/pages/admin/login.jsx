@@ -9,8 +9,6 @@ export default function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [loginSuccess, setLoginSuccess] = useState(false);
-  const [loginData, setLoginData] = useState(null);
   const { login } = useAuth();
   const router = useRouter();
 
@@ -35,17 +33,13 @@ export default function AdminLogin() {
         
         // Check if role can access admin portal
         if (canAccessAdminPortal(role)) {
-          toast.success(`Welcome ${getRoleDisplayName(role)}! Login successful - check console for details.`);
-          setLoginSuccess(true);
-          setLoginData({
-            user: result.user,
-            role: role,
-            redirectPath: getDefaultRedirect(role, result.user.id)
-          });
-          // TEMPORARILY DISABLED AUTO-REDIRECT - Uncomment below to enable
-          // const redirectPath = getDefaultRedirect(role, result.user.id);
-          // console.log('Redirecting to:', redirectPath);
-          // router.replace(redirectPath);
+          toast.success(`Welcome ${getRoleDisplayName(role)}!`);
+          const redirectPath = getDefaultRedirect(role, result.user.id);
+          console.log('Redirecting to:', redirectPath);
+          // Redirect after a short delay to show success message
+          setTimeout(() => {
+            router.replace(redirectPath);
+          }, 500);
         } else {
           toast.error('Access denied. Please use the client portal.');
           setLoading(false);
@@ -130,28 +124,6 @@ export default function AdminLogin() {
             </button>
           </div>
 
-          {loginSuccess && loginData && (
-            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
-              <p className="text-sm text-green-800 font-medium mb-2">
-                ✅ Login Successful! Check browser console for details.
-              </p>
-              <div className="text-xs text-green-700 mb-3 space-y-1">
-                <p><strong>Role:</strong> {loginData.role}</p>
-                <p><strong>Email:</strong> {loginData.user.email}</p>
-                <p><strong>User ID:</strong> {loginData.user.id}</p>
-                <p><strong>Will redirect to:</strong> {loginData.redirectPath}</p>
-              </div>
-              <button
-                onClick={() => {
-                  console.log('Manual redirect to:', loginData.redirectPath);
-                  router.replace(loginData.redirectPath);
-                }}
-                className="w-full py-2 px-4 text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 transition"
-              >
-                Continue to Dashboard
-              </button>
-            </div>
-          )}
 
           <div className="text-center">
             <Link
