@@ -113,7 +113,7 @@ export default function ClientLogin() {
 
           <div className="text-center">
             <span className="text-sm text-gray-600">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <Link
                 href="/client/register"
                 className="font-medium text-primary-600 hover:text-primary-500"
