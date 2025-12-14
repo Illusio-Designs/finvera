@@ -47,16 +47,20 @@ api.interceptors.response.use(
         }
       } catch (refreshError) {
         // Refresh failed - logout user
+        // BUT: Don't redirect if we're already on the login page (to prevent refresh loop)
         Cookies.remove("token");
         Cookies.remove("refreshToken");
         Cookies.remove("user");
         Cookies.remove("jti");
         if (typeof window !== "undefined") {
           const path = window.location.pathname;
-          if (path.startsWith("/admin")) {
-            window.location.href = "/admin/login";
-          } else if (path.startsWith("/client")) {
-            window.location.href = "/client/login";
+          // Only redirect if NOT already on login page
+          if (!path.includes("/login")) {
+            if (path.startsWith("/admin")) {
+              window.location.href = "/admin/login";
+            } else if (path.startsWith("/client")) {
+              window.location.href = "/client/login";
+            }
           }
         }
         return Promise.reject(refreshError);
@@ -65,16 +69,20 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401) {
       // Unauthorized - clear token and redirect to login
+      // BUT: Don't redirect if we're already on the login page (to prevent refresh loop)
       Cookies.remove("token");
       Cookies.remove("refreshToken");
       Cookies.remove("user");
       Cookies.remove("jti");
       if (typeof window !== "undefined") {
         const path = window.location.pathname;
-        if (path.startsWith("/admin")) {
-          window.location.href = "/admin/login";
-        } else if (path.startsWith("/client")) {
-          window.location.href = "/client/login";
+        // Only redirect if NOT already on login page
+        if (!path.includes("/login")) {
+          if (path.startsWith("/admin")) {
+            window.location.href = "/admin/login";
+          } else if (path.startsWith("/client")) {
+            window.location.href = "/client/login";
+          }
         }
       }
     }

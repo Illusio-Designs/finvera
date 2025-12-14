@@ -14,9 +14,10 @@ module.exports = {
       const password_hash = await bcrypt.hash(password, 10);
       const user = await User.create({
         email,
-        password_hash,
+        password: password_hash, // Use password field as per User model
         tenant_id: tenant.id,
         role: 'user',
+        name: company_name || email, // Add name field
       });
       const tokens = await signTokens({ id: user.id, tenant_id: tenant.id, role: user.role });
       return res.status(201).json({ 
@@ -40,18 +41,20 @@ module.exports = {
       if (!user) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
-      const valid = await bcrypt.compare(password, user.password_hash || '');
+      // Use password field (not password_hash) as per User model
+      const passwordToCompare = user.password || user.password_hash || '';
+      const valid = await bcrypt.compare(password, passwordToCompare);
       if (!valid) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
-      const tokens = await signTokens({ id: user.id, tenant_id: user.tenant_id, role: user.role });
+      const tokens = await signTokens({ id: user.id, tenant_id: user.tenant_id || null, role: user.role });
       return res.json({ 
         user: { 
           id: user.id, 
           email: user.email, 
-          tenant_id: user.tenant_id, 
+          tenant_id: user.tenant_id || null, 
           role: user.role,
-          full_name: user.full_name 
+          full_name: user.name || user.full_name || null
         }, 
         ...tokens 
       });
