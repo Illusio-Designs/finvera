@@ -7,14 +7,6 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
       },
-      tenant_id: {
-        type: DataTypes.UUID,
-        allowNull: false,
-        references: {
-          model: 'tenants',
-          key: 'id',
-        },
-      },
       email: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -23,17 +15,25 @@ module.exports = (sequelize, DataTypes) => {
           isEmail: true,
         },
       },
-      password_hash: DataTypes.STRING,
-      full_name: DataTypes.STRING,
-      role: {
+      password: {
         type: DataTypes.STRING,
         allowNull: false,
-        defaultValue: 'user',
       },
+      name: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      role: {
+        type: DataTypes.ENUM('super_admin', 'admin'),
+        allowNull: false,
+        defaultValue: 'admin',
+      },
+      phone: DataTypes.STRING(15),
       is_active: {
         type: DataTypes.BOOLEAN,
         defaultValue: true,
       },
+      last_login: DataTypes.DATE,
     },
     {
       tableName: 'users',
@@ -41,11 +41,10 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
+  // Admin users don't need associations in main DB
+  // Tenant users are in tenant databases
   User.associate = (models) => {
-    User.belongsTo(models.Tenant, { foreignKey: 'tenant_id' });
-    User.hasOne(models.Distributor, { foreignKey: 'user_id' });
-    User.hasOne(models.Salesman, { foreignKey: 'user_id' });
-    User.hasMany(models.AuditLog, { foreignKey: 'user_id' });
+    // No associations needed for admin users
   };
 
   return User;
