@@ -7,6 +7,7 @@ const routes = require('./routes');
 const errorHandler = require('./middleware/errorHandler');
 const sanitizeInput = require('./middleware/sanitize');
 const { uploadDir } = require('./config/multer');
+const { decryptRequest, encryptResponse } = require('./middleware/payloadEncryption');
 
 const app = express();
 
@@ -34,6 +35,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Input sanitization
 app.use(sanitizeInput);
+
+// Payload encryption/decryption (optional - activates when client sends encrypted data)
+app.use('/api', decryptRequest, encryptResponse);
 
 // Static file serving for uploads
 app.use('/uploads', express.static(path.join(__dirname, '..', uploadDir)));
