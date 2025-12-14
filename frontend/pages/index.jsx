@@ -22,13 +22,17 @@ export default function LandingPage() {
               </div>
               <div className="space-x-4">
                 <a
-                  href={`${typeof window !== 'undefined' && window.location.protocol}//${process.env.MAIN_DOMAIN?.includes('localhost') ? 'admin.localhost:3000' : `admin.${process.env.MAIN_DOMAIN}`}`}
+                  href={`${typeof window !== 'undefined' && window.location.protocol}//${process.env.MAIN_DOMAIN?.includes('localhost') ? 'admin.localhost:3001' : `admin.${process.env.MAIN_DOMAIN}`}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-gray-600 hover:text-indigo-600 transition"
                 >
                   Admin Login
                 </a>
                 <a
-                  href={`${typeof window !== 'undefined' && window.location.protocol}//${process.env.MAIN_DOMAIN?.includes('localhost') ? 'client.localhost:3000' : `client.${process.env.MAIN_DOMAIN}`}`}
+                  href={`${typeof window !== 'undefined' && window.location.protocol}//${process.env.MAIN_DOMAIN?.includes('localhost') ? 'client.localhost:3001' : `client.${process.env.MAIN_DOMAIN}`}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition"
                 >
                   Client Login
@@ -52,7 +56,9 @@ export default function LandingPage() {
 
             <div className="flex flex-col md:flex-row gap-4 justify-center">
               <a
-                href={`${typeof window !== 'undefined' && window.location.protocol}//${process.env.MAIN_DOMAIN?.includes('localhost') ? 'client.localhost:3000' : `client.${process.env.MAIN_DOMAIN}`}/register`}
+                href={`${typeof window !== 'undefined' && window.location.protocol}//${process.env.MAIN_DOMAIN?.includes('localhost') ? 'client.localhost:3001' : `client.${process.env.MAIN_DOMAIN}`}/register`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="bg-indigo-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-indigo-700 transition shadow-lg"
               >
                 Get Started Free
