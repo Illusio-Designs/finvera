@@ -1,6 +1,6 @@
 # Multi-Tenant Quick Start Guide
 
-Get your multi-tenant Finvera application running in 5 minutes!
+Get your multi-tenant Finvera application running in **3 minutes**!
 
 ## Step 1: Configure Environment
 
@@ -12,15 +12,16 @@ cp .env.example .env
 Edit `.env` and set these required values:
 
 ```bash
-# Database root credentials
+# Database credentials
+DB_NAME=finvera_db              # Main database (admin, salesman, etc.)
 DB_USER=root
-DB_PASSWORD=your_root_password
+DB_PASSWORD=your_password
 
-# Master database name
-MASTER_DB_NAME=finvera_master
+# Master database (auto-created)
+MASTER_DB_NAME=finvera_master   # Tenant metadata only
 
 # Encryption key (must be 32 characters)
-ENCRYPTION_KEY=your-32-character-encryption-key
+ENCRYPTION_KEY=your-32-character-encryption-key-here
 ```
 
 ## Step 2: Install Dependencies
@@ -29,26 +30,34 @@ ENCRYPTION_KEY=your-32-character-encryption-key
 npm install
 ```
 
-## Step 3: Initialize Master Database
-
-```bash
-node src/scripts/initMasterDatabase.js
-```
-
-This will:
-- ✅ Create master database (`finvera_master`)
-- ✅ Create `tenant_master` table
-- ✅ Set up indexes
-
-## Step 4: Start Server
+## Step 3: Start Server (Auto-Setup!)
 
 ```bash
 npm start
 ```
 
+**That's it!** The server automatically:
+- ✅ Creates `finvera_master` database
+- ✅ Creates `tenant_master` table
+- ✅ Syncs all main database tables
+- ✅ Ready to accept requests
+
 Server runs on `http://localhost:3000`
 
-## Step 5: Create Your First Tenant
+You'll see:
+```
+🔄 Initializing databases...
+📦 Setting up master database for tenant metadata...
+📦 Setting up main database for system models...
+✅ All databases initialized successfully
+🚀 Server running on port 3000
+📊 Databases:
+   - Main DB: finvera_db (Admin, Salesman, Distributor, etc.)
+   - Master DB: finvera_master (Tenant metadata only)
+   - Tenant DBs: Created dynamically per tenant
+```
+
+## Step 4: Create Your First Tenant
 
 ### Using API:
 
@@ -92,7 +101,7 @@ The system automatically:
 4. ✅ Seeds default data (account groups, voucher types)
 5. ✅ Creates admin user
 
-## Step 6: Access Tenant
+## Step 5: Access Tenant
 
 ### Via Subdomain (Web):
 
