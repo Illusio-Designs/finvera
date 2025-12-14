@@ -24,6 +24,9 @@ const adminModels = [
   'Lead',          // Leads
   'LeadActivity',  // Lead activities
   'Target',        // Targets
+  'Blog',          // Blog posts
+  'BlogCategory',  // Blog categories
+  'SEO',           // SEO settings
 ];
 
 // Load only admin/system models
