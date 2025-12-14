@@ -140,6 +140,15 @@ export const adminAPI = {
     create: (data) => api.post("/admin/referrals", data),
     rewards: (params) => api.get("/admin/referrals/rewards", { params }),
   },
+  targets: {
+    list: (params) => api.get("/admin/targets", { params }),
+    get: (id) => api.get(`/admin/targets/${id}`),
+    create: (data) => api.post("/admin/targets", data),
+    update: (id, data) => api.put(`/admin/targets/${id}`, data),
+    delete: (id) => api.delete(`/admin/targets/${id}`),
+    getDistributorTargets: (id) => api.get(`/admin/targets/distributor/${id}`),
+    getSalesmanTargets: (id) => api.get(`/admin/targets/salesman/${id}`),
+  },
 };
 
 // Accounting API
