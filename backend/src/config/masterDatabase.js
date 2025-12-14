@@ -30,7 +30,7 @@ const masterSequelize = new Sequelize(
 
 /**
  * Initialize master database
- * Creates database if it doesn't exist
+ * Creates database and syncs all master models (shared across tenants)
  */
 async function initMasterDatabase() {
   try {
@@ -50,16 +50,67 @@ async function initMasterDatabase() {
 
     // Test connection
     await masterSequelize.authenticate();
-    logger.info('Master database connection established successfully');
+    logger.info('Master database connection established');
 
-    // Sync tenant_master table
-    const TenantMaster = require('../models/TenantMaster');
-    await TenantMaster.sync({ alter: false });
-    logger.info('Tenant master table synchronized');
+    // Sync all master models (shared accounting structure)
+    const masterModels = require('../models/masterModels');
+    await masterModels.syncMasterModels();
+    
+    logger.info('Master database models synchronized:');
+    logger.info('  ✓ tenant_master (tenant metadata)');
+    logger.info('  ✓ account_groups (shared chart of accounts)');
+    logger.info('  ✓ voucher_types (shared voucher types)');
+    logger.info('  ✓ gst_rates (shared GST rates)');
+    logger.info('  ✓ tds_sections (shared TDS sections)');
+    logger.info('  ✓ accounting_years (shared accounting periods)');
+
+    // Seed default data if tables are empty
+    await seedMasterData();
 
   } catch (err) {
     logger.error('Failed to initialize master database:', err);
     throw err;
+  }
+}
+
+/**
+ * Seed default master data if not exists
+ */
+async function seedMasterData() {
+  const masterModels = require('../models/masterModels');
+  
+  try {
+    // Seed default account groups
+    const groupCount = await masterModels.AccountGroup.count();
+    if (groupCount === 0) {
+      logger.info('Seeding default account groups...');
+      await require('../seeders/masterSeeds').seedAccountGroups();
+    }
+
+    // Seed default voucher types
+    const voucherTypeCount = await masterModels.VoucherType.count();
+    if (voucherTypeCount === 0) {
+      logger.info('Seeding default voucher types...');
+      await require('../seeders/masterSeeds').seedVoucherTypes();
+    }
+
+    // Seed default GST rates
+    const gstRateCount = await masterModels.GSTRate.count();
+    if (gstRateCount === 0) {
+      logger.info('Seeding default GST rates...');
+      await require('../seeders/masterSeeds').seedGSTRates();
+    }
+
+    // Seed default TDS sections
+    const tdsCount = await masterModels.TDSSection.count();
+    if (tdsCount === 0) {
+      logger.info('Seeding default TDS sections...');
+      await require('../seeders/masterSeeds').seedTDSSections();
+    }
+
+    logger.info('Master data seeding complete');
+  } catch (error) {
+    logger.warn('Error seeding master data:', error.message);
   }
 }
 

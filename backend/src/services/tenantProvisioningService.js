@@ -201,27 +201,14 @@ class TenantProvisioningService {
    * @param {Object} tenant - Tenant master record
    */
   async seedDefaultData(connection, tenant) {
-    // Load and initialize tenant models
+    // Load tenant models
     const models = require('./tenantModels')(connection);
 
-    // Create default account groups
-    const defaultGroups = await this.getDefaultAccountGroups();
-    await models.AccountGroup.bulkCreate(defaultGroups);
+    // NOTE: Account groups and voucher types are in Master DB (shared)
+    // No need to seed them per tenant
 
-    // Create default voucher types
-    const defaultVoucherTypes = [
-      { name: 'Sales', type_category: 'sales', affects_stock: false },
-      { name: 'Purchase', type_category: 'purchase', affects_stock: false },
-      { name: 'Payment', type_category: 'payment', affects_stock: false },
-      { name: 'Receipt', type_category: 'receipt', affects_stock: false },
-      { name: 'Journal', type_category: 'journal', affects_stock: false },
-      { name: 'Contra', type_category: 'contra', affects_stock: false },
-    ];
-    await models.VoucherType.bulkCreate(defaultVoucherTypes);
-
-    // Create default admin user
-    const User = models.User;
-    await User.create({
+    // Create default admin user for the tenant
+    await models.User.create({
       name: 'Admin',
       email: tenant.email,
       role: 'admin',
@@ -229,7 +216,20 @@ class TenantProvisioningService {
       password: require('bcrypt').hashSync('ChangeMe@123', 10),
     });
 
-    logger.info('Default data seeded for tenant');
+    // Create default GSTIN if provided
+    if (tenant.gstin) {
+      await models.GSTIN.create({
+        gstin: tenant.gstin,
+        legal_name: tenant.company_name,
+        trade_name: tenant.company_name,
+        state: tenant.state,
+        address: tenant.address,
+        gstin_status: 'active',
+        is_primary: true,
+      });
+    }
+
+    logger.info('Default data seeded for tenant (admin user created)');
   }
 
   /**
@@ -358,22 +358,7 @@ class TenantProvisioningService {
     return date;
   }
 
-  async getDefaultAccountGroups() {
-    // Load default account groups from file or return predefined set
-    return [
-      { name: 'Cash', parent_id: null, nature: 'asset', affects_gross_profit: false },
-      { name: 'Bank Accounts', parent_id: null, nature: 'asset', affects_gross_profit: false },
-      { name: 'Sales', parent_id: null, nature: 'income', affects_gross_profit: true },
-      { name: 'Purchase', parent_id: null, nature: 'expense', affects_gross_profit: true },
-      { name: 'Sundry Debtors', parent_id: null, nature: 'asset', affects_gross_profit: false },
-      { name: 'Sundry Creditors', parent_id: null, nature: 'liability', affects_gross_profit: false },
-      { name: 'Capital Account', parent_id: null, nature: 'liability', affects_gross_profit: false },
-      { name: 'Reserves & Surplus', parent_id: null, nature: 'liability', affects_gross_profit: false },
-      { name: 'Loans & Advances', parent_id: null, nature: 'asset', affects_gross_profit: false },
-      { name: 'Fixed Assets', parent_id: null, nature: 'asset', affects_gross_profit: false },
-      { name: 'Duties & Taxes', parent_id: null, nature: 'liability', affects_gross_profit: false },
-    ];
-  }
+  // Removed: getDefaultAccountGroups() - Now in Master DB
 }
 
 module.exports = new TenantProvisioningService();

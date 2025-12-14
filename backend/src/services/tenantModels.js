@@ -1,12 +1,14 @@
 const { DataTypes } = require('sequelize');
 
 /**
- * Initialize all models for a tenant database
+ * Tenant Database Models
+ * ONLY transactional/operational data specific to each tenant
+ * Accounting structure (account groups, voucher types) comes from master DB
+ * 
  * @param {Sequelize} sequelize - Tenant-specific Sequelize instance
- * @returns {Object} - Object containing all models
+ * @returns {Object} - Object containing all tenant models
  */
 module.exports = (sequelize) => {
-  // Define all models for tenant database
   const models = {};
 
   // User model (tenant-specific users)
@@ -47,39 +49,10 @@ module.exports = (sequelize) => {
     timestamps: true,
   });
 
-  // Account Group model
-  models.AccountGroup = sequelize.define('AccountGroup', {
-    id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true,
-    },
-    name: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    parent_id: {
-      type: DataTypes.UUID,
-      allowNull: true,
-    },
-    nature: {
-      type: DataTypes.ENUM('asset', 'liability', 'income', 'expense'),
-      allowNull: false,
-    },
-    affects_gross_profit: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-    },
-    is_system: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-    },
-  }, {
-    tableName: 'account_groups',
-    timestamps: true,
-  });
+  // NOTE: AccountGroup is now in Master DB (shared across all tenants)
+  // Tenants reference account_group_id from master database
 
-  // Ledger model
+  // Ledger model (Tenant-specific ledgers with balances)
   models.Ledger = sequelize.define('Ledger', {
     id: {
       type: DataTypes.UUID,
@@ -94,6 +67,7 @@ module.exports = (sequelize) => {
     account_group_id: {
       type: DataTypes.UUID,
       allowNull: false,
+      comment: 'References master DB account_groups table',
     },
     opening_balance: {
       type: DataTypes.DECIMAL(15, 2),
@@ -150,36 +124,10 @@ module.exports = (sequelize) => {
     timestamps: true,
   });
 
-  // Voucher Type model
-  models.VoucherType = sequelize.define('VoucherType', {
-    id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true,
-    },
-    name: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true,
-    },
-    type_category: {
-      type: DataTypes.ENUM('sales', 'purchase', 'payment', 'receipt', 'journal', 'contra', 'debit_note', 'credit_note'),
-      allowNull: false,
-    },
-    affects_stock: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-    },
-    is_system: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-    },
-  }, {
-    tableName: 'voucher_types',
-    timestamps: true,
-  });
+  // NOTE: VoucherType is now in Master DB (shared across all tenants)
+  // Vouchers reference voucher_type_id from master database
 
-  // Voucher model
+  // Voucher model (Tenant-specific transactions)
   models.Voucher = sequelize.define('Voucher', {
     id: {
       type: DataTypes.UUID,
@@ -189,6 +137,7 @@ module.exports = (sequelize) => {
     voucher_type_id: {
       type: DataTypes.UUID,
       allowNull: false,
+      comment: 'References master DB voucher_types table',
     },
     voucher_number: {
       type: DataTypes.STRING(50),
@@ -389,12 +338,8 @@ module.exports = (sequelize) => {
     updatedAt: false,
   });
 
-  // Define associations
-  models.AccountGroup.hasMany(models.Ledger, { foreignKey: 'account_group_id' });
-  models.Ledger.belongsTo(models.AccountGroup, { foreignKey: 'account_group_id' });
-
-  models.VoucherType.hasMany(models.Voucher, { foreignKey: 'voucher_type_id' });
-  models.Voucher.belongsTo(models.VoucherType, { foreignKey: 'voucher_type_id' });
+  // Define associations (within tenant DB)
+  // NOTE: AccountGroup and VoucherType are in Master DB, so no foreign key constraints
 
   models.Voucher.hasMany(models.VoucherLedgerEntry, { foreignKey: 'voucher_id' });
   models.VoucherLedgerEntry.belongsTo(models.Voucher, { foreignKey: 'voucher_id' });

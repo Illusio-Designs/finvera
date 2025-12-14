@@ -69,14 +69,18 @@ const resolveTenant = async (req, res, next) => {
       db_password: process.env.USE_SEPARATE_DB_USERS === 'true' ? dbPassword : process.env.DB_PASSWORD,
     });
 
-    // Load tenant models
+    // Load tenant models (transactional data)
     const tenantModels = require('../services/tenantModels')(tenantConnection);
+
+    // Load master models (shared accounting structure)
+    const masterModels = require('../models/masterModels');
 
     // Attach to request
     req.tenant = tenant;
     req.tenant_id = tenant.id;
     req.tenantDb = tenantConnection;
-    req.tenantModels = tenantModels;
+    req.tenantModels = tenantModels; // Transactional data (ledgers, vouchers, etc.)
+    req.masterModels = masterModels; // Shared structure (account groups, voucher types, etc.)
 
     next();
   } catch (error) {

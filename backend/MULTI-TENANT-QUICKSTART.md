@@ -48,13 +48,24 @@ You'll see:
 ```
 🔄 Initializing databases...
 📦 Setting up master database for tenant metadata...
+Master database models synchronized:
+  ✓ tenant_master (tenant metadata)
+  ✓ account_groups (shared chart of accounts)
+  ✓ voucher_types (shared voucher types)
+  ✓ gst_rates (shared GST rates)
+  ✓ tds_sections (shared TDS sections)
+  ✓ accounting_years (shared accounting periods)
+Seeding default account groups...
+Seeding default voucher types...
+Seeding default GST rates...
+Seeding default TDS sections...
 📦 Setting up main database for system models...
 ✅ All databases initialized successfully
 🚀 Server running on port 3000
 📊 Databases:
-   - Main DB: finvera_db (Admin, Salesman, Distributor, etc.)
-   - Master DB: finvera_master (Tenant metadata only)
-   - Tenant DBs: Created dynamically per tenant
+   - Main DB: finvera_db (Admin, Salesman, Distributor)
+   - Master DB: finvera_master (Shared accounting structure + Tenant metadata)
+   - Tenant DBs: Created dynamically per tenant (transactional data only)
 ```
 
 ## Step 4: Create Your First Tenant
