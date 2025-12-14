@@ -52,6 +52,9 @@ async function initMasterDatabase() {
     await masterSequelize.authenticate();
     logger.info('Master database connection established');
 
+    // Run migrations for master database
+    await runMasterMigrations();
+    
     // Sync all master models (shared accounting structure)
     const masterModels = require('../models/masterModels');
     await masterModels.syncMasterModels();
@@ -70,6 +73,49 @@ async function initMasterDatabase() {
   } catch (err) {
     logger.error('Failed to initialize master database:', err);
     throw err;
+  }
+}
+
+/**
+ * Run consolidated migration for master database
+ */
+async function runMasterMigrations() {
+  const fs = require('fs');
+  const path = require('path');
+  
+  try {
+    const migrationsPath = path.join(__dirname, '../migrations');
+    if (!fs.existsSync(migrationsPath)) {
+      return;
+    }
+
+    // Use consolidated master migration
+    const migrationFile = path.join(migrationsPath, '001-consolidated-master-migration.js');
+    
+    if (!fs.existsSync(migrationFile)) {
+      logger.warn('⚠️  Consolidated master migration file not found');
+      return;
+    }
+
+    const queryInterface = masterSequelize.getQueryInterface();
+    const { Sequelize } = require('sequelize');
+    const migration = require(migrationFile);
+    
+    if (migration.up && typeof migration.up === 'function') {
+      try {
+        await migration.up(queryInterface, Sequelize);
+        logger.info(`  ✓ Consolidated master migration completed`);
+      } catch (error) {
+        // Ignore errors if column/index already exists
+        if (error.message && error.message.includes('already exists')) {
+          logger.debug(`  ℹ️  Master migration already applied`);
+        } else {
+          logger.warn(`  ⚠️  Master migration failed: ${error.message}`);
+        }
+      }
+    }
+  } catch (error) {
+    logger.warn('Error running master migrations:', error.message);
   }
 }
 

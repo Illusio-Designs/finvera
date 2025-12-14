@@ -16,6 +16,7 @@ export default function TargetsList() {
   const router = useRouter();
   const [deleteId, setDeleteId] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
 
   const {
     data: tableData,
@@ -36,6 +37,19 @@ export default function TargetsList() {
       setDeleteId(null);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete target');
+    }
+  };
+
+  const handleRecalculateAll = async () => {
+    try {
+      setRecalculating(true);
+      const response = await adminAPI.targets.recalculateAll();
+      toast.success(response.data?.message || 'Achieved values recalculated successfully');
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to recalculate achieved values');
+    } finally {
+      setRecalculating(false);
     }
   };
 
@@ -102,8 +116,27 @@ export default function TargetsList() {
     },
   ];
 
+  const handleRecalculate = async (id, e) => {
+    e.stopPropagation();
+    try {
+      await adminAPI.targets.recalculate(id);
+      toast.success('Achieved value recalculated');
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to recalculate');
+    }
+  };
+
   const actions = (row) => (
     <div className="flex items-center space-x-2">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={(e) => handleRecalculate(row.id, e)}
+        title="Recalculate achieved value"
+      >
+        ↻
+      </Button>
       <Button
         variant="outline"
         size="sm"
@@ -139,9 +172,19 @@ export default function TargetsList() {
             { label: 'Targets' },
           ]}
           actions={
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleRecalculateAll}
+                disabled={recalculating}
+                loading={recalculating}
+              >
+                {recalculating ? 'Recalculating...' : 'Recalculate All'}
+              </Button>
             <Button onClick={() => router.push('/admin/targets/new')}>
               Set Target
             </Button>
+            </div>
           }
         >
           <DataTable

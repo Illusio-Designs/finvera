@@ -1,6 +1,8 @@
-const { Distributor, User, Salesman, Commission, Payout, Lead, Target, Tenant } = require('../models');
+const { Distributor, User, Salesman, Commission, Payout, Lead, Target } = require('../models');
+const { TenantMaster } = require('../models/masterModels');
 const { Op } = require('sequelize');
 const bcrypt = require('bcryptjs');
+const { Sequelize } = require('sequelize');
 
 module.exports = {
   async list(req, res, next) {
@@ -22,7 +24,7 @@ module.exports = {
         limit: parseInt(limit),
         offset: parseInt(offset),
         include: [
-          { model: User, attributes: ['id', 'email', 'full_name'] },
+          { model: User, attributes: ['id', 'email', 'name'] },
         ],
         order: [['createdAt', 'DESC']],
       });
@@ -55,8 +57,8 @@ module.exports = {
       const password_hash = await bcrypt.hash(password, 10);
       const user = await User.create({
         email,
-        password_hash,
-        full_name,
+        password: password_hash,
+        name: full_name,
         role: 'distributor',
         tenant_id: req.tenant_id || null, // Distributors might not have a tenant_id
       });
@@ -82,7 +84,7 @@ module.exports = {
       const { id } = req.params;
       const distributor = await Distributor.findByPk(id, {
         include: [
-          { model: User, attributes: ['id', 'email', 'full_name'] },
+          { model: User, attributes: ['id', 'email', 'name'] },
           { model: Salesman, attributes: ['id', 'salesman_code', 'full_name', 'is_active'] },
         ],
       });
@@ -143,7 +145,7 @@ module.exports = {
       const totalCommission = commissions.reduce((sum, c) => sum + parseFloat(c.amount || 0), 0);
 
       const salesmen = await Salesman.count({ where: { distributor_id: id, is_active: true } });
-      const tenants = await Tenant.count({ where: { distributor_id: id, is_active: true } });
+      const tenants = await TenantMaster.count({ where: { distributor_id: id, is_active: true } });
 
       res.json({
         performance: {
@@ -151,6 +153,89 @@ module.exports = {
           salesmen,
           tenants,
           commissions: commissions.length,
+        },
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async dashboard(req, res, next) {
+    try {
+      const userId = req.user_id;
+      const distributor = await Distributor.findOne({ where: { user_id: userId } });
+
+      if (!distributor) {
+        return res.status(404).json({ message: 'Distributor not found' });
+      }
+
+      const distributorId = distributor.id;
+      const now = new Date();
+
+      // Get active targets
+      const targets = await Target.findAll({
+        where: {
+          distributor_id: distributorId,
+          [Op.or]: [
+            { end_date: { [Op.gte]: now } },
+            { end_date: null },
+          ],
+        },
+        order: [['createdAt', 'DESC']],
+      });
+
+      // Calculate total target, achieved, and left
+      let totalTarget = 0;
+      let totalAchieved = 0;
+      targets.forEach(target => {
+        totalTarget += parseFloat(target.target_value || 0);
+        totalAchieved += parseFloat(target.achieved_value || 0);
+      });
+      const totalLeft = totalTarget - totalAchieved;
+
+      // Get commissions
+      const totalCommissions = await Commission.sum('amount', {
+        where: { distributor_id: distributorId },
+      });
+
+      const pendingCommissions = await Commission.sum('amount', {
+        where: { distributor_id: distributorId, status: 'pending' },
+      });
+
+      const approvedCommissions = await Commission.sum('amount', {
+        where: { distributor_id: distributorId, status: 'approved' },
+      });
+
+      // Get commission list
+      const commissions = await Commission.findAll({
+        where: { distributor_id: distributorId },
+        order: [['createdAt', 'DESC']],
+        limit: 10,
+      });
+
+      // Get tenants count
+      const totalTenants = await TenantMaster.count({
+        where: { distributor_id: distributorId },
+      });
+
+      res.json({
+        data: {
+          targets: {
+            total: parseFloat(totalTarget.toFixed(2)),
+            achieved: parseFloat(totalAchieved.toFixed(2)),
+            left: parseFloat(totalLeft.toFixed(2)),
+            percentage: totalTarget > 0 ? parseFloat(((totalAchieved / totalTarget) * 100).toFixed(2)) : 0,
+            list: targets,
+          },
+          commissions: {
+            total: parseFloat(totalCommissions || 0),
+            pending: parseFloat(pendingCommissions || 0),
+            approved: parseFloat(approvedCommissions || 0),
+            list: commissions,
+          },
+          tenants: {
+            total: totalTenants,
+          },
         },
       });
     } catch (err) {

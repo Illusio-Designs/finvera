@@ -140,6 +140,74 @@ module.exports = {
     }
   },
 
+  async updateProfile(req, res, next) {
+    try {
+      const userId = req.user_id || req.user?.id || req.user?.sub;
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
+
+      const { name, email, phone } = req.body;
+
+      // Get user from appropriate database
+      let user = null;
+      
+      if (req.tenantModels && req.tenantModels.User) {
+        // Tenant user
+        user = await req.tenantModels.User.findByPk(userId);
+      } else {
+        // Admin user (master database)
+        user = await User.findByPk(userId);
+      }
+
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Check if email is being changed and if it's already taken
+      if (email && email !== user.email) {
+        let existingUser = null;
+        if (req.tenantModels && req.tenantModels.User) {
+          existingUser = await req.tenantModels.User.findOne({ where: { email } });
+        } else {
+          existingUser = await User.findOne({ where: { email } });
+        }
+        
+        if (existingUser && existingUser.id !== userId) {
+          return res.status(409).json({ message: 'Email already in use' });
+        }
+      }
+
+      // Update user profile
+      const updateData = {};
+      if (name !== undefined) updateData.name = name;
+      if (email !== undefined) updateData.email = email;
+      if (phone !== undefined) updateData.phone = phone;
+
+      await user.update(updateData);
+
+      // Return updated user data
+      const userData = {
+        id: user.id,
+        email: user.email,
+        name: user.name || user.full_name,
+        role: user.role,
+        phone: user.phone,
+        profile_image: user.profile_image,
+        is_active: user.is_active,
+        last_login: user.last_login,
+      };
+
+      return res.json({
+        message: 'Profile updated successfully',
+        user: userData,
+      });
+    } catch (err) {
+      return next(err);
+    }
+  },
+
   async uploadProfileImage(req, res, next) {
     try {
       const userId = req.user_id || req.user?.id || req.user?.sub;

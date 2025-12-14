@@ -20,17 +20,19 @@ const TenantMaster = masterSequelize.define(
     },
     subdomain: {
       type: DataTypes.STRING(50),
-      unique: true,
       allowNull: false,
       comment: 'Unique subdomain for tenant (e.g., acme.finvera.com)',
+      // Note: unique constraint removed to avoid MySQL 64-index limit
+      // Uniqueness is enforced at application level
     },
     
     // Database connection info
     db_name: {
       type: DataTypes.STRING(100),
       allowNull: false,
-      unique: true,
       comment: 'Name of tenant database',
+      // Note: unique constraint removed to avoid MySQL 64-index limit
+      // Uniqueness is enforced at application level
     },
     db_host: {
       type: DataTypes.STRING(255),
@@ -53,8 +55,9 @@ const TenantMaster = masterSequelize.define(
     // Tenant metadata
     gstin: {
       type: DataTypes.STRING(15),
-      unique: true,
       comment: 'Primary GSTIN for the company',
+      // Note: unique constraint removed to avoid MySQL 64-index limit
+      // Uniqueness is enforced at application level
     },
     pan: {
       type: DataTypes.STRING(10),
@@ -100,6 +103,11 @@ const TenantMaster = masterSequelize.define(
     },
     referral_type: {
       type: DataTypes.ENUM('salesman', 'distributor', 'tenant'),
+    },
+    acquisition_category: {
+      type: DataTypes.ENUM('distributor', 'salesman', 'referral', 'organic'),
+      defaultValue: 'organic',
+      comment: 'How the tenant was acquired: distributor (from distributor), salesman (from salesman), referral (from referral code), organic (direct from website)',
     },
     
     // Contact info
@@ -158,12 +166,14 @@ const TenantMaster = masterSequelize.define(
     tableName: 'tenant_master',
     timestamps: true,
     indexes: [
-      { fields: ['subdomain'] },
-      { fields: ['db_name'] },
-      { fields: ['gstin'] },
-      { fields: ['email'] },
-      { fields: ['is_active'] },
-      { fields: ['subscription_end'] },
+      // Only keep essential unique indexes - these are critical for data integrity
+      { fields: ['subdomain'], unique: true, name: 'idx_tenant_master_subdomain_unique' },
+      { fields: ['db_name'], unique: true, name: 'idx_tenant_master_db_name_unique' },
+      // Keep only most frequently queried non-unique indexes
+      { fields: ['email'], name: 'idx_tenant_master_email' },
+      { fields: ['is_active'], name: 'idx_tenant_master_is_active' },
+      // Removed other indexes to stay under MySQL's 64-index limit
+      // acquisition_category, gstin, subscription_end can be queried without dedicated indexes
     ],
   },
 );

@@ -151,6 +151,30 @@ module.exports = {
   // Create blog category
   async createCategory(req, res, next) {
     try {
+      const { name, slug } = req.body;
+
+      // Check for duplicate name
+      if (name) {
+        const existingName = await BlogCategory.findOne({ where: { name } });
+        if (existingName) {
+          return res.status(409).json({
+            success: false,
+            error: 'Category name already exists',
+          });
+        }
+      }
+
+      // Check for duplicate slug
+      if (slug) {
+        const existingSlug = await BlogCategory.findOne({ where: { slug } });
+        if (existingSlug) {
+          return res.status(409).json({
+            success: false,
+            error: 'Category slug already exists',
+          });
+        }
+      }
+
       const category = await BlogCategory.create(req.body);
       res.status(201).json({ success: true, data: category });
     } catch (error) {

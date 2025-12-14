@@ -1,5 +1,8 @@
-const { Commission, Distributor, Salesman, Tenant, Payout } = require('../models');
+const { Commission, Distributor, Salesman, Payout, SubscriptionPlan } = require('../models');
+const { TenantMaster } = require('../models/masterModels');
 const { Op } = require('sequelize');
+const logger = require('../utils/logger');
+const commissionService = require('../services/commissionService');
 
 module.exports = {
   async list(req, res, next) {
@@ -20,7 +23,6 @@ module.exports = {
         include: [
           { model: Distributor, attributes: ['id', 'distributor_code', 'company_name'] },
           { model: Salesman, attributes: ['id', 'salesman_code', 'full_name'] },
-          { model: Tenant, attributes: ['id', 'company_name'] },
         ],
         order: [['createdAt', 'DESC']],
       });
@@ -43,7 +45,6 @@ module.exports = {
         include: [
           { model: Distributor, attributes: ['id', 'distributor_code', 'company_name'] },
           { model: Salesman, attributes: ['id', 'salesman_code', 'full_name'] },
-          { model: Tenant, attributes: ['id', 'company_name'] },
           { model: Payout, attributes: ['id', 'status', 'paid_date'] },
         ],
       });
@@ -62,29 +63,31 @@ module.exports = {
     try {
       const { tenant_id, subscription_plan, commission_type } = req.body;
 
-      // This is a simplified calculation - you would implement actual commission logic here
-      const tenant = await Tenant.findByPk(tenant_id);
-      if (!tenant) {
-        return res.status(404).json({ message: 'Tenant not found' });
-      }
-
-      // Get commission rates from subscription plan or default
-      const commissionRate = 5; // Default 5%
-      const amount = 1000; // This would be calculated based on subscription plan price
-
-      const commission = await Commission.create({
+      const commissions = await commissionService.calculateAndCreateCommissions(
         tenant_id,
-        distributor_id: tenant.distributor_id,
-        salesman_id: tenant.salesman_id,
-        commission_type: commission_type || 'subscription',
         subscription_plan,
-        amount,
-        commission_rate: commissionRate,
-        status: 'pending',
-      });
+        commission_type || 'subscription'
+      );
 
-      res.status(201).json(commission);
+      // Get plan to return total value
+      const plan = await SubscriptionPlan.findOne({
+        where: { plan_code: subscription_plan, is_active: true },
+      });
+      const totalValue = plan ? parseFloat(plan.discounted_price || plan.base_price || 0) : 0;
+
+      res.status(201).json({
+        message: 'Commissions calculated and created',
+        commissions,
+        total_value: totalValue,
+      });
     } catch (err) {
+      logger.error('Commission calculation error:', err);
+      if (err.message === 'Tenant not found') {
+        return res.status(404).json({ message: err.message });
+      }
+      if (err.message === 'Subscription plan is required' || err.message === 'Subscription plan not found') {
+        return res.status(400).json({ message: err.message });
+      }
       next(err);
     }
   },

@@ -5,62 +5,105 @@ import Header from './Header';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   FiHome, FiUsers, FiBriefcase, FiTarget, FiDollarSign,
-  FiCreditCard, FiGift, FiTag
+  FiCreditCard, FiGift, FiTag, FiUser, FiHeadphones
 } from 'react-icons/fi';
 
-const getAdminMenuItems = () => [
-  {
-    label: 'Dashboard',
-    href: '/admin/dashboard',
-    icon: FiHome,
-  },
-  {
-    label: 'Tenants',
-    href: '/admin/tenants',
-    icon: FiBriefcase,
-  },
-  {
-    label: 'Distributors',
-    href: '/admin/distributors',
-    icon: FiUsers,
-  },
-  {
-    label: 'Salesmen',
-    href: '/admin/salesmen',
-    icon: FiUsers,
-  },
-  {
-    label: 'Targets',
-    href: '/admin/targets',
-    icon: FiTarget,
-  },
-  {
-    divider: true,
-  },
-  {
-    label: 'Commissions',
-    href: '/admin/commissions',
-    icon: FiDollarSign,
-  },
-  {
-    label: 'Payouts',
-    href: '/admin/payouts',
-    icon: FiCreditCard,
-  },
-  {
-    label: 'Referrals',
-    href: '/admin/referrals',
-    icon: FiGift,
-  },
-  {
-    divider: true,
-  },
-  {
-    label: 'Pricing',
-    href: '/admin/pricing',
-    icon: FiTag,
-  },
-];
+const getAdminMenuItems = (userRole) => {
+  // For distributor and salesman, show limited menu
+  if (userRole === 'distributor' || userRole === 'salesman') {
+    return [
+      {
+        label: 'Dashboard',
+        href: userRole === 'distributor' ? '/admin/distributors/dashboard' : '/admin/salesmen/dashboard',
+        icon: FiHome,
+      },
+      {
+        label: 'Tenants',
+        href: '/admin/tenants',
+        icon: FiBriefcase,
+      },
+      {
+        divider: true,
+      },
+      {
+        label: 'Profile',
+        href: '/admin/profile',
+        icon: FiUser,
+      },
+    ];
+  }
+
+  // Full menu for admin and super_admin
+  return [
+    {
+      label: 'Dashboard',
+      href: '/admin/dashboard',
+      icon: FiHome,
+    },
+    {
+      label: 'Tenants',
+      href: '/admin/tenants',
+      icon: FiBriefcase,
+    },
+    {
+      label: 'Distributors',
+      href: '/admin/distributors',
+      icon: FiUsers,
+    },
+    {
+      label: 'Salesmen',
+      href: '/admin/salesmen',
+      icon: FiUsers,
+    },
+    {
+      label: 'Targets',
+      href: '/admin/targets',
+      icon: FiTarget,
+    },
+    {
+      divider: true,
+    },
+    {
+      label: 'Commissions',
+      href: '/admin/commissions',
+      icon: FiDollarSign,
+    },
+    {
+      label: 'Payouts',
+      href: '/admin/payouts',
+      icon: FiCreditCard,
+    },
+    {
+      label: 'Referrals',
+      href: '/admin/referrals',
+      icon: FiGift,
+    },
+    {
+      divider: true,
+    },
+    {
+      label: 'Pricing',
+      href: '/admin/pricing',
+      icon: FiTag,
+    },
+    {
+      divider: true,
+    },
+    {
+      label: 'Support Tickets',
+      href: '/admin/support',
+      icon: FiHeadphones,
+    },
+    {
+      divider: true,
+    },
+    {
+      label: 'Profile',
+      href: '/admin/profile',
+      icon: FiUser,
+    },
+  ];
+};
 
 export default function AdminLayout({ children, title = 'Admin Panel - Finvera' }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -75,7 +118,7 @@ export default function AdminLayout({ children, title = 'Admin Panel - Finvera' 
       </Head>
       <div className="min-h-screen bg-gray-50 flex">
         <Sidebar
-          items={getAdminMenuItems()}
+          items={getAdminMenuItems(user?.role)}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
           isCollapsed={sidebarCollapsed}
@@ -86,8 +129,10 @@ export default function AdminLayout({ children, title = 'Admin Panel - Finvera' 
             onMenuClick={() => setSidebarOpen(!sidebarOpen)}
             title={title}
           />
-          <main className="flex-1 p-4 sm:p-6 lg:p-8">
-            {children}
+          <main className="flex-1 overflow-auto">
+            <div className="max-w-7xl mx-auto p-4 sm:p-5 lg:p-6">
+              {children}
+            </div>
           </main>
         </div>
       </div>

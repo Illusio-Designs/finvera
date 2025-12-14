@@ -21,6 +21,10 @@ router.get('/:id/performance',
   requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DISTRIBUTOR, ROLES.SALESMAN),
   salesmanController.getPerformance
 );
+router.get('/dashboard', 
+  requireRole(ROLES.SALESMAN),
+  salesmanController.dashboard
+);
 router.get('/:id/leads', 
   requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DISTRIBUTOR, ROLES.SALESMAN),
   salesmanController.getLeads
