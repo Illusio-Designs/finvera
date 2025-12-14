@@ -17,6 +17,7 @@ const tdsRoutes = require('./tdsRoutes');
 const eInvoiceRoutes = require('./eInvoiceRoutes');
 const blogRoutes = require('./blogRoutes');
 const seoRoutes = require('./seoRoutes');
+const supportRoutes = require('./supportRoutes');
 
 const router = Router();
 
@@ -38,6 +39,7 @@ router.use('/tds', tdsRoutes);
 router.use('/einvoice', eInvoiceRoutes);
 router.use('/', blogRoutes);
 router.use('/', seoRoutes);
+router.use('/support', supportRoutes);
 
 router.get('/health', (req, res) => res.json({ status: 'ok' }));
 
