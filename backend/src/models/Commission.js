@@ -10,10 +10,7 @@ module.exports = (sequelize, DataTypes) => {
       tenant_id: {
         type: DataTypes.UUID,
         allowNull: false,
-        references: {
-          model: 'tenants',
-          key: 'id',
-        },
+        comment: 'Logical reference to master.tenant_master.id (no FK constraint)',
       },
       distributor_id: DataTypes.UUID,
       salesman_id: DataTypes.UUID,
