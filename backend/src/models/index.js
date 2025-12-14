@@ -1,22 +1,37 @@
-const fs = require('fs');
-const path = require('path');
 const sequelize = require('../config/database');
 const { DataTypes } = require('sequelize');
 
 const db = {};
 
-// Read all model files
-const modelsDir = __dirname;
-const modelFiles = fs
-  .readdirSync(modelsDir)
-  .filter((file) => file !== 'index.js' && file.endsWith('.js'));
+/**
+ * Main Database Models (finvera_db)
+ * ONLY admin/system/platform models
+ * 
+ * Master DB models are in: src/models/masterModels.js
+ * Tenant DB models are in: src/services/tenantModels.js
+ */
 
-// Load all models
-modelFiles.forEach((file) => {
+// Admin/System Models ONLY - load explicitly to avoid confusion
+const adminModels = [
+  'User',          // Admin users
+  'Salesman',      // Salesmen
+  'Distributor',   // Distributors
+  'SubscriptionPlan', // Subscription plans
+  'ReferralCode',  // Referral codes
+  'ReferralReward', // Referral rewards
+  'Commission',    // Commissions
+  'Payout',        // Payouts
+  'Lead',          // Leads
+  'LeadActivity',  // Lead activities
+  'Target',        // Targets
+];
+
+// Load only admin/system models
+adminModels.forEach((modelName) => {
   try {
-    const modelModule = require(path.join(modelsDir, file));
+    const modelFile = `./${modelName}.js`;
+    const modelModule = require(modelFile);
     
-    // Check if it's a function (Sequelize model definition)
     if (typeof modelModule === 'function') {
       const model = modelModule(sequelize, DataTypes);
       if (model && model.name) {
@@ -24,8 +39,7 @@ modelFiles.forEach((file) => {
       }
     }
   } catch (error) {
-    // Skip files that can't be loaded (empty or invalid)
-    console.warn(`Warning: Could not load model ${file}:`, error.message);
+    console.error(`Error loading model ${modelName}:`, error.message);
   }
 });
 
