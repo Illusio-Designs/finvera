@@ -21,15 +21,19 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
+      console.log('Admin login attempt:', { email });
       const result = await login(email, password, 'admin');
+      console.log('Login result:', result);
       
       if (result.success && result.user) {
         const role = result.user?.role;
+        console.log('User role:', role);
         
         // Check if role can access admin portal
         if (canAccessAdminPortal(role)) {
           toast.success(`Welcome ${getRoleDisplayName(role)}!`);
           const redirectPath = getDefaultRedirect(role, result.user.id);
+          console.log('Redirecting to:', redirectPath);
           // Use replace instead of push to prevent back button issues
           router.replace(redirectPath);
         } else {
@@ -37,11 +41,13 @@ export default function AdminLogin() {
           setLoading(false);
         }
       } else {
-        toast.error(result.message || 'Login failed. Please check your credentials.');
+        const errorMsg = result.message || 'Login failed. Please check your credentials.';
+        console.error('Login failed:', errorMsg);
+        toast.error(errorMsg);
         setLoading(false);
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login exception:', error);
       toast.error(error.message || 'An error occurred during login');
       setLoading(false);
     }
