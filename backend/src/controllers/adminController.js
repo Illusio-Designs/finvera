@@ -43,10 +43,7 @@ module.exports = {
     try {
       const { page = 1, limit = 20, search, is_active } = req.query;
       const offset = (page - 1) * limit;
-      const where = {
-        // Exclude system tenant from listing
-        company_name: { [Op.ne]: 'System' }
-      };
+      const where = {};
 
       if (search) {
         where[Op.or] = [
@@ -64,9 +61,22 @@ module.exports = {
         limit: parseInt(limit),
         offset: parseInt(offset),
         order: [['createdAt', 'DESC']],
+        attributes: [
+          'id',
+          'company_name',
+          'subdomain',
+          'email',
+          'subscription_plan',
+          'is_active',
+          'is_suspended',
+          'db_provisioned',
+          'createdAt',
+          'updatedAt'
+        ],
       });
 
       res.json({
+        success: true,
         data: rows,
         pagination: {
           page: parseInt(page),
