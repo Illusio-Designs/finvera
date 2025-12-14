@@ -37,11 +37,19 @@ export const useTable = (fetchFunction, initialParams = {}) => {
       
       setData(responseData.data || responseData.items || []);
       
+      // Handle pagination in nested object or direct format
       if (responseData.pagination) {
         setPagination((prev) => ({
           ...prev,
           total: responseData.pagination.total || 0,
           totalPages: responseData.pagination.totalPages || 0,
+        }));
+      } else if (responseData.total !== undefined) {
+        // Handle direct pagination format (total, page, limit, totalPages)
+        setPagination((prev) => ({
+          ...prev,
+          total: responseData.total || 0,
+          totalPages: responseData.totalPages || Math.ceil((responseData.total || 0) / (responseData.limit || prev.limit)),
         }));
       }
     } catch (err) {

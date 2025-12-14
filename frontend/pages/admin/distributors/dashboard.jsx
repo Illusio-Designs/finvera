@@ -9,7 +9,7 @@ import {
   FiTarget, FiDollarSign, FiBriefcase, FiTrendingUp,
   FiCheckCircle, FiClock, FiArrowRight
 } from 'react-icons/fi';
-import DataTable from '../../../components/ui/DataTable';
+import DataTable from '../../../components/tables/DataTable';
 
 export default function DistributorDashboard() {
   const [dashboardData, setDashboardData] = useState({
