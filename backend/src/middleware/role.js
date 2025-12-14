@@ -74,4 +74,5 @@ module.exports = {
   requireRole,
   hasAnyRole,
   hasAllRoles,
+  authorize: requireRole, // Alias for convenience
 };
