@@ -309,8 +309,39 @@ module.exports = {
 
       // Check if tenant came from referral code
       const { referral_code } = req.body;
+      let finalPrice = null;
+      let discountApplied = null;
+
       if (referral_code && !finalDistributorId && !finalSalesmanId) {
         acquisitionCategory = 'referral';
+        
+        // Apply referral discount if subscription plan is provided
+        if (subscription_plan) {
+          try {
+            const SubscriptionPlan = require('../models').SubscriptionPlan;
+            const plan = await SubscriptionPlan.findOne({
+              where: { plan_code: subscription_plan, is_active: true },
+            });
+            
+            if (plan) {
+              const referralDiscountService = require('../services/referralDiscountService');
+              const basePrice = parseFloat(plan.base_price || 0);
+              const discountResult = await referralDiscountService.applyReferralDiscount(
+                referral_code,
+                basePrice
+              );
+              
+              if (discountResult.discountAmount > 0) {
+                finalPrice = discountResult.discountedPrice;
+                discountApplied = discountResult.discountPercentage;
+                logger.info(`Referral discount applied: ${discountResult.discountPercentage}% (${discountResult.discountAmount})`);
+              }
+            }
+          } catch (error) {
+            logger.warn('Failed to apply referral discount:', error.message);
+            // Continue with tenant creation even if discount fails
+          }
+        }
       }
 
       // If distributor_id or salesman_id is provided in body, set category accordingly
@@ -348,6 +379,53 @@ module.exports = {
         referral_code,
         acquisition_category: acquisitionCategory,
       });
+
+      // Auto-generate referral code for the new tenant
+      try {
+        const ReferralCode = require('../models').ReferralCode;
+        const crypto = require('crypto');
+        const generateReferralCode = (ownerType) => {
+          const prefix = ownerType === 'salesman' ? 'SM' : ownerType === 'distributor' ? 'DS' : 'CU';
+          const random = crypto.randomBytes(4).toString('hex').toUpperCase();
+          return `${prefix}${random}`;
+        };
+
+        // Check if referral code already exists for this tenant
+        const existingCode = await ReferralCode.findOne({
+          where: { owner_type: 'customer', owner_id: tenant.id, is_active: true },
+        });
+
+        if (!existingCode) {
+          // Get current discount percentage from config
+          const ReferralDiscountConfig = require('../models').ReferralDiscountConfig;
+          const currentConfig = await ReferralDiscountConfig.findOne({
+            where: {
+              is_active: true,
+              effective_from: { [require('sequelize').Op.lte]: new Date() },
+              [require('sequelize').Op.or]: [
+                { effective_until: null },
+                { effective_until: { [require('sequelize').Op.gte]: new Date() } },
+              ],
+            },
+            order: [['effective_from', 'DESC']],
+          });
+
+          const discountPercentage = currentConfig ? parseFloat(currentConfig.discount_percentage) : 10.00;
+
+          await ReferralCode.create({
+            code: generateReferralCode('customer'),
+            owner_type: 'customer',
+            owner_id: tenant.id,
+            discount_type: 'percentage',
+            discount_value: discountPercentage,
+            is_active: true,
+          });
+          logger.info(`Referral code auto-generated for tenant ${tenant.id}`);
+        }
+      } catch (error) {
+        logger.warn('Failed to auto-generate referral code for tenant:', error.message);
+        // Don't fail tenant creation if referral code generation fails
+      }
 
       // Create admin user if email and password provided
       if (email && password) {
@@ -528,6 +606,219 @@ module.exports = {
     } catch (error) {
       logger.error('Error updating target achievement:', error);
       // Don't throw error - target update failure shouldn't block tenant creation
+    }
+  },
+
+  // ============================================
+  // USER MANAGEMENT
+  // ============================================
+
+  /**
+   * List all system users (excluding distributors and salesmen)
+   */
+  async listUsers(req, res, next) {
+    try {
+      const { page = 1, limit = 20, role, search, is_active } = req.query;
+      const offset = (page - 1) * limit;
+      const where = {};
+
+      // Exclude distributor and salesman roles
+      where.role = {
+        [Op.notIn]: ['distributor', 'salesman'],
+      };
+
+      if (role) {
+        where.role = role;
+      }
+
+      if (is_active !== undefined) {
+        where.is_active = is_active === 'true';
+      }
+
+      if (search) {
+        where[Op.or] = [
+          { name: { [Op.like]: `%${search}%` } },
+          { email: { [Op.like]: `%${search}%` } },
+        ];
+      }
+
+      const { count, rows } = await User.findAndCountAll({
+        where,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        order: [['createdAt', 'DESC']],
+        attributes: { exclude: ['password'] },
+      });
+
+      res.json({
+        data: rows,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: count,
+          totalPages: Math.ceil(count / limit),
+        },
+      });
+    } catch (error) {
+      logger.error('List users error:', error);
+      next(error);
+    }
+  },
+
+  /**
+   * Get user by ID
+   */
+  async getUser(req, res, next) {
+    try {
+      const { id } = req.params;
+      const user = await User.findByPk(id, {
+        attributes: { exclude: ['password'] },
+      });
+
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Don't allow viewing distributor/salesman users
+      if (user.role === 'distributor' || user.role === 'salesman') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      res.json({ data: user });
+    } catch (error) {
+      logger.error('Get user error:', error);
+      next(error);
+    }
+  },
+
+  /**
+   * Create new user
+   */
+  async createUser(req, res, next) {
+    try {
+      const { email, password, name, role, phone, is_active } = req.body;
+
+      // Validate role (cannot create distributor or salesman here)
+      if (role === 'distributor' || role === 'salesman') {
+        return res.status(400).json({ message: 'Cannot create distributor or salesman users here' });
+      }
+
+      // Check if email already exists
+      const existingUser = await User.findOne({ where: { email } });
+      if (existingUser) {
+        return res.status(409).json({ message: 'Email already exists' });
+      }
+
+      // Hash password
+      const bcrypt = require('bcryptjs');
+      const password_hash = await bcrypt.hash(password, 10);
+
+      const user = await User.create({
+        email,
+        password: password_hash,
+        name,
+        role: role || 'admin',
+        phone,
+        is_active: is_active !== undefined ? is_active : true,
+      });
+
+      // Return user without password
+      const userResponse = user.toJSON();
+      delete userResponse.password;
+
+      res.status(201).json({ data: userResponse });
+    } catch (error) {
+      logger.error('Create user error:', error);
+      next(error);
+    }
+  },
+
+  /**
+   * Update user
+   */
+  async updateUser(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { email, password, name, role, phone, is_active, profile_image } = req.body;
+
+      const user = await User.findByPk(id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Don't allow updating distributor/salesman users
+      if (user.role === 'distributor' || user.role === 'salesman') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      // Validate role if provided
+      if (role && (role === 'distributor' || role === 'salesman')) {
+        return res.status(400).json({ message: 'Cannot change role to distributor or salesman' });
+      }
+
+      // Check email uniqueness if email is being changed
+      if (email && email !== user.email) {
+        const existingUser = await User.findOne({ where: { email } });
+        if (existingUser) {
+          return res.status(409).json({ message: 'Email already exists' });
+        }
+      }
+
+      // Update fields
+      const updateData = {};
+      if (email) updateData.email = email;
+      if (name) updateData.name = name;
+      if (role) updateData.role = role;
+      if (phone !== undefined) updateData.phone = phone;
+      if (is_active !== undefined) updateData.is_active = is_active;
+      if (profile_image !== undefined) updateData.profile_image = profile_image;
+
+      // Hash password if provided
+      if (password) {
+        const bcrypt = require('bcryptjs');
+        updateData.password = await bcrypt.hash(password, 10);
+      }
+
+      await user.update(updateData);
+
+      // Return user without password
+      const userResponse = user.toJSON();
+      delete userResponse.password;
+
+      res.json({ data: userResponse });
+    } catch (error) {
+      logger.error('Update user error:', error);
+      next(error);
+    }
+  },
+
+  /**
+   * Delete user
+   */
+  async deleteUser(req, res, next) {
+    try {
+      const { id } = req.params;
+
+      const user = await User.findByPk(id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Don't allow deleting distributor/salesman users
+      if (user.role === 'distributor' || user.role === 'salesman') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      // Don't allow deleting yourself
+      if (user.id === req.user.id) {
+        return res.status(400).json({ message: 'Cannot delete your own account' });
+      }
+
+      await user.destroy();
+      res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+      logger.error('Delete user error:', error);
+      next(error);
     }
   },
 };

@@ -43,7 +43,9 @@ export default function ProtectedRoute({ children, portalType = null }) {
       // Check admin portal access
       if (portalType === 'admin' && !canAccessAdminPortal(userRole)) {
         console.error('Access denied: User role cannot access admin portal');
-        router.replace('/client/dashboard');
+        const { getDefaultRedirect } = require('../lib/roleConfig');
+        const redirectPath = getDefaultRedirect(userRole, user.id);
+        router.replace(redirectPath);
         setHasChecked(true);
         return;
       }
@@ -51,7 +53,9 @@ export default function ProtectedRoute({ children, portalType = null }) {
       // Check client portal access
       if (portalType === 'client' && !canAccessClientPortal(userRole)) {
         console.error('Access denied: User role cannot access client portal');
-        router.replace('/admin/dashboard');
+        const { getDefaultRedirect } = require('../lib/roleConfig');
+        const redirectPath = getDefaultRedirect(userRole, user.id);
+        router.replace(redirectPath);
         setHasChecked(true);
         return;
       }

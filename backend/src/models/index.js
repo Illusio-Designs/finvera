@@ -30,6 +30,8 @@ const adminModels = [
   'SupportTicket', // Support tickets
   'TicketMessage', // Ticket messages
   'SupportAgentReview', // Support agent reviews
+  'ReferralDiscountConfig', // Referral discount configurations
+  'Notification', // Notifications
 ];
 
 // Load only admin/system models

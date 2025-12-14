@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   FiHome, FiFolder, FiFileText, FiTrendingUp, FiTrendingDown,
   FiDollarSign, FiCreditCard, FiRefreshCw, FiFile, FiBarChart2,
-  FiShield, FiPercent, FiFileMinus, FiMail, FiSettings, FiUser
+  FiShield, FiPercent, FiFileMinus, FiMail, FiSettings, FiUser, FiGift
 } from 'react-icons/fi';
 
 const getClientMenuItems = () => [
@@ -61,6 +61,14 @@ const getClientMenuItems = () => [
       { label: 'TDS', href: '/client/tds', icon: FiDollarSign },
       { label: 'E-Invoice', href: '/client/einvoice', icon: FiMail },
     ],
+  },
+  {
+    divider: true,
+  },
+  {
+    label: 'Referral',
+    href: '/client/referral',
+    icon: FiGift,
   },
   {
     divider: true,

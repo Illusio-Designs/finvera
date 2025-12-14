@@ -5,7 +5,8 @@ import Header from './Header';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   FiHome, FiUsers, FiBriefcase, FiTarget, FiDollarSign,
-  FiCreditCard, FiGift, FiTag, FiUser, FiHeadphones, FiBarChart2
+  FiCreditCard, FiGift, FiTag, FiUser, FiHeadphones, FiBarChart2,
+  FiFileText, FiSearch, FiSettings
 } from 'react-icons/fi';
 
 const getAdminMenuItems = (userRole) => {
@@ -21,6 +22,33 @@ const getAdminMenuItems = (userRole) => {
         label: 'Tenants',
         href: '/admin/tenants',
         icon: FiBriefcase,
+      },
+      {
+        divider: true,
+      },
+      {
+        label: 'Profile',
+        href: '/admin/profile',
+        icon: FiUser,
+      },
+    ];
+  }
+
+  // For finance manager, show commission and payout management
+  if (userRole === 'finance_manager') {
+    return [
+      {
+        label: 'Dashboard',
+        href: '/admin/dashboard',
+        icon: FiHome,
+      },
+      {
+        divider: true,
+      },
+      {
+        label: 'Commissions & Payouts',
+        href: '/admin/commissions-payouts',
+        icon: FiDollarSign,
       },
       {
         divider: true,
@@ -96,6 +124,35 @@ const getAdminMenuItems = (userRole) => {
       label: 'Support Tickets',
       href: '/admin/support',
       icon: FiHeadphones,
+    },
+    {
+      divider: true,
+    },
+    {
+      label: 'Users',
+      href: '/admin/users',
+      icon: FiUsers,
+    },
+    {
+      divider: true,
+    },
+    {
+      label: 'Blog',
+      href: '/admin/blog',
+      icon: FiFileText,
+    },
+    {
+      label: 'SEO',
+      href: '/admin/seo',
+      icon: FiSearch,
+    },
+    {
+      divider: true,
+    },
+    {
+      label: 'Settings',
+      href: '/admin/settings',
+      icon: FiSettings,
     },
     {
       divider: true,

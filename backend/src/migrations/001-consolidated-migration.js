@@ -176,6 +176,38 @@ module.exports = {
           updatedAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
         },
       },
+      {
+        name: 'referral_discount_configs',
+        definition: {
+          id: { type: Sequelize.UUID, primaryKey: true, defaultValue: Sequelize.literal('(UUID())') },
+          discount_percentage: { type: Sequelize.DECIMAL(5, 2), allowNull: false, defaultValue: 10.00 },
+          effective_from: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW },
+          effective_until: { type: Sequelize.DATE, allowNull: true },
+          is_active: { type: Sequelize.BOOLEAN, defaultValue: true },
+          notes: Sequelize.TEXT,
+          createdAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
+          updatedAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
+        },
+      },
+      {
+        name: 'notifications',
+        definition: {
+          id: { type: Sequelize.UUID, primaryKey: true, defaultValue: Sequelize.literal('(UUID())') },
+          user_id: { type: Sequelize.UUID, allowNull: false },
+          type: { type: Sequelize.STRING, allowNull: false },
+          title: { type: Sequelize.STRING(255), allowNull: false },
+          message: { type: Sequelize.TEXT, allowNull: false },
+          priority: { type: Sequelize.ENUM('critical', 'high', 'medium', 'low'), defaultValue: 'medium' },
+          is_read: { type: Sequelize.BOOLEAN, defaultValue: false },
+          read_at: { type: Sequelize.DATE, allowNull: true },
+          action_url: { type: Sequelize.STRING(500), allowNull: true },
+          metadata: { type: Sequelize.JSON, defaultValue: {} },
+          sent_email: { type: Sequelize.BOOLEAN, defaultValue: false },
+          sent_at: { type: Sequelize.DATE, allowNull: true },
+          createdAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
+          updatedAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
+        },
+      },
     ];
 
     for (const table of coreTables) {
@@ -295,6 +327,8 @@ module.exports = {
 
   async down(queryInterface, Sequelize) {
     // Drop tables in reverse order
+    await queryInterface.dropTable('notifications');
+    await queryInterface.dropTable('referral_discount_configs');
     await queryInterface.dropTable('referral_rewards');
     await queryInterface.dropTable('referral_codes');
     await queryInterface.dropTable('subscription_plans');

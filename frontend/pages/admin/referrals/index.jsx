@@ -69,6 +69,12 @@ export default function ReferralsList() {
               >
                 View Rewards
               </Button>
+              <Button
+                variant="outline"
+                onClick={() => router.push('/admin/referrals/discount-config')}
+              >
+                Discount Settings
+              </Button>
               <Button onClick={() => router.push('/admin/referrals/new')}>
                 Create Referral Code
               </Button>

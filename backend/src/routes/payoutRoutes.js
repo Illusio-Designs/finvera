@@ -8,27 +8,27 @@ const router = Router();
 
 router.use(authenticate);
 
-// View - accessible by admin portal roles
+// View - accessible by admin portal roles and finance manager
 router.get('/', 
-  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DISTRIBUTOR, ROLES.SALESMAN),
+  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.FINANCE_MANAGER, ROLES.DISTRIBUTOR, ROLES.SALESMAN),
   payoutController.list
 );
 router.get('/:id', 
-  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DISTRIBUTOR, ROLES.SALESMAN),
+  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.FINANCE_MANAGER, ROLES.DISTRIBUTOR, ROLES.SALESMAN),
   payoutController.getById
 );
 
-// Create, process, update - only super_admin and admin
+// Create, process, update - super_admin, admin, and finance_manager
 router.post('/', 
-  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN),
+  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.FINANCE_MANAGER),
   payoutController.create
 );
 router.post('/:id/process', 
-  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN),
+  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.FINANCE_MANAGER),
   payoutController.process
 );
 router.put('/:id', 
-  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN),
+  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.FINANCE_MANAGER),
   payoutController.update
 );
 
