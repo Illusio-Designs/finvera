@@ -27,6 +27,9 @@ const adminModels = [
   'Blog',          // Blog posts
   'BlogCategory',  // Blog categories
   'SEO',           // SEO settings
+  'SupportTicket', // Support tickets
+  'TicketMessage', // Ticket messages
+  'SupportAgentReview', // Support agent reviews
 ];
 
 // Load only admin/system models
