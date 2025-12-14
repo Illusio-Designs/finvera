@@ -8,15 +8,15 @@ const router = Router();
 
 router.use(authenticate);
 
-// Get commission-payout summary - accessible by admin portal roles
+// Get commission-payout summary - accessible by admin portal roles and finance manager
 router.get('/summary',
-  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DISTRIBUTOR, ROLES.SALESMAN),
+  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.FINANCE_MANAGER, ROLES.DISTRIBUTOR, ROLES.SALESMAN),
   commissionPayoutController.summary
 );
 
-// Update payout status - only super_admin and admin
+// Update payout status - super_admin, admin, and finance_manager
 router.put('/:role/:user_id/status',
-  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN),
+  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.FINANCE_MANAGER),
   commissionPayoutController.updatePayoutStatus
 );
 

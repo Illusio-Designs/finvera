@@ -126,6 +126,13 @@ export const adminAPI = {
     update: (id, data) => api.put(`/admin/tenants/${id}`, data),
     delete: (id) => api.delete(`/admin/tenants/${id}`),
   },
+  users: {
+    list: (params) => api.get("/admin/users", { params }),
+    get: (id) => api.get(`/admin/users/${id}`),
+    create: (data) => api.post("/admin/users", data),
+    update: (id, data) => api.put(`/admin/users/${id}`, data),
+    delete: (id) => api.delete(`/admin/users/${id}`),
+  },
   distributors: {
     list: (params) => api.get("/admin/distributors", { params }),
     get: (id) => api.get(`/admin/distributors/${id}`),
@@ -296,6 +303,13 @@ export const referralAPI = {
   createCode: (data) => api.post("/referrals", data),
   listCodes: (params) => api.get("/referrals", { params }),
   getRewards: (params) => api.get("/referrals/rewards", { params }),
+  discountConfig: {
+    getCurrent: () => api.get("/referrals/discount-config/current"),
+    list: () => api.get("/referrals/discount-config"),
+    create: (data) => api.post("/referrals/discount-config", data),
+    update: (id, data) => api.put(`/referrals/discount-config/${id}`, data),
+    delete: (id) => api.delete(`/referrals/discount-config/${id}`),
+  },
 };
 
 export const commissionAPI = {
@@ -306,6 +320,37 @@ export const commissionAPI = {
 export const payoutAPI = {
   list: (params) => api.get("/payouts", { params }),
   get: (id) => api.get(`/payouts/${id}`),
+};
+
+// Blog API
+export const blogAPI = {
+  list: (params) => api.get("/blogs", { params }),
+  get: (id) => api.get(`/blogs/${id}`),
+  create: (data) => api.post("/blogs", data),
+  update: (id, data) => api.put(`/blogs/${id}`, data),
+  delete: (id) => api.delete(`/blogs/${id}`),
+  categories: {
+    list: () => api.get("/blog-categories"),
+    create: (data) => api.post("/blog-categories", data),
+  },
+};
+
+// SEO API
+export const seoAPI = {
+  list: (params) => api.get("/seo", { params }),
+  get: (path) => api.get(`/seo/${path}`),
+  create: (data) => api.post("/seo", data),
+  update: (id, data) => api.put(`/seo/${id}`, data),
+  delete: (id) => api.delete(`/seo/${id}`),
+};
+
+// Notification API
+export const notificationAPI = {
+  list: (params) => api.get("/notifications", { params }),
+  getUnreadCount: () => api.get("/notifications/unread-count"),
+  markAsRead: (id) => api.put(`/notifications/${id}/read`),
+  markAllAsRead: () => api.put("/notifications/read-all"),
+  delete: (id) => api.delete(`/notifications/${id}`),
 };
 
 export const pricingAPI = {

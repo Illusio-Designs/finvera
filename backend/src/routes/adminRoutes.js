@@ -15,6 +15,7 @@ router.get('/dashboard',
   requireRole(
     constants.ROLES.SUPER_ADMIN,
     constants.ROLES.ADMIN,
+    constants.ROLES.FINANCE_MANAGER,
     constants.ROLES.DISTRIBUTOR,
     constants.ROLES.SALESMAN
   ),
@@ -99,6 +100,28 @@ router.get('/reports/summary/executive',
 router.get('/reports/summary/financial', 
   requireRole(constants.ROLES.SUPER_ADMIN, constants.ROLES.ADMIN),
   adminReportController.getFinancialSummaryReport
+);
+
+// User Management - only super_admin and admin
+router.get('/users', 
+  requireRole(constants.ROLES.SUPER_ADMIN, constants.ROLES.ADMIN),
+  adminController.listUsers
+);
+router.get('/users/:id', 
+  requireRole(constants.ROLES.SUPER_ADMIN, constants.ROLES.ADMIN),
+  adminController.getUser
+);
+router.post('/users', 
+  requireRole(constants.ROLES.SUPER_ADMIN, constants.ROLES.ADMIN),
+  adminController.createUser
+);
+router.put('/users/:id', 
+  requireRole(constants.ROLES.SUPER_ADMIN, constants.ROLES.ADMIN),
+  adminController.updateUser
+);
+router.delete('/users/:id', 
+  requireRole(constants.ROLES.SUPER_ADMIN, constants.ROLES.ADMIN),
+  adminController.deleteUser
 );
 
 module.exports = router;

@@ -7,6 +7,7 @@ export const ROLES = {
   ADMIN: 'admin',
   DISTRIBUTOR: 'distributor',
   SALESMAN: 'salesman',
+  FINANCE_MANAGER: 'finance_manager',
   ACCOUNTANT: 'accountant',
   USER: 'user',
 };
@@ -20,6 +21,7 @@ export const ADMIN_PORTAL_ROLES = [
   ROLES.ADMIN,
   ROLES.DISTRIBUTOR,
   ROLES.SALESMAN,
+  ROLES.FINANCE_MANAGER,
 ];
 
 /**
@@ -74,6 +76,7 @@ export const getRoleDisplayName = (role) => {
     [ROLES.ADMIN]: 'Administrator',
     [ROLES.DISTRIBUTOR]: 'Distributor',
     [ROLES.SALESMAN]: 'Salesman',
+    [ROLES.FINANCE_MANAGER]: 'Finance Manager',
     [ROLES.ACCOUNTANT]: 'Accountant',
     [ROLES.USER]: 'User',
   };
