@@ -6,12 +6,9 @@ import PageLayout from '../../../components/layouts/PageLayout';
 import DataTable from '../../../components/tables/DataTable';
 import Button from '../../../components/ui/Button';
 import Badge from '../../../components/ui/Badge';
-import { useTable } from '../../../hooks/useTable';
-import { useDebounce } from '../../../hooks/useDebounce';
 import { adminAPI } from '../../../lib/api';
 import toast, { Toaster } from 'react-hot-toast';
 import { FiFilter, FiX } from 'react-icons/fi';
-import Select from '../../../components/ui/Select';
 
 export default function SupportTicketsList() {
   const router = useRouter();
@@ -22,40 +19,50 @@ export default function SupportTicketsList() {
     search: '',
   });
   const [showFilters, setShowFilters] = useState(false);
-  const debouncedSearch = useDebounce(filters.search, 500);
-
-  const {
-    data: tableData,
-    loading,
-    error,
-    pagination,
-    handlePageChange,
-    handleSort,
-    sort,
-    fetchData,
-  } = useTable(
-    adminAPI.support.tickets.list,
-    {
-      status: filters.status,
-      priority: filters.priority,
-      category: filters.category,
-      search: debouncedSearch,
-      page: 1,
-      limit: 20,
-    }
-  );
+  const [tableData, setTableData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+  });
 
   useEffect(() => {
-    if (fetchData) {
-      fetchData();
+    fetchTickets();
+  }, [filters.status, filters.priority, filters.category, filters.search, pagination.page]);
+
+  const fetchTickets = async () => {
+    try {
+      setLoading(true);
+      const response = await adminAPI.support.tickets.list({
+        page: pagination.page,
+        limit: pagination.limit,
+        status: filters.status || undefined,
+        priority: filters.priority || undefined,
+        category: filters.category || undefined,
+        search: filters.search || undefined,
+      });
+      const data = response.data?.data || response.data || [];
+      setTableData(Array.isArray(data) ? data : []);
+      if (response.data?.pagination) {
+        setPagination(response.data.pagination);
+      }
+    } catch (error) {
+      console.error('Error fetching tickets:', error);
+      toast.error('Failed to load tickets');
+      setTableData([]);
+    } finally {
+      setLoading(false);
     }
-  }, [filters.status, filters.priority, filters.category, debouncedSearch]);
+  };
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({
       ...prev,
       [key]: value,
     }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   const clearFilters = () => {
@@ -65,6 +72,11 @@ export default function SupportTicketsList() {
       category: '',
       search: '',
     });
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  const handlePageChange = (newPage) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
   };
 
   const getStatusBadge = (status) => {
@@ -266,13 +278,10 @@ export default function SupportTicketsList() {
 
           <DataTable
             columns={columns}
-            data={tableData?.data || tableData || []}
+            data={tableData}
             loading={loading}
             pagination={pagination}
             onPageChange={handlePageChange}
-            onSort={handleSort}
-            sortField={sort.field}
-            sortOrder={sort.order}
             onRowClick={(row) => router.push(`/admin/support/${row.id}`)}
           />
         </PageLayout>

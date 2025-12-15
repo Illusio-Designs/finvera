@@ -5,7 +5,7 @@ import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageLayout from '../../../components/layouts/PageLayout';
 import DataTable from '../../../components/tables/DataTable';
 import Button from '../../../components/ui/Button';
-import FormInput from '../../../components/ui/FormInput';
+import Input from '../../../components/ui/Input';
 import { seoAPI } from '../../../lib/api';
 import Badge from '../../../components/ui/Badge';
 import toast from 'react-hot-toast';
@@ -174,18 +174,24 @@ export default function SEOManagement() {
               </h3>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <FormInput
-                    label="Page Type"
-                    type="select"
-                    value={formData.page_type}
-                    onChange={(e) => setFormData({ ...formData, page_type: e.target.value })}
-                    required
-                  >
-                    <option value="page">Page</option>
-                    <option value="blog">Blog</option>
-                    <option value="product">Product</option>
-                  </FormInput>
-                  <FormInput
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Page Type <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      name="page_type"
+                      value={formData.page_type}
+                      onChange={(e) => setFormData({ ...formData, page_type: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      required
+                    >
+                      <option value="page">Page</option>
+                      <option value="blog">Blog</option>
+                      <option value="product">Product</option>
+                    </select>
+                  </div>
+                  <Input
+                    name="page_path"
                     label="Page Path"
                     value={formData.page_path}
                     onChange={(e) => setFormData({ ...formData, page_path: e.target.value })}
@@ -193,44 +199,59 @@ export default function SEOManagement() {
                     required
                   />
                 </div>
-                <FormInput
+                <Input
+                  name="page_title"
                   label="Page Title"
                   value={formData.page_title}
                   onChange={(e) => setFormData({ ...formData, page_title: e.target.value })}
                   required
                 />
-                <FormInput
-                  label="Meta Description"
-                  type="textarea"
-                  value={formData.meta_description}
-                  onChange={(e) => setFormData({ ...formData, meta_description: e.target.value })}
-                  rows={3}
-                />
-                <FormInput
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Meta Description
+                  </label>
+                  <textarea
+                    name="meta_description"
+                    value={formData.meta_description}
+                    onChange={(e) => setFormData({ ...formData, meta_description: e.target.value })}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
+                <Input
+                  name="meta_keywords"
                   label="Meta Keywords (comma-separated)"
                   value={formData.meta_keywords}
                   onChange={(e) => setFormData({ ...formData, meta_keywords: e.target.value })}
                 />
                 <div className="grid grid-cols-2 gap-4">
-                  <FormInput
+                  <Input
+                    name="og_title"
                     label="OG Title"
                     value={formData.og_title}
                     onChange={(e) => setFormData({ ...formData, og_title: e.target.value })}
                   />
-                  <FormInput
+                  <Input
+                    name="og_image"
                     label="OG Image URL"
                     value={formData.og_image}
                     onChange={(e) => setFormData({ ...formData, og_image: e.target.value })}
                   />
                 </div>
-                <FormInput
-                  label="OG Description"
-                  type="textarea"
-                  value={formData.og_description}
-                  onChange={(e) => setFormData({ ...formData, og_description: e.target.value })}
-                  rows={2}
-                />
-                <FormInput
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    OG Description
+                  </label>
+                  <textarea
+                    name="og_description"
+                    value={formData.og_description}
+                    onChange={(e) => setFormData({ ...formData, og_description: e.target.value })}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
+                <Input
+                  name="canonical_url"
                   label="Canonical URL"
                   value={formData.canonical_url}
                   onChange={(e) => setFormData({ ...formData, canonical_url: e.target.value })}

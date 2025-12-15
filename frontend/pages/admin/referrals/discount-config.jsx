@@ -4,7 +4,7 @@ import ProtectedRoute from '../../../components/ProtectedRoute';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageLayout from '../../../components/layouts/PageLayout';
 import Button from '../../../components/ui/Button';
-import FormInput from '../../../components/ui/FormInput';
+import Input from '../../../components/ui/Input';
 import { referralAPI } from '../../../lib/api';
 import toast from 'react-hot-toast';
 import DataTable from '../../../components/tables/DataTable';
@@ -176,7 +176,8 @@ export default function ReferralDiscountConfig() {
                 {editingId ? 'Edit Configuration' : 'New Configuration'}
               </h3>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <FormInput
+                <Input
+                  name="discount_percentage"
                   label="Discount Percentage"
                   type="number"
                   step="0.01"
@@ -186,22 +187,24 @@ export default function ReferralDiscountConfig() {
                   onChange={(e) => setFormData({ ...formData, discount_percentage: parseFloat(e.target.value) })}
                   required
                 />
-                <FormInput
+                <Input
+                  name="effective_from"
                   label="Effective From"
                   type="date"
                   value={formData.effective_from}
                   onChange={(e) => setFormData({ ...formData, effective_from: e.target.value })}
                   required
                 />
-                <FormInput
+                <Input
+                  name="effective_until"
                   label="Effective Until (optional - leave empty for indefinite)"
                   type="date"
                   value={formData.effective_until}
                   onChange={(e) => setFormData({ ...formData, effective_until: e.target.value })}
                 />
-                <FormInput
+                <Input
+                  name="notes"
                   label="Notes (optional)"
-                  type="text"
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 />

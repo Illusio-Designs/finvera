@@ -4,7 +4,7 @@ import ProtectedRoute from '../../../components/ProtectedRoute';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageLayout from '../../../components/layouts/PageLayout';
 import Button from '../../../components/ui/Button';
-import FormInput from '../../../components/ui/FormInput';
+import Input from '../../../components/ui/Input';
 import { blogAPI } from '../../../lib/api';
 import toast from 'react-hot-toast';
 import { FiSave, FiX } from 'react-icons/fi';
@@ -210,19 +210,26 @@ export default function EditBlogPost() {
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">SEO Settings</h3>
               <div className="space-y-4">
-                <FormInput
+                <Input
+                  name="meta_title"
                   label="Meta Title"
                   value={formData.meta_title}
                   onChange={(e) => setFormData({ ...formData, meta_title: e.target.value })}
                 />
-                <FormInput
-                  label="Meta Description"
-                  type="textarea"
-                  value={formData.meta_description}
-                  onChange={(e) => setFormData({ ...formData, meta_description: e.target.value })}
-                  rows={2}
-                />
-                <FormInput
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Meta Description
+                  </label>
+                  <textarea
+                    name="meta_description"
+                    value={formData.meta_description}
+                    onChange={(e) => setFormData({ ...formData, meta_description: e.target.value })}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
+                <Input
+                  name="meta_keywords"
                   label="Meta Keywords (comma-separated)"
                   value={formData.meta_keywords}
                   onChange={(e) => setFormData({ ...formData, meta_keywords: e.target.value })}

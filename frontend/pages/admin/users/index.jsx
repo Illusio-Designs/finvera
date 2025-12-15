@@ -4,7 +4,7 @@ import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageLayout from '../../../components/layouts/PageLayout';
 import DataTable from '../../../components/tables/DataTable';
 import Button from '../../../components/ui/Button';
-import FormInput from '../../../components/ui/FormInput';
+import Input from '../../../components/ui/Input';
 import { useTable } from '../../../hooks/useTable';
 import { adminAPI } from '../../../lib/api';
 import Badge from '../../../components/ui/Badge';
@@ -168,13 +168,15 @@ export default function UserManagement() {
               </h3>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <FormInput
+                  <Input
+                    name="name"
                     label="Name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
                   />
-                  <FormInput
+                  <Input
+                    name="email"
                     label="Email"
                     type="email"
                     value={formData.email}
@@ -183,31 +185,38 @@ export default function UserManagement() {
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <FormInput
+                  <Input
+                    name="password"
                     label={editingId ? 'New Password (leave empty to keep current)' : 'Password'}
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required={!editingId}
                   />
-                  <FormInput
+                  <Input
+                    name="phone"
                     label="Phone"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <FormInput
-                    label="Role"
-                    type="select"
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    required
-                  >
-                    <option value="super_admin">Super Admin</option>
-                    <option value="admin">Admin</option>
-                    <option value="finance_manager">Finance Manager</option>
-                  </FormInput>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Role <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      name="role"
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      required
+                    >
+                      <option value="super_admin">Super Admin</option>
+                      <option value="admin">Admin</option>
+                      <option value="finance_manager">Finance Manager</option>
+                    </select>
+                  </div>
                   <div className="flex items-center pt-6">
                     <input
                       type="checkbox"
