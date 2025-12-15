@@ -3,7 +3,7 @@ import ProtectedRoute from '../../../components/ProtectedRoute';
 import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageLayout from '../../../components/layouts/PageLayout';
 import Button from '../../../components/ui/Button';
-import FormInput from '../../../components/ui/FormInput';
+import Input from '../../../components/ui/Input';
 import toast from 'react-hot-toast';
 import { FiSave, FiMail, FiLock, FiBell, FiGlobe, FiDatabase } from 'react-icons/fi';
 
@@ -104,47 +104,66 @@ export default function AdminSettings() {
               {activeTab === 'general' && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">General Settings</h3>
-                  <FormInput
+                  <Input
+                    name="company_name"
                     label="Company Name"
                     value={generalSettings.company_name}
                     onChange={(e) => setGeneralSettings({ ...generalSettings, company_name: e.target.value })}
                   />
-                  <FormInput
+                  <Input
+                    name="company_email"
                     label="Company Email"
                     type="email"
                     value={generalSettings.company_email}
                     onChange={(e) => setGeneralSettings({ ...generalSettings, company_email: e.target.value })}
                   />
-                  <FormInput
+                  <Input
+                    name="company_phone"
                     label="Company Phone"
                     value={generalSettings.company_phone}
                     onChange={(e) => setGeneralSettings({ ...generalSettings, company_phone: e.target.value })}
                   />
-                  <FormInput
-                    label="Company Address"
-                    type="textarea"
-                    value={generalSettings.company_address}
-                    onChange={(e) => setGeneralSettings({ ...generalSettings, company_address: e.target.value })}
-                  />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Company Address
+                    </label>
+                    <textarea
+                      name="company_address"
+                      value={generalSettings.company_address}
+                      onChange={(e) => setGeneralSettings({ ...generalSettings, company_address: e.target.value })}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <FormInput
-                      label="Timezone"
-                      type="select"
-                      value={generalSettings.timezone}
-                      onChange={(e) => setGeneralSettings({ ...generalSettings, timezone: e.target.value })}
-                    >
-                      <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
-                      <option value="UTC">UTC</option>
-                    </FormInput>
-                    <FormInput
-                      label="Currency"
-                      type="select"
-                      value={generalSettings.currency}
-                      onChange={(e) => setGeneralSettings({ ...generalSettings, currency: e.target.value })}
-                    >
-                      <option value="INR">INR (₹)</option>
-                      <option value="USD">USD ($)</option>
-                    </FormInput>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Timezone
+                      </label>
+                      <select
+                        name="timezone"
+                        value={generalSettings.timezone}
+                        onChange={(e) => setGeneralSettings({ ...generalSettings, timezone: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                        <option value="UTC">UTC</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Currency
+                      </label>
+                      <select
+                        name="currency"
+                        value={generalSettings.currency}
+                        onChange={(e) => setGeneralSettings({ ...generalSettings, currency: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        <option value="INR">INR (₹)</option>
+                        <option value="USD">USD ($)</option>
+                      </select>
+                    </div>
                   </div>
                   <Button onClick={() => handleSave('General')} disabled={loading}>
                     <FiSave className="h-4 w-4 mr-2" />
@@ -156,35 +175,41 @@ export default function AdminSettings() {
               {activeTab === 'email' && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Email Settings</h3>
-                  <FormInput
+                  <Input
+                    name="smtp_host"
                     label="SMTP Host"
                     value={emailSettings.smtp_host}
                     onChange={(e) => setEmailSettings({ ...emailSettings, smtp_host: e.target.value })}
                   />
-                  <FormInput
+                  <Input
+                    name="smtp_port"
                     label="SMTP Port"
                     type="number"
                     value={emailSettings.smtp_port}
                     onChange={(e) => setEmailSettings({ ...emailSettings, smtp_port: parseInt(e.target.value) })}
                   />
-                  <FormInput
+                  <Input
+                    name="smtp_user"
                     label="SMTP Username"
                     value={emailSettings.smtp_user}
                     onChange={(e) => setEmailSettings({ ...emailSettings, smtp_user: e.target.value })}
                   />
-                  <FormInput
+                  <Input
+                    name="smtp_password"
                     label="SMTP Password"
                     type="password"
                     value={emailSettings.smtp_password}
                     onChange={(e) => setEmailSettings({ ...emailSettings, smtp_password: e.target.value })}
                   />
-                  <FormInput
+                  <Input
+                    name="from_email"
                     label="From Email"
                     type="email"
                     value={emailSettings.from_email}
                     onChange={(e) => setEmailSettings({ ...emailSettings, from_email: e.target.value })}
                   />
-                  <FormInput
+                  <Input
+                    name="from_name"
                     label="From Name"
                     value={emailSettings.from_name}
                     onChange={(e) => setEmailSettings({ ...emailSettings, from_name: e.target.value })}
@@ -199,19 +224,22 @@ export default function AdminSettings() {
               {activeTab === 'security' && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Security Settings</h3>
-                  <FormInput
+                  <Input
+                    name="session_timeout"
                     label="Session Timeout (minutes)"
                     type="number"
                     value={securitySettings.session_timeout}
                     onChange={(e) => setSecuritySettings({ ...securitySettings, session_timeout: parseInt(e.target.value) })}
                   />
-                  <FormInput
+                  <Input
+                    name="password_min_length"
                     label="Minimum Password Length"
                     type="number"
                     value={securitySettings.password_min_length}
                     onChange={(e) => setSecuritySettings({ ...securitySettings, password_min_length: parseInt(e.target.value) })}
                   />
-                  <FormInput
+                  <Input
+                    name="max_login_attempts"
                     label="Max Login Attempts"
                     type="number"
                     value={securitySettings.max_login_attempts}

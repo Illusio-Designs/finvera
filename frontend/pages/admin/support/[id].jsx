@@ -43,7 +43,7 @@ export default function SupportTicketDetail() {
     try {
       setLoading(true);
       const response = await adminAPI.support.tickets.get(id);
-      setTicket(response.data.data || response.data);
+      setTicket(response.data?.data || response.data);
     } catch (error) {
       console.error('Error fetching ticket:', error);
       toast.error('Failed to load ticket');
