@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   FiHome, FiUsers, FiBriefcase, FiTarget, FiDollarSign,
   FiCreditCard, FiGift, FiTag, FiUser, FiHeadphones, FiBarChart2,
-  FiFileText, FiSearch, FiSettings
+  FiFileText, FiSearch
 } from 'react-icons/fi';
 
 const getAdminMenuItems = (userRole) => {
@@ -150,14 +150,6 @@ const getAdminMenuItems = (userRole) => {
       divider: true,
     },
     {
-      label: 'Settings',
-      href: '/admin/settings',
-      icon: FiSettings,
-    },
-    {
-      divider: true,
-    },
-    {
       label: 'Profile',
       href: '/admin/profile',
       icon: FiUser,
@@ -184,7 +176,7 @@ export default function AdminLayout({ children, title = 'Admin Panel - Finvera' 
           isCollapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
-        <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'}`}>
+        <div className="flex-1 flex flex-col transition-all duration-300">
           <Header
             onMenuClick={() => setSidebarOpen(!sidebarOpen)}
             title={title}
