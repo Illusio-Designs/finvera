@@ -76,7 +76,7 @@ export default function ClientReferralPage() {
             </div>
             <p className="text-gray-600">
               Share your referral code and earn rewards! When someone uses your code to subscribe,
-              they'll get a discount on their subscription.
+              they&apos;ll get a discount on their subscription.
             </p>
           </div>
 
@@ -211,7 +211,7 @@ export default function ClientReferralPage() {
                 <div>
                   <div className="font-medium text-gray-900">Track Your Referrals</div>
                   <div className="text-sm text-gray-600 mt-1">
-                    Monitor how many people have used your code and the rewards you've earned.
+                    Monitor how many people have used your code and the rewards you&apos;ve earned.
                   </div>
                 </div>
               </div>
