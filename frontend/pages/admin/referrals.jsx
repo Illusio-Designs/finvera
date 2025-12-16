@@ -392,17 +392,17 @@ export default function ReferralsList() {
           actions={
             <>
               {activeTab === 'codes' && (
-                <Button onClick={handleCreateCode}>
-                  <FiPlus className="h-4 w-4 mr-2" />
-                  Create Referral Code
-                </Button>
-              )}
-              {activeTab === 'discount-config' && (
-                <Button onClick={handleCreateDiscount}>
-                  <FiPlus className="h-4 w-4 mr-2" />
-                  Add Configuration
-                </Button>
-              )}
+              <Button onClick={handleCreateCode}>
+                <FiPlus className="h-4 w-4 mr-2" />
+                Create Referral Code
+              </Button>
+            )}
+            {activeTab === 'discount-config' && (
+              <Button onClick={handleCreateDiscount}>
+                <FiPlus className="h-4 w-4 mr-2" />
+                Add Configuration
+              </Button>
+            )}
             </>
           }
         >

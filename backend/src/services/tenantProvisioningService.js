@@ -219,12 +219,13 @@ class TenantProvisioningService {
     // No need to seed them per tenant
 
     // Create default admin user for the tenant
+    const bcrypt = require('bcryptjs');
     await models.User.create({
       name: 'Admin',
       email: tenant.email,
       role: 'admin',
       is_active: true,
-      password: require('bcrypt').hashSync('ChangeMe@123', 10),
+      password: bcrypt.hashSync('ChangeMe@123', 10),
     });
 
     // Create default GSTIN if provided

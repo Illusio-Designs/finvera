@@ -80,7 +80,7 @@ export default function ClientDashboard() {
   ];
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute portalType="client">
       <ClientLayout title="Dashboard">
         <Toaster />
         <div className="space-y-6">

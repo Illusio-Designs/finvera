@@ -271,38 +271,38 @@ export default function DistributorsList() {
           }
         >
           <Card className="shadow-sm border border-gray-200">
-            <DataTable
-              columns={columns}
-              data={tableData?.data || tableData || []}
-              loading={tableLoading}
-              actions={(row) => (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleView(row)}
+          <DataTable
+            columns={columns}
+            data={tableData?.data || tableData || []}
+            loading={tableLoading}
+            actions={(row) => (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleView(row)}
                     className="text-blue-600 hover:text-blue-700 transition-colors"
-                  >
-                    <FiEye className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => handleEdit(row)}
+                >
+                  <FiEye className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => handleEdit(row)}
                     className="text-primary-600 hover:text-primary-700 transition-colors"
-                  >
-                    <FiEdit className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteClick(row.id)}
+                >
+                  <FiEdit className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => handleDeleteClick(row.id)}
                     className="text-red-600 hover:text-red-700 transition-colors"
-                  >
-                    <FiTrash2 className="h-5 w-5" />
-                  </button>
-                </div>
-              )}
-              pagination={pagination}
-              onPageChange={handlePageChange}
-              onSort={handleSort}
-              sortField={sort.field}
-              sortOrder={sort.order}
-            />
+                >
+                  <FiTrash2 className="h-5 w-5" />
+                </button>
+              </div>
+            )}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            onSort={handleSort}
+            sortField={sort.field}
+            sortOrder={sort.order}
+          />
           </Card>
 
           {/* Create/Edit Modal */}
@@ -323,7 +323,7 @@ export default function DistributorsList() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <FiUsers className="h-5 w-5 text-primary-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">User Account Details</h3>
+                <h3 className="text-lg font-semibold text-gray-900">User Account Details</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormInput
@@ -380,7 +380,7 @@ export default function DistributorsList() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <FiBriefcase className="h-5 w-5 text-primary-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">Business Information</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Business Information</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormInput
@@ -435,7 +435,7 @@ export default function DistributorsList() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                   <FiMapPin className="h-5 w-5 text-primary-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">Territory Coverage</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Territory Coverage</h3>
                 </div>
                 <p className="text-sm text-gray-600 mb-4">Select the states this distributor will cover</p>
                 

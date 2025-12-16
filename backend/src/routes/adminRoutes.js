@@ -22,17 +22,17 @@ router.get('/dashboard',
   adminController.dashboard
 );
 
-// Tenant management - only super_admin and admin
+// Tenant management
 router.get('/tenants', 
   requireRole(constants.ROLES.SUPER_ADMIN, constants.ROLES.ADMIN),
   adminController.listTenants
 );
 router.get('/tenants/:id', 
-  requireRole(constants.ROLES.SUPER_ADMIN, constants.ROLES.ADMIN),
+  requireRole(constants.ROLES.SUPER_ADMIN, constants.ROLES.ADMIN, constants.ROLES.DISTRIBUTOR, constants.ROLES.SALESMAN),
   adminController.getTenant
 );
 router.post('/tenants', 
-  requireRole(constants.ROLES.SUPER_ADMIN, constants.ROLES.ADMIN),
+  requireRole(constants.ROLES.SUPER_ADMIN, constants.ROLES.ADMIN, constants.ROLES.DISTRIBUTOR, constants.ROLES.SALESMAN),
   adminController.createTenant
 );
 router.put('/tenants/:id', 
@@ -42,6 +42,14 @@ router.put('/tenants/:id',
 router.delete('/tenants/:id', 
   requireRole(constants.ROLES.SUPER_ADMIN, constants.ROLES.ADMIN),
   adminController.deleteTenant
+);
+router.post('/tenants/:tenant_id/user', 
+  requireRole(constants.ROLES.SUPER_ADMIN, constants.ROLES.ADMIN),
+  adminController.createTenantUser
+);
+router.post('/tenants/:id/provision', 
+  requireRole(constants.ROLES.SUPER_ADMIN, constants.ROLES.ADMIN),
+  adminController.provisionTenantDatabase
 );
 
 // Reports - only super_admin and admin

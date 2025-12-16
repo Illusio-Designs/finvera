@@ -143,48 +143,48 @@ export default function ReportsIndex() {
             { label: 'Reports' },
           ]}
         >
-          <div className="space-y-6">
+        <div className="space-y-6">
             <Card>
-              <p className="text-gray-600">
-                Generate comprehensive reports for revenue, commissions, performance, and more.
-              </p>
+            <p className="text-gray-600">
+              Generate comprehensive reports for revenue, commissions, performance, and more.
+            </p>
             </Card>
 
-            {reportCategories.map((category, categoryIndex) => {
-              const CategoryIcon = category.icon;
-              return (
+          {reportCategories.map((category, categoryIndex) => {
+            const CategoryIcon = category.icon;
+            return (
                 <Card key={categoryIndex} className="overflow-hidden">
                   <div className={`${category.color} p-4 flex items-center rounded-t-xl`}>
-                    <CategoryIcon className="h-6 w-6 mr-3" />
-                    <h2 className="text-lg font-semibold">{category.title}</h2>
-                  </div>
+                  <CategoryIcon className="h-6 w-6 mr-3" />
+                  <h2 className="text-lg font-semibold">{category.title}</h2>
+                </div>
                   <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {category.reports.map((report, reportIndex) => {
-                      const ReportIcon = report.icon;
-                      return (
+                  {category.reports.map((report, reportIndex) => {
+                    const ReportIcon = report.icon;
+                    return (
                         <Card
-                          key={reportIndex}
-                          onClick={() => router.push(report.href)}
+                        key={reportIndex}
+                        onClick={() => router.push(report.href)}
                           className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-primary-300 group"
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center">
-                              <ReportIcon className="h-5 w-5 text-primary-600 mr-2" />
-                              <h3 className="font-semibold text-gray-900">{report.name}</h3>
-                            </div>
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center">
+                            <ReportIcon className="h-5 w-5 text-primary-600 mr-2" />
+                            <h3 className="font-semibold text-gray-900">{report.name}</h3>
                           </div>
-                          <p className="text-sm text-gray-600 mb-3">{report.description}</p>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-3">{report.description}</p>
                           <div className="text-primary-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
                             View Report <span className="ml-1">→</span>
-                          </div>
+                        </div>
                         </Card>
-                      );
-                    })}
-                  </div>
+                    );
+                  })}
+                </div>
                 </Card>
-              );
-            })}
-          </div>
+            );
+          })}
+        </div>
         </PageLayout>
       </AdminLayout>
     </ProtectedRoute>

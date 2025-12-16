@@ -239,20 +239,36 @@ module.exports = {
   async getTenant(req, res, next) {
     try {
       const { id } = req.params;
-      const tenant = await TenantMaster.findByPk(id, {
-        include: [
-          {
-            association: 'Users',
-            attributes: ['id', 'email', 'name', 'role', 'is_active'],
-          },
-        ],
-      });
+      const tenant = await TenantMaster.findByPk(id);
 
       if (!tenant) {
-        return res.status(404).json({ message: 'Tenant not found' });
+        return res.status(404).json({ 
+          success: false,
+          message: 'Tenant not found' 
+        });
       }
 
-      res.json({ data: tenant });
+      // Get associated user if exists
+      let user = null;
+      try {
+        user = await User.findOne({ 
+          where: { tenant_id: tenant.id },
+          attributes: ['id', 'email', 'name', 'role', 'is_active']
+        });
+      } catch (userError) {
+        logger.warn(`Could not fetch user for tenant ${tenant.id}:`, userError.message);
+      }
+
+      // Convert tenant to plain object and add user info
+      const tenantData = tenant.toJSON();
+      if (user) {
+        tenantData.user = user.toJSON();
+      }
+
+      res.json({ 
+        success: true,
+        data: tenantData 
+      });
     } catch (error) {
       logger.error('Admin getTenant error:', error);
       next(error);
@@ -353,18 +369,88 @@ module.exports = {
 
       // Application-level uniqueness validation (since we removed unique constraints to avoid MySQL limit)
       if (email) {
-        const existingEmail = await TenantMaster.findOne({ where: { email } });
-        if (existingEmail) {
-          return res.status(409).json({ message: 'Email already exists' });
+        const existingTenantEmail = await TenantMaster.findOne({ where: { email } });
+        if (existingTenantEmail) {
+          return res.status(409).json({ message: 'Email already exists in tenant records' });
+        }
+        
+        // Also check if email exists in users table (if password is provided)
+        if (password) {
+          const existingUserEmail = await User.findOne({ where: { email } });
+          if (existingUserEmail) {
+            return res.status(409).json({ message: 'Email already exists. Please use a different email address.' });
+          }
         }
       }
 
-      // Generate subdomain if not provided (for uniqueness check)
-      // Note: subdomain uniqueness should be checked if subdomain field exists in req.body
-      // For now, we'll let the database handle it or add validation if needed
+      // Check GSTIN uniqueness if provided
+      if (gstin) {
+        const existingGSTIN = await TenantMaster.findOne({ where: { gstin } });
+        if (existingGSTIN) {
+          return res.status(409).json({ message: 'GSTIN already exists. Please use a different GSTIN.' });
+        }
+      }
+
+      // Generate subdomain from company name or email
+      const generateSubdomain = async (name, email) => {
+        const base = name 
+          ? name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').substring(0, 30)
+          : email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').substring(0, 30);
+        
+        // Ensure uniqueness by appending counter if needed
+        let subdomain = base;
+        let counter = 1;
+        while (true) {
+          const existing = await TenantMaster.findOne({ where: { subdomain } });
+          if (!existing) break;
+          subdomain = `${base}-${counter}`;
+          counter++;
+          if (counter > 1000) {
+            // Fallback to timestamp if too many conflicts
+            subdomain = `${base}-${Date.now()}`;
+            break;
+          }
+        }
+        return subdomain;
+      };
+
+      const subdomain = await generateSubdomain(company_name, email);
+
+      // Generate database name, user, and password
+      const crypto = require('crypto');
+      const generateDatabaseName = (subdomain) => {
+        const sanitized = subdomain.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        return `finvera_${sanitized}_${Date.now()}`;
+      };
+
+      const generateDatabaseUser = (subdomain) => {
+        const sanitized = subdomain.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        return `fv_${sanitized}`.substring(0, 32); // MySQL username limit
+      };
+
+      const generateSecurePassword = (length = 20) => {
+        return crypto.randomBytes(length).toString('base64').slice(0, length);
+      };
+
+      const encryptPassword = (password) => {
+        const algorithm = 'aes-256-cbc';
+        const key = crypto.scryptSync(process.env.ENCRYPTION_KEY || 'default-key', 'salt', 32);
+        const iv = crypto.randomBytes(16);
+        const cipher = crypto.createCipheriv(algorithm, key, iv);
+        let encrypted = cipher.update(password, 'utf8', 'hex');
+        encrypted += cipher.final('hex');
+        return iv.toString('hex') + ':' + encrypted;
+      };
+
+      const dbName = generateDatabaseName(subdomain);
+      const dbUser = generateDatabaseUser(subdomain);
+      const dbPassword = generateSecurePassword();
+      const encryptedPassword = encryptPassword(dbPassword);
 
       const tenant = await TenantMaster.create({
         company_name,
+        subdomain: subdomain.toLowerCase(),
+        email,
         gstin,
         pan,
         address,
@@ -372,13 +458,30 @@ module.exports = {
         state,
         pincode,
         phone,
-        email,
         subscription_plan,
         distributor_id: finalDistributorId,
         salesman_id: finalSalesmanId,
         referral_code,
         acquisition_category: acquisitionCategory,
+        db_name: dbName,
+        db_host: process.env.DB_HOST || 'localhost',
+        db_port: parseInt(process.env.DB_PORT) || 3306,
+        db_user: dbUser,
+        db_password: encryptedPassword,
+        db_provisioned: false,
       });
+
+      // Provision the tenant database
+      try {
+        logger.info(`Provisioning database for tenant ${tenant.id}...`);
+        const tenantProvisioningService = require('../services/tenantProvisioningService');
+        await tenantProvisioningService.provisionDatabase(tenant, dbPassword);
+        logger.info(`Database provisioned successfully for tenant ${tenant.id}`);
+      } catch (provisionError) {
+        logger.error(`Failed to provision database for tenant ${tenant.id}:`, provisionError);
+        // Don't fail tenant creation if provisioning fails - can be done later
+        // But log the error for admin to fix
+      }
 
       // Auto-generate referral code for the new tenant
       try {
@@ -429,15 +532,57 @@ module.exports = {
 
       // Create admin user if email and password provided
       if (email && password) {
-        const bcrypt = require('bcryptjs');
-        const password_hash = await bcrypt.hash(password, 10);
-        await User.create({
-          email,
-          password: password_hash,
-          name: company_name || email,
-          tenant_id: tenant.id,
-          role: 'tenant_admin',
-        });
+        try {
+          // Double-check email doesn't exist (race condition protection)
+          const existingUser = await User.findOne({ where: { email } });
+          if (existingUser) {
+            // If user already exists, don't fail - just log a warning
+            logger.warn(`User with email ${email} already exists. Skipping user creation for tenant ${tenant.id}`);
+          } else {
+            const bcrypt = require('bcryptjs');
+            const password_hash = await bcrypt.hash(password, 10);
+            
+            logger.info(`Creating user for tenant ${tenant.id} with email: ${email}`);
+            
+            const newUser = await User.create({
+              email: email.toLowerCase().trim(), // Normalize email
+              password: password_hash,
+              name: company_name || email,
+              tenant_id: tenant.id,
+              role: 'tenant_admin',
+            });
+            
+            logger.info(`Admin user created successfully for tenant ${tenant.id}:`, {
+              userId: newUser.id,
+              email: newUser.email,
+              role: newUser.role,
+              tenant_id: newUser.tenant_id,
+              hasPassword: !!newUser.password
+            });
+            
+            // Verify user was actually created
+            const verifyUser = await User.findByPk(newUser.id);
+            if (!verifyUser) {
+              logger.error(`User creation verification failed - user ${newUser.id} not found after creation`);
+            } else {
+              logger.info(`User creation verified - user ${verifyUser.id} exists with email ${verifyUser.email}`);
+            }
+          }
+        } catch (userError) {
+          // If user creation fails due to duplicate email, log but don't fail tenant creation
+          if (userError.name === 'SequelizeUniqueConstraintError' && userError.errors?.[0]?.path === 'email') {
+            logger.warn(`User with email ${email} already exists. Tenant created but user creation skipped.`);
+          } else {
+            // For other errors, log but don't fail tenant creation
+            logger.error(`Failed to create admin user for tenant ${tenant.id}:`, {
+              message: userError.message,
+              stack: userError.stack,
+              error: userError
+            });
+          }
+        }
+      } else {
+        logger.warn(`Tenant ${tenant.id} created without admin user (email or password not provided)`);
       }
 
       // Automatically create commissions if subscription plan is provided
@@ -459,9 +604,167 @@ module.exports = {
       // Automatically update achieved targets after tenant creation
       await module.exports.updateTargetAchievement(finalDistributorId, finalSalesmanId, tenant);
 
-      res.status(201).json({ data: tenant });
+      res.status(201).json({ 
+        success: true,
+        message: 'Tenant created successfully',
+        data: tenant 
+      });
     } catch (error) {
       logger.error('Admin createTenant error:', error);
+      
+      // Handle specific validation errors
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        const field = error.errors?.[0]?.path || 'unknown';
+        const value = error.errors?.[0]?.value || '';
+        
+        let message = 'A record with this information already exists.';
+        if (field === 'email') {
+          message = 'Email already exists. Please use a different email address.';
+        } else if (field === 'gstin') {
+          message = 'GSTIN already exists. Please use a different GSTIN.';
+        } else if (field === 'subdomain') {
+          message = 'Subdomain already exists. Please try again.';
+        }
+        
+        return res.status(409).json({ 
+          success: false,
+          message,
+          field,
+          value 
+        });
+      }
+      
+      // Handle other errors
+      next(error);
+    }
+  },
+
+  async createTenantUser(req, res, next) {
+    try {
+      const { tenant_id } = req.params;
+      const { email, password, name } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Email and password are required' 
+        });
+      }
+
+      // Find tenant
+      const tenant = await TenantMaster.findByPk(tenant_id);
+      if (!tenant) {
+        return res.status(404).json({ 
+          success: false,
+          message: 'Tenant not found' 
+        });
+      }
+
+      // Check if user already exists
+      const existingUser = await User.findOne({ where: { email: email.toLowerCase().trim() } });
+      if (existingUser) {
+        return res.status(409).json({ 
+          success: false,
+          message: 'User with this email already exists' 
+        });
+      }
+
+      // Check if user exists for this tenant
+      const existingTenantUser = await User.findOne({ where: { tenant_id: tenant.id } });
+      if (existingTenantUser) {
+        return res.status(409).json({ 
+          success: false,
+          message: 'User already exists for this tenant' 
+        });
+      }
+
+      // Create user
+      const bcrypt = require('bcryptjs');
+      const password_hash = await bcrypt.hash(password, 10);
+      
+      const newUser = await User.create({
+        email: email.toLowerCase().trim(),
+        password: password_hash,
+        name: name || tenant.company_name || email,
+        tenant_id: tenant.id,
+        role: 'tenant_admin',
+      });
+
+      logger.info(`User created for existing tenant ${tenant.id}:`, {
+        userId: newUser.id,
+        email: newUser.email,
+        tenant_id: newUser.tenant_id
+      });
+
+      res.status(201).json({ 
+        success: true,
+        message: 'User created successfully',
+        data: {
+          user: {
+            id: newUser.id,
+            email: newUser.email,
+            name: newUser.name,
+            role: newUser.role,
+            tenant_id: newUser.tenant_id
+          }
+        }
+      });
+    } catch (error) {
+      logger.error('Admin createTenantUser error:', error);
+      next(error);
+    }
+  },
+
+  async provisionTenantDatabase(req, res, next) {
+    try {
+      const { id } = req.params;
+
+      // Find tenant
+      const tenant = await TenantMaster.findByPk(id);
+      if (!tenant) {
+        return res.status(404).json({ 
+          success: false,
+          message: 'Tenant not found' 
+        });
+      }
+
+      // Check if already provisioned
+      if (tenant.db_provisioned) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Tenant database is already provisioned' 
+        });
+      }
+
+      logger.info(`Starting database provisioning for tenant ${tenant.id} (${tenant.company_name})`);
+
+      // Decrypt database password
+      const tenantProvisioningService = require('../services/tenantProvisioningService');
+      const plainPassword = tenantProvisioningService.decryptPassword(tenant.db_password);
+
+      // Provision the database
+      await tenantProvisioningService.provisionDatabase(tenant, plainPassword);
+
+      // Reload tenant to get updated db_provisioned status
+      await tenant.reload();
+
+      logger.info(`Database provisioned successfully for tenant ${tenant.id}`);
+
+      res.json({ 
+        success: true,
+        message: 'Tenant database provisioned successfully',
+        data: {
+          tenant: {
+            id: tenant.id,
+            company_name: tenant.company_name,
+            db_name: tenant.db_name,
+            db_provisioned: tenant.db_provisioned,
+            db_provisioned_at: tenant.db_provisioned_at
+          }
+        }
+      });
+    } catch (error) {
+      logger.error('Admin provisionTenantDatabase error:', error);
       next(error);
     }
   },

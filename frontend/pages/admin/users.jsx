@@ -165,8 +165,8 @@ export default function UserManagement() {
               <div className="flex items-center gap-2 mb-4">
                 <FiUser className="h-5 w-5 text-primary-600" />
                 <h3 className="text-lg font-semibold text-gray-900">
-                  {editingId ? 'Edit User' : 'New User'}
-                </h3>
+                {editingId ? 'Edit User' : 'New User'}
+              </h3>
               </div>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -254,16 +254,16 @@ export default function UserManagement() {
             </Card>
           )}
 
-          <DataTable
-            columns={columns}
-            data={tableData?.data || tableData || []}
-            loading={loading}
-            pagination={pagination}
-            onPageChange={handlePageChange}
-            onSort={handleSort}
-            sortField={sort.field}
-            sortOrder={sort.order}
-          />
+            <DataTable
+              columns={columns}
+              data={tableData?.data || tableData || []}
+              loading={loading}
+              pagination={pagination}
+              onPageChange={handlePageChange}
+              onSort={handleSort}
+              sortField={sort.field}
+              sortOrder={sort.order}
+            />
         </PageLayout>
       </AdminLayout>
     </ProtectedRoute>

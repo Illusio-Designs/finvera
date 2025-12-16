@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import AdminLayout from '../../components/layouts/AdminLayout';
 import PageLayout from '../../components/layouts/PageLayout';
@@ -11,10 +11,11 @@ import FormInput from '../../components/forms/FormInput';
 import FormSelect from '../../components/forms/FormSelect';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useTable } from '../../hooks/useTable';
-import { adminAPI } from '../../lib/api';
+import { adminAPI, pricingAPI } from '../../lib/api';
 import toast, { Toaster } from 'react-hot-toast';
 import Badge from '../../components/ui/Badge';
-import { FiPlus, FiEdit, FiTrash2, FiSave, FiX, FiEye, FiBriefcase } from 'react-icons/fi';
+import { extractPANFromGSTIN, validateGSTIN, validatePAN } from '../../lib/formatters';
+import { FiPlus, FiEdit, FiTrash2, FiSave, FiX, FiEye, FiBriefcase, FiMapPin, FiPhone, FiMail } from 'react-icons/fi';
 
 export default function TenantsList() {
   const [showModal, setShowModal] = useState(false);
@@ -30,9 +31,18 @@ export default function TenantsList() {
     password: '',
     gstin: '',
     pan: '',
+    address: '',
+    city: '',
+    state: '',
+    pincode: '',
+    phone: '',
+    subscription_plan: '',
+    referral_code: '',
     is_active: true,
   });
   const [formErrors, setFormErrors] = useState({});
+  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
+  const [loadingPlans, setLoadingPlans] = useState(false);
 
   const {
     data: tableData,
@@ -43,6 +53,24 @@ export default function TenantsList() {
     sort,
     fetchData,
   } = useTable(adminAPI.tenants.list, {});
+
+  useEffect(() => {
+    fetchSubscriptionPlans();
+  }, []);
+
+  const fetchSubscriptionPlans = async () => {
+    try {
+      setLoadingPlans(true);
+      const response = await pricingAPI.list({ is_active: true });
+      const plans = response.data?.data || response.data || [];
+      setSubscriptionPlans(Array.isArray(plans) ? plans : []);
+    } catch (error) {
+      console.error('Failed to load subscription plans:', error);
+      toast.error('Failed to load subscription plans');
+    } finally {
+      setLoadingPlans(false);
+    }
+  };
 
   const handleCreate = () => {
     setModalMode('create');
@@ -60,6 +88,13 @@ export default function TenantsList() {
         password: '',
         gstin: tenant.gstin || '',
         pan: tenant.pan || '',
+        address: tenant.address || '',
+        city: tenant.city || '',
+        state: tenant.state || '',
+        pincode: tenant.pincode || '',
+        phone: tenant.phone || '',
+        subscription_plan: tenant.subscription_plan || '',
+        referral_code: tenant.referral_code || '',
         is_active: tenant.is_active !== undefined ? tenant.is_active : true,
       });
       setEditingId(row.id);
@@ -78,6 +113,26 @@ export default function TenantsList() {
       setShowDetailModal(true);
     } catch (error) {
       toast.error('Failed to load tenant details');
+    }
+  };
+
+  const handleProvisionDatabase = async () => {
+    if (!selectedTenant) return;
+    
+    try {
+      toast.loading('Provisioning database...', { id: 'provision' });
+      const response = await adminAPI.tenants.provision(selectedTenant.id);
+      toast.success(response?.data?.message || 'Database provisioned successfully', { id: 'provision' });
+      
+      // Reload tenant details to show updated status
+      const tenantResponse = await adminAPI.tenants.get(selectedTenant.id);
+      const updatedTenant = tenantResponse.data?.data || tenantResponse.data;
+      setSelectedTenant(updatedTenant);
+      
+      // Refresh the table
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to provision database', { id: 'provision' });
     }
   };
 
@@ -106,14 +161,18 @@ export default function TenantsList() {
     const errors = {};
     if (!formData.company_name.trim()) errors.company_name = 'Company name is required';
     if (!formData.email.trim()) errors.email = 'Email is required';
+    if (!formData.phone.trim()) errors.phone = 'Phone is required';
     if (modalMode === 'create' && !formData.password.trim()) {
       errors.password = 'Password is required';
     }
-    if (formData.gstin && formData.gstin.length !== 15) {
-      errors.gstin = 'GSTIN must be 15 characters';
+    if (formData.gstin && !validateGSTIN(formData.gstin)) {
+      errors.gstin = 'GSTIN must be 15 alphanumeric characters';
     }
-    if (formData.pan && formData.pan.length !== 10) {
-      errors.pan = 'PAN must be 10 characters';
+    if (formData.pan && !validatePAN(formData.pan)) {
+      errors.pan = 'PAN must be in format: ABCDE1234F (5 letters, 4 digits, 1 letter)';
+    }
+    if (formData.pincode && formData.pincode.length !== 6) {
+      errors.pincode = 'Pincode must be 6 digits';
     }
 
     if (Object.keys(errors).length > 0) {
@@ -128,17 +187,34 @@ export default function TenantsList() {
       }
 
       if (modalMode === 'create') {
-        await adminAPI.tenants.create(payload);
-        toast.success('Tenant created successfully');
+        const response = await adminAPI.tenants.create(payload);
+        toast.success(response?.data?.message || 'Tenant created successfully');
       } else {
-        await adminAPI.tenants.update(editingId, payload);
-        toast.success('Tenant updated successfully');
+        const response = await adminAPI.tenants.update(editingId, payload);
+        toast.success(response?.data?.message || 'Tenant updated successfully');
       }
       setShowModal(false);
       resetForm();
       fetchData();
     } catch (error) {
-      toast.error(error.response?.data?.message || `Failed to ${modalMode === 'create' ? 'create' : 'update'} tenant`);
+      const errorData = error.response?.data;
+      const errorMessage = errorData?.message || `Failed to ${modalMode === 'create' ? 'create' : 'update'} tenant`;
+      
+      // If backend returns field-specific error, set it in formErrors
+      if (errorData?.field && errorData?.field !== 'unknown') {
+        setFormErrors(prev => ({
+          ...prev,
+          [errorData.field]: errorMessage
+        }));
+      } else {
+        // Show general error toast
+        toast.error(errorMessage);
+      }
+      
+      // Also show toast for 409 (Conflict) errors
+      if (error.response?.status === 409) {
+        toast.error(errorMessage);
+      }
     }
   };
 
@@ -149,6 +225,13 @@ export default function TenantsList() {
       password: '',
       gstin: '',
       pan: '',
+      address: '',
+      city: '',
+      state: '',
+      pincode: '',
+      phone: '',
+      subscription_plan: '',
+      referral_code: '',
       is_active: true,
     });
     setFormErrors({});
@@ -161,7 +244,24 @@ export default function TenantsList() {
   };
 
   const handleChange = (name, value) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [name]: value };
+      
+      // Auto-fill PAN from GSTIN when GSTIN is entered
+      if (name === 'gstin' && value) {
+        const cleanedGST = value.replace(/\s/g, '').toUpperCase();
+        if (cleanedGST.length === 15) {
+          const extractedPAN = extractPANFromGSTIN(cleanedGST);
+          if (extractedPAN && !prev.pan) {
+            // Only auto-fill if PAN is empty
+            updated.pan = extractedPAN;
+          }
+        }
+      }
+      
+      return updated;
+    });
+    
     if (formErrors[name]) {
       setFormErrors(prev => {
         const newErrors = { ...prev };
@@ -246,16 +346,16 @@ export default function TenantsList() {
           }
         >
           <Card className="shadow-sm border border-gray-200">
-            <DataTable
-              columns={columns}
-              data={tableData?.data || tableData || []}
-              loading={loading}
-              pagination={pagination}
-              onPageChange={handlePageChange}
-              onSort={handleSort}
-              sortField={sort.field}
-              sortOrder={sort.order}
-            />
+          <DataTable
+            columns={columns}
+            data={tableData?.data || tableData || []}
+            loading={loading}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            onSort={handleSort}
+            sortField={sort.field}
+            sortOrder={sort.order}
+          />
           </Card>
 
           {/* Create/Edit Modal */}
@@ -266,10 +366,12 @@ export default function TenantsList() {
             size="lg"
           >
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Basic Information */}
               <div className="flex items-center gap-2 mb-4">
                 <FiBriefcase className="h-5 w-5 text-primary-600" />
-                <h3 className="text-sm font-semibold text-gray-700">Tenant Information</h3>
+                <h3 className="text-sm font-semibold text-gray-700">Basic Information</h3>
               </div>
+              
               <FormInput
                 name="company_name"
                 label="Company Name"
@@ -290,6 +392,23 @@ export default function TenantsList() {
                 touched={!!formErrors.email}
                 required
                 disabled={modalMode === 'edit'}
+              />
+
+              <FormInput
+                name="phone"
+                label="Phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(name, value) => {
+                  // Only allow digits
+                  const digitsOnly = value.replace(/\D/g, '');
+                  handleChange(name, digitsOnly);
+                }}
+                error={formErrors.phone}
+                touched={!!formErrors.phone}
+                required
+                placeholder="10 digits"
+                maxLength={10}
               />
 
               {modalMode === 'create' && (
@@ -317,26 +436,146 @@ export default function TenantsList() {
                 />
               )}
 
+              {/* Tax Information */}
+              <div className="flex items-center gap-2 mb-4 mt-6 pt-4 border-t border-gray-200">
+                <FiBriefcase className="h-5 w-5 text-primary-600" />
+                <h3 className="text-sm font-semibold text-gray-700">Tax Information</h3>
+              </div>
+
               <FormInput
                 name="gstin"
                 label="GSTIN"
                 value={formData.gstin}
-                onChange={handleChange}
+                onChange={(name, value) => {
+                  // Convert to uppercase automatically
+                  const upperValue = value.toUpperCase();
+                  setFormData(prev => {
+                    const updated = { ...prev, [name]: upperValue };
+                    
+                    // Auto-fill PAN from GSTIN when GSTIN is 15 characters
+                    if (upperValue.length === 15) {
+                      const extractedPAN = extractPANFromGSTIN(upperValue);
+                      if (extractedPAN && !prev.pan) {
+                        // Only auto-fill if PAN is empty
+                        updated.pan = extractedPAN;
+                      }
+                    }
+                    
+                    return updated;
+                  });
+                  
+                  // Clear error if exists
+                  if (formErrors[name]) {
+                    setFormErrors(prev => {
+                      const newErrors = { ...prev };
+                      delete newErrors[name];
+                      return newErrors;
+                    });
+                  }
+                }}
                 error={formErrors.gstin}
                 touched={!!formErrors.gstin}
-                placeholder="15 characters"
+                placeholder="24ABKPZ9119Q1ZL (15 characters)"
                 maxLength={15}
+                style={{ textTransform: 'uppercase' }}
               />
 
               <FormInput
                 name="pan"
-                label="PAN"
+                label="PAN (Auto-filled from GSTIN)"
                 value={formData.pan}
-                onChange={handleChange}
+                onChange={(name, value) => {
+                  // Convert to uppercase automatically
+                  handleChange(name, value.toUpperCase());
+                }}
                 error={formErrors.pan}
                 touched={!!formErrors.pan}
-                placeholder="10 characters"
+                placeholder="ABKPZ9119Q1 (10 characters)"
                 maxLength={10}
+                style={{ textTransform: 'uppercase' }}
+              />
+
+              {/* Address Information */}
+              <div className="flex items-center gap-2 mb-4 mt-6 pt-4 border-t border-gray-200">
+                <FiMapPin className="h-5 w-5 text-primary-600" />
+                <h3 className="text-sm font-semibold text-gray-700">Address Information</h3>
+              </div>
+
+              <FormInput
+                name="address"
+                label="Address"
+                value={formData.address}
+                onChange={handleChange}
+                error={formErrors.address}
+                touched={!!formErrors.address}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormInput
+                  name="city"
+                  label="City"
+                  value={formData.city}
+                  onChange={handleChange}
+                  error={formErrors.city}
+                  touched={!!formErrors.city}
+                />
+
+                <FormInput
+                  name="state"
+                  label="State"
+                  value={formData.state}
+                  onChange={handleChange}
+                  error={formErrors.state}
+                  touched={!!formErrors.state}
+                />
+              </div>
+
+              <FormInput
+                name="pincode"
+                label="Pincode"
+                value={formData.pincode}
+                onChange={(name, value) => {
+                  // Only allow digits
+                  const digitsOnly = value.replace(/\D/g, '');
+                  handleChange(name, digitsOnly);
+                }}
+                error={formErrors.pincode}
+                touched={!!formErrors.pincode}
+                placeholder="6 digits"
+                maxLength={6}
+                type="tel"
+              />
+
+              {/* Subscription Information */}
+              <div className="flex items-center gap-2 mb-4 mt-6 pt-4 border-t border-gray-200">
+                <FiBriefcase className="h-5 w-5 text-primary-600" />
+                <h3 className="text-sm font-semibold text-gray-700">Subscription Information</h3>
+              </div>
+
+              <FormSelect
+                name="subscription_plan"
+                label="Subscription Plan"
+                value={formData.subscription_plan}
+                onChange={handleChange}
+                error={formErrors.subscription_plan}
+                options={[
+                  { value: '', label: 'Select a plan' },
+                  ...subscriptionPlans.map(plan => ({
+                    value: plan.plan_code,
+                    label: `${plan.plan_name} (${plan.plan_code})`,
+                  })),
+                ]}
+                disabled={loadingPlans}
+              />
+
+              <FormInput
+                name="referral_code"
+                label="Referral Code (Optional)"
+                value={formData.referral_code}
+                onChange={handleChange}
+                error={formErrors.referral_code}
+                touched={!!formErrors.referral_code}
+                placeholder="Enter referral code if applicable"
               />
 
               {modalMode === 'edit' && (
@@ -383,7 +622,10 @@ export default function TenantsList() {
             {selectedTenant && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Company Information</h3>
+                  <div className="flex items-center gap-2 mb-4">
+                    <FiBriefcase className="h-5 w-5 text-primary-600" />
+                    <h3 className="text-lg font-semibold text-gray-900">Company Information</h3>
+                  </div>
                   <dl className="space-y-4">
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Company Name</dt>
@@ -394,12 +636,16 @@ export default function TenantsList() {
                       <dd className="mt-1 text-sm text-gray-900">{selectedTenant.email}</dd>
                     </div>
                     <div>
+                      <dt className="text-sm font-medium text-gray-500">Phone</dt>
+                      <dd className="mt-1 text-sm text-gray-900">{selectedTenant.phone || 'N/A'}</dd>
+                    </div>
+                    <div>
                       <dt className="text-sm font-medium text-gray-500">GSTIN</dt>
-                      <dd className="mt-1 text-sm text-gray-900">{selectedTenant.gstin || 'N/A'}</dd>
+                      <dd className="mt-1 text-sm text-gray-900 font-mono">{selectedTenant.gstin || 'N/A'}</dd>
                     </div>
                     <div>
                       <dt className="text-sm font-medium text-gray-500">PAN</dt>
-                      <dd className="mt-1 text-sm text-gray-900">{selectedTenant.pan || 'N/A'}</dd>
+                      <dd className="mt-1 text-sm text-gray-900 font-mono">{selectedTenant.pan || 'N/A'}</dd>
                     </div>
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Status</dt>
@@ -413,11 +659,45 @@ export default function TenantsList() {
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Subscription</h3>
+                  <div className="flex items-center gap-2 mb-4">
+                    <FiMapPin className="h-5 w-5 text-primary-600" />
+                    <h3 className="text-lg font-semibold text-gray-900">Address Information</h3>
+                  </div>
+                  <dl className="space-y-4">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">Address</dt>
+                      <dd className="mt-1 text-sm text-gray-900">{selectedTenant.address || 'N/A'}</dd>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <dt className="text-sm font-medium text-gray-500">City</dt>
+                        <dd className="mt-1 text-sm text-gray-900">{selectedTenant.city || 'N/A'}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm font-medium text-gray-500">State</dt>
+                        <dd className="mt-1 text-sm text-gray-900">{selectedTenant.state || 'N/A'}</dd>
+                      </div>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">Pincode</dt>
+                      <dd className="mt-1 text-sm text-gray-900">{selectedTenant.pincode || 'N/A'}</dd>
+                    </div>
+                  </dl>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <FiBriefcase className="h-5 w-5 text-primary-600" />
+                    <h3 className="text-lg font-semibold text-gray-900">Subscription</h3>
+                  </div>
                   <dl className="space-y-4">
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Plan</dt>
                       <dd className="mt-1 text-sm text-gray-900">{selectedTenant.subscription_plan || 'N/A'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">Referral Code</dt>
+                      <dd className="mt-1 text-sm text-gray-900">{selectedTenant.referral_code || 'N/A'}</dd>
                     </div>
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Start Date</dt>
@@ -431,6 +711,46 @@ export default function TenantsList() {
                         {selectedTenant.subscription_end ? new Date(selectedTenant.subscription_end).toLocaleDateString() : 'N/A'}
                       </dd>
                     </div>
+                  </dl>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <FiBriefcase className="h-5 w-5 text-primary-600" />
+                      <h3 className="text-lg font-semibold text-gray-900">Database Information</h3>
+                    </div>
+                    {!selectedTenant.db_provisioned && (
+                      <Button
+                        onClick={handleProvisionDatabase}
+                        variant="primary"
+                        size="sm"
+                      >
+                        Provision Database
+                      </Button>
+                    )}
+                  </div>
+                  <dl className="space-y-4">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">Database Name</dt>
+                      <dd className="mt-1 text-sm text-gray-900 font-mono">{selectedTenant.db_name || 'N/A'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">Provision Status</dt>
+                      <dd className="mt-1">
+                        <Badge variant={selectedTenant.db_provisioned ? 'success' : 'warning'}>
+                          {selectedTenant.db_provisioned ? 'Provisioned' : 'Not Provisioned'}
+                        </Badge>
+                      </dd>
+                    </div>
+                    {selectedTenant.db_provisioned_at && (
+                      <div>
+                        <dt className="text-sm font-medium text-gray-500">Provisioned At</dt>
+                        <dd className="mt-1 text-sm text-gray-900">
+                          {new Date(selectedTenant.db_provisioned_at).toLocaleString()}
+                        </dd>
+                      </div>
+                    )}
                   </dl>
                 </div>
 

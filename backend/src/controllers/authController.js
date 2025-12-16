@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { signTokens, revokeSession } = require('../utils/jwt');
 const { User, Tenant } = require('../models');
+const { TenantMaster } = require('../models/masterModels');
 const { uploadDir } = require('../config/multer');
 
 module.exports = {
@@ -40,16 +41,110 @@ module.exports = {
   async login(req, res, next) {
     try {
       const { email, password } = req.body;
-      const user = await User.findOne({ where: { email } });
-      if (!user) {
-        return res.status(401).json({ message: 'Invalid credentials' });
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required' });
       }
+
+      // Log login attempt (without password)
+      console.log(`Login attempt for email: ${email}`);
+      
+      // Normalize email for search (lowercase, trim)
+      const normalizedEmail = email.toLowerCase().trim();
+      
+      // First, try to find user in users table (master database)
+      // Try exact match first, then case-insensitive
+      let user = await User.findOne({ 
+        where: { 
+          email: normalizedEmail 
+        } 
+      });
+      
+      // If not found, try case-insensitive search (in case email was stored with different case)
+      if (!user) {
+        const { Op } = require('sequelize');
+        user = await User.findOne({ 
+          where: { 
+            email: { [Op.like]: normalizedEmail }
+          } 
+        });
+      }
+      
+      // If user not found, check tenant_master table
+      if (!user) {
+        console.log(`User not found in users table, checking tenant_master for email: ${email}`);
+        const tenant = await TenantMaster.findOne({ where: { email } });
+        
+        if (tenant) {
+          console.log(`Tenant found in tenant_master: ${tenant.id}`);
+          
+          // Check if user exists by tenant_id (maybe email search failed due to case sensitivity)
+          user = await User.findOne({ 
+            where: { 
+              tenant_id: tenant.id 
+            } 
+          });
+          
+          if (!user) {
+            // User doesn't exist in users table but tenant exists
+            // This means user creation failed during tenant creation
+            // For existing tenants, create the user now with the provided password
+            console.log(`Tenant found (${tenant.id}) but user not created. Creating user now.`);
+            console.log(`Tenant email: ${tenant.email}, Company: ${tenant.company_name}`);
+            
+            try {
+              const bcrypt = require('bcryptjs');
+              const password_hash = await bcrypt.hash(password, 10);
+              
+              user = await User.create({
+                email: normalizedEmail,
+                password: password_hash,
+                name: tenant.company_name || normalizedEmail,
+                tenant_id: tenant.id,
+                role: 'tenant_admin',
+              });
+              
+              console.log(`User created successfully for tenant ${tenant.id}: ${user.id}`);
+            } catch (createError) {
+              console.error(`Failed to create user for tenant ${tenant.id}:`, createError);
+              return res.status(500).json({ 
+                message: 'Failed to create user account. Please contact administrator.' 
+              });
+            }
+          } else {
+            // User found by tenant_id, verify email matches
+            if (user.email.toLowerCase() !== email.toLowerCase()) {
+              console.error(`Email mismatch: user email ${user.email} vs login email ${email}`);
+              return res.status(401).json({ message: 'Invalid credentials' });
+            }
+            console.log(`User found by tenant_id: ${user.id}, email: ${user.email}`);
+          }
+        } else {
+          console.log(`User not found in users table or tenant_master for email: ${email}`);
+          return res.status(401).json({ message: 'Invalid credentials' });
+        }
+      }
+
+      console.log(`User found: ${user.id}, role: ${user.role}, tenant_id: ${user.tenant_id}`);
+      console.log(`User has password field: ${!!user.password}, has password_hash: ${!!user.password_hash}`);
+      
       // Use password field (not password_hash) as per User model
       const passwordToCompare = user.password || user.password_hash || '';
-      const valid = await bcrypt.compare(password, passwordToCompare);
-      if (!valid) {
+      
+      if (!passwordToCompare) {
+        console.error(`User ${user.id} has no password stored`);
         return res.status(401).json({ message: 'Invalid credentials' });
       }
+
+      const valid = await bcrypt.compare(password, passwordToCompare);
+      
+      if (!valid) {
+        console.log(`Password comparison failed for user: ${user.id}`);
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+      console.log(`Login successful for user: ${user.id}, role: ${user.role}`);
+      
       const tokens = await signTokens({ id: user.id, tenant_id: user.tenant_id || null, role: user.role });
       return res.json({ 
         user: { 
@@ -63,6 +158,7 @@ module.exports = {
         ...tokens 
       });
     } catch (err) {
+      console.error('Login error:', err);
       return next(err);
     }
   },
@@ -114,12 +210,12 @@ module.exports = {
       let user = null;
       
       try {
-        if (req.tenantModels && req.tenantModels.User) {
-          // Tenant user
-          user = await req.tenantModels.User.findByPk(userId);
-        } else {
-          // Admin user (master database)
-          user = await User.findByPk(userId);
+      if (req.tenantModels && req.tenantModels.User) {
+        // Tenant user
+        user = await req.tenantModels.User.findByPk(userId);
+      } else {
+        // Admin user (master database)
+        user = await User.findByPk(userId);
         }
       } catch (dbError) {
         // If database query fails, log but continue with JWT data
@@ -230,7 +326,7 @@ module.exports = {
         success: true,
         message: 'Profile updated successfully',
         data: {
-          user: userData,
+        user: userData,
         },
       });
     } catch (err) {

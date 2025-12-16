@@ -125,6 +125,7 @@ export const adminAPI = {
     create: (data) => api.post("/admin/tenants", data),
     update: (id, data) => api.put(`/admin/tenants/${id}`, data),
     delete: (id) => api.delete(`/admin/tenants/${id}`),
+    provision: (id) => api.post(`/admin/tenants/${id}/provision`),
   },
   users: {
     list: (params) => api.get("/admin/users", { params }),

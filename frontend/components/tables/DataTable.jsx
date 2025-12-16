@@ -172,32 +172,32 @@ export default function DataTable({
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              {columns.map((column) => (
-                <th
-                  key={column.key}
-                  className={`
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            {columns.map((column) => (
+              <th
+                key={column.key}
+                className={`
                     px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider
                     ${column.sortable ? 'cursor-pointer hover:bg-gray-100 transition-colors' : ''}
-                  `}
-                  onClick={() => column.sortable && handleSort(column.key)}
-                >
+                `}
+                onClick={() => column.sortable && handleSort(column.key)}
+              >
                   <div className="flex items-center">
-                    <span>{column.label}</span>
-                    {column.sortable && renderSortIcon(column.key)}
-                  </div>
-                </th>
-              ))}
+                  <span>{column.label}</span>
+                  {column.sortable && renderSortIcon(column.key)}
+                </div>
+              </th>
+            ))}
               {actions && (
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Actions
                 </th>
               )}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
             {displayData.length === 0 ? (
               <tr>
                 <td colSpan={columns.length + (actions ? 1 : 0)} className="px-6 py-12">
@@ -206,31 +206,31 @@ export default function DataTable({
               </tr>
             ) : (
               displayData.map((row, index) => (
-                <tr
-                  key={row.id || index}
+            <tr
+              key={row.id || index}
                   className={`
                     transition-colors duration-150
                     ${onRowClick ? 'cursor-pointer hover:bg-gray-50' : 'hover:bg-gray-50/50'}
                   `}
-                  onClick={() => onRowClick && onRowClick(row)}
-                >
-                  {columns.map((column) => (
-                    <td key={column.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              onClick={() => onRowClick && onRowClick(row)}
+            >
+              {columns.map((column) => (
+                <td key={column.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {column.render ? column.render(row[column.key], row) : row[column.key] || '-'}
-                    </td>
-                  ))}
-                  {actions && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                </td>
+              ))}
+              {actions && (
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                        {actions(row)}
+                  {actions(row)}
                       </div>
-                    </td>
-                  )}
-                </tr>
+                </td>
+              )}
+            </tr>
               ))
             )}
-          </tbody>
-        </table>
+        </tbody>
+      </table>
       </div>
 
       {/* Pagination */}

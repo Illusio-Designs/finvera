@@ -130,3 +130,61 @@ export const truncateText = (text, maxLength = 50) => {
   return `${text.substring(0, maxLength)}...`;
 };
 
+/**
+ * Extract PAN number from GSTIN
+ * GSTIN format: 24ABKPZ9119Q1ZL (15 characters)
+ * Remove first 2 characters and last 3 characters to get PAN (10 characters)
+ * Example: 24ABKPZ9119Q1ZL -> ABKPZ9119Q1
+ * 
+ * GSTIN structure: [State Code (2)] + [PAN (10)] + [Check Digit (1)] + [Entity Number (1)] + [Z (1)]
+ * To extract PAN: Remove first 2 (state code) and last 3 (check digit + entity + Z)
+ */
+export const extractPANFromGSTIN = (gstin) => {
+  if (!gstin) return '';
+  
+  // Remove spaces and convert to uppercase
+  const cleaned = gstin.replace(/\s/g, '').toUpperCase();
+  
+  // GSTIN should be 15 characters
+  if (cleaned.length === 15) {
+    // Remove first 2 characters (state code) and last 3 characters (check digit + entity + Z)
+    // substring(2, 12) gives us characters from index 2 to 11 (10 characters = PAN)
+    return cleaned.substring(2, 12);
+  }
+  
+  return '';
+};
+
+/**
+ * Validate GSTIN format
+ * GSTIN should be 15 characters alphanumeric
+ */
+export const validateGSTIN = (gstin) => {
+  if (!gstin) return false;
+  const cleaned = gstin.replace(/\s/g, '').toUpperCase();
+  return /^[0-9A-Z]{15}$/.test(cleaned);
+};
+
+/**
+ * Validate PAN format
+ * PAN should be 10 characters: 5 letters + 4 digits + 1 letter
+ */
+export const validatePAN = (pan) => {
+  if (!pan) return false;
+  const cleaned = pan.replace(/\s/g, '').toUpperCase();
+  return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(cleaned);
+};
+
+/**
+ * Format GSTIN with proper spacing (optional display format)
+ * Format: XX XX XXXXXXXXX X X
+ */
+export const formatGSTINDisplay = (gstin) => {
+  if (!gstin) return '';
+  const cleaned = gstin.replace(/\s/g, '').toUpperCase();
+  if (cleaned.length === 15) {
+    return `${cleaned.substring(0, 2)} ${cleaned.substring(2, 4)} ${cleaned.substring(4, 14)} ${cleaned.substring(14, 15)} ${cleaned.substring(14, 15)}`;
+  }
+  return cleaned;
+};
+
