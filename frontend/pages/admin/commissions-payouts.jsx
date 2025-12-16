@@ -1,21 +1,19 @@
 import { useState } from 'react';
-import { useRouter } from 'next/router';
-import ProtectedRoute from '../../../components/ProtectedRoute';
-import AdminLayout from '../../../components/layouts/AdminLayout';
-import PageLayout from '../../../components/layouts/PageLayout';
-import DataTable from '../../../components/tables/DataTable';
-import Button from '../../../components/ui/Button';
-import Badge from '../../../components/ui/Badge';
-import Modal from '../../../components/ui/Modal';
-import Select from '../../../components/ui/Select';
-import Textarea from '../../../components/ui/Textarea';
-import { useTable } from '../../../hooks/useTable';
-import { adminAPI } from '../../../lib/api';
-import { formatCurrency } from '../../../lib/formatters';
+import ProtectedRoute from '../../components/ProtectedRoute';
+import AdminLayout from '../../components/layouts/AdminLayout';
+import PageLayout from '../../components/layouts/PageLayout';
+import DataTable from '../../components/tables/DataTable';
+import Button from '../../components/ui/Button';
+import Badge from '../../components/ui/Badge';
+import Modal from '../../components/ui/Modal';
+import Select from '../../components/ui/Select';
+import Textarea from '../../components/ui/Textarea';
+import { useTable } from '../../hooks/useTable';
+import { adminAPI } from '../../lib/api';
+import { formatCurrency } from '../../lib/formatters';
 import toast, { Toaster } from 'react-hot-toast';
 
 export default function CommissionsPayoutsList() {
-  const router = useRouter();
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
   const [statusForm, setStatusForm] = useState({

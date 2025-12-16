@@ -159,6 +159,8 @@ export const adminAPI = {
   payouts: {
     list: (params) => api.get("/admin/payouts", { params }),
     get: (id) => api.get(`/admin/payouts/${id}`),
+    create: (data) => api.post("/admin/payouts", data),
+    process: (id, data) => api.post(`/admin/payouts/${id}/process`, data),
     generate: (data) => api.post("/admin/payouts/generate", data),
   },
   commissionPayouts: {
@@ -167,7 +169,10 @@ export const adminAPI = {
   },
   referrals: {
     list: (params) => api.get("/admin/referrals", { params }),
+    get: (id) => api.get(`/admin/referrals/${id}`),
     create: (data) => api.post("/admin/referrals", data),
+    update: (id, data) => api.put(`/admin/referrals/${id}`, data),
+    delete: (id) => api.delete(`/admin/referrals/${id}`),
     rewards: (params) => api.get("/admin/referrals/rewards", { params }),
   },
   targets: {

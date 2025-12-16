@@ -36,6 +36,7 @@ export default function AdminProfile() {
 
   useEffect(() => {
     fetchProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchProfile = async () => {
@@ -67,7 +68,46 @@ export default function AdminProfile() {
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-      toast.error('Failed to load profile');
+      
+      // If API call fails, try to use data from AuthContext as fallback
+      if (authUser) {
+        setProfile({
+          name: authUser.name || authUser.full_name || '',
+          email: authUser.email || '',
+          phone: authUser.phone || '',
+          role: authUser.role || '',
+          profile_image: authUser.profile_image || null,
+          last_login: authUser.last_login || null,
+        });
+        
+        setFormData({
+          name: authUser.name || authUser.full_name || '',
+          email: authUser.email || '',
+          phone: authUser.phone || '',
+        });
+
+        if (authUser.profile_image) {
+          const imageUrl = getProfileImageUrl(authUser.profile_image);
+          setImagePreview(imageUrl);
+          setImageError(false);
+        }
+
+        // Show warning instead of error if we have fallback data
+        if (error.response?.status === 404) {
+          toast.error('Profile endpoint not found. Please ensure the backend server is running.');
+        } else {
+          toast.error('Failed to load profile from server. Using cached data.');
+        }
+      } else {
+        // No fallback data available
+        if (error.response?.status === 404) {
+          toast.error('Profile endpoint not found. Please check your API configuration.');
+        } else if (error.response?.status === 401) {
+          toast.error('Authentication required. Please log in again.');
+        } else {
+          toast.error('Failed to load profile');
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -251,7 +291,7 @@ export default function AdminProfile() {
         <Toaster />
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Profile Header */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <Card className="shadow-sm border border-gray-200">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
               {/* Profile Image */}
               <div className="relative">
@@ -327,7 +367,8 @@ export default function AdminProfile() {
           </div>
 
           {/* Profile Form */}
-          <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <Card className="shadow-sm border border-gray-200">
+            <form onSubmit={handleSubmit}>
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Profile Information</h2>
             
             <div className="space-y-4">
@@ -383,7 +424,8 @@ export default function AdminProfile() {
                 {saving ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
-          </form>
+            </form>
+          </Card>
         </div>
       </AdminLayout>
     </ProtectedRoute>

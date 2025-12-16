@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
-import ProtectedRoute from '../../../components/ProtectedRoute';
-import AdminLayout from '../../../components/layouts/AdminLayout';
-import PageLayout from '../../../components/layouts/PageLayout';
-import DataTable from '../../../components/tables/DataTable';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
-import { seoAPI } from '../../../lib/api';
-import Badge from '../../../components/ui/Badge';
+import ProtectedRoute from '../../components/ProtectedRoute';
+import AdminLayout from '../../components/layouts/AdminLayout';
+import PageLayout from '../../components/layouts/PageLayout';
+import DataTable from '../../components/tables/DataTable';
+import Button from '../../components/ui/Button';
+import Input from '../../components/ui/Input';
+import Card from '../../components/ui/Card';
+import Modal from '../../components/ui/Modal';
+import { seoAPI } from '../../lib/api';
+import Badge from '../../components/ui/Badge';
 import toast from 'react-hot-toast';
-import { FiPlus, FiEdit, FiTrash2, FiSave, FiX } from 'react-icons/fi';
+import { FiPlus, FiEdit, FiTrash2, FiSave, FiX, FiSearch } from 'react-icons/fi';
 
 export default function SEOManagement() {
   const router = useRouter();
@@ -168,10 +169,13 @@ export default function SEOManagement() {
           }
         >
           {showForm && (
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {editingId ? 'Edit SEO Setting' : 'New SEO Setting'}
-              </h3>
+            <Card className="mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <FiSearch className="h-5 w-5 text-primary-600" />
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {editingId ? 'Edit SEO Setting' : 'New SEO Setting'}
+                </h3>
+              </div>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -290,13 +294,13 @@ export default function SEOManagement() {
             </div>
           )}
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <Card className="shadow-sm border border-gray-200">
             <DataTable
               columns={columns}
               data={seoSettings}
               loading={loading}
             />
-          </div>
+          </Card>
         </PageLayout>
       </AdminLayout>
     </ProtectedRoute>
