@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import { 
@@ -252,12 +253,12 @@ export default function FeaturesPage() {
                 >
                   Start Free Trial
                 </a>
-                <a
+                <Link
                   href="/contact"
                   className="bg-transparent border-2 border-white text-white px-8 py-4 rounded-lg hover:bg-white hover:text-primary-600 transition font-semibold text-lg"
                 >
                   Contact Sales
-                </a>
+                </Link>
               </div>
             </div>
           </div>
