@@ -5,6 +5,7 @@ import AdminLayout from '../../../components/layouts/AdminLayout';
 import PageLayout from '../../../components/layouts/PageLayout';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
+import FormInput from '../../../components/forms/FormInput';
 import { blogAPI } from '../../../lib/api';
 import toast from 'react-hot-toast';
 import { FiSave, FiX } from 'react-icons/fi';
