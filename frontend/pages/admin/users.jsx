@@ -1,20 +1,19 @@
-import { useRouter } from 'next/router';
-import ProtectedRoute from '../../../components/ProtectedRoute';
-import AdminLayout from '../../../components/layouts/AdminLayout';
-import PageLayout from '../../../components/layouts/PageLayout';
-import DataTable from '../../../components/tables/DataTable';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
-import { useTable } from '../../../hooks/useTable';
-import { adminAPI } from '../../../lib/api';
-import Badge from '../../../components/ui/Badge';
-import { getRoleDisplayName } from '../../../lib/roleConfig';
+import ProtectedRoute from '../../components/ProtectedRoute';
+import AdminLayout from '../../components/layouts/AdminLayout';
+import PageLayout from '../../components/layouts/PageLayout';
+import DataTable from '../../components/tables/DataTable';
+import Button from '../../components/ui/Button';
+import Input from '../../components/ui/Input';
+import Card from '../../components/ui/Card';
+import { useTable } from '../../hooks/useTable';
+import { adminAPI } from '../../lib/api';
+import Badge from '../../components/ui/Badge';
+import { getRoleDisplayName } from '../../lib/roleConfig';
 import toast from 'react-hot-toast';
-import { FiPlus, FiEdit, FiTrash2, FiSave, FiX } from 'react-icons/fi';
+import { FiPlus, FiEdit, FiTrash2, FiSave, FiX, FiUser } from 'react-icons/fi';
 import { useState } from 'react';
 
 export default function UserManagement() {
-  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
@@ -162,10 +161,13 @@ export default function UserManagement() {
           }
         >
           {showForm && (
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {editingId ? 'Edit User' : 'New User'}
-              </h3>
+            <Card className="mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <FiUser className="h-5 w-5 text-primary-600" />
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {editingId ? 'Edit User' : 'New User'}
+                </h3>
+              </div>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <Input
@@ -252,7 +254,7 @@ export default function UserManagement() {
             </div>
           )}
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <Card className="shadow-sm border border-gray-200">
             <DataTable
               columns={columns}
               data={tableData?.data || tableData || []}
@@ -263,7 +265,7 @@ export default function UserManagement() {
               sortField={sort.field}
               sortOrder={sort.order}
             />
-          </div>
+          </Card>
         </PageLayout>
       </AdminLayout>
     </ProtectedRoute>

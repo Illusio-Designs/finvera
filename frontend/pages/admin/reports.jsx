@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router';
-import ProtectedRoute from '../../../components/ProtectedRoute';
-import AdminLayout from '../../../components/layouts/AdminLayout';
+import ProtectedRoute from '../../components/ProtectedRoute';
+import AdminLayout from '../../components/layouts/AdminLayout';
 import {
   FiBarChart2, FiDollarSign, FiTrendingUp, FiUsers,
   FiTarget, FiPieChart, FiFileText, FiCalendar

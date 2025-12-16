@@ -15,7 +15,7 @@ const getAdminMenuItems = (userRole) => {
     return [
       {
         label: 'Dashboard',
-        href: userRole === 'distributor' ? '/admin/distributors/dashboard' : '/admin/salesmen/dashboard',
+        href: '/admin/dashboard',
         icon: FiHome,
       },
       {
