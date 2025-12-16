@@ -255,7 +255,7 @@ export default function DistributorsList() {
 
   return (
     <ProtectedRoute portalType="admin">
-      <AdminLayout title="Distributors - Admin Panel">
+      <AdminLayout>
         <Toaster />
         <PageLayout
           title="Distributor Management"

@@ -4,6 +4,8 @@ import ReportLayout from '../../../../components/reports/ReportLayout';
 import { adminAPI } from '../../../../lib/api';
 import { formatCurrency } from '../../../../lib/formatters';
 import toast from 'react-hot-toast';
+import Card from '../../../../components/ui/Card';
+import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 
 export default function CommissionSummaryReport() {
   const router = useRouter();
@@ -35,7 +37,7 @@ export default function CommissionSummaryReport() {
     return (
       <ReportLayout title="Commission Summary Report">
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          <LoadingSpinner size="lg" />
         </div>
       </ReportLayout>
     );
@@ -48,35 +50,34 @@ export default function CommissionSummaryReport() {
     >
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+        <Card>
           <div className="text-sm font-medium text-gray-600 mb-1">Total Commissions</div>
           <div className="text-2xl font-bold text-primary-600">
             {formatCurrency(reportData?.summary?.total_commissions || 0)}
           </div>
-        </div>
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+        </Card>
+        <Card>
           <div className="text-sm font-medium text-gray-600 mb-1">Pending</div>
           <div className="text-2xl font-bold text-yellow-600">
             {formatCurrency(reportData?.summary?.pending_commissions || 0)}
           </div>
-        </div>
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+        </Card>
+        <Card>
           <div className="text-sm font-medium text-gray-600 mb-1">Approved</div>
           <div className="text-2xl font-bold text-green-600">
             {formatCurrency(reportData?.summary?.approved_commissions || 0)}
           </div>
-        </div>
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+        </Card>
+        <Card>
           <div className="text-sm font-medium text-gray-600 mb-1">Commission Ratio</div>
           <div className="text-2xl font-bold text-blue-600">
             {reportData?.summary?.commission_to_revenue_ratio || 0}%
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* By Type */}
-      <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Commissions by Type</h2>
+      <Card title="Commissions by Type">
         <div className="space-y-3">
           {reportData?.by_type?.map((ct, index) => (
             <div key={index} className="flex items-center justify-between border-b border-gray-200 pb-3">
@@ -90,11 +91,10 @@ export default function CommissionSummaryReport() {
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
       {/* Monthly Breakdown */}
-      <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Monthly Commission Breakdown</h2>
+      <Card title="Monthly Commission Breakdown">
         <div className="space-y-3">
           {reportData?.monthly_breakdown?.map((month, index) => (
             <div key={index} className="flex items-center justify-between border-b border-gray-200 pb-3">
@@ -105,7 +105,7 @@ export default function CommissionSummaryReport() {
             </div>
           ))}
         </div>
-      </div>
+      </Card>
     </ReportLayout>
   );
 }

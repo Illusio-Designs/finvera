@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import AdminLayout from '../../components/layouts/AdminLayout';
 import PageLayout from '../../components/layouts/PageLayout';
@@ -150,7 +151,7 @@ export default function SEOManagement() {
 
   return (
     <ProtectedRoute portalType="admin">
-      <AdminLayout title="SEO Management">
+      <AdminLayout>
         <PageLayout
           title="SEO Settings"
           breadcrumbs={[
@@ -291,16 +292,14 @@ export default function SEOManagement() {
                   </Button>
                 </div>
               </form>
-            </div>
+            </Card>
           )}
 
-          <Card className="shadow-sm border border-gray-200">
-            <DataTable
-              columns={columns}
-              data={seoSettings}
-              loading={loading}
-            />
-          </Card>
+          <DataTable
+            columns={columns}
+            data={seoSettings}
+            loading={loading}
+          />
         </PageLayout>
       </AdminLayout>
     </ProtectedRoute>

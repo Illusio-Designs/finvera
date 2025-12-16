@@ -381,7 +381,7 @@ export default function ReferralsList() {
 
   return (
     <ProtectedRoute portalType="admin">
-      <AdminLayout title="Referrals - Admin Panel">
+      <AdminLayout>
         <Toaster />
         <PageLayout
           title="Referral Code Management"
@@ -390,18 +390,20 @@ export default function ReferralsList() {
             { label: 'Referrals' },
           ]}
           actions={
-            activeTab === 'codes' && (
-              <Button onClick={handleCreateCode}>
-                <FiPlus className="h-4 w-4 mr-2" />
-                Create Referral Code
-              </Button>
-            )}
-            {activeTab === 'discount-config' && (
-              <Button onClick={handleCreateDiscount}>
-                <FiPlus className="h-4 w-4 mr-2" />
-                Add Configuration
-              </Button>
-            )}
+            <>
+              {activeTab === 'codes' && (
+                <Button onClick={handleCreateCode}>
+                  <FiPlus className="h-4 w-4 mr-2" />
+                  Create Referral Code
+                </Button>
+              )}
+              {activeTab === 'discount-config' && (
+                <Button onClick={handleCreateDiscount}>
+                  <FiPlus className="h-4 w-4 mr-2" />
+                  Add Configuration
+                </Button>
+              )}
+            </>
           }
         >
           {/* Tabs */}
@@ -428,16 +430,16 @@ export default function ReferralsList() {
           {/* Codes Tab */}
           {activeTab === 'codes' && (
             <Card className="shadow-sm border border-gray-200">
-              <DataTable
-                columns={codeColumns}
-                data={tableData?.data || tableData || []}
-                loading={codesLoading}
-                pagination={pagination}
-                onPageChange={handlePageChange}
-                onSort={handleSort}
-                sortField={sort.field}
-                sortOrder={sort.order}
-              />
+            <DataTable
+              columns={codeColumns}
+              data={tableData?.data || tableData || []}
+              loading={codesLoading}
+              pagination={pagination}
+              onPageChange={handlePageChange}
+              onSort={handleSort}
+              sortField={sort.field}
+              sortOrder={sort.order}
+            />
             </Card>
           )}
 
@@ -445,11 +447,11 @@ export default function ReferralsList() {
           {activeTab === 'discount-config' && (
             <>
               <Card className="shadow-sm border border-gray-200">
-                <DataTable
-                  columns={discountColumns}
-                  data={discountConfigs}
-                  loading={discountLoading}
-                />
+              <DataTable
+                columns={discountColumns}
+                data={discountConfigs}
+                loading={discountLoading}
+              />
               </Card>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
                 <h4 className="font-semibold text-blue-900 mb-2">How It Works</h4>
@@ -465,16 +467,16 @@ export default function ReferralsList() {
           {/* Rewards Tab */}
           {activeTab === 'rewards' && (
             <Card className="shadow-sm border border-gray-200">
-              <DataTable
-                columns={rewardsColumns}
-                data={rewardsData?.data || rewardsData || []}
-                loading={rewardsLoading}
-                pagination={rewardsPagination}
-                onPageChange={handleRewardsPageChange}
-                onSort={handleRewardsSort}
-                sortField={rewardsSort.field}
-                sortOrder={rewardsSort.order}
-              />
+            <DataTable
+              columns={rewardsColumns}
+              data={rewardsData?.data || rewardsData || []}
+              loading={rewardsLoading}
+              pagination={rewardsPagination}
+              onPageChange={handleRewardsPageChange}
+              onSort={handleRewardsSort}
+              sortField={rewardsSort.field}
+              sortOrder={rewardsSort.order}
+            />
             </Card>
           )}
 

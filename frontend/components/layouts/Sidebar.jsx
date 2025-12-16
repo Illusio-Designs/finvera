@@ -131,50 +131,21 @@ export default function Sidebar({ items = [], isOpen = true, onClose, isCollapse
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 z-50 h-full bg-white border-r border-gray-200 transform transition-all duration-300 ease-in-out
+          fixed top-4 left-0 z-50 h-[calc(100vh-1rem)] bg-white border-r border-gray-200 rounded-r-xl shadow-sm transform transition-all duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-          lg:translate-x-0 lg:static
+          lg:translate-x-0 lg:fixed lg:top-4 lg:left-0 lg:h-[calc(100vh-1rem)] lg:rounded-r-xl lg:shadow-sm lg:pt-4
           ${isCollapsed ? 'w-16' : 'w-64'}
-          flex flex-col
+          flex flex-col pt-4
         `}
       >
-        {/* Logo & Toggle */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-          {!isCollapsed && (
-            <Link href="/" className="flex items-center">
-              <img 
-                src="/logo.png" 
-                alt="Finvera" 
-                className="h-8 w-auto"
-              />
-            </Link>
-          )}
-          {isCollapsed && (
-            <Link href="/" className="flex items-center justify-center w-full">
-              <img 
-                src="/logo.png" 
-                alt="Finvera" 
-                className="h-8 w-auto"
-              />
-            </Link>
-          )}
-          <div className="flex items-center gap-2">
-            {onToggleCollapse && (
-              <button
-                onClick={onToggleCollapse}
-                className="hidden lg:flex p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition"
-                title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              >
-                {isCollapsed ? <FiChevronRight className="h-4 w-4" /> : <FiChevronLeft className="h-4 w-4" />}
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              className="lg:hidden p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition"
-            >
-              <FiX className="h-5 w-5" />
-            </button>
-          </div>
+        {/* Close button for mobile */}
+        <div className="flex items-center justify-end px-4 pb-4 border-b border-gray-200 lg:hidden">
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition"
+          >
+            <FiX className="h-5 w-5" />
+          </button>
         </div>
 
         {/* Navigation */}
@@ -183,6 +154,19 @@ export default function Sidebar({ items = [], isOpen = true, onClose, isCollapse
             <NavItem key={item.href || item.label || index} item={item} />
           ))}
         </nav>
+
+        {/* Expand/Collapse Toggle - Sticky at bottom */}
+        {onToggleCollapse && (
+          <div className="border-t border-gray-200 p-4 mt-auto">
+            <button
+              onClick={onToggleCollapse}
+              className="hidden lg:flex w-full items-center justify-center p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition"
+              title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {isCollapsed ? <FiChevronRight className="h-5 w-5" /> : <FiChevronLeft className="h-5 w-5" />}
+            </button>
+          </div>
+        )}
       </aside>
     </>
   );

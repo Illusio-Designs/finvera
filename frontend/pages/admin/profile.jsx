@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import AdminLayout from '../../components/layouts/AdminLayout';
+import PageLayout from '../../components/layouts/PageLayout';
+import Card from '../../components/ui/Card';
 import { authAPI } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { getProfileImageUrl } from '../../lib/imageUtils';
 import toast, { Toaster } from 'react-hot-toast';
 import FormInput from '../../components/forms/FormInput';
 import Button from '../../components/ui/Button';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { FiUser, FiMail, FiPhone, FiCamera, FiSave, FiX } from 'react-icons/fi';
 
 export default function AdminProfile() {
@@ -43,7 +46,7 @@ export default function AdminProfile() {
     try {
       setLoading(true);
       const response = await authAPI.getProfile();
-      const userData = response.data;
+      const userData = response.data?.data || response.data;
       
       setProfile({
         name: userData.name || '',
@@ -92,16 +95,20 @@ export default function AdminProfile() {
           setImageError(false);
         }
 
-        // Show warning instead of error if we have fallback data
-        if (error.response?.status === 404) {
-          toast.error('Profile endpoint not found. Please ensure the backend server is running.');
-        } else {
-          toast.error('Failed to load profile from server. Using cached data.');
+        // Only show error for non-404 errors or if it's a critical error
+        // For 404, silently use cached data (endpoint might not be implemented yet)
+        if (error.response?.status !== 404) {
+          if (error.response?.status === 401) {
+            toast.error('Authentication required. Please log in again.');
+          } else {
+            console.warn('Failed to load profile from server. Using cached data.');
+          }
         }
       } else {
-        // No fallback data available
+        // No fallback data available - only show error if it's not a 404
         if (error.response?.status === 404) {
-          toast.error('Profile endpoint not found. Please check your API configuration.');
+          // 404 is expected if endpoint doesn't exist - don't show error
+          console.warn('Profile endpoint not found. Using default values.');
         } else if (error.response?.status === 401) {
           toast.error('Authentication required. Please log in again.');
         } else {
@@ -173,7 +180,7 @@ export default function AdminProfile() {
       formData.append('profile_image', selectedImage);
 
       const response = await authAPI.uploadProfileImage(formData);
-      const updatedUser = response.data.user;
+      const updatedUser = response.data?.data?.user || response.data?.user || response.data;
 
       // Update profile state
       setProfile(prev => ({
@@ -229,7 +236,7 @@ export default function AdminProfile() {
     try {
       setSaving(true);
       const response = await authAPI.updateProfile(formData);
-      const updatedUser = response.data.user;
+      const updatedUser = response.data?.data?.user || response.data?.user || response.data;
 
       // Update profile state
       setProfile(prev => ({
@@ -276,10 +283,18 @@ export default function AdminProfile() {
   if (loading) {
     return (
       <ProtectedRoute portalType="admin">
-        <AdminLayout title="Profile">
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-          </div>
+        <AdminLayout>
+          <PageLayout
+            title="Profile"
+            breadcrumbs={[
+              { label: 'Admin', href: '/admin/dashboard' },
+              { label: 'Profile' },
+            ]}
+          >
+            <div className="flex justify-center items-center h-64">
+              <LoadingSpinner size="lg" />
+            </div>
+          </PageLayout>
         </AdminLayout>
       </ProtectedRoute>
     );
@@ -287,9 +302,16 @@ export default function AdminProfile() {
 
   return (
     <ProtectedRoute portalType="admin">
-      <AdminLayout title="Profile">
+      <AdminLayout>
         <Toaster />
-        <div className="max-w-4xl mx-auto space-y-6">
+        <PageLayout
+          title="Profile"
+          breadcrumbs={[
+            { label: 'Admin', href: '/admin/dashboard' },
+            { label: 'Profile' },
+          ]}
+        >
+          <div className="max-w-4xl mx-auto space-y-6">
           {/* Profile Header */}
           <Card className="shadow-sm border border-gray-200">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
@@ -364,7 +386,7 @@ export default function AdminProfile() {
                 </div>
               </div>
             )}
-          </div>
+          </Card>
 
           {/* Profile Form */}
           <Card className="shadow-sm border border-gray-200">
@@ -426,7 +448,8 @@ export default function AdminProfile() {
             </div>
             </form>
           </Card>
-        </div>
+          </div>
+        </PageLayout>
       </AdminLayout>
     </ProtectedRoute>
   );

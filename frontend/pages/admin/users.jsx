@@ -142,7 +142,7 @@ export default function UserManagement() {
 
   return (
     <ProtectedRoute portalType="admin">
-      <AdminLayout title="User Management">
+      <AdminLayout>
         <PageLayout
           title="System Users"
           breadcrumbs={[
@@ -251,21 +251,19 @@ export default function UserManagement() {
                   </Button>
                 </div>
               </form>
-            </div>
+            </Card>
           )}
 
-          <Card className="shadow-sm border border-gray-200">
-            <DataTable
-              columns={columns}
-              data={tableData?.data || tableData || []}
-              loading={loading}
-              pagination={pagination}
-              onPageChange={handlePageChange}
-              onSort={handleSort}
-              sortField={sort.field}
-              sortOrder={sort.order}
-            />
-          </Card>
+          <DataTable
+            columns={columns}
+            data={tableData?.data || tableData || []}
+            loading={loading}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            onSort={handleSort}
+            sortField={sort.field}
+            sortOrder={sort.order}
+          />
         </PageLayout>
       </AdminLayout>
     </ProtectedRoute>

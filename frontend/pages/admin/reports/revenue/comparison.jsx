@@ -4,6 +4,10 @@ import ReportLayout from '../../../../components/reports/ReportLayout';
 import { adminAPI } from '../../../../lib/api';
 import { formatCurrency } from '../../../../lib/formatters';
 import toast from 'react-hot-toast';
+import Card from '../../../../components/ui/Card';
+import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
+import Button from '../../../../components/ui/Button';
+import Input from '../../../../components/ui/Input';
 import { FiTrendingUp, FiTrendingDown, FiArrowRight } from 'react-icons/fi';
 
 export default function RevenueComparisonReport() {
@@ -44,7 +48,7 @@ export default function RevenueComparisonReport() {
     return (
       <ReportLayout title="Revenue Comparison Report">
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          <LoadingSpinner size="lg" />
         </div>
       </ReportLayout>
     );
@@ -57,60 +61,45 @@ export default function RevenueComparisonReport() {
       dateRange={false}
     >
       {!reportData ? (
-        <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200 text-center">
+        <Card className="text-center">
           <p className="text-gray-600 mb-4">Please select date ranges for both periods to compare</p>
           <div className="max-w-2xl mx-auto space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Period 1 - From</label>
-                <input
-                  type="date"
-                  value={period1From}
-                  onChange={(e) => setPeriod1From(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Period 1 - To</label>
-                <input
-                  type="date"
-                  value={period1To}
-                  onChange={(e) => setPeriod1To(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Period 2 - From</label>
-                <input
-                  type="date"
-                  value={period2From}
-                  onChange={(e) => setPeriod2From(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Period 2 - To</label>
-                <input
-                  type="date"
-                  value={period2To}
-                  onChange={(e) => setPeriod2To(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                />
-              </div>
+              <Input
+                label="Period 1 - From"
+                type="date"
+                value={period1From}
+                onChange={(e) => setPeriod1From(e.target.value)}
+              />
+              <Input
+                label="Period 1 - To"
+                type="date"
+                value={period1To}
+                onChange={(e) => setPeriod1To(e.target.value)}
+              />
+              <Input
+                label="Period 2 - From"
+                type="date"
+                value={period2From}
+                onChange={(e) => setPeriod2From(e.target.value)}
+              />
+              <Input
+                label="Period 2 - To"
+                type="date"
+                value={period2To}
+                onChange={(e) => setPeriod2To(e.target.value)}
+              />
             </div>
-            <button
-              onClick={fetchReport}
-              className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700"
-            >
+            <Button onClick={fetchReport}>
               Generate Comparison
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       ) : (
         <>
           {/* Comparison Summary */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
+            <Card>
               <div className="text-sm font-medium text-gray-600 mb-1">Period 1 Revenue</div>
               <div className="text-2xl font-bold text-blue-600">
                 {formatCurrency(reportData?.period1?.revenue || 0)}
@@ -121,9 +110,9 @@ export default function RevenueComparisonReport() {
               <div className="text-xs text-gray-500 mt-1">
                 {reportData?.period1?.tenant_count} tenants
               </div>
-            </div>
+            </Card>
 
-            <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
+            <Card>
               <div className="text-sm font-medium text-gray-600 mb-1">Period 2 Revenue</div>
               <div className="text-2xl font-bold text-green-600">
                 {formatCurrency(reportData?.period2?.revenue || 0)}
@@ -134,9 +123,9 @@ export default function RevenueComparisonReport() {
               <div className="text-xs text-gray-500 mt-1">
                 {reportData?.period2?.tenant_count} tenants
               </div>
-            </div>
+            </Card>
 
-            <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
+            <Card>
               <div className="text-sm font-medium text-gray-600 mb-1">Difference</div>
               <div className={`text-2xl font-bold flex items-center ${
                 reportData?.comparison?.is_growth ? 'text-green-600' : 'text-red-600'
@@ -158,7 +147,7 @@ export default function RevenueComparisonReport() {
           </div>
 
           {/* Plan-wise Comparison */}
-          <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
+            <Card>
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Revenue by Plan - Comparison</h2>
             <div className="space-y-4">
               {reportData?.period1?.by_plan?.map((plan1, index) => {
@@ -191,7 +180,7 @@ export default function RevenueComparisonReport() {
                   </div>
                 );
               })}
-            </div>
+            </Card>
           </div>
         </>
       )}
