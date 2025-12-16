@@ -67,11 +67,67 @@ export default function Sidebar({ items = [], isOpen = true, onClose, isCollapse
           </button>
           {!isCollapsed && mounted && isExpanded && (
             <div className="ml-4 mt-1 space-y-1">
-              {item.children.map((child) => {
+              {item.children.map((child, childIndex) => {
+                // Handle nested children (like vouchers dropdown)
+                if (child.children) {
+                  const childIsExpanded = mounted && (expandedItems[`${item.label}-${child.label}`] || false);
+                  const hasActiveGrandChild = mounted && child.children.some(grandChild => isActive(grandChild.href));
+                  const childIsActiveState = mounted && (hasActiveGrandChild || childIsExpanded);
+                  
+                  return (
+                    <div key={child.href || child.label || childIndex}>
+                      <button
+                        onClick={() => toggleExpand(`${item.label}-${child.label}`)}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
+                          childIsActiveState
+                            ? 'bg-primary-100 text-primary-700 font-medium'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        }`}
+                      >
+                        <div className="flex items-center min-w-0">
+                          {child.icon && (
+                            <span className="mr-3 flex-shrink-0">
+                              {typeof child.icon === 'function' ? <child.icon className="h-4 w-4" /> : child.icon}
+                            </span>
+                          )}
+                          <span className="truncate">{child.label}</span>
+                        </div>
+                        <FiChevronRight className={`ml-2 flex-shrink-0 transition-transform ${childIsExpanded ? 'rotate-90' : ''}`} />
+                      </button>
+                      {childIsExpanded && (
+                        <div className="ml-4 mt-1 space-y-1">
+                          {child.children.map((grandChild) => {
+                            const grandChildIsActive = isActive(grandChild.href);
+                            return (
+                              <Link
+                                key={grandChild.href}
+                                href={grandChild.href}
+                                className={`flex items-center px-3 py-2 rounded-lg text-sm transition-colors ${
+                                  grandChildIsActive
+                                    ? 'bg-primary-200 text-primary-800 font-medium'
+                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                }`}
+                              >
+                                {grandChild.icon && (
+                                  <span className="mr-3 flex-shrink-0">
+                                    {typeof grandChild.icon === 'function' ? <grandChild.icon className="h-4 w-4" /> : grandChild.icon}
+                                  </span>
+                                )}
+                                <span className="truncate">{grandChild.label}</span>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+                
+                // Regular child item
                 const childIsActive = isActive(child.href);
                 return (
                   <Link
-                    key={child.href}
+                    key={child.href || child.label || childIndex}
                     href={child.href}
                     className={`flex items-center px-3 py-2 rounded-lg text-sm transition-colors ${
                       childIsActive

@@ -231,6 +231,15 @@ export const adminAPI = {
 
 // Accounting API
 export const accountingAPI = {
+  // Account Groups
+  accountGroups: {
+    list: (params) => api.get("/accounting/groups", { params }),
+    get: (id) => api.get(`/accounting/groups/${id}`),
+    create: (data) => api.post("/accounting/groups", data),
+    update: (id, data) => api.put(`/accounting/groups/${id}`, data),
+    delete: (id) => api.delete(`/accounting/groups/${id}`),
+    getTree: () => api.get("/accounting/groups/tree"),
+  },
   // Invoices
   invoices: {
     createSales: (data) => api.post("/accounting/invoices/sales", data),

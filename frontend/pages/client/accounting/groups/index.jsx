@@ -21,19 +21,32 @@ export default function AccountGroupsList() {
   } = useTable(accountingAPI.accountGroups.list, {});
 
   const columns = [
-    { key: 'group_name', label: 'Group Name', sortable: true },
+    { key: 'name', label: 'Group Name', sortable: true },
     { key: 'group_code', label: 'Code', sortable: true },
     {
-      key: 'parent_group_id',
+      key: 'parent_id',
       label: 'Parent Group',
-      sortable: true,
-      render: (value) => value || 'Root',
+      sortable: false,
+      render: (value, row) => {
+        if (row.parent && row.parent.name) {
+          return `${row.parent.name} (${row.parent.group_code})`;
+        }
+        return 'Root';
+      },
     },
     {
-      key: 'group_type',
+      key: 'nature',
       label: 'Type',
       sortable: true,
-      render: (value) => <Badge variant="primary">{value || 'N/A'}</Badge>,
+      render: (value) => {
+        const natureColors = {
+          asset: 'primary',
+          liability: 'warning',
+          income: 'success',
+          expense: 'danger',
+        };
+        return <Badge variant={natureColors[value] || 'primary'}>{value || 'N/A'}</Badge>;
+      },
     },
   ];
 
@@ -48,17 +61,12 @@ export default function AccountGroupsList() {
             { label: 'Account Groups' },
           ]}
           actions={
-            <>
-              <Button
-                variant="outline"
-                onClick={() => router.push('/client/accounting/groups/tree')}
-              >
-                Tree View
-              </Button>
-              <Button onClick={() => router.push('/client/accounting/groups/new')}>
-                Add Group
-              </Button>
-            </>
+            <Button
+              variant="outline"
+              onClick={() => router.push('/client/accounting/groups/tree')}
+            >
+              Tree View
+            </Button>
           }
         >
           <DataTable
