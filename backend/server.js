@@ -1,6 +1,7 @@
 require('dotenv').config();
 const app = require('./src/app');
 const sequelize = require('./src/config/database');
+const { initDatabase } = require('./src/config/database');
 const masterSequelize = require('./src/config/masterDatabase');
 const { initMasterDatabase } = require('./src/config/masterDatabase');
 const redisClient = require('./src/config/redis');
@@ -19,8 +20,9 @@ async function startServer() {
     logger.info('📦 Setting up master database for tenant metadata...');
     await initMasterDatabase();
     
-    // 2. Sync Main Database (for admin, salesman, distributor, etc.)
+    // 2. Initialize Main Database (for admin, salesman, distributor, etc.)
     logger.info('📦 Setting up main database for system models...');
+    await initDatabase();
     await syncDatabase();
 
     logger.info('✅ All databases initialized successfully');
