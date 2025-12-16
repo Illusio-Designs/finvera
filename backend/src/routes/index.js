@@ -1,0 +1,50 @@
+const { Router } = require('express');
+const authRoutes = require('./authRoutes');
+const tenantRoutes = require('./tenantRoutes');
+const pricingRoutes = require('./pricingRoutes');
+const fileRoutes = require('./fileRoutes');
+const adminRoutes = require('./adminRoutes');
+const distributorRoutes = require('./distributorRoutes');
+const salesmanRoutes = require('./salesmanRoutes');
+const targetRoutes = require('./targetRoutes');
+const referralRoutes = require('./referralRoutes');
+const commissionRoutes = require('./commissionRoutes');
+const payoutRoutes = require('./payoutRoutes');
+const commissionPayoutRoutes = require('./commissionPayoutRoutes');
+const accountingRoutes = require('./accountingRoutes');
+const reportRoutes = require('./reportRoutes');
+const gstRoutes = require('./gstRoutes');
+const tdsRoutes = require('./tdsRoutes');
+const eInvoiceRoutes = require('./eInvoiceRoutes');
+const blogRoutes = require('./blogRoutes');
+const seoRoutes = require('./seoRoutes');
+const supportRoutes = require('./supportRoutes');
+const notificationRoutes = require('./notificationRoutes');
+
+const router = Router();
+
+router.use('/auth', authRoutes);
+router.use('/tenants', tenantRoutes);
+router.use('/pricing', pricingRoutes);
+router.use('/files', fileRoutes);
+router.use('/admin', adminRoutes);
+router.use('/admin/distributors', distributorRoutes);
+router.use('/admin/salesmen', salesmanRoutes);
+router.use('/admin/targets', targetRoutes);
+router.use('/referrals', referralRoutes);
+router.use('/admin/commissions', commissionRoutes);
+router.use('/admin/payouts', payoutRoutes);
+router.use('/admin/commissions-payouts', commissionPayoutRoutes);
+router.use('/accounting', accountingRoutes);
+router.use('/reports', reportRoutes);
+router.use('/gst', gstRoutes);
+router.use('/tds', tdsRoutes);
+router.use('/einvoice', eInvoiceRoutes);
+router.use('/', blogRoutes);
+router.use('/', seoRoutes);
+router.use('/support', supportRoutes);
+router.use('/notifications', notificationRoutes);
+
+router.get('/health', (req, res) => res.json({ status: 'ok' }));
+
+module.exports = router;
