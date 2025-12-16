@@ -4,6 +4,9 @@ import ReportLayout from '../../../../components/reports/ReportLayout';
 import { adminAPI } from '../../../../lib/api';
 import { formatCurrency } from '../../../../lib/formatters';
 import toast from 'react-hot-toast';
+import Card from '../../../../components/ui/Card';
+import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
+import Select from '../../../../components/ui/Select';
 import { FiTrendingUp, FiTrendingDown } from 'react-icons/fi';
 
 export default function RevenueTrendReport() {
@@ -38,7 +41,7 @@ export default function RevenueTrendReport() {
     return (
       <ReportLayout title="Revenue Trend Report">
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          <LoadingSpinner size="lg" />
         </div>
       </ReportLayout>
     );
@@ -51,23 +54,21 @@ export default function RevenueTrendReport() {
       dateRange={false}
     >
       {/* Period Selector */}
-      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 mb-5">
-        <div className="flex items-center gap-4">
-          <label className="text-sm font-medium text-gray-700">Period:</label>
-          <select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value)}
-            className="border border-gray-300 rounded-md px-3 py-2 text-sm"
-          >
-            <option value="monthly">Monthly</option>
-            <option value="quarterly">Quarterly</option>
-            <option value="yearly">Yearly</option>
-          </select>
-        </div>
-      </div>
+      <Card className="mb-5">
+        <Select
+          label="Period"
+          value={period}
+          onChange={(e) => setPeriod(e.target.value)}
+          options={[
+            { value: 'monthly', label: 'Monthly' },
+            { value: 'quarterly', label: 'Quarterly' },
+            { value: 'yearly', label: 'Yearly' },
+          ]}
+        />
+      </Card>
 
       {/* Trend Chart */}
-      <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
+      <Card>
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
           Revenue Trend ({period.charAt(0).toUpperCase() + period.slice(1)})
         </h2>
@@ -114,7 +115,7 @@ export default function RevenueTrendReport() {
         ) : (
           <p className="text-gray-500 text-center py-4">No data available</p>
         )}
-      </div>
+      </Card>
     </ReportLayout>
   );
 }

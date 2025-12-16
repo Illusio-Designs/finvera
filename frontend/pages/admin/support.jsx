@@ -11,16 +11,14 @@ import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
 import { adminAPI } from '../../lib/api';
 import toast, { Toaster } from 'react-hot-toast';
-import { FiFilter, FiX, FiSend, FiHeadphones } from 'react-icons/fi';
+import { FiX, FiSend, FiHeadphones } from 'react-icons/fi';
 
 export default function SupportTicketsList() {
   const [filters, setFilters] = useState({
     status: '',
     priority: '',
     category: '',
-    search: '',
   });
-  const [showFilters, setShowFilters] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -39,7 +37,7 @@ export default function SupportTicketsList() {
 
   useEffect(() => {
     fetchTickets();
-  }, [filters.status, filters.priority, filters.category, filters.search, pagination.page]);
+  }, [filters.status, filters.priority, filters.category, pagination.page]);
 
   const fetchTickets = async () => {
     try {
@@ -50,7 +48,6 @@ export default function SupportTicketsList() {
         status: filters.status || undefined,
         priority: filters.priority || undefined,
         category: filters.category || undefined,
-        search: filters.search || undefined,
       });
       const data = response.data?.data || response.data || [];
       setTableData(Array.isArray(data) ? data : []);
@@ -118,20 +115,11 @@ export default function SupportTicketsList() {
     }
   };
 
-  const handleFilterChange = (key, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value,
-    }));
-    setPagination(prev => ({ ...prev, page: 1 }));
-  };
-
-  const clearFilters = () => {
+  const handleFilterChange = (newFilters) => {
     setFilters({
-      status: '',
-      priority: '',
-      category: '',
-      search: '',
+      status: newFilters.status || '',
+      priority: newFilters.priority || '',
+      category: newFilters.category || '',
     });
     setPagination(prev => ({ ...prev, page: 1 }));
   };
@@ -196,6 +184,16 @@ export default function SupportTicketsList() {
       key: 'category',
       label: 'Category',
       sortable: true,
+      filterable: true,
+      filterOptions: [
+        { value: '', label: 'All Categories' },
+        { value: 'technical', label: 'Technical' },
+        { value: 'billing', label: 'Billing' },
+        { value: 'feature_request', label: 'Feature Request' },
+        { value: 'bug_report', label: 'Bug Report' },
+        { value: 'general', label: 'General' },
+        { value: 'other', label: 'Other' },
+      ],
       render: (value) => (
         <span className="capitalize">{value?.replace('_', ' ') || 'N/A'}</span>
       ),
@@ -204,12 +202,30 @@ export default function SupportTicketsList() {
       key: 'priority',
       label: 'Priority',
       sortable: true,
+      filterable: true,
+      filterOptions: [
+        { value: '', label: 'All Priorities' },
+        { value: 'low', label: 'Low' },
+        { value: 'medium', label: 'Medium' },
+        { value: 'high', label: 'High' },
+        { value: 'urgent', label: 'Urgent' },
+      ],
       render: (value) => getPriorityBadge(value),
     },
     {
       key: 'status',
       label: 'Status',
       sortable: true,
+      filterable: true,
+      filterOptions: [
+        { value: '', label: 'All Statuses' },
+        { value: 'open', label: 'Open' },
+        { value: 'assigned', label: 'Assigned' },
+        { value: 'in_progress', label: 'In Progress' },
+        { value: 'waiting_client', label: 'Waiting Client' },
+        { value: 'resolved', label: 'Resolved' },
+        { value: 'closed', label: 'Closed' },
+      ],
       render: (value) => getStatusBadge(value),
     },
     {
@@ -236,7 +252,7 @@ export default function SupportTicketsList() {
 
   return (
     <ProtectedRoute portalType="admin">
-      <AdminLayout title="Support Tickets">
+      <AdminLayout>
         <Toaster />
         <PageLayout
           title="Support Tickets"
@@ -244,107 +260,19 @@ export default function SupportTicketsList() {
             { label: 'Admin', href: '/admin/dashboard' },
             { label: 'Support Tickets' },
           ]}
-          actions={
-            <Button
-              variant="outline"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <FiFilter className="h-4 w-4 mr-2" />
-              Filters
-            </Button>
-          }
         >
-          {/* Filters */}
-          {showFilters && (
-            <Card className="mb-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-gray-900">Filter Tickets</h3>
-                <button
-                  onClick={clearFilters}
-                  className="text-sm text-primary-600 hover:text-primary-700"
-                >
-                  Clear All
-                </button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Search
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ticket #, subject, email..."
-                    value={filters.search}
-                    onChange={(e) => handleFilterChange('search', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Status
-                  </label>
-                  <select
-                    value={filters.status}
-                    onChange={(e) => handleFilterChange('status', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="">All Statuses</option>
-                    <option value="open">Open</option>
-                    <option value="assigned">Assigned</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="waiting_client">Waiting Client</option>
-                    <option value="resolved">Resolved</option>
-                    <option value="closed">Closed</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Priority
-                  </label>
-                  <select
-                    value={filters.priority}
-                    onChange={(e) => handleFilterChange('priority', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="">All Priorities</option>
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Category
-                  </label>
-                  <select
-                    value={filters.category}
-                    onChange={(e) => handleFilterChange('category', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="">All Categories</option>
-                    <option value="technical">Technical</option>
-                    <option value="billing">Billing</option>
-                    <option value="feature_request">Feature Request</option>
-                    <option value="bug_report">Bug Report</option>
-                    <option value="general">General</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <Card className="shadow-sm border border-gray-200">
-            <DataTable
-              columns={columns}
-              data={tableData}
-              loading={loading}
-              pagination={pagination}
-              onPageChange={handlePageChange}
-              onRowClick={handleView}
-            />
-          </Card>
+          <DataTable
+            columns={columns}
+            data={tableData}
+            loading={loading}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            onRowClick={handleView}
+            onFilter={handleFilterChange}
+            filters={filters}
+            searchable={false}
+            showFilters={true}
+          />
 
           {/* Ticket Detail Modal */}
           <Modal

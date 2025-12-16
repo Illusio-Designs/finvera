@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Sidebar from './Sidebar';
 import Header from './Header';
@@ -160,7 +160,17 @@ const getAdminMenuItems = (userRole) => {
 export default function AdminLayout({ children, title = 'Admin Panel - Finvera' }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   const { user } = useAuth();
+
+  useEffect(() => {
+    const checkDesktop = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
 
   return (
     <>
@@ -168,7 +178,7 @@ export default function AdminLayout({ children, title = 'Admin Panel - Finvera' 
         <title>{title}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      <div className="min-h-screen bg-gray-50 flex">
+      <div className="min-h-screen bg-gray-50">
         <Sidebar
           items={getAdminMenuItems(user?.role)}
           isOpen={sidebarOpen}
@@ -176,10 +186,12 @@ export default function AdminLayout({ children, title = 'Admin Panel - Finvera' 
           isCollapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
-        <div className="flex-1 flex flex-col transition-all duration-300">
+        <div 
+          className="flex-1 flex flex-col transition-all duration-300"
+          style={{ marginLeft: isDesktop ? (sidebarCollapsed ? '64px' : '256px') : '0' }}
+        >
           <Header
             onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-            title={title}
           />
           <main className="flex-1 overflow-auto">
             <div className="max-w-7xl mx-auto p-4 sm:p-5 lg:p-6">

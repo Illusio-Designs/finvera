@@ -5,6 +5,8 @@ import { adminAPI } from '../../../../lib/api';
 import { formatCurrency } from '../../../../lib/formatters';
 import toast from 'react-hot-toast';
 import DataTable from '../../../../components/tables/DataTable';
+import Card from '../../../../components/ui/Card';
+import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 import { FiTrophy, FiTrendingUp } from 'react-icons/fi';
 
 export default function DistributorPerformanceReport() {
@@ -47,7 +49,7 @@ export default function DistributorPerformanceReport() {
     return (
       <ReportLayout title="Distributor Performance Report">
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          <LoadingSpinner size="lg" />
         </div>
       </ReportLayout>
     );
@@ -59,22 +61,22 @@ export default function DistributorPerformanceReport() {
       description="Performance metrics for all distributors with rankings"
     >
       {/* Summary */}
-      <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
-        <div className="flex items-center justify-between mb-4">
+      <Card>
+        <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Performance Summary</h2>
           <div className="text-sm text-gray-600">
             Total Distributors: {reportData?.total_distributors || 0}
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Top Performers */}
       {reportData?.top_performers && reportData.top_performers.length > 0 && (
-        <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <Card>
+          <div className="flex items-center mb-4">
             <FiTrophy className="mr-2 h-5 w-5 text-yellow-500" />
-            Top 10 Performers
-          </h2>
+            <h2 className="text-lg font-semibold text-gray-900">Top 10 Performers</h2>
+          </div>
           <div className="space-y-3">
             {reportData.top_performers.slice(0, 10).map((dist, index) => (
               <div key={index} className="border border-gray-200 rounded-lg p-4">
@@ -100,12 +102,11 @@ export default function DistributorPerformanceReport() {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* All Distributors */}
-      <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">All Distributors</h2>
+      <Card title="All Distributors">
         {reportData?.performance && reportData.performance.length > 0 ? (
           <DataTable
             data={reportData.performance}
@@ -114,7 +115,7 @@ export default function DistributorPerformanceReport() {
         ) : (
           <p className="text-gray-500 text-center py-4">No data available</p>
         )}
-      </div>
+      </Card>
     </ReportLayout>
   );
 }

@@ -310,7 +310,7 @@ export default function TargetsList() {
 
   return (
     <ProtectedRoute portalType="admin">
-      <AdminLayout title="Targets - Admin Panel">
+      <AdminLayout>
         <Toaster />
         <PageLayout
           title="Target Management"

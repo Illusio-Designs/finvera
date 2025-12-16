@@ -104,22 +104,46 @@ module.exports = {
       const userId = req.user_id || req.user?.id || req.user?.sub;
       
       if (!userId) {
-        return res.status(401).json({ message: 'User not authenticated' });
+        return res.status(401).json({ 
+          success: false,
+          message: 'User not authenticated' 
+        });
       }
 
       // Check if user is in tenant database or master database
       let user = null;
       
-      if (req.tenantModels && req.tenantModels.User) {
-        // Tenant user
-        user = await req.tenantModels.User.findByPk(userId);
-      } else {
-        // Admin user (master database)
-        user = await User.findByPk(userId);
+      try {
+        if (req.tenantModels && req.tenantModels.User) {
+          // Tenant user
+          user = await req.tenantModels.User.findByPk(userId);
+        } else {
+          // Admin user (master database)
+          user = await User.findByPk(userId);
+        }
+      } catch (dbError) {
+        // If database query fails, log but continue with JWT data
+        console.error('Database error fetching user:', dbError);
       }
 
+      // If user not found in database, use JWT token data as fallback
       if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        // Return user data from JWT token
+        const userData = {
+          id: userId,
+          email: req.user?.email || req.user?.email_address || '',
+          name: req.user?.name || req.user?.full_name || '',
+          role: req.user?.role || req.role || '',
+          phone: req.user?.phone || '',
+          profile_image: req.user?.profile_image || null,
+          is_active: req.user?.is_active !== undefined ? req.user.is_active : true,
+          last_login: req.user?.last_login || null,
+        };
+
+        return res.json({ 
+          success: true,
+          data: userData 
+        });
       }
 
       // Return user data without sensitive information
@@ -134,7 +158,10 @@ module.exports = {
         last_login: user.last_login,
       };
 
-      return res.json(userData);
+      return res.json({ 
+        success: true,
+        data: userData 
+      });
     } catch (err) {
       return next(err);
     }
@@ -200,8 +227,11 @@ module.exports = {
       };
 
       return res.json({
+        success: true,
         message: 'Profile updated successfully',
-        user: userData,
+        data: {
+          user: userData,
+        },
       });
     } catch (err) {
       return next(err);

@@ -4,6 +4,8 @@ import ReportLayout from '../../../../components/reports/ReportLayout';
 import { adminAPI } from '../../../../lib/api';
 import { formatCurrency } from '../../../../lib/formatters';
 import toast from 'react-hot-toast';
+import Card from '../../../../components/ui/Card';
+import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
 import { FiPieChart } from 'react-icons/fi';
 
 export default function RevenueByTypeReport() {
@@ -36,7 +38,7 @@ export default function RevenueByTypeReport() {
     return (
       <ReportLayout title="Revenue by Type Report">
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          <LoadingSpinner size="lg" />
         </div>
       </ReportLayout>
     );
@@ -48,11 +50,11 @@ export default function RevenueByTypeReport() {
       description="Revenue breakdown by acquisition channel, plan, and commission type"
     >
       {/* By Acquisition Category */}
-      <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+      <Card>
+        <div className="flex items-center mb-4">
           <FiPieChart className="mr-2 h-5 w-5 text-primary-600" />
-          Revenue by Acquisition Category
-        </h2>
+          <h2 className="text-lg font-semibold text-gray-900">Revenue by Acquisition Category</h2>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {reportData?.by_acquisition_category && Object.entries(reportData.by_acquisition_category).map(([category, data]) => {
             const percentage = reportData.total_revenue > 0
@@ -76,11 +78,10 @@ export default function RevenueByTypeReport() {
             );
           })}
         </div>
-      </div>
+      </Card>
 
       {/* By Subscription Plan */}
-      <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Revenue by Subscription Plan</h2>
+      <Card title="Revenue by Subscription Plan">
         <div className="space-y-3">
           {reportData?.by_subscription_plan?.map((plan, index) => (
             <div key={index} className="border border-gray-200 rounded-lg p-4">
@@ -101,11 +102,10 @@ export default function RevenueByTypeReport() {
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
       {/* By Commission Type */}
-      <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Commissions by Type</h2>
+      <Card title="Commissions by Type">
         <div className="space-y-3">
           {reportData?.by_commission_type?.map((ct, index) => (
             <div key={index} className="flex items-center justify-between border-b border-gray-200 pb-3">
@@ -119,7 +119,7 @@ export default function RevenueByTypeReport() {
             </div>
           ))}
         </div>
-      </div>
+      </Card>
     </ReportLayout>
   );
 }

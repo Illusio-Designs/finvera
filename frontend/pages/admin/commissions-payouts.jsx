@@ -4,6 +4,8 @@ import AdminLayout from '../../components/layouts/AdminLayout';
 import PageLayout from '../../components/layouts/PageLayout';
 import DataTable from '../../components/tables/DataTable';
 import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
 import Select from '../../components/ui/Select';
@@ -12,6 +14,7 @@ import { useTable } from '../../hooks/useTable';
 import { adminAPI } from '../../lib/api';
 import { formatCurrency } from '../../lib/formatters';
 import toast, { Toaster } from 'react-hot-toast';
+import { FiDollarSign, FiSave, FiX } from 'react-icons/fi';
 
 export default function CommissionsPayoutsList() {
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -149,7 +152,7 @@ export default function CommissionsPayoutsList() {
 
   return (
     <ProtectedRoute portalType="admin">
-      <AdminLayout title="Commissions & Payouts - Admin Panel">
+      <AdminLayout>
         <Toaster />
         <PageLayout
           title="Commission & Payout Management"
@@ -158,17 +161,19 @@ export default function CommissionsPayoutsList() {
             { label: 'Commissions & Payouts' },
           ]}
         >
-          <DataTable
-            columns={columns}
-            data={tableData?.data || tableData || []}
-            loading={loading}
-            pagination={pagination}
-            onPageChange={handlePageChange}
-            onSort={handleSort}
-            sortField={sort.field}
-            sortOrder={sort.order}
-            actions={actions}
-          />
+          <Card className="shadow-sm border border-gray-200">
+            <DataTable
+              columns={columns}
+              data={tableData?.data || tableData || []}
+              loading={loading}
+              pagination={pagination}
+              onPageChange={handlePageChange}
+              onSort={handleSort}
+              sortField={sort.field}
+              sortOrder={sort.order}
+              actions={actions}
+            />
+          </Card>
         </PageLayout>
 
         {/* Status Update Modal */}
@@ -182,9 +187,18 @@ export default function CommissionsPayoutsList() {
           title="Manage Payout Status"
           size="md"
         >
+          {updating && (
+            <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-lg">
+              <LoadingSpinner size="lg" />
+            </div>
+          )}
           {selectedRow && (
             <div className="space-y-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="flex items-center gap-2 mb-4">
+                <FiDollarSign className="h-5 w-5 text-primary-600" />
+                <h3 className="text-sm font-semibold text-gray-700">User Information</h3>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                 <div className="text-sm text-gray-600">User</div>
                 <div className="font-semibold text-gray-900">{selectedRow.user_name}</div>
                 <div className="text-sm text-gray-500">{selectedRow.user_code}</div>
@@ -223,7 +237,7 @@ export default function CommissionsPayoutsList() {
                 />
               )}
 
-              <div className="flex justify-end space-x-3 pt-4 border-t">
+              <div className="flex gap-3 pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -233,10 +247,12 @@ export default function CommissionsPayoutsList() {
                   }}
                   disabled={updating}
                 >
+                  <FiX className="h-4 w-4 mr-2" />
                   Cancel
                 </Button>
-                <Button onClick={handleStatusUpdate} disabled={updating}>
-                  {updating ? 'Updating...' : 'Update Status'}
+                <Button onClick={handleStatusUpdate} disabled={updating} loading={updating}>
+                  <FiSave className="h-4 w-4 mr-2" />
+                  Update Status
                 </Button>
               </div>
             </div>

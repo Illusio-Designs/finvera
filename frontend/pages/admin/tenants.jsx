@@ -230,7 +230,7 @@ export default function TenantsList() {
 
   return (
     <ProtectedRoute portalType="admin">
-      <AdminLayout title="Tenants - Admin Panel">
+      <AdminLayout>
         <Toaster />
         <PageLayout
           title="Tenant Management"

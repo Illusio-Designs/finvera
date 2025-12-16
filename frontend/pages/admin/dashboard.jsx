@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import AdminLayout from '../../components/layouts/AdminLayout';
+import PageLayout from '../../components/layouts/PageLayout';
 import Card from '../../components/ui/Card';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import DataTable from '../../components/tables/DataTable';
@@ -259,9 +260,16 @@ export default function AdminDashboard() {
   if (userRole === 'distributor' || userRole === 'salesman') {
     return (
       <ProtectedRoute portalType="admin">
-        <AdminLayout title="Dashboard">
+        <AdminLayout>
           <Toaster />
-          <div className="space-y-5">
+          <PageLayout
+            title="Dashboard"
+            breadcrumbs={[
+              { label: 'Admin', href: '/admin/dashboard' },
+              { label: 'Dashboard' },
+            ]}
+          >
+            <div className="space-y-5">
             {loading ? (
               <div className="flex justify-center items-center h-64">
                 <LoadingSpinner size="lg" />
@@ -440,7 +448,8 @@ export default function AdminDashboard() {
                 </Card>
               </>
             )}
-          </div>
+            </div>
+          </PageLayout>
         </AdminLayout>
       </ProtectedRoute>
     );
@@ -449,9 +458,16 @@ export default function AdminDashboard() {
   // Render admin dashboard (admin/super_admin/finance_manager)
   return (
     <ProtectedRoute portalType="admin">
-      <AdminLayout title="Dashboard">
+      <AdminLayout>
         <Toaster />
-        <div className="space-y-5">
+        <PageLayout
+          title="Dashboard"
+          breadcrumbs={[
+            { label: 'Admin', href: '/admin/dashboard' },
+            { label: 'Dashboard' },
+          ]}
+        >
+          <div className="space-y-5">
           {/* Stats Grid */}
           {loading ? (
             <div className="flex justify-center items-center h-64">
@@ -654,7 +670,8 @@ export default function AdminDashboard() {
               </Card>
             </>
           )}
-        </div>
+          </div>
+        </PageLayout>
       </AdminLayout>
     </ProtectedRoute>
   );

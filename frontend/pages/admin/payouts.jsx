@@ -227,7 +227,7 @@ export default function PayoutsList() {
 
   return (
     <ProtectedRoute portalType="admin">
-      <AdminLayout title="Payouts - Admin Panel">
+      <AdminLayout>
         <Toaster />
         <PageLayout
           title="Payout Management"
@@ -243,16 +243,16 @@ export default function PayoutsList() {
           }
         >
           <Card className="shadow-sm border border-gray-200">
-            <DataTable
-              columns={columns}
-              data={tableData?.data || tableData || []}
-              loading={tableLoading}
-              pagination={pagination}
-              onPageChange={handlePageChange}
-              onSort={handleSort}
-              sortField={sort.field}
-              sortOrder={sort.order}
-            />
+          <DataTable
+            columns={columns}
+            data={tableData?.data || tableData || []}
+            loading={tableLoading}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            onSort={handleSort}
+            sortField={sort.field}
+            sortOrder={sort.order}
+          />
           </Card>
 
           {/* Create Modal */}

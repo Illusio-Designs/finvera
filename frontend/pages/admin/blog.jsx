@@ -206,7 +206,7 @@ export default function BlogManagement() {
 
   return (
     <ProtectedRoute portalType="admin">
-      <AdminLayout title="Blog Management">
+      <AdminLayout>
         <PageLayout
           title="Blog Posts"
           breadcrumbs={[
@@ -221,16 +221,16 @@ export default function BlogManagement() {
           }
         >
           <Card className="shadow-sm border border-gray-200">
-            <DataTable
-              columns={columns}
-              data={tableData?.data || tableData || []}
-              loading={tableLoading}
-              pagination={pagination}
-              onPageChange={handlePageChange}
-              onSort={handleSort}
-              sortField={sort.field}
-              sortOrder={sort.order}
-            />
+          <DataTable
+            columns={columns}
+            data={tableData?.data || tableData || []}
+            loading={tableLoading}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            onSort={handleSort}
+            sortField={sort.field}
+            sortOrder={sort.order}
+          />
           </Card>
 
           <Modal
@@ -249,7 +249,7 @@ export default function BlogManagement() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <FiFileText className="h-5 w-5 text-primary-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
                 </div>
                 <Input
                   name="title"
@@ -329,7 +329,7 @@ export default function BlogManagement() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <FiFileText className="h-5 w-5 text-primary-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">Content</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Content</h3>
                 </div>
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -360,7 +360,7 @@ export default function BlogManagement() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <FiFileText className="h-5 w-5 text-primary-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">SEO Settings</h3>
+                <h3 className="text-lg font-semibold text-gray-900">SEO Settings</h3>
                 </div>
                 <Input
                   name="meta_title"

@@ -89,29 +89,29 @@ export default function AdminLogin() {
         >
           <div className="space-y-4">
             <Input
-              id="email"
-              name="email"
-              type="email"
+                id="email"
+                name="email"
+                type="email"
               label="Email address"
-              autoComplete="email"
-              required
+                autoComplete="email"
+                required
               placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               className="w-full"
             />
             <Input
-              id="password"
-              name="password"
-              type="password"
+                id="password"
+                name="password"
+                type="password"
               label="Password"
-              autoComplete="current-password"
-              required
+                autoComplete="current-password"
+                required
               placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               className="w-full"
-            />
+              />
           </div>
 
           <div>

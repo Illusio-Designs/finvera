@@ -1,6 +1,8 @@
 import { useRouter } from 'next/router';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import AdminLayout from '../../components/layouts/AdminLayout';
+import PageLayout from '../../components/layouts/PageLayout';
+import Card from '../../components/ui/Card';
 import {
   FiBarChart2, FiDollarSign, FiTrendingUp, FiUsers,
   FiTarget, FiPieChart, FiFileText, FiCalendar
@@ -133,50 +135,57 @@ export default function ReportsIndex() {
 
   return (
     <ProtectedRoute portalType="admin">
-      <AdminLayout title="Reports">
-        <div className="space-y-6">
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Reports Dashboard</h1>
-            <p className="text-gray-600">
-              Generate comprehensive reports for revenue, commissions, performance, and more.
-            </p>
-          </div>
+      <AdminLayout>
+        <PageLayout
+          title="Reports Dashboard"
+          breadcrumbs={[
+            { label: 'Admin', href: '/admin/dashboard' },
+            { label: 'Reports' },
+          ]}
+        >
+          <div className="space-y-6">
+            <Card>
+              <p className="text-gray-600">
+                Generate comprehensive reports for revenue, commissions, performance, and more.
+              </p>
+            </Card>
 
-          {reportCategories.map((category, categoryIndex) => {
-            const CategoryIcon = category.icon;
-            return (
-              <div key={categoryIndex} className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className={`${category.color} p-4 rounded-t-lg flex items-center`}>
-                  <CategoryIcon className="h-6 w-6 mr-3" />
-                  <h2 className="text-lg font-semibold">{category.title}</h2>
-                </div>
-                <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {category.reports.map((report, reportIndex) => {
-                    const ReportIcon = report.icon;
-                    return (
-                      <div
-                        key={reportIndex}
-                        onClick={() => router.push(report.href)}
-                        className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer group"
-                      >
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center">
-                            <ReportIcon className="h-5 w-5 text-primary-600 mr-2" />
-                            <h3 className="font-semibold text-gray-900">{report.name}</h3>
+            {reportCategories.map((category, categoryIndex) => {
+              const CategoryIcon = category.icon;
+              return (
+                <Card key={categoryIndex} className="overflow-hidden">
+                  <div className={`${category.color} p-4 flex items-center rounded-t-xl`}>
+                    <CategoryIcon className="h-6 w-6 mr-3" />
+                    <h2 className="text-lg font-semibold">{category.title}</h2>
+                  </div>
+                  <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {category.reports.map((report, reportIndex) => {
+                      const ReportIcon = report.icon;
+                      return (
+                        <Card
+                          key={reportIndex}
+                          onClick={() => router.push(report.href)}
+                          className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-primary-300 group"
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center">
+                              <ReportIcon className="h-5 w-5 text-primary-600 mr-2" />
+                              <h3 className="font-semibold text-gray-900">{report.name}</h3>
+                            </div>
                           </div>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-3">{report.description}</p>
-                        <div className="text-primary-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                          View Report →
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                          <p className="text-sm text-gray-600 mb-3">{report.description}</p>
+                          <div className="text-primary-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+                            View Report <span className="ml-1">→</span>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </PageLayout>
       </AdminLayout>
     </ProtectedRoute>
   );
