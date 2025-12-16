@@ -24,14 +24,23 @@ const getClientMenuItems = () => [
     children: [
       { label: 'Account Groups', href: '/client/accounting/groups', icon: FiFolder },
       { label: 'Ledgers', href: '/client/accounting/ledgers', icon: FiFileText },
-      { label: 'Vouchers', href: '/client/accounting/vouchers', icon: FiFile },
+      { label: 'Outstanding Bills', href: '/client/accounting/bills/outstanding', icon: FiBarChart2 },
+    ],
+  },
+  {
+    divider: true,
+  },
+  {
+    label: 'Vouchers',
+    icon: FiFile,
+    children: [
+      { label: 'All Vouchers', href: '/client/accounting/vouchers', icon: FiFile },
       { label: 'Sales Invoice', href: '/client/accounting/invoices/sales/new', icon: FiTrendingUp },
       { label: 'Purchase Invoice', href: '/client/accounting/invoices/purchase/new', icon: FiTrendingDown },
-      { label: 'Payments', href: '/client/accounting/payments/new', icon: FiDollarSign },
-      { label: 'Receipts', href: '/client/accounting/receipts/new', icon: FiCreditCard },
+      { label: 'Payment', href: '/client/accounting/payments/new', icon: FiDollarSign },
+      { label: 'Receipt', href: '/client/accounting/receipts/new', icon: FiCreditCard },
       { label: 'Journal', href: '/client/accounting/journals/new', icon: FiFileText },
       { label: 'Contra', href: '/client/accounting/contra/new', icon: FiRefreshCw },
-      { label: 'Outstanding Bills', href: '/client/accounting/bills/outstanding', icon: FiBarChart2 },
     ],
   },
   {
