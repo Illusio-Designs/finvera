@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import { FiCheck, FiX, FiZap, FiBriefcase, FiAward } from 'react-icons/fi';
@@ -263,12 +264,12 @@ export default function PricingPage() {
               <p className="text-xl text-primary-100 mb-8">
                 Our team is here to help you choose the right plan for your business
               </p>
-              <a
+              <Link
                 href="/contact"
                 className="inline-block bg-white text-primary-600 px-8 py-4 rounded-lg hover:bg-primary-50 transition font-semibold text-lg"
               >
                 Contact Sales Team
-              </a>
+              </Link>
             </div>
           </div>
         </section>
