@@ -49,7 +49,7 @@ export default function Pagination({
       </div>
       
       <div className="flex items-center gap-3">
-        {onItemsPerPageChange && (
+          {onItemsPerPageChange && (
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-700">Show:</span>
             <select
@@ -63,44 +63,44 @@ export default function Pagination({
               <option value={100}>100</option>
             </select>
           </div>
-        )}
+          )}
         
         <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
             <FiChevronLeft className="h-4 w-4 mr-1" />
-            Previous
-          </Button>
+              Previous
+            </Button>
           
-          {getPageNumbers().map((page) => (
-            <button
-              key={page}
-              onClick={() => onPageChange(page)}
-              className={`
+            {getPageNumbers().map((page) => (
+              <button
+                key={page}
+                onClick={() => onPageChange(page)}
+                className={`
                 min-w-[2.5rem] px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200
-                ${currentPage === page
+                  ${currentPage === page
                   ? 'bg-primary-600 text-white shadow-md shadow-primary-500/20'
                   : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400'
-                }
-              `}
-            >
-              {page}
-            </button>
-          ))}
+                  }
+                `}
+              >
+                {page}
+              </button>
+            ))}
           
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage >= totalPages}
-          >
-            Next
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage >= totalPages}
+            >
+              Next
             <FiChevronRight className="h-4 w-4 ml-1" />
-          </Button>
+            </Button>
         </div>
       </div>
     </div>

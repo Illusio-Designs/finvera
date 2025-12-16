@@ -174,8 +174,8 @@ export default function SEOManagement() {
               <div className="flex items-center gap-2 mb-4">
                 <FiSearch className="h-5 w-5 text-primary-600" />
                 <h3 className="text-lg font-semibold text-gray-900">
-                  {editingId ? 'Edit SEO Setting' : 'New SEO Setting'}
-                </h3>
+                {editingId ? 'Edit SEO Setting' : 'New SEO Setting'}
+              </h3>
               </div>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -295,11 +295,11 @@ export default function SEOManagement() {
             </Card>
           )}
 
-          <DataTable
-            columns={columns}
-            data={seoSettings}
-            loading={loading}
-          />
+            <DataTable
+              columns={columns}
+              data={seoSettings}
+              loading={loading}
+            />
         </PageLayout>
       </AdminLayout>
     </ProtectedRoute>

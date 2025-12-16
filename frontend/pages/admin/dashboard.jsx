@@ -124,9 +124,9 @@ export default function AdminDashboard() {
         }
       } else {
         // Admin/super_admin/finance_manager - fetch admin dashboard
-        const response = await adminAPI.dashboard();
-        const data = response.data.data || response.data;
-        setStats(data);
+      const response = await adminAPI.dashboard();
+      const data = response.data.data || response.data;
+      setStats(data);
       }
     } catch (error) {
       toast.error('Failed to load dashboard data');
@@ -467,7 +467,7 @@ export default function AdminDashboard() {
             { label: 'Dashboard' },
           ]}
         >
-          <div className="space-y-5">
+        <div className="space-y-5">
           {/* Stats Grid */}
           {loading ? (
             <div className="flex justify-center items-center h-64">
@@ -670,7 +670,7 @@ export default function AdminDashboard() {
               </Card>
             </>
           )}
-          </div>
+        </div>
         </PageLayout>
       </AdminLayout>
     </ProtectedRoute>

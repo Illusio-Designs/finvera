@@ -162,17 +162,17 @@ export default function CommissionsPayoutsList() {
           ]}
         >
           <Card className="shadow-sm border border-gray-200">
-            <DataTable
-              columns={columns}
-              data={tableData?.data || tableData || []}
-              loading={loading}
-              pagination={pagination}
-              onPageChange={handlePageChange}
-              onSort={handleSort}
-              sortField={sort.field}
-              sortOrder={sort.order}
-              actions={actions}
-            />
+          <DataTable
+            columns={columns}
+            data={tableData?.data || tableData || []}
+            loading={loading}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            onSort={handleSort}
+            sortField={sort.field}
+            sortOrder={sort.order}
+            actions={actions}
+          />
           </Card>
         </PageLayout>
 

@@ -13,9 +13,39 @@ const app = express();
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || process.env.CORS_ORIGIN || '*',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // List of allowed origins
+    const allowedOrigins = [
+      process.env.FRONTEND_URL,
+      process.env.CORS_ORIGIN,
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://admin.localhost:3000',
+      'http://admin.localhost:3001',
+      'http://client.localhost:3000',
+      'http://client.localhost:3001',
+      'http://localhost:3000',
+      'http://localhost:3001',
+    ].filter(Boolean); // Remove undefined values
+    
+    // Allow all localhost subdomains in development
+    const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/.test(origin) ||
+                        /^https?:\/\/.*\.localhost(:\d+)?$/.test(origin);
+    
+    // Allow if in allowed list or is localhost/subdomain
+    if (allowedOrigins.includes(origin) || isLocalhost || process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 };
 app.use(cors(corsOptions));
 
@@ -65,8 +95,17 @@ const absoluteUploadDir = path.isAbsolute(uploadDir)
 // Serve static files with CORS headers
 app.use('/uploads', (req, res, next) => {
   // Set CORS headers for static files
-  const origin = corsOptions.origin === '*' ? '*' : (req.headers.origin || corsOptions.origin);
-  res.header('Access-Control-Allow-Origin', origin);
+  const origin = req.headers.origin || '*';
+  // Check if origin is allowed
+  if (typeof corsOptions.origin === 'function') {
+    corsOptions.origin(origin, (err, allowed) => {
+      if (allowed) {
+        res.header('Access-Control-Allow-Origin', origin);
+      }
+    });
+  } else {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
   res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
   res.header('Access-Control-Allow-Credentials', 'true');

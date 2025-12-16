@@ -7,6 +7,11 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
       },
+      tenant_id: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        comment: 'Tenant ID for tenant_admin users, null for admin portal users',
+      },
       email: {
         type: DataTypes.STRING,
         allowNull: false,

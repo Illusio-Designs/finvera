@@ -40,13 +40,27 @@ export const AuthProvider = ({ children }) => {
       console.log('Attempting login for:', email);
       const response = await authAPI.login({ email, password });
       console.log('Login response:', response);
+      console.log('Response data:', response.data);
       
       // Handle different response structures
       const responseData = response.data?.data || response.data;
-      const { user: userData, accessToken, refreshToken, jti } = responseData;
+      console.log('Response data (processed):', responseData);
+      
+      // Extract tokens - backend returns accessToken, refreshToken, jti directly
+      const userData = responseData.user || responseData;
+      const accessToken = responseData.accessToken || responseData.token;
+      const refreshToken = responseData.refreshToken;
+      const jti = responseData.jti;
+      
+      console.log('Extracted data:', { userData, hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken, hasJti: !!jti });
       
       if (!userData || !accessToken) {
-        console.error('Invalid response structure:', responseData);
+        console.error('Invalid response structure:', {
+          responseData,
+          hasUser: !!userData,
+          hasAccessToken: !!accessToken,
+          keys: Object.keys(responseData || {})
+        });
         return {
           success: false,
           message: 'Invalid response from server',
@@ -78,6 +92,7 @@ export const AuthProvider = ({ children }) => {
       
       setUser(normalizedUser);
       console.log('Login successful for user:', normalizedUser);
+      console.log('Token stored:', !!Cookies.get('token'));
       return { success: true, user: normalizedUser };
     } catch (error) {
       console.error('Login error details:', {
@@ -85,6 +100,7 @@ export const AuthProvider = ({ children }) => {
         response: error.response?.data,
         status: error.response?.status,
         statusText: error.response?.statusText,
+        stack: error.stack
       });
       
       const errorMessage = error.response?.data?.message || 

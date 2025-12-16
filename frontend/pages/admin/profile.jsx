@@ -100,7 +100,7 @@ export default function AdminProfile() {
         if (error.response?.status !== 404) {
           if (error.response?.status === 401) {
             toast.error('Authentication required. Please log in again.');
-          } else {
+        } else {
             console.warn('Failed to load profile from server. Using cached data.');
           }
         }
@@ -291,9 +291,9 @@ export default function AdminProfile() {
               { label: 'Profile' },
             ]}
           >
-            <div className="flex justify-center items-center h-64">
+          <div className="flex justify-center items-center h-64">
               <LoadingSpinner size="lg" />
-            </div>
+          </div>
           </PageLayout>
         </AdminLayout>
       </ProtectedRoute>
@@ -311,7 +311,7 @@ export default function AdminProfile() {
             { label: 'Profile' },
           ]}
         >
-          <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-4xl mx-auto space-y-6">
           {/* Profile Header */}
           <Card className="shadow-sm border border-gray-200">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
@@ -446,9 +446,9 @@ export default function AdminProfile() {
                 {saving ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
-            </form>
+          </form>
           </Card>
-          </div>
+        </div>
         </PageLayout>
       </AdminLayout>
     </ProtectedRoute>

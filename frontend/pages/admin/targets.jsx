@@ -336,16 +336,16 @@ export default function TargetsList() {
           }
         >
           <Card className="shadow-sm border border-gray-200">
-            <DataTable
-              columns={columns}
-              data={tableData?.data || tableData || []}
-              loading={tableLoading}
-              pagination={pagination}
-              onPageChange={handlePageChange}
-              onSort={handleSort}
-              sortField={sort.field}
-              sortOrder={sort.order}
-            />
+          <DataTable
+            columns={columns}
+            data={tableData?.data || tableData || []}
+            loading={tableLoading}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            onSort={handleSort}
+            sortField={sort.field}
+            sortOrder={sort.order}
+          />
           </Card>
 
           {/* Create/Edit Modal */}
@@ -365,7 +365,7 @@ export default function TargetsList() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 mb-4">
                     <FiTarget className="h-5 w-5 text-primary-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Assignment</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Assignment</h3>
                   </div>
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -421,7 +421,7 @@ export default function TargetsList() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 mb-4">
                     <FiTarget className="h-5 w-5 text-primary-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Assignment</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Assignment</h3>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -443,7 +443,7 @@ export default function TargetsList() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <FiTarget className="h-5 w-5 text-primary-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">Target Details</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Target Details</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormSelect

@@ -18,26 +18,37 @@ export default function ClientLogin() {
 
     try {
       const result = await login(email, password, 'client');
+      console.log('Login result:', result);
       
       if (result.success) {
         const role = result.user?.role;
+        console.log('User role:', role);
+        console.log('Can access client portal?', canAccessClientPortal(role));
         
         // Check if role can access client portal
         if (canAccessClientPortal(role)) {
           toast.success(`Welcome ${getRoleDisplayName(role)}!`);
           const redirectPath = getDefaultRedirect(role, result.user.id);
-          router.push(redirectPath);
+          console.log('Redirecting to:', redirectPath);
+          
+          // Use replace instead of push to avoid back button issues
+          setTimeout(() => {
+            router.replace(redirectPath);
+          }, 500);
         } else {
+          console.error('Access denied for role:', role);
           toast.error('Access denied. Please use the admin portal.');
           setLoading(false);
           return;
         }
       } else {
+        console.error('Login failed:', result.message);
         toast.error(result.message || 'Login failed');
+        setLoading(false);
       }
     } catch (error) {
+      console.error('Login exception:', error);
       toast.error('An error occurred during login');
-    } finally {
       setLoading(false);
     }
   };

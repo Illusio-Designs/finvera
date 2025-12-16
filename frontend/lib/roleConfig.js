@@ -10,6 +10,7 @@ export const ROLES = {
   FINANCE_MANAGER: 'finance_manager',
   ACCOUNTANT: 'accountant',
   USER: 'user',
+  TENANT_ADMIN: 'tenant_admin',
 };
 
 /**
@@ -31,6 +32,7 @@ export const ADMIN_PORTAL_ROLES = [
 export const CLIENT_PORTAL_ROLES = [
   ROLES.USER,
   ROLES.ACCOUNTANT,
+  ROLES.TENANT_ADMIN,
 ];
 
 /**
@@ -61,6 +63,7 @@ export const getDefaultRedirect = (role, userId) => {
       return '/admin/salesmen/dashboard';
     case ROLES.ACCOUNTANT:
     case ROLES.USER:
+    case ROLES.TENANT_ADMIN:
       return '/client/dashboard';
     default:
       return '/';
@@ -79,6 +82,7 @@ export const getRoleDisplayName = (role) => {
     [ROLES.FINANCE_MANAGER]: 'Finance Manager',
     [ROLES.ACCOUNTANT]: 'Accountant',
     [ROLES.USER]: 'User',
+    [ROLES.TENANT_ADMIN]: 'Tenant Admin',
   };
   return names[role] || role;
 };
