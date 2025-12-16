@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import Head from 'next/head';
 import Sidebar from './Sidebar';
 import Header from './Header';
@@ -165,38 +165,15 @@ const getAdminMenuItems = (userRole) => {
   ];
 };
 
-const AdminLayoutContext = createContext(null);
-
 export default function AdminLayout({ children, title = 'Admin Panel - Finvera' }) {
-  const parent = useContext(AdminLayoutContext);
-
-  // If we're already inside an AdminLayout (e.g. wrapped globally in `_app.jsx`),
-  // don't render a second sidebar/header. Just update the parent title.
-  useEffect(() => {
-    if (parent?.setTitle && title) {
-      parent.setTitle(title);
-    }
-  }, [parent, title]);
-
-  if (parent) {
-    return children;
-  }
-
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [layoutTitle, setLayoutTitle] = useState(title);
   const { user } = useAuth();
 
-  useEffect(() => {
-    setLayoutTitle(title);
-  }, [title]);
-
-  const ctxValue = useMemo(() => ({ setTitle: setLayoutTitle }), []);
-
   return (
-    <AdminLayoutContext.Provider value={ctxValue}>
+    <>
       <Head>
-        <title>{layoutTitle}</title>
+        <title>{title}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <div className="min-h-screen bg-gray-50 flex">
@@ -210,7 +187,7 @@ export default function AdminLayout({ children, title = 'Admin Panel - Finvera' 
         <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'}`}>
           <Header
             onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-            title={layoutTitle}
+            title={title}
           />
           <main className="flex-1 overflow-auto">
             <div className="max-w-7xl mx-auto p-4 sm:p-5 lg:p-6">
@@ -219,6 +196,6 @@ export default function AdminLayout({ children, title = 'Admin Panel - Finvera' 
           </main>
         </div>
       </div>
-    </AdminLayoutContext.Provider>
+    </>
   );
 }
