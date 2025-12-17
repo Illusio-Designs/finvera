@@ -1,8 +1,13 @@
-const { Distributor, User, Salesman, Commission, Payout, Lead, Target } = require('../models');
+const { Distributor, User, Salesman, Commission, Payout, Lead, Target, sequelize } = require('../models');
 const { TenantMaster } = require('../models/masterModels');
 const { Op } = require('sequelize');
 const bcrypt = require('bcryptjs');
 const { Sequelize } = require('sequelize');
+const {
+  normalizeOptionalCode,
+  generateNextSequentialCode,
+  isUniqueConstraintOnField,
+} = require('../utils/codeGenerator');
 
 module.exports = {
   async list(req, res, next) {
@@ -46,34 +51,77 @@ module.exports = {
         email,
         password,
         full_name,
-        distributor_code,
+        distributor_code: distributorCodeInput,
         company_name,
         territory,
         commission_rate,
         payment_terms,
       } = req.body;
 
-      // Create user first
-      const password_hash = await bcrypt.hash(password, 10);
-      const user = await User.create({
-        email,
-        password: password_hash,
-        name: full_name,
-        role: 'distributor',
-        tenant_id: req.tenant_id || null, // Distributors might not have a tenant_id
-      });
+      const distributor_code = normalizeOptionalCode(distributorCodeInput);
 
-      // Create distributor
-      const distributor = await Distributor.create({
-        user_id: user.id,
-        distributor_code,
-        company_name,
-        territory: territory || [],
-        commission_rate: parseFloat(commission_rate) || 0,
-        payment_terms,
-      });
+      const tx = await sequelize.transaction();
+      try {
+        // Create user first
+        const password_hash = await bcrypt.hash(password, 10);
+        const user = await User.create(
+          {
+            email,
+            password: password_hash,
+            name: full_name,
+            role: 'distributor',
+            tenant_id: req.tenant_id || null, // Distributors might not have a tenant_id
+          },
+          { transaction: tx }
+        );
 
-      res.status(201).json({ distributor });
+        // Create distributor (auto-generate code if not provided)
+        let distributor = null;
+        const maxAttempts = 5;
+
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          const codeToUse =
+            distributor_code ||
+            (await generateNextSequentialCode({
+              model: Distributor,
+              field: 'distributor_code',
+              prefix: 'DIST',
+              padLength: 3,
+              transaction: tx,
+            }));
+
+          try {
+            distributor = await Distributor.create(
+              {
+                user_id: user.id,
+                distributor_code: codeToUse,
+                company_name,
+                territory: territory || [],
+                commission_rate: parseFloat(commission_rate) || 0,
+                payment_terms,
+              },
+              { transaction: tx }
+            );
+            break;
+          } catch (err) {
+            // If auto-generated code collided (concurrency), retry with a new code.
+            if (!distributor_code && isUniqueConstraintOnField(err, 'distributor_code')) {
+              continue;
+            }
+            throw err;
+          }
+        }
+
+        if (!distributor) {
+          throw new Error('Failed to generate a unique distributor_code');
+        }
+
+        await tx.commit();
+        res.status(201).json({ distributor });
+      } catch (err) {
+        await tx.rollback();
+        throw err;
+      }
     } catch (err) {
       next(err);
     }
