@@ -5,6 +5,7 @@ const voucherTypeController = require('../controllers/voucherTypeController');
 const voucherController = require('../controllers/voucherController');
 const transactionController = require('../controllers/transactionController');
 const dashboardController = require('../controllers/dashboardController');
+const inventoryController = require('../controllers/inventoryController');
 const { authenticate } = require('../middleware/auth');
 const { setTenantContext, requireTenant, resolveTenant } = require('../middleware/tenant');
 
@@ -59,6 +60,13 @@ const billWiseController = require('../controllers/billWiseController');
 router.get('/outstanding', billWiseController.getOutstanding);
 router.post('/bills/allocate', billWiseController.allocatePayment);
 router.get('/bills/aging', billWiseController.getAgingReport);
+
+// Inventory Items
+router.get('/inventory/items', inventoryController.list);
+router.post('/inventory/items', inventoryController.create);
+router.get('/inventory/items/:id', inventoryController.getById);
+router.put('/inventory/items/:id', inventoryController.update);
+router.delete('/inventory/items/:id', inventoryController.delete);
 
 module.exports = router;
 

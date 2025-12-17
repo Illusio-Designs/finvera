@@ -2,6 +2,31 @@ const { Op } = require('sequelize');
 const { Sequelize } = require('sequelize');
 const logger = require('../utils/logger');
 
+/**
+ * Run migration to add missing columns to ledgers table
+ * This is called automatically if columns are missing
+ */
+async function runLedgerMigration(sequelize) {
+  try {
+    const queryInterface = sequelize.getQueryInterface();
+    const tableDescription = await queryInterface.describeTable('ledgers');
+    
+    const migration = require('../migrations/20251218-add-ledger-fields');
+    await migration.up(queryInterface, Sequelize);
+    
+    logger.info('Ledger migration completed successfully');
+    return true;
+  } catch (error) {
+    // If columns already exist, that's fine
+    if (error.message && (error.message.includes('Duplicate column') || error.message.includes('already exists'))) {
+      logger.debug('Ledger columns already exist, skipping migration');
+      return true;
+    }
+    logger.warn('Ledger migration failed (non-critical):', error.message);
+    return false;
+  }
+}
+
 module.exports = {
   async list(req, res, next) {
     try {
@@ -84,6 +109,9 @@ module.exports = {
 
   async create(req, res, next) {
     try {
+      // Run migration automatically if needed (adds missing columns)
+      // This ensures the database has all required columns
+      await runLedgerMigration(req.tenantDb);
       const {
         ledger_name,
         account_group_id,
@@ -129,15 +157,39 @@ module.exports = {
       const groupCode = accountGroup.group_code || 'LED';
       
       // Find the highest sequence number for this group
-      const existingLedgers = await req.tenantModels.Ledger.findAll({
-        where: {
-          ledger_code: {
-            [Op.like]: `${groupCode}-%`,
+      // Exclude potentially missing columns like 'country'
+      let existingLedgers;
+      try {
+        existingLedgers = await req.tenantModels.Ledger.findAll({
+          where: {
+            ledger_code: {
+              [Op.like]: `${groupCode}-%`,
+            },
           },
-        },
-        order: [['ledger_code', 'DESC']],
-        limit: 1,
-      });
+          order: [['ledger_code', 'DESC']],
+          limit: 1,
+          attributes: {
+            exclude: ['country'], // Exclude potentially missing columns
+          },
+        });
+      } catch (error) {
+        // If error is about missing column, retry with minimal attributes
+        if (error.message && error.message.includes("Unknown column")) {
+          logger.warn('Ledger create: Column missing, retrying with minimal attributes', error.message);
+          existingLedgers = await req.tenantModels.Ledger.findAll({
+            where: {
+              ledger_code: {
+                [Op.like]: `${groupCode}-%`,
+              },
+            },
+            order: [['ledger_code', 'DESC']],
+            limit: 1,
+            attributes: ['id', 'ledger_code'], // Only select needed fields
+          });
+        } else {
+          throw error;
+        }
+      }
 
       let sequence = 1;
       if (existingLedgers.length > 0) {
@@ -148,6 +200,7 @@ module.exports = {
 
       const ledger_code = `${groupCode}-${String(sequence).padStart(3, '0')}`;
 
+      // After migration runs, we can use all fields
       // Separate standard fields from dynamic fields
       const standardFields = {
         ledger_name,
@@ -169,8 +222,8 @@ module.exports = {
         phone: phone || null,
         email: email || null,
       };
-
-      // Store shipping_locations and dynamic fields in JSON column
+      
+      // Store shipping_locations and dynamic fields in additional_fields JSON column
       const additionalFields = {};
       
       // Add shipping_locations if provided
@@ -185,6 +238,7 @@ module.exports = {
         }
       });
 
+      // Create ledger with all fields (migration should have added missing columns)
       const ledger = await req.tenantModels.Ledger.create({
         ...standardFields,
         additional_fields: Object.keys(additionalFields).length > 0 ? additionalFields : null,
@@ -200,7 +254,27 @@ module.exports = {
   async getById(req, res, next) {
     try {
       const { id } = req.params;
-      const ledger = await req.tenantModels.Ledger.findByPk(id);
+      
+      // Try to run migration first to ensure columns exist
+      await runLedgerMigration(req.tenantDb);
+      
+      // Try to get ledger - handle missing columns gracefully
+      let ledger;
+      try {
+        ledger = await req.tenantModels.Ledger.findByPk(id);
+      } catch (error) {
+        // If error is about missing column, try with explicit attributes
+        if (error.message && error.message.includes("Unknown column")) {
+          logger.warn('Ledger getById: Column missing, retrying with explicit attributes', error.message);
+          ledger = await req.tenantModels.Ledger.findByPk(id, {
+            attributes: {
+              exclude: ['country', 'opening_balance_date', 'currency', 'description', 'additional_fields'], // Exclude potentially missing columns
+            },
+          });
+        } else {
+          throw error;
+        }
+      }
 
       if (!ledger) {
         return res.status(404).json({ message: 'Ledger not found' });
