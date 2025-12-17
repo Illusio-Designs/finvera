@@ -300,12 +300,18 @@ export const reportsAPI = {
   balanceSheet: (params) => api.get("/reports/balance-sheet", { params }),
   profitLoss: (params) => api.get("/reports/profit-loss", { params }),
   ledgerStatement: (params) => api.get("/reports/ledger-statement", { params }),
+  stockSummary: (params) => api.get("/reports/stock-summary", { params }),
+  stockLedger: (params) => api.get("/reports/stock-ledger", { params }),
 };
 
 // GST API
 export const gstAPI = {
   gstins: {
     create: (data) => api.post("/gst/gstins", data),
+  },
+  rates: {
+    list: (params) => api.get("/gst/rates", { params }),
+    create: (data) => api.post("/gst/rates", data),
   },
   returns: {
     generateGSTR1: (data) => api.post("/gst/returns/gstr1", data),
@@ -326,6 +332,14 @@ export const eInvoiceAPI = {
   generate: (data) => api.post("/einvoice/generate", data),
   get: (voucherId) => api.get(`/einvoice/voucher/${voucherId}`),
   cancel: (voucherId, data) => api.post(`/einvoice/cancel/${voucherId}`, data),
+};
+
+// E-Way Bill API
+export const eWayBillAPI = {
+  list: (params) => api.get("/ewaybill", { params }),
+  generate: (data) => api.post("/ewaybill/generate", data),
+  get: (voucherId) => api.get(`/ewaybill/voucher/${voucherId}`),
+  cancel: (voucherId, data) => api.post(`/ewaybill/cancel/${voucherId}`, data),
 };
 
 // Additional APIs (not in backend docs, keeping for backward compatibility)

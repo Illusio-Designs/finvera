@@ -8,7 +8,7 @@ import { companyAPI } from '../../lib/api';
 import {
   FiHome, FiFolder, FiFileText, FiTrendingUp, FiTrendingDown,
   FiDollarSign, FiCreditCard, FiRefreshCw, FiFile, FiBarChart2,
-  FiShield, FiPercent, FiFileMinus, FiMail, FiSettings, FiUser, FiGift
+  FiShield, FiPercent, FiFileMinus, FiMail, FiSettings, FiUser, FiGift, FiTruck
 } from 'react-icons/fi';
 
 const getClientMenuItems = () => [
@@ -55,6 +55,8 @@ const getClientMenuItems = () => [
       { label: 'Balance Sheet', href: '/client/reports/balance-sheet', icon: FiTrendingUp },
       { label: 'Profit & Loss', href: '/client/reports/profit-loss', icon: FiTrendingDown },
       { label: 'Ledger Statement', href: '/client/reports/ledger-statement', icon: FiFileText },
+      { label: 'Stock Summary', href: '/client/reports/stock-summary', icon: FiBarChart2 },
+      { label: 'Stock Ledger', href: '/client/reports/stock-ledger', icon: FiFileText },
     ],
   },
   {
@@ -70,6 +72,7 @@ const getClientMenuItems = () => [
       { label: 'GSTR-3B', href: '/client/gst/returns/gstr3b', icon: FiFileMinus },
       { label: 'TDS', href: '/client/tds', icon: FiDollarSign },
       { label: 'E-Invoice', href: '/client/einvoice', icon: FiMail },
+      { label: 'E-Way Bill', href: '/client/ewaybill', icon: FiTruck },
     ],
   },
   {
