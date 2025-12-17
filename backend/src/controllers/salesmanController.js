@@ -1,7 +1,12 @@
-const { Salesman, Distributor, Lead, LeadActivity, Commission, Target, User } = require('../models');
+const { Salesman, Distributor, Lead, LeadActivity, Commission, Target, User, sequelize } = require('../models');
 const { TenantMaster } = require('../models/masterModels');
 const { Op } = require('sequelize');
 const { Sequelize } = require('sequelize');
+const {
+  normalizeOptionalCode,
+  generateNextSequentialCode,
+  isUniqueConstraintOnField,
+} = require('../utils/codeGenerator');
 
 module.exports = {
   async list(req, res, next) {
@@ -46,7 +51,7 @@ module.exports = {
       const {
         email,
         password,
-        salesman_code,
+        salesman_code: salesmanCodeInput,
         full_name,
         distributor_id,
         territory,
@@ -56,29 +61,71 @@ module.exports = {
         target_annual,
       } = req.body;
 
-      const bcrypt = require('bcryptjs');
-      const password_hash = await bcrypt.hash(password, 10);
-      const user = await User.create({
-        email,
-        password: password_hash,
-        role: 'salesman',
-        name: full_name,
-        tenant_id: req.tenant_id || null,
-      });
+      const salesman_code = normalizeOptionalCode(salesmanCodeInput);
 
-      const salesman = await Salesman.create({
-        user_id: user.id,
-        distributor_id,
-        salesman_code,
-        full_name,
-        territory: territory || [],
-        commission_rate: parseFloat(commission_rate) || 0,
-        target_monthly: parseFloat(target_monthly) || 0,
-        target_quarterly: parseFloat(target_quarterly) || 0,
-        target_annual: parseFloat(target_annual) || 0,
-      });
+      const tx = await sequelize.transaction();
+      try {
+        const bcrypt = require('bcryptjs');
+        const password_hash = await bcrypt.hash(password, 10);
+        const user = await User.create(
+          {
+            email,
+            password: password_hash,
+            role: 'salesman',
+            name: full_name,
+            tenant_id: req.tenant_id || null,
+          },
+          { transaction: tx }
+        );
 
-      res.status(201).json(salesman);
+        let salesman = null;
+        const maxAttempts = 5;
+
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          const codeToUse =
+            salesman_code ||
+            (await generateNextSequentialCode({
+              model: Salesman,
+              field: 'salesman_code',
+              prefix: 'SALE',
+              padLength: 3,
+              transaction: tx,
+            }));
+
+          try {
+            salesman = await Salesman.create(
+              {
+                user_id: user.id,
+                distributor_id,
+                salesman_code: codeToUse,
+                full_name,
+                territory: territory || [],
+                commission_rate: parseFloat(commission_rate) || 0,
+                target_monthly: parseFloat(target_monthly) || 0,
+                target_quarterly: parseFloat(target_quarterly) || 0,
+                target_annual: parseFloat(target_annual) || 0,
+              },
+              { transaction: tx }
+            );
+            break;
+          } catch (err) {
+            if (!salesman_code && isUniqueConstraintOnField(err, 'salesman_code')) {
+              continue;
+            }
+            throw err;
+          }
+        }
+
+        if (!salesman) {
+          throw new Error('Failed to generate a unique salesman_code');
+        }
+
+        await tx.commit();
+        res.status(201).json(salesman);
+      } catch (err) {
+        await tx.rollback();
+        throw err;
+      }
     } catch (err) {
       next(err);
     }
@@ -111,6 +158,11 @@ module.exports = {
 
       if (!salesman) {
         return res.status(404).json({ message: 'Salesman not found' });
+      }
+
+      // Codes are immutable after creation
+      if (Object.prototype.hasOwnProperty.call(req.body || {}, 'salesman_code')) {
+        return res.status(400).json({ message: 'salesman_code cannot be changed' });
       }
 
       await salesman.update(req.body);
