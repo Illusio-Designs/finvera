@@ -243,6 +243,59 @@ module.exports = {
     }
   },
 
+  async switchCompany(req, res, next) {
+    try {
+      const userId = req.user_id || req.user?.id || req.user?.sub;
+      const tenantId = req.tenant_id;
+      const role = req.role;
+      const { company_id } = req.body || {};
+
+      if (!userId || !tenantId) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      if (!['tenant_admin', 'user', 'accountant'].includes(role)) {
+        return res.status(403).json({ message: 'Company switching is only for tenant users' });
+      }
+
+      if (!company_id) {
+        return res.status(400).json({ message: 'company_id is required' });
+      }
+
+      const company = await masterModels.Company.findOne({
+        where: { id: company_id, tenant_id: tenantId, is_active: true },
+      });
+
+      if (!company) {
+        return res.status(404).json({ message: 'Company not found' });
+      }
+
+      if (!company.db_provisioned) {
+        return res.status(503).json({ message: 'Company database is being provisioned' });
+      }
+
+      const tokens = await signTokens({
+        id: userId,
+        tenant_id: tenantId,
+        company_id: company.id,
+        role,
+      });
+
+      return res.json({
+        user: {
+          id: userId,
+          tenant_id: tenantId,
+          company_id: company.id,
+          company_name: company.company_name,
+          role,
+        },
+        ...tokens,
+      });
+    } catch (err) {
+      return next(err);
+    }
+  },
+
   async getProfile(req, res, next) {
     try {
       const userId = req.user_id || req.user?.id || req.user?.sub;

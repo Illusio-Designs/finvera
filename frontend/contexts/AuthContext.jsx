@@ -229,6 +229,27 @@ export const AuthProvider = ({ children }) => {
     Cookies.set('user', JSON.stringify(updatedUser), { expires: 7, sameSite: 'lax' });
   };
 
+  const switchCompany = async (companyId) => {
+    const response = await authAPI.switchCompany(companyId);
+    const responseData = response.data?.data || response.data;
+    const userData = responseData.user || responseData;
+    const accessToken = responseData.accessToken || responseData.token;
+    const refreshTokenValue = responseData.refreshToken;
+    const jti = responseData.jti;
+
+    const cookieOptions = { expires: 7, sameSite: 'lax' };
+    if (accessToken) Cookies.set('token', accessToken, cookieOptions);
+    if (refreshTokenValue) Cookies.set('refreshToken', refreshTokenValue, { ...cookieOptions, expires: 30 });
+    if (jti) Cookies.set('jti', jti, cookieOptions);
+
+    if (userData?.company_id) {
+      Cookies.set('companyId', userData.company_id, cookieOptions);
+    }
+
+    updateUser(userData);
+    return { success: true, user: userData };
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -238,6 +259,7 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         refreshToken,
+        switchCompany,
         updateUser,
         isAuthenticated: !!user,
       }}

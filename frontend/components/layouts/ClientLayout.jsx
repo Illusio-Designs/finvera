@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import Sidebar from './Sidebar';
@@ -98,8 +98,11 @@ const getClientMenuItems = () => [
 export default function ClientLayout({ children, title = 'Client Portal - Finvera' }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const { user } = useAuth();
+  const { user, switchCompany } = useAuth();
   const router = useRouter();
+  const [companies, setCompanies] = useState([]);
+  const [companyStatus, setCompanyStatus] = useState(null);
+  const [switching, setSwitching] = useState(false);
 
   // Ensure a company exists before accessing most tenant features
   useEffect(() => {
@@ -129,6 +132,75 @@ export default function ClientLayout({ children, title = 'Client Portal - Finver
     };
   }, [router, router.pathname, user]);
 
+  useEffect(() => {
+    if (!user) return;
+    if (!router.pathname.startsWith('/client')) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [listRes, statusRes] = await Promise.all([companyAPI.list(), companyAPI.status()]);
+        if (cancelled) return;
+        setCompanies(listRes?.data?.data || []);
+        setCompanyStatus(statusRes?.data?.data || null);
+      } catch (e) {
+        // ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [router.pathname, user]);
+
+  const companyActions = useMemo(() => {
+    if (!user || !router.pathname.startsWith('/client')) return null;
+    if (!['tenant_admin', 'user', 'accountant'].includes(user.role)) return null;
+    if (!companies.length) return null;
+
+    const canCreate =
+      companyStatus && typeof companyStatus.company_count === 'number' && typeof companyStatus.max_companies === 'number'
+        ? companyStatus.company_count < companyStatus.max_companies
+        : true;
+
+    return (
+      <div className="flex items-center gap-2">
+        <select
+          value={user.company_id || ''}
+          onChange={async (e) => {
+            const nextCompanyId = e.target.value;
+            if (!nextCompanyId || nextCompanyId === user.company_id) return;
+            try {
+              setSwitching(true);
+              await switchCompany(nextCompanyId);
+              // Refresh current page data under new company context
+              router.replace(router.asPath);
+            } finally {
+              setSwitching(false);
+            }
+          }}
+          disabled={switching}
+          className="hidden sm:block text-sm border border-gray-300 rounded-lg bg-gray-50 px-3 py-2"
+          title="Select company"
+        >
+          {companies.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.company_name}
+            </option>
+          ))}
+        </select>
+
+        {canCreate && (
+          <button
+            onClick={() => router.push('/client/company/new')}
+            className="hidden sm:inline-flex items-center text-sm px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50"
+            type="button"
+          >
+            Create company
+          </button>
+        )}
+      </div>
+    );
+  }, [companies, companyStatus, router, switchCompany, switching, user]);
+
   return (
     <>
       <Head>
@@ -147,6 +219,7 @@ export default function ClientLayout({ children, title = 'Client Portal - Finver
           <Header
             onMenuClick={() => setSidebarOpen(!sidebarOpen)}
             title={title}
+            actions={companyActions}
           />
           <main className="flex-1 p-4 sm:p-6 lg:p-8">
             {children}

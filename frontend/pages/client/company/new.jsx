@@ -70,12 +70,14 @@ export default function CreateCompanyPage() {
   });
 
   useEffect(() => {
-    // If company already exists, skip this page
+    // If plan/company limit reached, skip this page
     (async () => {
       try {
         const res = await companyAPI.status();
-        const hasCompany = !!res?.data?.data?.has_company;
-        if (hasCompany) router.replace('/client/dashboard');
+        const status = res?.data?.data || {};
+        const companyCount = status.company_count || 0;
+        const maxCompanies = status.max_companies || 1;
+        if (companyCount >= maxCompanies) router.replace('/client/dashboard');
       } catch (e) {
         // ignore
       }

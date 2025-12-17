@@ -6,9 +6,15 @@ import DataTable from '../../../../components/tables/DataTable';
 import { useTable } from '../../../../hooks/useTable';
 import { accountingAPI } from '../../../../lib/api';
 import Badge from '../../../../components/ui/Badge';
+import { useEffect } from 'react';
 
 export default function AccountGroupsList() {
   const router = useRouter();
+
+  // Account groups are system-managed; redirect users to Ledgers.
+  useEffect(() => {
+    router.replace('/client/accounting/ledgers');
+  }, [router]);
 
   const {
     data: tableData,
@@ -60,16 +66,7 @@ export default function AccountGroupsList() {
             { label: 'Account Groups' },
           ]}
         >
-          <DataTable
-            columns={columns}
-            data={tableData?.data || tableData || []}
-            loading={loading}
-            pagination={pagination}
-            onPageChange={handlePageChange}
-            onSort={handleSort}
-            sortField={sort.field}
-            sortOrder={sort.order}
-          />
+          <DataTable columns={columns} data={[]} loading={true} />
         </PageLayout>
       </ClientLayout>
     </ProtectedRoute>
