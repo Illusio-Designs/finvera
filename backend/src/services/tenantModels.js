@@ -399,6 +399,41 @@ module.exports = (sequelize) => {
     timestamps: true,
   });
 
+  // E-Way Bill model (generated for outward supply / sales)
+  models.EWayBill = sequelize.define('EWayBill', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    voucher_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      unique: true,
+    },
+    eway_bill_no: DataTypes.STRING(32),
+    generated_at: DataTypes.DATE,
+    valid_upto: DataTypes.DATE,
+    status: {
+      type: DataTypes.ENUM('pending', 'generated', 'cancelled', 'failed'),
+      defaultValue: 'pending',
+    },
+    transporter_id: DataTypes.STRING(50),
+    transporter_name: DataTypes.STRING(255),
+    transport_mode: DataTypes.STRING(20), // ROAD/RAIL/AIR/SHIP
+    vehicle_no: DataTypes.STRING(20),
+    distance_km: DataTypes.INTEGER,
+    from_pincode: DataTypes.STRING(10),
+    to_pincode: DataTypes.STRING(10),
+    supply_type: DataTypes.STRING(20), // OUTWARD/INWARD
+    doc_type: DataTypes.STRING(10), // INV/CHL/BIL
+    payload: DataTypes.JSON,
+    error_message: DataTypes.TEXT,
+  }, {
+    tableName: 'e_way_bills',
+    timestamps: true,
+  });
+
   // Bill-wise Details model
   models.BillWiseDetail = sequelize.define('BillWiseDetail', {
     id: {
@@ -602,6 +637,9 @@ module.exports = (sequelize) => {
 
   models.Voucher.hasOne(models.EInvoice, { foreignKey: 'voucher_id' });
   models.EInvoice.belongsTo(models.Voucher, { foreignKey: 'voucher_id' });
+
+  models.Voucher.hasOne(models.EWayBill, { foreignKey: 'voucher_id' });
+  models.EWayBill.belongsTo(models.Voucher, { foreignKey: 'voucher_id' });
 
   models.InventoryItem.hasMany(models.StockMovement, { foreignKey: 'inventory_item_id' });
   models.StockMovement.belongsTo(models.InventoryItem, { foreignKey: 'inventory_item_id' });
