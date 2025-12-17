@@ -100,6 +100,7 @@ export const authAPI = {
   login: (data) => api.post("/auth/login", data),
   logout: (data) => api.post("/auth/logout", data),
   refresh: (data) => api.post("/auth/refresh", data),
+  switchCompany: (company_id) => api.post("/auth/switch-company", { company_id }),
   getProfile: () => api.get("/auth/profile"),
   updateProfile: (data) => api.put("/auth/profile", data),
   uploadProfileImage: (formData) => {
