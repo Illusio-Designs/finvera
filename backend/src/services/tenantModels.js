@@ -101,8 +101,31 @@ module.exports = (sequelize) => {
     city: DataTypes.STRING(100),
     state: DataTypes.STRING(100),
     pincode: DataTypes.STRING(10),
+    country: DataTypes.STRING(100),
     phone: DataTypes.STRING(15),
     email: DataTypes.STRING(255),
+    // Bank details
+    bank_name: DataTypes.STRING(255),
+    bank_account_number: DataTypes.STRING(50),
+    bank_ifsc_code: DataTypes.STRING(11),
+    bank_branch: DataTypes.STRING(255),
+    bank_account_type: DataTypes.STRING(50),
+    // Shipping location
+    shipping_location_name: DataTypes.STRING(255),
+    shipping_address: DataTypes.TEXT,
+    shipping_city: DataTypes.STRING(100),
+    shipping_state: DataTypes.STRING(100),
+    shipping_pincode: DataTypes.STRING(10),
+    shipping_country: DataTypes.STRING(100),
+    currency: DataTypes.STRING(3),
+    opening_balance_date: DataTypes.DATEONLY,
+    description: DataTypes.TEXT,
+    // JSON field for storing dynamic fields based on account group
+    additional_fields: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      comment: 'Stores dynamic fields based on account group type',
+    },
     is_active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,

@@ -20,12 +20,36 @@ module.exports = {
         where.account_group_id = account_group_id;
       }
 
-      const { count, rows } = await req.tenantModels.Ledger.findAndCountAll({
-        where,
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        order: [['ledger_code', 'ASC']],
-      });
+      // Try to get ledgers - handle case where country column might not exist
+      let count, rows;
+      try {
+        const result = await req.tenantModels.Ledger.findAndCountAll({
+          where,
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          order: [['ledger_code', 'ASC']],
+        });
+        count = result.count;
+        rows = result.rows;
+      } catch (error) {
+        // If error is about missing column (like 'country'), retry with explicit attributes
+        if (error.message && error.message.includes("Unknown column")) {
+          logger.warn('Ledger list: Column missing, retrying with explicit attributes', error.message);
+          const result = await req.tenantModels.Ledger.findAndCountAll({
+            where,
+            limit: parseInt(limit),
+            offset: parseInt(offset),
+            order: [['ledger_code', 'ASC']],
+            attributes: {
+              exclude: ['country'], // Exclude potentially missing columns
+            },
+          });
+          count = result.count;
+          rows = result.rows;
+        } else {
+          throw error;
+        }
+      }
 
       // Enrich account group details from master DB
       const groupIds = [...new Set(rows.map((r) => r.account_group_id).filter(Boolean))];
@@ -62,35 +86,108 @@ module.exports = {
     try {
       const {
         ledger_name,
-        ledger_code,
         account_group_id,
         opening_balance = 0,
+        opening_balance_date,
         balance_type = 'debit',
+        currency = 'INR',
+        description,
+        // Standard fields
         gstin,
         pan,
         address,
         city,
         state,
         pincode,
+        country,
         phone,
         email,
+        // Shipping locations (array)
+        shipping_locations,
+        ...dynamicFields
       } = req.body;
 
-      const ledger = await req.tenantModels.Ledger.create({
+      if (!ledger_name || !account_group_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'ledger_name and account_group_id are required',
+        });
+      }
+
+      // Get account group to generate ledger code
+      const accountGroup = await req.masterModels.AccountGroup.findByPk(account_group_id);
+      if (!accountGroup) {
+        return res.status(404).json({
+          success: false,
+          message: 'Account group not found',
+        });
+      }
+
+      // Auto-generate ledger code
+      // Format: {GROUP_CODE}-{SEQUENCE}
+      // Example: CA-001, BANK-002, etc.
+      const groupCode = accountGroup.group_code || 'LED';
+      
+      // Find the highest sequence number for this group
+      const existingLedgers = await req.tenantModels.Ledger.findAll({
+        where: {
+          ledger_code: {
+            [Op.like]: `${groupCode}-%`,
+          },
+        },
+        order: [['ledger_code', 'DESC']],
+        limit: 1,
+      });
+
+      let sequence = 1;
+      if (existingLedgers.length > 0) {
+        const lastCode = existingLedgers[0].ledger_code;
+        const lastSequence = parseInt(lastCode.split('-')[1] || '0', 10);
+        sequence = lastSequence + 1;
+      }
+
+      const ledger_code = `${groupCode}-${String(sequence).padStart(3, '0')}`;
+
+      // Separate standard fields from dynamic fields
+      const standardFields = {
         ledger_name,
         ledger_code,
         account_group_id,
         opening_balance: parseFloat(opening_balance) || 0,
+        opening_balance_date: opening_balance_date || null,
         opening_balance_type: balance_type === 'debit' ? 'Dr' : 'Cr',
         balance_type,
-        gstin,
-        pan,
-        address,
-        city,
-        state,
-        pincode,
-        phone,
-        email,
+        currency: currency || 'INR',
+        description: description || null,
+        gstin: gstin || null,
+        pan: pan || null,
+        address: address || null,
+        city: city || null,
+        state: state || null,
+        pincode: pincode || null,
+        country: country || null,
+        phone: phone || null,
+        email: email || null,
+      };
+
+      // Store shipping_locations and dynamic fields in JSON column
+      const additionalFields = {};
+      
+      // Add shipping_locations if provided
+      if (shipping_locations && Array.isArray(shipping_locations) && shipping_locations.length > 0) {
+        additionalFields.shipping_locations = shipping_locations;
+      }
+      
+      // Add other dynamic fields
+      Object.keys(dynamicFields).forEach((key) => {
+        if (dynamicFields[key] !== null && dynamicFields[key] !== undefined && dynamicFields[key] !== '') {
+          additionalFields[key] = dynamicFields[key];
+        }
+      });
+
+      const ledger = await req.tenantModels.Ledger.create({
+        ...standardFields,
+        additional_fields: Object.keys(additionalFields).length > 0 ? additionalFields : null,
       });
 
       res.status(201).json({ data: ledger });
@@ -113,9 +210,16 @@ module.exports = {
         ? await req.masterModels.AccountGroup.findByPk(ledger.account_group_id)
         : null;
 
+      const ledgerData = ledger.toJSON();
+      
+      // Merge additional_fields into main object for easier access
+      if (ledgerData.additional_fields && typeof ledgerData.additional_fields === 'object') {
+        Object.assign(ledgerData, ledgerData.additional_fields);
+      }
+
       res.json({
         data: {
-          ...ledger.toJSON(),
+          ...ledgerData,
           account_group: group
             ? { id: group.id, group_name: group.name, group_code: group.group_code, nature: group.nature }
             : null,
@@ -132,19 +236,26 @@ module.exports = {
       const { id } = req.params;
       const {
         ledger_name,
-        ledger_code,
         account_group_id,
         opening_balance,
+        opening_balance_date,
         balance_type,
+        currency,
+        description,
+        // Standard fields
         gstin,
         pan,
         address,
         city,
         state,
         pincode,
+        country,
         phone,
         email,
+        // Shipping locations (array)
+        shipping_locations,
         is_active,
+        ...dynamicFields
       } = req.body;
 
       const ledger = await req.tenantModels.Ledger.findByPk(id);
@@ -155,22 +266,55 @@ module.exports = {
 
       const updateData = {};
       if (ledger_name) updateData.ledger_name = ledger_name;
-      if (ledger_code) updateData.ledger_code = ledger_code;
       if (account_group_id) updateData.account_group_id = account_group_id;
       if (opening_balance !== undefined) updateData.opening_balance = parseFloat(opening_balance);
+      if (opening_balance_date !== undefined) updateData.opening_balance_date = opening_balance_date;
       if (balance_type) {
         updateData.balance_type = balance_type;
         updateData.opening_balance_type = balance_type === 'debit' ? 'Dr' : 'Cr';
       }
+      if (currency !== undefined) updateData.currency = currency;
+      if (description !== undefined) updateData.description = description;
       if (gstin !== undefined) updateData.gstin = gstin;
       if (pan !== undefined) updateData.pan = pan;
       if (address !== undefined) updateData.address = address;
       if (city !== undefined) updateData.city = city;
       if (state !== undefined) updateData.state = state;
       if (pincode !== undefined) updateData.pincode = pincode;
+      if (country !== undefined) updateData.country = country;
       if (phone !== undefined) updateData.phone = phone;
       if (email !== undefined) updateData.email = email;
       if (is_active !== undefined) updateData.is_active = is_active;
+
+      // Handle shipping_locations and dynamic fields in additional_fields JSON
+      const additionalFields = {};
+      
+      // Get existing additional_fields if any
+      if (ledger.additional_fields && typeof ledger.additional_fields === 'object') {
+        Object.assign(additionalFields, ledger.additional_fields);
+      }
+      
+      // Update shipping_locations if provided
+      if (shipping_locations !== undefined) {
+        if (Array.isArray(shipping_locations) && shipping_locations.length > 0) {
+          additionalFields.shipping_locations = shipping_locations;
+        } else {
+          delete additionalFields.shipping_locations;
+        }
+      }
+      
+      // Add other dynamic fields
+      Object.keys(dynamicFields).forEach((key) => {
+        if (dynamicFields[key] !== null && dynamicFields[key] !== undefined && dynamicFields[key] !== '') {
+          additionalFields[key] = dynamicFields[key];
+        }
+      });
+      
+      if (Object.keys(additionalFields).length > 0) {
+        updateData.additional_fields = additionalFields;
+      } else {
+        updateData.additional_fields = null;
+      }
 
       await ledger.update(updateData);
 
@@ -255,6 +399,35 @@ module.exports = {
       });
     } catch (error) {
       logger.error('Ledger getBalance error:', error);
+      next(error);
+    }
+  },
+
+  async delete(req, res, next) {
+    try {
+      const { id } = req.params;
+      const ledger = await req.tenantModels.Ledger.findByPk(id);
+
+      if (!ledger) {
+        return res.status(404).json({ message: 'Ledger not found' });
+      }
+
+      // Check if ledger is used in any vouchers
+      const voucherEntries = await req.tenantModels.VoucherLedgerEntry.findOne({
+        where: { ledger_id: id },
+      });
+
+      if (voucherEntries) {
+        return res.status(400).json({
+          message: 'Cannot delete ledger. It is being used in vouchers.',
+        });
+      }
+
+      await ledger.destroy();
+
+      res.json({ message: 'Ledger deleted successfully' });
+    } catch (error) {
+      logger.error('Ledger delete error:', error);
       next(error);
     }
   },

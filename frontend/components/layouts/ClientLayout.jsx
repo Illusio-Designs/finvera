@@ -21,7 +21,7 @@ const getClientMenuItems = () => [
   },
   {
     label: 'Ledgers',
-    href: '/client/accounting/ledgers',
+    href: '/client/ledgers',
     icon: FiFileText,
   },
   {
@@ -31,11 +31,9 @@ const getClientMenuItems = () => [
     label: 'Inventory',
     icon: FiPackage,
     children: [
-      { label: 'Items', href: '/client/inventory/items', icon: FiPackage },
-      { label: 'Stock Summary', href: '/client/reports/stock-summary', icon: FiBarChart2 },
-      { label: 'Stock Ledger', href: '/client/reports/stock-ledger', icon: FiFileText },
-      { label: 'Stock Adjustment', href: '/client/inventory/adjustment', icon: FiEdit },
-      { label: 'Stock Transfer', href: '/client/inventory/transfer', icon: FiMove },
+      { label: 'Items', href: '/client/inventory-items', icon: FiPackage },
+      { label: 'Stock Adjustment', href: '/client/inventory-adjustment', icon: FiEdit },
+      { label: 'Stock Transfer', href: '/client/inventory-transfer', icon: FiMove },
     ],
   },
   {
@@ -45,13 +43,13 @@ const getClientMenuItems = () => [
     label: 'Vouchers',
     icon: FiFile,
     children: [
-      { label: 'All Vouchers', href: '/client/accounting/vouchers', icon: FiFile },
-      { label: 'Sales Invoice', href: '/client/accounting/invoices/sales/new', icon: FiTrendingUp },
-      { label: 'Purchase Invoice', href: '/client/accounting/invoices/purchase/new', icon: FiTrendingDown },
-      { label: 'Payment', href: '/client/accounting/payments/new', icon: FiDollarSign },
-      { label: 'Receipt', href: '/client/accounting/receipts/new', icon: FiCreditCard },
-      { label: 'Journal', href: '/client/accounting/journals/new', icon: FiFileText },
-      { label: 'Contra', href: '/client/accounting/contra/new', icon: FiRefreshCw },
+      { label: 'All Vouchers', href: '/client/vouchers/vouchers', icon: FiFile },
+      { label: 'Sales Invoice', href: '/client/vouchers/sales-invoice', icon: FiTrendingUp },
+      { label: 'Purchase Invoice', href: '/client/vouchers/purchase-invoice', icon: FiTrendingDown },
+      { label: 'Payment', href: '/client/vouchers/payment', icon: FiDollarSign },
+      { label: 'Receipt', href: '/client/vouchers/receipt', icon: FiCreditCard },
+      { label: 'Journal', href: '/client/vouchers/journal', icon: FiFileText },
+      { label: 'Contra', href: '/client/vouchers/contra', icon: FiRefreshCw },
     ],
   },
   {
@@ -65,6 +63,8 @@ const getClientMenuItems = () => [
       { label: 'Balance Sheet', href: '/client/reports/balance-sheet', icon: FiTrendingUp },
       { label: 'Profit & Loss', href: '/client/reports/profit-loss', icon: FiTrendingDown },
       { label: 'Ledger Statement', href: '/client/reports/ledger-statement', icon: FiFileText },
+      { label: 'Stock Summary', href: '/client/reports/stock-summary', icon: FiBarChart2 },
+      { label: 'Stock Ledger', href: '/client/reports/stock-ledger', icon: FiFileText },
     ],
   },
   {
@@ -74,12 +74,13 @@ const getClientMenuItems = () => [
     label: 'Compliance',
     icon: FiShield,
     children: [
-      { label: 'GSTINs', href: '/client/gst/gstins', icon: FiShield },
-      { label: 'GST Rates', href: '/client/gst/rates', icon: FiPercent },
+      { label: 'GSTINs', href: '/client/gstins', icon: FiShield },
+      { label: 'GST Rates', href: '/client/gst-rates', icon: FiPercent },
       { label: 'GSTR-1', href: '/client/gst/returns/gstr1', icon: FiFileMinus },
       { label: 'GSTR-3B', href: '/client/gst/returns/gstr3b', icon: FiFileMinus },
       { label: 'TDS', href: '/client/tds', icon: FiDollarSign },
       { label: 'E-Invoice', href: '/client/einvoice', icon: FiMail },
+      { label: 'E-Way Bill', href: '/client/ewaybill', icon: FiMail },
     ],
   },
   {

@@ -35,29 +35,28 @@ export default function Input({
         disabled={disabled}
         className={`
           w-full
-          px-4
+          z-20
+          px-3
           py-2.5
           border
           rounded-lg
-          shadow-sm
-          bg-white
+          bg-gray-50
           text-gray-900
-          placeholder-gray-400
+          text-sm
+          placeholder-gray-500
           transition-all
           duration-200
           focus:outline-none
-          focus:ring-2
-          focus:ring-primary-500/20
+          focus:ring-1
+          focus:ring-primary-500
           focus:border-primary-500
-          focus:shadow-md
-          focus:shadow-primary-500/10
-          disabled:bg-gray-50
-          disabled:text-gray-500
+          disabled:bg-gray-100
+          disabled:text-gray-400
           disabled:cursor-not-allowed
           disabled:border-gray-200
           ${error 
-            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' 
-            : 'border-gray-300 hover:border-gray-400'
+            ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+            : 'border-gray-300'
           }
           ${className}
         `.replace(/\s+/g, ' ').trim()}
