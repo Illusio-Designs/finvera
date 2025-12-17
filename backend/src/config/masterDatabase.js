@@ -154,6 +154,13 @@ async function seedMasterData() {
       await require('../seeders/masterSeeds').seedTDSSections();
     }
 
+    // Seed starter HSN/SAC master entries
+    const hsnCount = await masterModels.HSNSAC.count();
+    if (hsnCount === 0) {
+      logger.info('Seeding starter HSN/SAC master data...');
+      await require('../seeders/masterSeeds').seedHSNSACMaster();
+    }
+
     logger.info('Master data seeding complete');
   } catch (error) {
     logger.warn('Error seeding master data:', error.message);

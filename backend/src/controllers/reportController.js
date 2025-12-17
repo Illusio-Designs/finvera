@@ -1,60 +1,93 @@
-const { Ledger, AccountGroup, VoucherLedgerEntry, Voucher } = require('../models');
-const { Op } = require('sequelize');
-const sequelize = require('../config/database');
+const { Op, Sequelize } = require('sequelize');
+
+function toNum(v, fallback = 0) {
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function openingSigned(ledger) {
+  const amt = toNum(ledger?.opening_balance, 0);
+  return ledger?.opening_balance_type === 'Cr' ? -amt : amt;
+}
+
+async function loadGroupMap(masterModels, ledgers) {
+  const groupIds = [...new Set((ledgers || []).map((l) => l.account_group_id).filter(Boolean))];
+  const groups = groupIds.length > 0 ? await masterModels.AccountGroup.findAll({ where: { id: groupIds } }) : [];
+  return new Map(groups.map((g) => [g.id, g]));
+}
+
+async function movementByLedger(tenantModels, { fromDate, toDate, asOnDate, beforeDate } = {}) {
+  const voucherWhere = { status: 'posted' };
+  if (beforeDate) {
+    voucherWhere.voucher_date = { [Op.lt]: beforeDate };
+  } else if (asOnDate) {
+    voucherWhere.voucher_date = { [Op.lte]: asOnDate };
+  } else if (fromDate && toDate) {
+    voucherWhere.voucher_date = { [Op.between]: [fromDate, toDate] };
+  } else if (fromDate) {
+    voucherWhere.voucher_date = { [Op.gte]: fromDate };
+  } else if (toDate) {
+    voucherWhere.voucher_date = { [Op.lte]: toDate };
+  }
+
+  const rows = await tenantModels.VoucherLedgerEntry.findAll({
+    attributes: [
+      'ledger_id',
+      [Sequelize.fn('SUM', Sequelize.col('debit')), 'total_debit'],
+      [Sequelize.fn('SUM', Sequelize.col('credit')), 'total_credit'],
+    ],
+    include: [{ model: tenantModels.Voucher, attributes: [], where: voucherWhere, required: true }],
+    group: ['ledger_id'],
+    raw: true,
+  });
+
+  const map = new Map();
+  for (const r of rows) {
+    map.set(r.ledger_id, {
+      debit: toNum(r.total_debit, 0),
+      credit: toNum(r.total_credit, 0),
+    });
+  }
+  return map;
+}
 
 module.exports = {
   async getTrialBalance(req, res, next) {
     try {
       const { as_on_date, from_date } = req.query;
-      const where = { tenant_id: req.tenant_id };
+      const asOn = as_on_date || null;
+      const from = from_date || null;
+      const to = new Date().toISOString().slice(0, 10);
 
-      // Get all active ledgers
-      const ledgers = await Ledger.findAll({
-        where: { ...where, is_active: true },
-        include: [{ model: AccountGroup, attributes: ['nature', 'primary_group'] }],
+      const ledgers = await req.tenantModels.Ledger.findAll({ where: { is_active: true } });
+      const groupMap = await loadGroupMap(req.masterModels, ledgers);
+
+      const moveMap = await movementByLedger(req.tenantModels, {
+        asOnDate: asOn,
+        fromDate: !asOn && from ? from : null,
+        toDate: !asOn && from ? to : null,
       });
 
       const trialBalance = [];
-
       for (const ledger of ledgers) {
-        const entryWhere = {
-          tenant_id: req.tenant_id,
-          ledger_id: ledger.id,
-        };
+        const move = moveMap.get(ledger.id) || { debit: 0, credit: 0 };
+        const closingSigned = openingSigned(ledger) + (move.debit - move.credit);
+        if (Math.abs(closingSigned) <= 0.009) continue;
 
-        if (as_on_date) {
-          entryWhere.created_at = { [Op.lte]: new Date(as_on_date) };
-        } else if (from_date) {
-          entryWhere.created_at = { [Op.gte]: new Date(from_date) };
-        }
-
-        const entries = await VoucherLedgerEntry.findAll({ where: entryWhere });
-
-        let totalDebit = parseFloat(ledger.opening_balance_type === 'Debit' ? ledger.opening_balance : 0);
-        let totalCredit = parseFloat(ledger.opening_balance_type === 'Credit' ? ledger.opening_balance : 0);
-
-        entries.forEach((entry) => {
-          totalDebit += parseFloat(entry.debit_amount);
-          totalCredit += parseFloat(entry.credit_amount);
+        const group = groupMap.get(ledger.account_group_id);
+        trialBalance.push({
+          ledger_code: ledger.ledger_code,
+          ledger_name: ledger.ledger_name,
+          debit: closingSigned > 0 ? parseFloat(closingSigned.toFixed(2)) : 0,
+          credit: closingSigned < 0 ? parseFloat(Math.abs(closingSigned).toFixed(2)) : 0,
+          group_code: group?.group_code || null,
+          group_name: group?.name || null,
+          nature: group?.nature || null,
         });
-
-        const balance = ledger.account_group.nature === 'Debit'
-          ? totalDebit - totalCredit
-          : totalCredit - totalDebit;
-
-        if (Math.abs(balance) > 0.01) {
-          trialBalance.push({
-            ledger_code: ledger.ledger_code,
-            ledger_name: ledger.ledger_name,
-            debit: balance > 0 && ledger.account_group.nature === 'Debit' ? Math.abs(balance) : 0,
-            credit: balance > 0 && ledger.account_group.nature === 'Credit' ? Math.abs(balance) : 0,
-            group: ledger.account_group.primary_group,
-          });
-        }
       }
 
-      const totalDebit = trialBalance.reduce((sum, item) => sum + parseFloat(item.debit), 0);
-      const totalCredit = trialBalance.reduce((sum, item) => sum + parseFloat(item.credit), 0);
+      const totalDebit = trialBalance.reduce((sum, i) => sum + toNum(i.debit, 0), 0);
+      const totalCredit = trialBalance.reduce((sum, i) => sum + toNum(i.credit, 0), 0);
 
       res.json({
         trialBalance,
@@ -63,84 +96,7 @@ module.exports = {
           totalCredit: parseFloat(totalCredit.toFixed(2)),
           difference: parseFloat(Math.abs(totalDebit - totalCredit).toFixed(2)),
         },
-        as_on_date: as_on_date || new Date().toISOString(),
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  async getBalanceSheet(req, res, next) {
-    try {
-      const { as_on_date } = req.query;
-      const date = as_on_date ? new Date(as_on_date) : new Date();
-
-      // Get all account groups
-      const groups = await AccountGroup.findAll({
-        where: { tenant_id: req.tenant_id, is_active: true },
-        include: [{ model: Ledger, where: { is_active: true }, required: false }],
-        order: [['balance_sheet_order', 'ASC']],
-      });
-
-      const balanceSheet = {
-        assets: { current: [], nonCurrent: [] },
-        liabilities: { current: [], nonCurrent: [] },
-        equity: [],
-      };
-
-      for (const group of groups) {
-        let groupBalance = 0;
-
-        for (const ledger of group.ledgers || []) {
-          const balance = await this.calculateLedgerBalance(ledger.id, date);
-          groupBalance += balance;
-        }
-
-        if (Math.abs(groupBalance) > 0.01) {
-          const item = {
-            group_code: group.group_code,
-            group_name: group.group_name,
-            amount: Math.abs(groupBalance),
-          };
-
-          if (group.primary_group === 'Asset') {
-            if (group.group_type === 'Current Asset') {
-              balanceSheet.assets.current.push(item);
-            } else {
-              balanceSheet.assets.nonCurrent.push(item);
-            }
-          } else if (group.primary_group === 'Liability') {
-            if (group.group_type === 'Current Liability') {
-              balanceSheet.liabilities.current.push(item);
-            } else {
-              balanceSheet.liabilities.nonCurrent.push(item);
-            }
-          } else if (group.primary_group === 'Equity') {
-            balanceSheet.equity.push(item);
-          }
-        }
-      }
-
-      // Calculate totals
-      const totalAssets =
-        balanceSheet.assets.current.reduce((sum, a) => sum + a.amount, 0) +
-        balanceSheet.assets.nonCurrent.reduce((sum, a) => sum + a.amount, 0);
-
-      const totalLiabilities =
-        balanceSheet.liabilities.current.reduce((sum, l) => sum + l.amount, 0) +
-        balanceSheet.liabilities.nonCurrent.reduce((sum, l) => sum + l.amount, 0);
-
-      const totalEquity = balanceSheet.equity.reduce((sum, e) => sum + e.amount, 0);
-
-      res.json({
-        balanceSheet,
-        totals: {
-          totalAssets: parseFloat(totalAssets.toFixed(2)),
-          totalLiabilities: parseFloat(totalLiabilities.toFixed(2)),
-          totalEquity: parseFloat(totalEquity.toFixed(2)),
-          totalLiabilitiesAndEquity: parseFloat((totalLiabilities + totalEquity).toFixed(2)),
-        },
-        as_on_date: date.toISOString(),
+        as_on_date: asOn || to,
       });
     } catch (err) {
       next(err);
@@ -150,69 +106,54 @@ module.exports = {
   async getProfitLoss(req, res, next) {
     try {
       const { from_date, to_date } = req.query;
-      const from = from_date ? new Date(from_date) : new Date(new Date().getFullYear(), 0, 1);
-      const to = to_date ? new Date(to_date) : new Date();
+      const from = from_date || new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0, 10);
+      const to = to_date || new Date().toISOString().slice(0, 10);
 
-      // Get Income groups
-      const incomeGroups = await AccountGroup.findAll({
-        where: {
-          tenant_id: req.tenant_id,
-          primary_group: 'Income',
-          is_active: true,
-        },
-        include: [{ model: Ledger, where: { is_active: true }, required: false }],
-      });
+      const ledgers = await req.tenantModels.Ledger.findAll({ where: { is_active: true } });
+      const groupMap = await loadGroupMap(req.masterModels, ledgers);
+      const moveMap = await movementByLedger(req.tenantModels, { fromDate: from, toDate: to });
 
-      // Get Expense groups
-      const expenseGroups = await AccountGroup.findAll({
-        where: {
-          tenant_id: req.tenant_id,
-          primary_group: 'Expense',
-          is_active: true,
-        },
-        include: [{ model: Ledger, where: { is_active: true }, required: false }],
-      });
+      const incomeByGroup = new Map();
+      const expenseByGroup = new Map();
 
-      let totalIncome = 0;
-      let totalExpenses = 0;
+      for (const ledger of ledgers) {
+        const group = groupMap.get(ledger.account_group_id);
+        if (!group) continue;
 
-      const income = [];
-      const expenses = [];
+        const move = moveMap.get(ledger.id) || { debit: 0, credit: 0 };
+        const movementSigned = move.debit - move.credit; // debit-positive convention
 
-      // Calculate income
-      for (const group of incomeGroups) {
-        let groupTotal = 0;
-        for (const ledger of group.ledgers || []) {
-          const balance = await this.calculateLedgerBalance(ledger.id, to, from);
-          groupTotal += balance;
-        }
-        if (groupTotal > 0) {
-          income.push({
-            group_name: group.group_name,
-            amount: groupTotal,
-          });
-          totalIncome += groupTotal;
+        if (group.nature === 'income') {
+          const amt = -movementSigned; // income increases on credit
+          if (amt <= 0.009) continue;
+          incomeByGroup.set(group.id, (incomeByGroup.get(group.id) || 0) + amt);
+        } else if (group.nature === 'expense') {
+          const amt = movementSigned; // expense increases on debit
+          if (amt <= 0.009) continue;
+          expenseByGroup.set(group.id, (expenseByGroup.get(group.id) || 0) + amt);
         }
       }
 
-      // Calculate expenses
-      for (const group of expenseGroups) {
-        let groupTotal = 0;
-        for (const ledger of group.ledgers || []) {
-          const balance = await this.calculateLedgerBalance(ledger.id, to, from);
-          groupTotal += Math.abs(balance);
-        }
-        if (groupTotal > 0) {
-          expenses.push({
-            group_name: group.group_name,
-            amount: groupTotal,
-          });
-          totalExpenses += groupTotal;
-        }
-      }
+      const income = [...incomeByGroup.entries()].map(([groupId, amount]) => {
+        const g = groupMap.get(groupId);
+        return {
+          group_code: g?.group_code || null,
+          group_name: g?.name || null,
+          amount: parseFloat(amount.toFixed(2)),
+        };
+      });
+      const expenses = [...expenseByGroup.entries()].map(([groupId, amount]) => {
+        const g = groupMap.get(groupId);
+        return {
+          group_code: g?.group_code || null,
+          group_name: g?.name || null,
+          amount: parseFloat(amount.toFixed(2)),
+        };
+      });
 
-      const grossProfit = totalIncome - totalExpenses;
-      const netProfit = grossProfit; // Simplified - in reality, there are more calculations
+      const totalIncome = income.reduce((s, i) => s + toNum(i.amount, 0), 0);
+      const totalExpenses = expenses.reduce((s, i) => s + toNum(i.amount, 0), 0);
+      const netProfit = totalIncome - totalExpenses;
 
       res.json({
         income,
@@ -220,13 +161,63 @@ module.exports = {
         totals: {
           totalIncome: parseFloat(totalIncome.toFixed(2)),
           totalExpenses: parseFloat(totalExpenses.toFixed(2)),
-          grossProfit: parseFloat(grossProfit.toFixed(2)),
           netProfit: parseFloat(netProfit.toFixed(2)),
         },
-        period: {
-          from_date: from.toISOString(),
-          to_date: to.toISOString(),
+        period: { from_date: from, to_date: to },
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async getBalanceSheet(req, res, next) {
+    try {
+      const { as_on_date } = req.query;
+      const asOn = as_on_date || new Date().toISOString().slice(0, 10);
+
+      const ledgers = await req.tenantModels.Ledger.findAll({ where: { is_active: true } });
+      const groupMap = await loadGroupMap(req.masterModels, ledgers);
+      const moveMap = await movementByLedger(req.tenantModels, { asOnDate: asOn });
+
+      const assets = new Map();
+      const liabilities = new Map();
+
+      for (const ledger of ledgers) {
+        const group = groupMap.get(ledger.account_group_id);
+        if (!group) continue;
+        if (group.nature !== 'asset' && group.nature !== 'liability') continue;
+
+        const move = moveMap.get(ledger.id) || { debit: 0, credit: 0 };
+        const closingSigned = openingSigned(ledger) + (move.debit - move.credit);
+        if (Math.abs(closingSigned) <= 0.009) continue;
+
+        const amountAbs = Math.abs(closingSigned);
+        if (group.nature === 'asset') {
+          assets.set(group.id, (assets.get(group.id) || 0) + amountAbs);
+        } else {
+          liabilities.set(group.id, (liabilities.get(group.id) || 0) + amountAbs);
+        }
+      }
+
+      const assetsArr = [...assets.entries()].map(([groupId, amount]) => {
+        const g = groupMap.get(groupId);
+        return { group_code: g?.group_code || null, group_name: g?.name || null, amount: parseFloat(amount.toFixed(2)) };
+      });
+      const liabilitiesArr = [...liabilities.entries()].map(([groupId, amount]) => {
+        const g = groupMap.get(groupId);
+        return { group_code: g?.group_code || null, group_name: g?.name || null, amount: parseFloat(amount.toFixed(2)) };
+      });
+
+      const totalAssets = assetsArr.reduce((s, i) => s + toNum(i.amount, 0), 0);
+      const totalLiabilities = liabilitiesArr.reduce((s, i) => s + toNum(i.amount, 0), 0);
+
+      res.json({
+        balanceSheet: { assets: assetsArr, liabilities: liabilitiesArr },
+        totals: {
+          totalAssets: parseFloat(totalAssets.toFixed(2)),
+          totalLiabilities: parseFloat(totalLiabilities.toFixed(2)),
         },
+        as_on_date: asOn,
       });
     } catch (err) {
       next(err);
@@ -236,123 +227,138 @@ module.exports = {
   async getLedgerStatement(req, res, next) {
     try {
       const { ledger_id, from_date, to_date } = req.query;
+      if (!ledger_id) return res.status(400).json({ message: 'ledger_id is required' });
 
-      if (!ledger_id) {
-        return res.status(400).json({ message: 'ledger_id is required' });
-      }
+      const ledger = await req.tenantModels.Ledger.findByPk(ledger_id);
+      if (!ledger) return res.status(404).json({ message: 'Ledger not found' });
 
-      const ledger = await Ledger.findOne({
-        where: { id: ledger_id, tenant_id: req.tenant_id },
-        include: [{ model: AccountGroup }],
-      });
+      const from = from_date || new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0, 10);
+      const to = to_date || new Date().toISOString().slice(0, 10);
 
-      if (!ledger) {
-        return res.status(404).json({ message: 'Ledger not found' });
-      }
+      const beforeMoveMap = await movementByLedger(req.tenantModels, { beforeDate: from });
+      const beforeMove = beforeMoveMap.get(ledger.id) || { debit: 0, credit: 0 };
+      const openingBalSigned = openingSigned(ledger) + (beforeMove.debit - beforeMove.credit);
 
-      const from = from_date ? new Date(from_date) : new Date(new Date().getFullYear(), 0, 1);
-      const to = to_date ? new Date(to_date) : new Date();
-
-      const entries = await VoucherLedgerEntry.findAll({
-        where: {
-          tenant_id: req.tenant_id,
-          ledger_id,
-          created_at: { [Op.between]: [from, to] },
-        },
+      const entries = await req.tenantModels.VoucherLedgerEntry.findAll({
+        where: { ledger_id },
         include: [
           {
-            model: Voucher,
-            attributes: ['voucher_number', 'voucher_date', 'voucher_type_id'],
-            include: [{ model: VoucherType, attributes: ['voucher_name'] }],
+            model: req.tenantModels.Voucher,
+            where: { status: 'posted', voucher_date: { [Op.between]: [from, to] } },
+            required: true,
           },
         ],
-        order: [['created_at', 'ASC']],
+        order: [[req.tenantModels.Voucher, 'voucher_date', 'ASC'], ['createdAt', 'ASC']],
       });
 
-      let runningBalance = parseFloat(ledger.opening_balance || 0);
-      const statement = [];
+      let running = openingBalSigned;
+      const statement = [
+        {
+          date: from,
+          voucher_number: 'Opening Balance',
+          voucher_type: null,
+          debit: openingBalSigned > 0 ? parseFloat(openingBalSigned.toFixed(2)) : 0,
+          credit: openingBalSigned < 0 ? parseFloat(Math.abs(openingBalSigned).toFixed(2)) : 0,
+          balance: parseFloat(running.toFixed(2)),
+          narration: 'Opening Balance',
+        },
+      ];
 
-      // Opening balance entry
-      statement.push({
-        date: from,
-        voucher_number: 'Opening Balance',
-        voucher_type: null,
-        debit: ledger.opening_balance_type === 'Debit' ? runningBalance : 0,
-        credit: ledger.opening_balance_type === 'Credit' ? runningBalance : 0,
-        balance: runningBalance,
-        narration: 'Opening Balance',
-      });
-
-      // Process entries
-      entries.forEach((entry) => {
-        if (ledger.account_group.nature === 'Debit') {
-          runningBalance += parseFloat(entry.debit_amount) - parseFloat(entry.credit_amount);
-        } else {
-          runningBalance += parseFloat(entry.credit_amount) - parseFloat(entry.debit_amount);
-        }
-
+      for (const e of entries) {
+        const debit = toNum(e.debit_amount, 0);
+        const credit = toNum(e.credit_amount, 0);
+        running += debit - credit;
         statement.push({
-          date: entry.voucher.voucher_date,
-          voucher_number: entry.voucher.voucher_number,
-          voucher_type: entry.voucher.voucher_type?.voucher_name,
-          debit: parseFloat(entry.debit_amount),
-          credit: parseFloat(entry.credit_amount),
-          balance: runningBalance,
-          narration: entry.narration,
+          date: e.voucher.voucher_date,
+          voucher_number: e.voucher.voucher_number,
+          voucher_type: e.voucher.voucher_type,
+          debit: parseFloat(debit.toFixed(2)),
+          credit: parseFloat(credit.toFixed(2)),
+          balance: parseFloat(running.toFixed(2)),
+          narration: e.narration,
         });
-      });
+      }
 
       res.json({
         ledger: {
           ledger_code: ledger.ledger_code,
           ledger_name: ledger.ledger_name,
-          opening_balance: parseFloat(ledger.opening_balance || 0),
-          opening_balance_type: ledger.opening_balance_type,
+          opening_balance: parseFloat(Math.abs(openingBalSigned).toFixed(2)),
+          opening_balance_type: openingBalSigned < 0 ? 'Cr' : 'Dr',
         },
         statement,
-        closing_balance: parseFloat(runningBalance.toFixed(2)),
-        period: {
-          from_date: from.toISOString(),
-          to_date: to.toISOString(),
-        },
+        closing_balance: parseFloat(Math.abs(running).toFixed(2)),
+        closing_balance_type: running < 0 ? 'Cr' : 'Dr',
+        period: { from_date: from, to_date: to },
       });
     } catch (err) {
       next(err);
     }
   },
 
-  async calculateLedgerBalance(ledgerId, asOnDate, fromDate = null) {
-    const ledger = await Ledger.findByPk(ledgerId, {
-      include: [{ model: AccountGroup }],
-    });
+  async getStockSummary(req, res, next) {
+    try {
+      const items = await req.tenantModels.InventoryItem.findAll({
+        where: { is_active: true },
+        order: [['item_name', 'ASC']],
+      });
 
-    if (!ledger) return 0;
+      const data = items.map((i) => {
+        const qty = toNum(i.quantity_on_hand, 0);
+        const avg = toNum(i.avg_cost, 0);
+        return {
+          item_key: i.item_key,
+          item_code: i.item_code,
+          item_name: i.item_name,
+          hsn_sac_code: i.hsn_sac_code,
+          uqc: i.uqc,
+          gst_rate: i.gst_rate,
+          quantity_on_hand: qty,
+          avg_cost: avg,
+          stock_value: parseFloat((qty * avg).toFixed(2)),
+        };
+      });
 
-    const where = {
-      ledger_id: ledgerId,
-      tenant_id: ledger.tenant_id,
-    };
-
-    if (fromDate) {
-      where.created_at = { [Op.between]: [fromDate, asOnDate] };
-    } else {
-      where.created_at = { [Op.lte]: asOnDate };
+      const totalValue = data.reduce((s, r) => s + toNum(r.stock_value, 0), 0);
+      res.json({ data, totals: { stock_value: parseFloat(totalValue.toFixed(2)) } });
+    } catch (err) {
+      next(err);
     }
+  },
 
-    const entries = await VoucherLedgerEntry.findAll({ where });
+  async getStockLedger(req, res, next) {
+    try {
+      const { item_key, from_date, to_date } = req.query;
+      const where = {};
 
-    let balance = parseFloat(ledger.opening_balance_type === 'Debit' ? ledger.opening_balance : 0) -
-      parseFloat(ledger.opening_balance_type === 'Credit' ? ledger.opening_balance : 0);
+      if (from_date && to_date) where.createdAt = { [Op.between]: [new Date(from_date), new Date(to_date)] };
+      else if (from_date) where.createdAt = { [Op.gte]: new Date(from_date) };
+      else if (to_date) where.createdAt = { [Op.lte]: new Date(to_date) };
 
-    entries.forEach((entry) => {
-      if (ledger.account_group.nature === 'Debit') {
-        balance += parseFloat(entry.debit_amount) - parseFloat(entry.credit_amount);
-      } else {
-        balance += parseFloat(entry.credit_amount) - parseFloat(entry.debit_amount);
-      }
-    });
+      const include = [{ model: req.tenantModels.InventoryItem }];
+      if (item_key) include[0].where = { item_key: String(item_key).toLowerCase() };
 
-    return balance;
+      const rows = await req.tenantModels.StockMovement.findAll({
+        where,
+        include,
+        order: [['createdAt', 'ASC']],
+      });
+
+      const data = rows.map((r) => ({
+        date: r.createdAt,
+        item_key: r.inventory_item?.item_key,
+        item_name: r.inventory_item?.item_name,
+        movement_type: r.movement_type,
+        quantity: toNum(r.quantity, 0),
+        rate: toNum(r.rate, 0),
+        amount: toNum(r.amount, 0),
+        voucher_id: r.voucher_id,
+        narration: r.narration,
+      }));
+
+      res.json({ data, period: { from_date: from_date || null, to_date: to_date || null } });
+    } catch (err) {
+      next(err);
+    }
   },
 };
-

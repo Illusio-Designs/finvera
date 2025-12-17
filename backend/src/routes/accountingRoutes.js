@@ -5,20 +5,20 @@ const voucherTypeController = require('../controllers/voucherTypeController');
 const voucherController = require('../controllers/voucherController');
 const transactionController = require('../controllers/transactionController');
 const { authenticate } = require('../middleware/auth');
-const { setTenantContext, requireTenant } = require('../middleware/tenant');
+const { setTenantContext, requireTenant, resolveTenant } = require('../middleware/tenant');
 
 const router = Router();
 
 router.use(authenticate);
 router.use(setTenantContext);
 router.use(requireTenant);
+router.use(resolveTenant);
 
 // Account Groups
 router.get('/groups', accountGroupController.list);
 router.get('/groups/tree', accountGroupController.getTree);
-router.post('/groups', accountGroupController.create);
 router.get('/groups/:id', accountGroupController.getById);
-router.put('/groups/:id', accountGroupController.update);
+// Account groups are shared master data; creation/update disabled from tenant API
 
 // Ledgers
 router.get('/ledgers', ledgerController.list);

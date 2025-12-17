@@ -29,8 +29,8 @@ const TenantMaster = masterSequelize.define(
     // Database connection info
     db_name: {
       type: DataTypes.STRING(100),
-      allowNull: false,
-      comment: 'Name of tenant database',
+      allowNull: true,
+      comment: 'Legacy: previously used as tenant database name. Now databases are provisioned per company.',
       // Note: unique constraint removed to avoid MySQL 64-index limit
       // Uniqueness is enforced at application level
     },
@@ -44,12 +44,12 @@ const TenantMaster = masterSequelize.define(
     },
     db_user: {
       type: DataTypes.STRING(100),
-      allowNull: false,
+      allowNull: true,
     },
     db_password: {
       type: DataTypes.STRING(255),
-      allowNull: false,
-      comment: 'Encrypted password for tenant database',
+      allowNull: true,
+      comment: 'Legacy: previously used for tenant database. Now databases are provisioned per company.',
     },
     
     // Tenant metadata

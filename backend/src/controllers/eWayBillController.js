@@ -1,65 +1,57 @@
-const eInvoiceService = require('../services/eInvoiceService');
+const eWayBillService = require('../services/eWayBillService');
 
 module.exports = {
-  async generateIRN(req, res, next) {
+  async generate(req, res, next) {
     try {
-      const { voucher_id } = req.body;
+      const { voucher_id, ...details } = req.body || {};
       if (!voucher_id) return res.status(400).json({ message: 'voucher_id is required' });
 
-      const eInvoice = await eInvoiceService.generateIRN(
+      const eWayBill = await eWayBillService.generate(
         { tenantModels: req.tenantModels, masterModels: req.masterModels, company: req.company },
-        voucher_id
+        voucher_id,
+        details
       );
 
-      res.status(201).json({
-        success: true,
-        eInvoice,
-      });
+      res.status(201).json({ success: true, eWayBill });
     } catch (err) {
       next(err);
     }
   },
 
-  async cancelIRN(req, res, next) {
+  async cancel(req, res, next) {
     try {
       const { voucher_id } = req.params;
-      const { reason } = req.body;
-
-      const eInvoice = await eInvoiceService.cancelEInvoice(
+      const { reason } = req.body || {};
+      const eWayBill = await eWayBillService.cancel(
         { tenantModels: req.tenantModels, masterModels: req.masterModels, company: req.company },
         voucher_id,
         reason
       );
-
-      res.json({ success: true, message: 'E-invoice cancelled successfully', eInvoice });
+      res.json({ success: true, eWayBill });
     } catch (err) {
       next(err);
     }
   },
 
-  async getEInvoice(req, res, next) {
+  async getByVoucher(req, res, next) {
     try {
       const { voucher_id } = req.params;
-      const eInvoice = await req.tenantModels.EInvoice.findOne({
-        where: { voucher_id },
-      });
-
-      if (!eInvoice) return res.status(404).json({ message: 'E-invoice not found' });
-      res.json({ eInvoice });
+      const eWayBill = await req.tenantModels.EWayBill.findOne({ where: { voucher_id } });
+      if (!eWayBill) return res.status(404).json({ message: 'E-way bill not found' });
+      res.json({ eWayBill });
     } catch (err) {
       next(err);
     }
   },
 
-  async listEInvoices(req, res, next) {
+  async list(req, res, next) {
     try {
       const { page = 1, limit = 20, status } = req.query;
       const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
-
       const where = {};
       if (status) where.status = status;
 
-      const eInvoices = await req.tenantModels.EInvoice.findAndCountAll({
+      const rows = await req.tenantModels.EWayBill.findAndCountAll({
         where,
         limit: parseInt(limit, 10),
         offset,
@@ -67,12 +59,12 @@ module.exports = {
       });
 
       res.json({
-        eInvoices: eInvoices.rows,
+        eWayBills: rows.rows,
         pagination: {
-          total: eInvoices.count,
+          total: rows.count,
           page: parseInt(page, 10),
           limit: parseInt(limit, 10),
-          pages: Math.ceil(eInvoices.count / parseInt(limit, 10)),
+          pages: Math.ceil(rows.count / parseInt(limit, 10)),
         },
       });
     } catch (err) {
@@ -80,3 +72,4 @@ module.exports = {
     }
   },
 };
+

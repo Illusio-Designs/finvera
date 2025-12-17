@@ -1,11 +1,11 @@
-const { Tenant } = require('../models');
+const TenantMaster = require('../models/TenantMaster');
 
 module.exports = {
   async getProfile(req, res, next) {
     try {
-      const tenant = await Tenant.findByPk(req.tenant_id);
+      const tenant = await TenantMaster.findByPk(req.tenant_id);
       if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
-      return res.json(tenant);
+      return res.json({ success: true, data: tenant });
     } catch (err) {
       return next(err);
     }
@@ -13,10 +13,10 @@ module.exports = {
 
   async updateProfile(req, res, next) {
     try {
-      const tenant = await Tenant.findByPk(req.tenant_id);
+      const tenant = await TenantMaster.findByPk(req.tenant_id);
       if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
       await tenant.update(req.body);
-      return res.json(tenant);
+      return res.json({ success: true, data: tenant });
     } catch (err) {
       return next(err);
     }

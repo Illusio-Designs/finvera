@@ -20,6 +20,7 @@ async function signTokens(userData) {
     user_id: userData.id, // Alias for compatibility
     sub: userData.id, // Standard JWT subject
     tenant_id: userData.tenant_id,
+    company_id: userData.company_id || null,
     role: userData.role,
     jti: jti,
   };
@@ -43,6 +44,7 @@ async function signTokens(userData) {
   const sessionData = {
     user_id: userData.id,
     tenant_id: userData.tenant_id,
+    company_id: userData.company_id || null,
     role: userData.role,
     created_at: new Date().toISOString(),
   };
@@ -152,6 +154,7 @@ async function refreshAccessToken(refreshToken) {
       user_id: decoded.id,
       sub: decoded.id,
       tenant_id: decoded.tenant_id,
+      company_id: session.company_id || decoded.company_id || null,
       role: session.role,
       jti: decoded.jti,
     };

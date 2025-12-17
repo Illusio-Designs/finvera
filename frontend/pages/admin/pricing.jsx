@@ -35,6 +35,7 @@ export default function PricingList() {
     trial_days: '0',
     max_users: '',
     max_invoices_per_month: '',
+    max_companies: '1',
     storage_limit_gb: '',
     salesman_commission_rate: '',
     distributor_commission_rate: '',
@@ -75,6 +76,7 @@ export default function PricingList() {
         trial_days: plan.trial_days?.toString() || '0',
         max_users: plan.max_users?.toString() || '',
         max_invoices_per_month: plan.max_invoices_per_month?.toString() || '',
+        max_companies: plan.max_companies?.toString() || '1',
         storage_limit_gb: plan.storage_limit_gb?.toString() || '',
         salesman_commission_rate: plan.salesman_commission_rate?.toString() || '',
         distributor_commission_rate: plan.distributor_commission_rate?.toString() || '',
@@ -131,6 +133,7 @@ export default function PricingList() {
         trial_days: parseInt(formData.trial_days) || 0,
         max_users: formData.max_users ? parseInt(formData.max_users) : null,
         max_invoices_per_month: formData.max_invoices_per_month ? parseInt(formData.max_invoices_per_month) : null,
+        max_companies: formData.max_companies ? parseInt(formData.max_companies) : 1,
         storage_limit_gb: formData.storage_limit_gb ? parseInt(formData.storage_limit_gb) : null,
         salesman_commission_rate: formData.salesman_commission_rate ? parseFloat(formData.salesman_commission_rate) : null,
         distributor_commission_rate: formData.distributor_commission_rate ? parseFloat(formData.distributor_commission_rate) : null,
@@ -165,6 +168,7 @@ export default function PricingList() {
       trial_days: '0',
       max_users: '',
       max_invoices_per_month: '',
+      max_companies: '1',
       storage_limit_gb: '',
       salesman_commission_rate: '',
       distributor_commission_rate: '',
@@ -396,6 +400,17 @@ export default function PricingList() {
                   min="0"
                 />
               </div>
+
+              <FormInput
+                name="max_companies"
+                label="Max Companies"
+                type="number"
+                value={formData.max_companies}
+                onChange={handleChange}
+                error={formErrors.max_companies}
+                touched={!!formErrors.max_companies}
+                min="1"
+              />
 
               <FormInput
                 name="storage_limit_gb"

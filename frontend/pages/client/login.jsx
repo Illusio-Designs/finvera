@@ -8,6 +8,8 @@ import Link from 'next/link';
 export default function ClientLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [companies, setCompanies] = useState([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
@@ -17,7 +19,7 @@ export default function ClientLogin() {
     setLoading(true);
 
     try {
-      const result = await login(email, password, 'client');
+      const result = await login(email, password, 'client', selectedCompanyId || null);
       console.log('Login result:', result);
       
       if (result.success) {
@@ -41,6 +43,16 @@ export default function ClientLogin() {
           setLoading(false);
           return;
         }
+      } else if (result.requireCompany) {
+        setCompanies(result.companies || []);
+        toast.error('Please select a company to continue');
+        setLoading(false);
+        return;
+      } else if (result.needsCompanyCreation) {
+        toast.error('Please create a company first');
+        setTimeout(() => router.replace('/client/company/new'), 500);
+        setLoading(false);
+        return;
       } else {
         console.error('Login failed:', result.message);
         toast.error(result.message || 'Login failed');
@@ -100,6 +112,30 @@ export default function ClientLogin() {
               />
             </div>
           </div>
+
+          {companies.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Select Company</label>
+              <select
+                value={selectedCompanyId}
+                onChange={(e) => setSelectedCompanyId(e.target.value)}
+                required
+                className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              >
+                <option value="" disabled>
+                  Choose a company...
+                </option>
+                {companies.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.company_name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                You’ll only be logged into the selected company.
+              </p>
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             <div className="text-sm">
