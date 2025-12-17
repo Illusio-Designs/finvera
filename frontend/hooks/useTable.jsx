@@ -70,9 +70,12 @@ export const useTable = (fetchFunction, initialParams = {}) => {
         return;
       }
       
+      // Handle axios response structure: response.data contains the actual data
       const responseData = response.data || response;
       
-      setData(responseData.data || responseData.items || []);
+      // Extract data array - could be in responseData.data or responseData.items
+      const items = responseData.data || responseData.items || [];
+      setData(Array.isArray(items) ? items : []);
       
       // Handle pagination in nested object or direct format
       if (responseData.pagination) {
@@ -109,13 +112,9 @@ export const useTable = (fetchFunction, initialParams = {}) => {
   }, [pagination.page, pagination.limit, sort.field, sort.order]);
 
   // Track previous values to prevent unnecessary refetches
-  const prevParamsRef = useRef({
-    page: pagination.page,
-    limit: pagination.limit,
-    sortField: sort.field,
-    sortOrder: sort.order,
-    filters: JSON.stringify(filters),
-  });
+  // Initialize with null to ensure first fetch happens
+  const prevParamsRef = useRef(null);
+  const hasInitializedRef = useRef(false);
 
   // Single effect to handle all data fetching
   useEffect(() => {
@@ -127,8 +126,17 @@ export const useTable = (fetchFunction, initialParams = {}) => {
       filters: JSON.stringify(filters),
     };
 
+    // Always fetch on initial mount
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      prevParamsRef.current = currentParams;
+      fetchData();
+      return;
+    }
+
     // Only fetch if parameters actually changed
     const paramsChanged = 
+      !prevParamsRef.current ||
       prevParamsRef.current.page !== currentParams.page ||
       prevParamsRef.current.limit !== currentParams.limit ||
       prevParamsRef.current.sortField !== currentParams.sortField ||
