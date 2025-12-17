@@ -137,6 +137,28 @@ models.Company = masterSequelize.define('Company', {
   },
 
   // Track provisioning status at company level (mirrors tenant provisioning for now)
+  // Database connection info (per company)
+  db_name: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+  },
+  db_host: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+  },
+  db_port: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
+  db_user: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+  },
+  db_password: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    comment: 'Encrypted password for company database',
+  },
   db_provisioned: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,

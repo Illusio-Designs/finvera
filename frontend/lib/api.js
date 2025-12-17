@@ -18,6 +18,10 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    const companyId = Cookies.get("companyId");
+    if (companyId) {
+      config.headers["X-Company-Id"] = companyId;
+    }
     return config;
   },
   (error) => {

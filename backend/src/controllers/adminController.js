@@ -416,36 +416,8 @@ module.exports = {
 
       const subdomain = await generateSubdomain(company_name, email);
 
-      // Generate database name, user, and password
-      const crypto = require('crypto');
-      const generateDatabaseName = (subdomain) => {
-        const sanitized = subdomain.toLowerCase().replace(/[^a-z0-9]/g, '_');
-        return `finvera_${sanitized}_${Date.now()}`;
-      };
-
-      const generateDatabaseUser = (subdomain) => {
-        const sanitized = subdomain.toLowerCase().replace(/[^a-z0-9]/g, '_');
-        return `fv_${sanitized}`.substring(0, 32); // MySQL username limit
-      };
-
-      const generateSecurePassword = (length = 20) => {
-        return crypto.randomBytes(length).toString('base64').slice(0, length);
-      };
-
-      const encryptPassword = (password) => {
-        const algorithm = 'aes-256-cbc';
-        const key = crypto.scryptSync(process.env.ENCRYPTION_KEY || 'default-key', 'salt', 32);
-        const iv = crypto.randomBytes(16);
-        const cipher = crypto.createCipheriv(algorithm, key, iv);
-        let encrypted = cipher.update(password, 'utf8', 'hex');
-        encrypted += cipher.final('hex');
-        return iv.toString('hex') + ':' + encrypted;
-      };
-
-      const dbName = generateDatabaseName(subdomain);
-      const dbUser = generateDatabaseUser(subdomain);
-      const dbPassword = generateSecurePassword();
-      const encryptedPassword = encryptPassword(dbPassword);
+      // DB provisioning is moved to COMPANY creation.
+      // Keep tenant db fields null for new tenants.
 
       const tenant = await TenantMaster.create({
         company_name,
@@ -463,11 +435,11 @@ module.exports = {
         salesman_id: finalSalesmanId,
         referral_code,
         acquisition_category: acquisitionCategory,
-        db_name: dbName,
+        db_name: null,
         db_host: process.env.DB_HOST || 'localhost',
         db_port: parseInt(process.env.DB_PORT) || 3306,
-        db_user: dbUser,
-        db_password: encryptedPassword,
+        db_user: null,
+        db_password: null,
         db_provisioned: false,
       });
 
