@@ -287,6 +287,34 @@ module.exports = {
       await addIndexIfNotExists('companies', ['company_name'], { name: 'idx_companies_name' });
       await addIndexIfNotExists('companies', ['db_name'], { name: 'idx_companies_db_name' });
     }
+
+    // ============================================
+    // CREATE HSN/SAC MASTER TABLE (shared reference)
+    // ============================================
+    const [hsnTables] = await queryInterface.sequelize.query("SHOW TABLES LIKE 'hsn_sac_master'");
+    if (hsnTables.length === 0) {
+      await queryInterface.createTable('hsn_sac_master', {
+        code: { type: Sequelize.STRING(10), allowNull: false, primaryKey: true },
+        item_type: { type: Sequelize.ENUM('GOODS', 'SERVICES'), allowNull: false },
+        chapter_code: Sequelize.STRING(2),
+        heading_code: Sequelize.STRING(4),
+        subheading_code: Sequelize.STRING(6),
+        tariff_item: Sequelize.STRING(8),
+        technical_description: { type: Sequelize.TEXT, allowNull: false },
+        trade_description: Sequelize.STRING(255),
+        gst_rate: Sequelize.DECIMAL(5, 2),
+        cess_rate: Sequelize.DECIMAL(6, 2),
+        uqc_code: Sequelize.STRING(10),
+        effective_from: Sequelize.DATEONLY,
+        is_active: { type: Sequelize.BOOLEAN, defaultValue: true },
+        createdAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
+        updatedAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
+      });
+
+      await addIndexIfNotExists('hsn_sac_master', ['item_type'], { name: 'idx_hsn_item_type' });
+      await addIndexIfNotExists('hsn_sac_master', ['chapter_code'], { name: 'idx_hsn_chapter' });
+      await addIndexIfNotExists('hsn_sac_master', ['heading_code'], { name: 'idx_hsn_heading' });
+    }
   },
 
   down: async (queryInterface, Sequelize) => {

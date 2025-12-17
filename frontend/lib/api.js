@@ -124,6 +124,11 @@ export const companyAPI = {
   create: (data) => api.post("/companies", data),
 };
 
+export const hsnAPI = {
+  search: (q, params = {}) => api.get("/hsn/search", { params: { q, ...params } }),
+  get: (code) => api.get(`/hsn/${code}`),
+};
+
 // Admin API
 export const adminAPI = {
   dashboard: () => api.get("/admin/dashboard"),

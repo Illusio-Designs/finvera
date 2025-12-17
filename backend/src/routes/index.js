@@ -21,6 +21,7 @@ const seoRoutes = require('./seoRoutes');
 const supportRoutes = require('./supportRoutes');
 const notificationRoutes = require('./notificationRoutes');
 const companyRoutes = require('./companyRoutes');
+const hsnRoutes = require('./hsnRoutes');
 
 const router = Router();
 
@@ -42,6 +43,7 @@ router.use('/gst', gstRoutes);
 router.use('/tds', tdsRoutes);
 router.use('/einvoice', eInvoiceRoutes);
 router.use('/companies', companyRoutes);
+router.use('/hsn', hsnRoutes);
 router.use('/', blogRoutes);
 router.use('/', seoRoutes);
 router.use('/support', supportRoutes);

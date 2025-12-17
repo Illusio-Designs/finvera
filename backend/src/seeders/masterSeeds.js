@@ -97,9 +97,75 @@ async function seedTDSSections() {
   console.log(`✓ Seeded ${tdsSections.length} TDS sections`);
 }
 
+/**
+ * Seed starter HSN/SAC master entries (small default set)
+ * Full government master can be imported later via admin tooling.
+ */
+async function seedHSNSACMaster() {
+  const rows = [
+    // GOODS (HSN)
+    {
+      code: '1001',
+      item_type: 'GOODS',
+      chapter_code: '10',
+      heading_code: '1001',
+      technical_description: 'Wheat and meslin',
+      trade_description: 'Wheat',
+      gst_rate: 0.0,
+      uqc_code: 'KGS',
+      is_active: true,
+    },
+    {
+      code: '6109',
+      item_type: 'GOODS',
+      chapter_code: '61',
+      heading_code: '6109',
+      technical_description: 'T-shirts, singlets and other vests, knitted or crocheted',
+      trade_description: 'T-shirts (knitted)',
+      gst_rate: 12.0,
+      uqc_code: 'NOS',
+      is_active: true,
+    },
+    {
+      code: '8471',
+      item_type: 'GOODS',
+      chapter_code: '84',
+      heading_code: '8471',
+      technical_description: 'Automatic data processing machines and units thereof',
+      trade_description: 'Computers',
+      gst_rate: 18.0,
+      uqc_code: 'NOS',
+      is_active: true,
+    },
+    // SERVICES (SAC)
+    {
+      code: '9983',
+      item_type: 'SERVICES',
+      technical_description: 'Other professional, technical and business services',
+      trade_description: 'Professional services',
+      gst_rate: 18.0,
+      uqc_code: null,
+      is_active: true,
+    },
+    {
+      code: '9963',
+      item_type: 'SERVICES',
+      technical_description: 'Accommodation, food and beverage services',
+      trade_description: 'Accommodation services',
+      gst_rate: 12.0,
+      uqc_code: null,
+      is_active: true,
+    },
+  ];
+
+  await masterModels.HSNSAC.bulkCreate(rows, { ignoreDuplicates: true });
+  console.log(`✓ Seeded ${rows.length} HSN/SAC master rows`);
+}
+
 module.exports = {
   seedAccountGroups,
   seedVoucherTypes,
   seedGSTRates,
   seedTDSSections,
+  seedHSNSACMaster,
 };
