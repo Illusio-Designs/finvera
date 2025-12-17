@@ -23,57 +23,74 @@ export default function Select({
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
       )}
-      <select
-        id={name}
-        name={name}
-        value={value || ''}
-        onChange={onChange}
-        onBlur={onBlur}
-        required={required}
-        disabled={disabled}
-        className={`
-          w-full
-          px-4
-          py-2.5
-          border
-          rounded-lg
-          shadow-sm
-          bg-white
-          text-gray-900
-          transition-all
-          duration-200
-          focus:outline-none
-          focus:ring-2
-          focus:ring-primary-500/20
-          focus:border-primary-500
-          focus:shadow-md
-          focus:shadow-primary-500/10
-          disabled:bg-gray-50
-          disabled:text-gray-500
-          disabled:cursor-not-allowed
-          disabled:border-gray-200
-          cursor-pointer
-          appearance-none
-          bg-[url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")] 
-          bg-[length:1.5em_1.5em]
-          bg-[right_0.75rem_center]
-          bg-no-repeat
-          pr-10
-          ${error 
-            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' 
-            : 'border-gray-300 hover:border-gray-400'
-          }
-          ${className}
-        `.replace(/\s+/g, ' ').trim()}
-        {...props}
-      >
-        <option value="">{placeholder}</option>
+      <div className="relative">
+        <select
+          id={name}
+          name={name}
+          value={value || ''}
+          onChange={onChange}
+          onBlur={onBlur}
+          required={required}
+          disabled={disabled}
+          className={`
+            inline-flex
+            items-center
+            justify-center
+            w-full
+            text-sm
+            font-medium
+            leading-5
+            px-4
+            py-2.5
+            box-border
+            border
+            border-transparent
+            rounded-lg
+            shadow-sm
+            transition-all
+            duration-200
+            focus:outline-none
+            focus:ring-4
+            cursor-pointer
+            appearance-none
+            pr-10
+            ${error 
+              ? 'text-white bg-red-500 hover:bg-red-600 focus:ring-red-300 border-red-500' 
+              : 'text-white bg-primary-500 hover:bg-primary-600 focus:ring-primary-300'
+            }
+            disabled:bg-gray-400
+            disabled:text-gray-200
+            disabled:cursor-not-allowed
+            disabled:hover:bg-gray-400
+            ${className}
+          `.replace(/\s+/g, ' ').trim()}
+          {...props}
+        >
+        <option value="" className="bg-white text-gray-900">{placeholder}</option>
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
+          <option key={option.value} value={option.value} className="bg-white text-gray-900">
             {option.label}
           </option>
         ))}
       </select>
+      <svg 
+        className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-white" 
+        aria-hidden="true" 
+        xmlns="http://www.w3.org/2000/svg" 
+        width="24" 
+        height="24" 
+        fill="none" 
+        viewBox="0 0 24 24"
+      >
+        <path 
+          stroke="currentColor" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          strokeWidth="2" 
+          d="m19 9-7 7-7-7"
+        />
+      </svg>
+      </div>
       {error && (
         <p className="mt-1.5 text-sm font-medium text-red-600 flex items-center">
           <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">

@@ -4,6 +4,7 @@ const ledgerController = require('../controllers/ledgerController');
 const voucherTypeController = require('../controllers/voucherTypeController');
 const voucherController = require('../controllers/voucherController');
 const transactionController = require('../controllers/transactionController');
+const dashboardController = require('../controllers/dashboardController');
 const { authenticate } = require('../middleware/auth');
 const { setTenantContext, requireTenant, resolveTenant } = require('../middleware/tenant');
 
@@ -13,6 +14,9 @@ router.use(authenticate);
 router.use(setTenantContext);
 router.use(requireTenant);
 router.use(resolveTenant);
+
+// Dashboard
+router.get('/dashboard', dashboardController.getDashboard);
 
 // Account Groups
 router.get('/groups', accountGroupController.list);
@@ -25,6 +29,7 @@ router.get('/ledgers', ledgerController.list);
 router.post('/ledgers', ledgerController.create);
 router.get('/ledgers/:id', ledgerController.getById);
 router.put('/ledgers/:id', ledgerController.update);
+router.delete('/ledgers/:id', ledgerController.delete);
 router.get('/ledgers/:id/balance', ledgerController.getBalance);
 
 // Voucher Types

@@ -248,6 +248,8 @@ export const adminAPI = {
 
 // Accounting API
 export const accountingAPI = {
+  // Dashboard
+  dashboard: () => api.get("/accounting/dashboard"),
   // Account Groups
   accountGroups: {
     list: (params) => api.get("/accounting/groups", { params }),
@@ -276,11 +278,20 @@ export const accountingAPI = {
   // Vouchers
   vouchers: {
     list: (params) => api.get("/accounting/vouchers", { params }),
+    get: (id) => api.get(`/accounting/vouchers/${id}`),
+    create: (data) => api.post("/accounting/vouchers", data),
+    update: (id, data) => api.put(`/accounting/vouchers/${id}`, data),
+    delete: (id) => api.delete(`/accounting/vouchers/${id}`),
     post: (id) => api.post(`/accounting/vouchers/${id}/post`),
+    cancel: (id) => api.post(`/accounting/vouchers/${id}/cancel`),
   },
   // Ledgers
   ledgers: {
+    list: (params) => api.get("/accounting/ledgers", { params }),
+    get: (id) => api.get(`/accounting/ledgers/${id}`),
     create: (data) => api.post("/accounting/ledgers", data),
+    update: (id, data) => api.put(`/accounting/ledgers/${id}`, data),
+    delete: (id) => api.delete(`/accounting/ledgers/${id}`),
     getBalance: (id, params) =>
       api.get(`/accounting/ledgers/${id}/balance`, { params }),
   },
@@ -307,7 +318,11 @@ export const reportsAPI = {
 // GST API
 export const gstAPI = {
   gstins: {
+    list: (params) => api.get("/gst/gstins", { params }),
+    get: (id) => api.get(`/gst/gstins/${id}`),
     create: (data) => api.post("/gst/gstins", data),
+    update: (id, data) => api.put(`/gst/gstins/${id}`, data),
+    delete: (id) => api.delete(`/gst/gstins/${id}`),
   },
   rates: {
     list: (params) => api.get("/gst/rates", { params }),
@@ -321,6 +336,7 @@ export const gstAPI = {
 
 // TDS API
 export const tdsAPI = {
+  list: (params) => api.get("/tds", { params }),
   calculate: (data) => api.post("/tds/calculate", data),
   generateReturn: (data) => api.post("/tds/return", data),
   generateCertificate: (id) => api.get(`/tds/certificate/${id}`),

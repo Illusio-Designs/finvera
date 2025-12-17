@@ -1,12 +1,12 @@
 import { useRouter } from 'next/router';
-import ProtectedRoute from '../../../components/ProtectedRoute';
-import ClientLayout from '../../../components/layouts/ClientLayout';
-import PageLayout from '../../../components/layouts/PageLayout';
-import DataTable from '../../../components/tables/DataTable';
-import Button from '../../../components/ui/Button';
-import { useTable } from '../../../hooks/useTable';
-import { eInvoiceAPI } from '../../../lib/api';
-import Badge from '../../../components/ui/Badge';
+import ProtectedRoute from '../../components/ProtectedRoute';
+import ClientLayout from '../../components/layouts/ClientLayout';
+import PageLayout from '../../components/layouts/PageLayout';
+import DataTable from '../../components/tables/DataTable';
+import Card from '../../components/ui/Card';
+import { useTable } from '../../hooks/useTable';
+import { eInvoiceAPI } from '../../lib/api';
+import Badge from '../../components/ui/Badge';
 
 export default function EInvoiceList() {
   const router = useRouter();
@@ -69,20 +69,21 @@ export default function EInvoiceList() {
             { label: 'E-Invoice' },
           ]}
         >
-          <DataTable
-            columns={columns}
-            data={tableData?.data || tableData || []}
-            loading={loading}
-            pagination={pagination}
-            onPageChange={handlePageChange}
-            onSort={handleSort}
-            sortField={sort.field}
-            sortOrder={sort.order}
-            onRowClick={(row) => router.push(`/client/einvoice/${row.id}`)}
-          />
+          <Card className="shadow-sm border border-gray-200">
+            <DataTable
+              columns={columns}
+              data={tableData?.data || tableData || []}
+              loading={loading}
+              pagination={pagination}
+              onPageChange={handlePageChange}
+              onSort={handleSort}
+              sortField={sort.field}
+              sortOrder={sort.order}
+              onRowClick={(row) => router.push(`/client/einvoice/${row.id}`)}
+            />
+          </Card>
         </PageLayout>
       </ClientLayout>
     </ProtectedRoute>
   );
 }
-

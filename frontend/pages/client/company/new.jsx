@@ -10,6 +10,7 @@ import FormTextarea from '../../../components/forms/FormTextarea';
 import toast, { Toaster } from 'react-hot-toast';
 import { companyAPI } from '../../../lib/api';
 import { useAuth } from '../../../contexts/AuthContext';
+import { extractPANFromGSTIN } from '../../../lib/formatters';
 
 const COMPANY_TYPES = [
   { value: 'sole_proprietorship', label: 'Sole Proprietorship' },
@@ -21,10 +22,6 @@ const COMPANY_TYPES = [
   { value: 'section_8', label: 'Section 8 Company (Non-profit)' },
 ];
 
-const ACCOUNTING_METHODS = [
-  { value: 'cash', label: 'Cash Basis' },
-  { value: 'accrual', label: 'Accrual Basis' },
-];
 
 export default function CreateCompanyPage() {
   const router = useRouter();
@@ -56,8 +53,6 @@ export default function CreateCompanyPage() {
 
     financial_year_start: '',
     financial_year_end: '',
-    authorized_capital: '',
-    accounting_method: 'accrual',
     currency: 'INR',
     books_beginning_date: '',
 
@@ -87,7 +82,21 @@ export default function CreateCompanyPage() {
   }, [router]);
 
   const handleChange = (name, value) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: value };
+      
+      // Auto-set TDS applicable when TAN is entered
+      if (name === 'tan') {
+        updated.tds_applicable = !!value.trim();
+      }
+      
+      // Auto-set GST registered when GST is entered
+      if (name === 'gstin') {
+        updated.gst_registered = !!value.trim();
+      }
+      
+      return updated;
+    });
     if (formErrors[name]) {
       setFormErrors((prev) => {
         const next = { ...prev };
@@ -125,8 +134,6 @@ export default function CreateCompanyPage() {
       principals: principals.length ? principals : null,
       financial_year_start: formData.financial_year_start || null,
       financial_year_end: formData.financial_year_end || null,
-      authorized_capital: formData.authorized_capital || null,
-      accounting_method: formData.accounting_method,
       currency: formData.currency || 'INR',
       books_beginning_date: formData.books_beginning_date || null,
       bank_details: {
@@ -228,13 +235,15 @@ export default function CreateCompanyPage() {
                     options={COMPANY_TYPES}
                     required
                   />
-                  <FormInput
-                    name="registration_number"
-                    label="Registration Number (CIN / LLPIN)"
-                    value={formData.registration_number}
-                    onChange={handleChange}
-                    placeholder="e.g. U12345MH2025PTC123456"
-                  />
+                  {(formData.company_type === 'private_limited' || formData.company_type === 'llp') && (
+                    <FormInput
+                      name="registration_number"
+                      label="Registration Number (CIN / LLPIN)"
+                      value={formData.registration_number}
+                      onChange={handleChange}
+                      placeholder="e.g. U12345MH2025PTC123456"
+                    />
+                  )}
                   <FormInput
                     name="incorporation_date"
                     label="Date of Incorporation"
@@ -243,25 +252,63 @@ export default function CreateCompanyPage() {
                     onChange={handleChange}
                   />
                   <FormInput
+                    name="gstin"
+                    label="GSTIN"
+                    value={formData.gstin}
+                    onChange={(name, value) => {
+                      // Convert to uppercase automatically
+                      const upperValue = value.toUpperCase().replace(/\s/g, '');
+                      setFormData(prev => {
+                        const updated = { ...prev, [name]: upperValue };
+                        
+                        // Auto-fill PAN from GSTIN when GSTIN is 15 characters
+                        if (upperValue.length === 15) {
+                          const extractedPAN = extractPANFromGSTIN(upperValue);
+                          if (extractedPAN && !prev.pan) {
+                            // Only auto-fill if PAN is empty
+                            updated.pan = extractedPAN;
+                          }
+                        }
+                        
+                        // Auto-set GST registered when GST is entered, clear when removed
+                        updated.gst_registered = !!upperValue.trim();
+                        
+                        return updated;
+                      });
+                      
+                      // Clear error if exists
+                      if (formErrors[name]) {
+                        setFormErrors(prev => {
+                          const next = { ...prev };
+                          delete next[name];
+                          return next;
+                        });
+                      }
+                    }}
+                    error={formErrors.gstin}
+                    touched={!!formErrors.gstin}
+                    placeholder="27ABCDE1234F1Z5 (15 characters)"
+                    maxLength={15}
+                    style={{ textTransform: 'uppercase' }}
+                  />
+                  <FormInput
                     name="pan"
                     label="PAN"
                     value={formData.pan}
-                    onChange={handleChange}
+                    onChange={(name, value) => handleChange(name, value.toUpperCase())}
                     placeholder="ABCDE1234F"
+                    style={{ textTransform: 'uppercase' }}
                   />
                   <FormInput
                     name="tan"
-                    label="TAN"
+                    label="TAN (optional)"
                     value={formData.tan}
-                    onChange={handleChange}
+                    onChange={(name, value) => {
+                      const upperValue = value.toUpperCase();
+                      handleChange(name, upperValue);
+                    }}
                     placeholder="ABCD12345E"
-                  />
-                  <FormInput
-                    name="gstin"
-                    label="GSTIN (if applicable)"
-                    value={formData.gstin}
-                    onChange={handleChange}
-                    placeholder="27ABCDE1234F1Z5"
+                    style={{ textTransform: 'uppercase' }}
                   />
                 </div>
               </div>
@@ -367,22 +414,6 @@ export default function CreateCompanyPage() {
                     onChange={handleChange}
                   />
                   <FormInput
-                    name="authorized_capital"
-                    label="Authorized Capital (optional)"
-                    type="number"
-                    value={formData.authorized_capital}
-                    onChange={handleChange}
-                    min="0"
-                    step="0.01"
-                  />
-                  <FormSelect
-                    name="accounting_method"
-                    label="Accounting Method"
-                    value={formData.accounting_method}
-                    onChange={handleChange}
-                    options={ACCOUNTING_METHODS}
-                  />
-                  <FormInput
                     name="currency"
                     label="Currency"
                     value={formData.currency}
@@ -430,38 +461,22 @@ export default function CreateCompanyPage() {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <h2 className="text-lg font-semibold text-gray-900">Compliance</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <label className="flex items-center gap-2 text-sm text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={formData.tds_applicable}
-                      onChange={(e) => handleChange('tds_applicable', e.target.checked)}
-                      className="h-4 w-4"
-                    />
-                    TDS applicable
-                  </label>
-                  <label className="flex items-center gap-2 text-sm text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={formData.gst_registered}
-                      onChange={(e) => handleChange('gst_registered', e.target.checked)}
-                      className="h-4 w-4"
-                    />
-                    GST registered
-                  </label>
-                  <label className="flex items-center gap-2 text-sm text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={formData.professional_tax_registered}
-                      onChange={(e) => handleChange('professional_tax_registered', e.target.checked)}
-                      className="h-4 w-4"
-                    />
-                    Professional tax registered
-                  </label>
+              {formData.gstin && (
+                <div className="space-y-4">
+                  <h2 className="text-lg font-semibold text-gray-900">Compliance</h2>
+                  <div className="grid grid-cols-1 gap-4">
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={formData.professional_tax_registered}
+                        onChange={(e) => handleChange('professional_tax_registered', e.target.checked)}
+                        className="h-4 w-4"
+                      />
+                      Professional tax registered
+                    </label>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="flex gap-3 pt-4 border-t border-gray-200">
                 <Button type="submit" loading={loading} disabled={loading}>
