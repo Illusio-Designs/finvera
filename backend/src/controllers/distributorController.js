@@ -156,6 +156,11 @@ module.exports = {
         return res.status(404).json({ message: 'Distributor not found' });
       }
 
+      // Codes are immutable after creation
+      if (Object.prototype.hasOwnProperty.call(req.body || {}, 'distributor_code')) {
+        return res.status(400).json({ message: 'distributor_code cannot be changed' });
+      }
+
       await distributor.update(req.body);
       res.json(distributor);
     } catch (err) {
