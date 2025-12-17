@@ -160,6 +160,11 @@ module.exports = {
         return res.status(404).json({ message: 'Salesman not found' });
       }
 
+      // Codes are immutable after creation
+      if (Object.prototype.hasOwnProperty.call(req.body || {}, 'salesman_code')) {
+        return res.status(400).json({ message: 'salesman_code cannot be changed' });
+      }
+
       await salesman.update(req.body);
       res.json(salesman);
     } catch (err) {

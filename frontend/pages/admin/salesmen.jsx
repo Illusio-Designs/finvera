@@ -184,8 +184,10 @@ export default function SalesmenList() {
         ...formData,
         territory: selectedStates,
       };
-      // Let backend auto-generate code if blank
-      if (modalMode === 'create' && !payload.salesman_code?.trim()) {
+      // Codes are immutable; never send on update. On create, omit if blank to auto-generate.
+      if (modalMode === 'edit') {
+        delete payload.salesman_code;
+      } else if (!payload.salesman_code?.trim()) {
         delete payload.salesman_code;
       }
       if (modalMode === 'edit' && !payload.password) {
