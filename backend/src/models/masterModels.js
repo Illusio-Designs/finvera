@@ -331,6 +331,69 @@ models.TDSSection = masterSequelize.define('TDSSection', {
   timestamps: true,
 });
 
+// HSN/SAC Master (SHARED - Government-issued classification)
+models.HSNSAC = masterSequelize.define('HSNSAC', {
+  code: {
+    type: DataTypes.STRING(10),
+    primaryKey: true,
+    allowNull: false,
+    comment: 'HSN (goods) or SAC (services) code',
+  },
+  item_type: {
+    type: DataTypes.ENUM('GOODS', 'SERVICES'),
+    allowNull: false,
+  },
+  chapter_code: {
+    type: DataTypes.STRING(2),
+    allowNull: true,
+  },
+  heading_code: {
+    type: DataTypes.STRING(4),
+    allowNull: true,
+  },
+  subheading_code: {
+    type: DataTypes.STRING(6),
+    allowNull: true,
+  },
+  tariff_item: {
+    type: DataTypes.STRING(8),
+    allowNull: true,
+  },
+  technical_description: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
+  trade_description: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+  },
+  gst_rate: {
+    type: DataTypes.DECIMAL(5, 2),
+    allowNull: true,
+    comment: 'Total GST rate (e.g., 18.00)',
+  },
+  cess_rate: {
+    type: DataTypes.DECIMAL(6, 2),
+    allowNull: true,
+  },
+  uqc_code: {
+    type: DataTypes.STRING(10),
+    allowNull: true,
+    comment: 'Unit Quantity Code (e.g., NOS, KGS, LTR)',
+  },
+  effective_from: {
+    type: DataTypes.DATEONLY,
+    allowNull: true,
+  },
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+  },
+}, {
+  tableName: 'hsn_sac_master',
+  timestamps: true,
+});
+
 // Accounting Year Template (SHARED)
 models.AccountingYear = masterSequelize.define('AccountingYear', {
   id: {
@@ -397,6 +460,7 @@ async function syncMasterModels() {
   await models.VoucherType.sync({ alter: false });
   await models.GSTRate.sync({ alter: false });
   await models.TDSSection.sync({ alter: false });
+  await models.HSNSAC.sync({ alter: true });
   await models.AccountingYear.sync({ alter: false });
 }
 
