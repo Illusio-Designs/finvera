@@ -329,7 +329,15 @@ class TenantProvisioningService {
 
   generateDatabaseName(subdomain) {
     const sanitized = subdomain.toLowerCase().replace(/[^a-z0-9]/g, '_');
-    return `finvera_${sanitized}_${Date.now()}`;
+    const timestamp = Date.now().toString();
+    // MySQL database name limit is 64 characters
+    // Format: finvera_<name>_<timestamp>
+    // Calculate max length for name part: 64 - 8 (finvera_) - 1 (_) - 13 (timestamp) - 1 (safety) = 41
+    const maxNameLength = 41;
+    const truncatedName = sanitized.substring(0, maxNameLength);
+    const dbName = `finvera_${truncatedName}_${timestamp}`;
+    // Final check to ensure it's within 64 chars
+    return dbName.substring(0, 64);
   }
 
   generateDatabaseUser(subdomain) {

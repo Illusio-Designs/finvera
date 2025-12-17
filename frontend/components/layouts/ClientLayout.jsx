@@ -6,7 +6,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   FiHome, FiFolder, FiFileText, FiTrendingUp, FiTrendingDown,
   FiDollarSign, FiCreditCard, FiRefreshCw, FiFile, FiBarChart2,
-  FiShield, FiPercent, FiFileMinus, FiMail, FiSettings, FiUser, FiGift
+  FiShield, FiPercent, FiFileMinus, FiMail, FiSettings, FiUser, FiGift,
+  FiPackage, FiLayers, FiMove, FiEdit
 } from 'react-icons/fi';
 
 const getClientMenuItems = () => [
@@ -19,12 +20,22 @@ const getClientMenuItems = () => [
     divider: true,
   },
   {
-    label: 'Accounting',
-    icon: FiFolder,
+    label: 'Ledgers',
+    href: '/client/accounting/ledgers',
+    icon: FiFileText,
+  },
+  {
+    divider: true,
+  },
+  {
+    label: 'Inventory',
+    icon: FiPackage,
     children: [
-      { label: 'Account Groups', href: '/client/accounting/groups', icon: FiFolder },
-      { label: 'Ledgers', href: '/client/accounting/ledgers', icon: FiFileText },
-      { label: 'Outstanding Bills', href: '/client/accounting/bills/outstanding', icon: FiBarChart2 },
+      { label: 'Items', href: '/client/inventory/items', icon: FiPackage },
+      { label: 'Stock Summary', href: '/client/reports/stock-summary', icon: FiBarChart2 },
+      { label: 'Stock Ledger', href: '/client/reports/stock-ledger', icon: FiFileText },
+      { label: 'Stock Adjustment', href: '/client/inventory/adjustment', icon: FiEdit },
+      { label: 'Stock Transfer', href: '/client/inventory/transfer', icon: FiMove },
     ],
   },
   {

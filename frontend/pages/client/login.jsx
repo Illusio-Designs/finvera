@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { canAccessClientPortal, getDefaultRedirect, getRoleDisplayName } from '../../lib/roleConfig';
 import toast, { Toaster } from 'react-hot-toast';
 import Link from 'next/link';
+import Cookies from 'js-cookie';
 
 export default function ClientLogin() {
   const [email, setEmail] = useState('');
@@ -29,14 +30,30 @@ export default function ClientLogin() {
         
         // Check if role can access client portal
         if (canAccessClientPortal(role)) {
+          // Check if user has a company - if not, redirect to company creation
+          if (!result.user?.company_id) {
+            console.log('User does not have company_id, redirecting to company creation');
+            console.log('User data:', result.user);
+            console.log('Token stored:', !!Cookies.get('token'));
+            setLoading(false);
+            // Wait 2 seconds to see logs, then redirect
+            toast.success('Login successful! Redirecting to company creation...');
+            setTimeout(() => {
+              window.location.href = '/client/company/new';
+            }, 2000);
+            return;
+          }
+          
           toast.success(`Welcome ${getRoleDisplayName(role)}!`);
           const redirectPath = getDefaultRedirect(role, result.user.id);
           console.log('Redirecting to:', redirectPath);
+          console.log('User data:', result.user);
+          console.log('Token stored:', !!Cookies.get('token'));
           
-          // Use replace instead of push to avoid back button issues
+          // Wait 2 seconds to see logs, then redirect
           setTimeout(() => {
             router.replace(redirectPath);
-          }, 500);
+          }, 2000);
         } else {
           console.error('Access denied for role:', role);
           toast.error('Access denied. Please use the admin portal.');
@@ -49,9 +66,26 @@ export default function ClientLogin() {
         setLoading(false);
         return;
       } else if (result.needsCompanyCreation) {
-        toast.error('Please create a company first');
-        setTimeout(() => router.replace('/client/company/new'), 500);
+        // Redirect to company creation after showing logs
+        console.log('=== COMPANY CREATION NEEDED ===');
+        console.log('Backend indicates company creation needed');
+        console.log('Result object:', result);
+        console.log('User data from result:', result.user);
+        console.log('Token stored:', !!Cookies.get('token'));
+        console.log('User cookie:', Cookies.get('user'));
+        
+        // If user data is provided in the result, it means tokens were set
+        if (result.user) {
+          console.log('User authenticated successfully, tokens stored');
+        }
+        
         setLoading(false);
+        // Wait 2 seconds to see logs, then redirect
+        toast.success('Login successful! Redirecting to company creation...');
+        setTimeout(() => {
+          console.log('Redirecting to company creation page now...');
+          window.location.href = '/client/company/new';
+        }, 2000);
         return;
       } else {
         console.error('Login failed:', result.message);

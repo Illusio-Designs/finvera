@@ -115,15 +115,17 @@ module.exports = {
         return crypto.randomBytes(length).toString('base64').slice(0, length);
       };
 
+      // Generate database credentials before creating company
       const dbPassword = generateSecurePassword();
-      const dbName = tenantProvisioningService.generateDatabaseName(
-        `${tenant.subdomain}_${company_name}`.toLowerCase()
-      );
-      const dbUser = tenantProvisioningService.generateDatabaseUser(
-        `${tenant.subdomain}_${company_name}`.toLowerCase()
-      );
+      // Fix: Use company name only (not subdomain) to avoid duplication
+      // Sanitize company name and limit length to prevent MySQL errors
+      const sanitizedCompanyName = company_name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+      // Limit to 30 chars to leave room for prefix and timestamp (MySQL limit is 64)
+      const dbNamePrefix = sanitizedCompanyName.substring(0, 30);
+      const dbName = tenantProvisioningService.generateDatabaseName(dbNamePrefix);
+      const dbUser = tenantProvisioningService.generateDatabaseUser(dbNamePrefix);
 
-      // Create company record first (so we always track creation attempt)
+      // Create company record with database info (but not provisioned yet)
       const company = await Company.create({
         tenant_id: req.tenant_id,
         created_by_user_id: req.user_id,
@@ -165,10 +167,12 @@ module.exports = {
         await company.reload();
       } catch (provisionError) {
         logger.error('Database provisioning failed during company creation:', provisionError);
-        return res.status(503).json({
+        // Delete the company record if database provisioning fails
+        await company.destroy();
+        return res.status(500).json({
           success: false,
-          message: 'Company created, but database provisioning failed. Please try again later or contact support.',
-          data: { company_id: company.id },
+          message: 'Failed to create company: Database provisioning failed. Please try again.',
+          error: provisionError.message,
         });
       }
 

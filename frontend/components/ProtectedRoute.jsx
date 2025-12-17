@@ -2,29 +2,64 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
 import { canAccessAdminPortal, canAccessClientPortal } from '../lib/roleConfig';
+import Cookies from 'js-cookie';
 
 export default function ProtectedRoute({ children, portalType = null }) {
   const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [hasChecked, setHasChecked] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [hasToken, setHasToken] = useState(false);
+  const [hasUserCookie, setHasUserCookie] = useState(false);
+
+  // Set mounted state on client side only
+  useEffect(() => {
+    setMounted(true);
+    // Check cookies only on client side
+    if (typeof window !== 'undefined') {
+      setHasToken(!!Cookies.get('token'));
+      setHasUserCookie(!!Cookies.get('user'));
+    }
+  }, []);
 
   useEffect(() => {
-    // Prevent running multiple times
-    if (loading || hasChecked) {
-      return;
-    }
-
+    // Don't run until mounted to avoid hydration mismatch
+    if (!mounted) return;
+    
     const currentPath = router.pathname;
     
     // Skip check for login and register pages - allow viewing even when authenticated
     // This allows users to see login success messages and console logs
     if (currentPath.includes('/login') || currentPath.includes('/register')) {
-      setHasChecked(true);
+      if (!hasChecked) setHasChecked(true);
       return;
     }
 
-    // Not authenticated - redirect to login
-    if (!isAuthenticated) {
+    const isCompanyCreationPage = currentPath === '/client/company/new';
+    
+    // If we have a token but auth is still loading, wait
+    if (loading && hasToken) {
+      return; // Wait for auth to finish loading
+    }
+
+    // Prevent running multiple times after loading is complete
+    if (hasChecked && !loading) {
+      return;
+    }
+
+    // Special handling for company creation page after login
+    // If user has token in cookies but isAuthenticated is false (state not updated yet), allow access
+    if (isCompanyCreationPage && hasToken && hasUserCookie) {
+      // User just logged in, cookies are set, but state might not be updated yet
+      // Allow access and mark as checked
+      if (!hasChecked) {
+        setHasChecked(true);
+      }
+      return;
+    }
+
+    // Not authenticated and no token - redirect to login
+    if (!isAuthenticated && !hasToken) {
       if (currentPath.startsWith('/admin')) {
         router.replace('/admin/login');
       } else if (currentPath.startsWith('/client')) {
@@ -59,13 +94,28 @@ export default function ProtectedRoute({ children, portalType = null }) {
         setHasChecked(true);
         return;
       }
+
+      // For client portal users, check if they have a company
+      // Allow access to company creation page, but redirect other pages
+      if (portalType === 'client' && canAccessClientPortal(userRole)) {
+        const isCompanyCreationPage = currentPath === '/client/company/new';
+        const hasCompany = !!user.company_id;
+        
+        // If user doesn't have a company and is not on company creation page, redirect
+        if (!hasCompany && !isCompanyCreationPage) {
+          console.log('User does not have a company, redirecting to company creation');
+          router.replace('/client/company/new');
+          setHasChecked(true);
+          return;
+        }
+      }
     }
 
     setHasChecked(true);
-  }, [loading, isAuthenticated, user, router.pathname, portalType, hasChecked]);
+  }, [loading, isAuthenticated, user, router.pathname, portalType, hasChecked, mounted, hasToken, hasUserCookie]);
 
-  // Show loading spinner while checking
-  if (loading || !hasChecked) {
+  // Don't render until mounted to avoid hydration mismatch
+  if (!mounted) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
@@ -73,9 +123,32 @@ export default function ProtectedRoute({ children, portalType = null }) {
     );
   }
 
-  // Not authenticated
-  if (!isAuthenticated) {
+  const isCompanyCreationPage = router.pathname === '/client/company/new';
+
+  // Show loading spinner while checking
+  if (loading || !hasChecked) {
+    // For company creation page, allow rendering if we have token and user cookie
+    // This handles the case where user just logged in and is being redirected
+    if (isCompanyCreationPage && hasToken && hasUserCookie) {
+      return children;
+    }
+    
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  // Not authenticated - but allow company creation page if token exists (just logged in)
+  if (!isAuthenticated && !hasToken) {
     return null;
+  }
+  
+  // Allow company creation page even if isAuthenticated is false but token exists
+  // This handles the redirect from login page where state hasn't updated yet
+  if (isCompanyCreationPage && hasToken && hasUserCookie && !isAuthenticated) {
+    return children;
   }
 
   // Check portal access

@@ -91,23 +91,39 @@ const resolveTenant = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Company not found' });
     }
 
-    if (!company.db_provisioned) {
-      return res.status(503).json({
-        success: false,
-        message: 'Company database is being provisioned',
+    // Use shared database if company doesn't have its own database
+    let tenantConnection;
+    if (company.db_provisioned && company.db_name && company.db_password) {
+      // Company has its own database - use it
+      const tenantProvisioningService = require('../services/tenantProvisioningService');
+      const dbPassword = tenantProvisioningService.decryptPassword(company.db_password);
+      tenantConnection = await tenantConnectionManager.getConnection({
+        id: company.id,
+        db_name: company.db_name,
+        db_host: company.db_host,
+        db_port: company.db_port,
+        db_user: process.env.USE_SEPARATE_DB_USERS === 'true' ? company.db_user : process.env.DB_USER,
+        db_password: process.env.USE_SEPARATE_DB_USERS === 'true' ? dbPassword : process.env.DB_PASSWORD,
+      });
+    } else {
+      // Company uses shared database - use tenant's database or default database
+      const sharedDbName = tenant.db_name || process.env.DB_NAME || 'finvera_master';
+      tenantConnection = await tenantConnectionManager.getConnection({
+        id: tenant.id,
+        db_name: sharedDbName,
+        db_host: tenant.db_host || process.env.DB_HOST || 'localhost',
+        db_port: tenant.db_port || parseInt(process.env.DB_PORT) || 3306,
+        db_user: tenant.db_user || process.env.DB_USER,
+        db_password: tenant.db_password ? (() => {
+          try {
+            const tenantProvisioningService = require('../services/tenantProvisioningService');
+            return tenantProvisioningService.decryptPassword(tenant.db_password);
+          } catch (e) {
+            return process.env.DB_PASSWORD;
+          }
+        })() : process.env.DB_PASSWORD,
       });
     }
-
-    const tenantProvisioningService = require('../services/tenantProvisioningService');
-    const dbPassword = tenantProvisioningService.decryptPassword(company.db_password);
-    const tenantConnection = await tenantConnectionManager.getConnection({
-      id: company.id,
-      db_name: company.db_name,
-      db_host: company.db_host,
-      db_port: company.db_port,
-      db_user: process.env.USE_SEPARATE_DB_USERS === 'true' ? company.db_user : process.env.DB_USER,
-      db_password: process.env.USE_SEPARATE_DB_USERS === 'true' ? dbPassword : process.env.DB_PASSWORD,
-    });
 
     // Load tenant models (transactional data)
     const tenantModels = require('../services/tenantModels')(tenantConnection);
