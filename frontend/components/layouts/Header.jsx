@@ -2,27 +2,108 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'next/router';
 import { getProfileImageUrl } from '../../lib/imageUtils';
+import { companyAPI } from '../../lib/api';
+import { canAccessClientPortal } from '../../lib/roleConfig';
+import Cookies from 'js-cookie';
+import toast from 'react-hot-toast';
 import {
   FiMenu, FiBell, FiSearch, FiUser, FiSettings,
-  FiLogOut, FiChevronDown, FiX
+  FiLogOut, FiChevronDown, FiX, FiBriefcase, FiPlus
 } from 'react-icons/fi';
 
 export default function Header({ onMenuClick, title, actions }) {
-  const { user, logout } = useAuth();
+  const { user, logout, switchCompany } = useAuth();
   const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
+  const [companies, setCompanies] = useState([]);
+  const [loadingCompanies, setLoadingCompanies] = useState(false);
   const [mounted, setMounted] = useState(false);
   const menuRef = useRef(null);
+  const companyDropdownRef = useRef(null);
+  const fetchingCompaniesRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Fetch companies for client users
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      // Only run on client side
+      if (typeof window === 'undefined') return;
+      
+      // Prevent multiple simultaneous calls
+      if (fetchingCompaniesRef.current) return;
+      
+      // Check if user is authenticated and is a client user
+      if (!user || !canAccessClientPortal(user.role)) {
+        setCompanies([]);
+        return;
+      }
+
+      // Check if we have a token before making the request
+      const token = Cookies.get('token');
+      if (!token) {
+        setCompanies([]);
+        return;
+      }
+
+      fetchingCompaniesRef.current = true;
+      setLoadingCompanies(true);
+      try {
+        const response = await companyAPI.list();
+        const companiesData = response.data?.data || response.data || [];
+        
+        // Ensure we have an array
+        if (!Array.isArray(companiesData)) {
+          setCompanies([]);
+          return;
+        }
+        
+        // Filter out invalid entries and deduplicate companies by ID using a Map
+        const companyMap = new Map();
+        companiesData.forEach((company) => {
+          // Only process valid company objects with an ID
+          if (company && company.id && typeof company.id === 'string') {
+            // Only add if we haven't seen this ID before
+            if (!companyMap.has(company.id)) {
+              companyMap.set(company.id, company);
+            }
+          }
+        });
+        
+        // Convert Map values back to array and ensure we have valid company names
+        const uniqueCompanies = Array.from(companyMap.values())
+          .filter(company => company.company_name); // Ensure company has a name
+        
+        setCompanies(uniqueCompanies);
+      } catch (error) {
+        // Silently handle network errors - don't break the UI
+        // Network errors can occur if API is not available or user is offline
+        if (error.code !== 'ERR_NETWORK') {
+          console.error('Error fetching companies:', error);
+        }
+        setCompanies([]);
+      } finally {
+        setLoadingCompanies(false);
+        fetchingCompaniesRef.current = false;
+      }
+    };
+
+    if (mounted && user) {
+      fetchCompanies();
+    }
+  }, [user, mounted]);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setShowUserMenu(false);
+      }
+      if (companyDropdownRef.current && !companyDropdownRef.current.contains(event.target)) {
+        setShowCompanyDropdown(false);
       }
     };
 
@@ -35,8 +116,37 @@ export default function Header({ onMenuClick, title, actions }) {
     setShowUserMenu(false);
   };
 
+  const handleCompanySwitch = async (companyId) => {
+    // Don't switch if it's the same company
+    if (companyId === user?.company_id) {
+      setShowCompanyDropdown(false);
+      return;
+    }
+
+    try {
+      await switchCompany(companyId);
+      setShowCompanyDropdown(false);
+      toast.success('Company switched successfully');
+      // Reload the page to ensure all data is refreshed with new company context
+      router.reload();
+    } catch (error) {
+      console.error('Error switching company:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to switch company';
+      
+      // Handle 503 error (database not provisioned)
+      if (error.response?.status === 503) {
+        toast.error('Company database is being provisioned. Please try again later.');
+      } else {
+        toast.error(errorMessage);
+      }
+    }
+  };
+
+  const isClientUser = user && canAccessClientPortal(user.role);
+  const currentCompany = companies.find(c => c.id === user?.company_id);
+
   return (
-    <header className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-30 shadow-sm w-full">
+    <header className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-[55] shadow-sm w-full">
       <div className="flex items-center h-16 px-4 sm:px-6">
         {/* Left: Logo and Menu button */}
         <div className="flex items-center gap-3">
@@ -56,6 +166,80 @@ export default function Header({ onMenuClick, title, actions }) {
             </button>
           )}
         </div>
+
+        {/* Company Selection Dropdown (for client users) */}
+        {isClientUser && (
+          <div className="relative" ref={companyDropdownRef}>
+            <button
+              onClick={() => setShowCompanyDropdown(!showCompanyDropdown)}
+              disabled={loadingCompanies}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FiBriefcase className="h-4 w-4 text-gray-500" />
+              <span className="hidden sm:block max-w-[150px] truncate">
+                {loadingCompanies ? 'Loading...' : (currentCompany?.company_name || 'Select Company')}
+              </span>
+              <FiChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${showCompanyDropdown ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showCompanyDropdown && (
+              <div className="absolute left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[70] max-h-80 overflow-y-auto">
+                {loadingCompanies ? (
+                  <div className="px-4 py-3 text-sm text-gray-500 text-center">Loading companies...</div>
+                ) : companies.length === 0 ? (
+                  <div className="px-4 py-3">
+                    <div className="text-sm text-gray-500 text-center mb-2">No companies found</div>
+                    <button
+                      onClick={() => {
+                        setShowCompanyDropdown(false);
+                        router.push('/client/company/new');
+                      }}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition"
+                    >
+                      <FiPlus className="h-4 w-4" />
+                      <span>Create Company</span>
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {companies.map((company) => {
+                      const isCurrentCompany = company.id === user?.company_id;
+                      return (
+                        <button
+                          key={company.id}
+                          onClick={() => !isCurrentCompany && handleCompanySwitch(company.id)}
+                          disabled={isCurrentCompany}
+                          className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition ${
+                            isCurrentCompany
+                              ? 'bg-primary-50 text-primary-700 font-medium cursor-default'
+                              : 'text-gray-700 hover:bg-gray-50 cursor-pointer'
+                          } disabled:opacity-100`}
+                        >
+                          <FiBriefcase className={`h-4 w-4 ${isCurrentCompany ? 'text-primary-600' : 'text-gray-400'}`} />
+                          <span className="flex-1 truncate">{company.company_name}</span>
+                          {isCurrentCompany && (
+                            <span className="text-primary-600 text-xs font-medium">Current</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                    <div className="border-t border-gray-200 my-1"></div>
+                    <button
+                      onClick={() => {
+                        setShowCompanyDropdown(false);
+                        router.push('/client/company/new');
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary-600 hover:bg-primary-50 transition"
+                    >
+                      <FiPlus className="h-4 w-4" />
+                      <span>Create New Company</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Center: Search bar */}
         <div className="flex-1 flex justify-center px-4">
@@ -130,7 +314,7 @@ export default function Header({ onMenuClick, title, actions }) {
               </button>
 
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[70]">
                   <div className="px-4 py-3 border-b border-gray-200">
                     <div className="text-sm font-medium text-gray-900">
                       {user?.name || user?.full_name || user?.email || 'User'}

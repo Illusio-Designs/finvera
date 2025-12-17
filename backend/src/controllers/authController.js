@@ -155,9 +155,29 @@ module.exports = {
         });
 
         if (companies.length === 0) {
+          // Still generate tokens and return user data so user can be authenticated
+          // This allows them to access the company creation page
+          const tokens = await signTokens({
+            id: user.id,
+            tenant_id: user.tenant_id || null,
+            company_id: null, // No company yet
+            role: user.role,
+          });
+
           return res.status(409).json({
             message: 'No company found. Please create your company first.',
             needs_company_creation: true,
+            user: {
+              id: user.id,
+              email: user.email,
+              tenant_id: user.tenant_id || null,
+              company_id: null,
+              company_name: null,
+              role: user.role,
+              full_name: user.name || user.full_name || null,
+              profile_image: user.profile_image || null,
+            },
+            ...tokens,
           });
         }
 

@@ -9,6 +9,7 @@ import FormSelect from '../../../components/forms/FormSelect';
 import FormTextarea from '../../../components/forms/FormTextarea';
 import toast, { Toaster } from 'react-hot-toast';
 import { companyAPI } from '../../../lib/api';
+import { useAuth } from '../../../contexts/AuthContext';
 
 const COMPANY_TYPES = [
   { value: 'sole_proprietorship', label: 'Sole Proprietorship' },
@@ -27,6 +28,7 @@ const ACCOUNTING_METHODS = [
 
 export default function CreateCompanyPage() {
   const router = useRouter();
+  const { switchCompany } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formErrors, setFormErrors] = useState({});
 
@@ -159,12 +161,33 @@ export default function CreateCompanyPage() {
 
     try {
       setLoading(true);
-      await companyAPI.create(payload);
-      toast.success('Company created successfully');
-      router.replace('/client/dashboard');
+      const response = await companyAPI.create(payload);
+      const createdCompany = response?.data?.data || response?.data;
+      const companyId = createdCompany?.id;
+      
+      if (companyId && switchCompany) {
+        // Switch to the newly created company
+        try {
+          await switchCompany(companyId);
+          toast.success('Company created successfully');
+          setTimeout(() => {
+            router.replace('/client/dashboard');
+          }, 300);
+        } catch (switchError) {
+          console.error('Error switching to company:', switchError);
+          toast.success('Company created successfully. Please refresh the page.');
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }
+      } else {
+        toast.success('Company created successfully');
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create company');
-    } finally {
       setLoading(false);
     }
   };
@@ -443,14 +466,6 @@ export default function CreateCompanyPage() {
               <div className="flex gap-3 pt-4 border-t border-gray-200">
                 <Button type="submit" loading={loading} disabled={loading}>
                   Create Company
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={loading}
-                  onClick={() => router.replace('/client/dashboard')}
-                >
-                  Skip for now
                 </Button>
               </div>
             </form>

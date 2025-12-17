@@ -100,24 +100,89 @@ export const AuthProvider = ({ children }) => {
       console.log('Token stored:', !!Cookies.get('token'));
       return { success: true, user: normalizedUser };
     } catch (error) {
+      const status = error.response?.status;
+      const responseData = error.response?.data || {};
+      
       console.error('Login error details:', {
         message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
+        response: responseData,
+        status: status,
         statusText: error.response?.statusText,
-        stack: error.stack
+        hasNeedsCompanyCreation: !!responseData.needs_company_creation,
+        hasRequireCompany: !!responseData.require_company,
       });
       
-      const requireCompany = !!error.response?.data?.require_company;
-      const companies = error.response?.data?.companies || [];
-      const needsCompanyCreation = !!error.response?.data?.needs_company_creation;
+      // Handle 409 Conflict status (no company found) - this is expected behavior
+      // Backend returns tokens and user data even with 409, so we can authenticate the user
+      if (status === 409) {
+        console.log('409 Conflict detected - checking for company creation requirement');
+        if (responseData.needs_company_creation) {
+          console.log('409 Conflict: Company creation needed - but tokens are provided');
+          
+          // Extract tokens and user data from 409 response
+          const userData = responseData.user;
+          const accessToken = responseData.accessToken || responseData.token;
+          const refreshToken = responseData.refreshToken;
+          const jti = responseData.jti;
+          
+          // If we have tokens and user data, authenticate the user even though company is needed
+          if (userData && accessToken) {
+            console.log('409 response includes tokens - authenticating user for company creation');
+            
+            // Normalize user data
+            const normalizedUser = {
+              ...userData,
+              name: userData.name || userData.full_name || userData.email?.split('@')[0] || 'User',
+              full_name: userData.full_name || userData.name || userData.email?.split('@')[0] || 'User',
+            };
+            
+            // Store tokens and user data
+            const cookieOptions = { 
+              expires: 7,
+              sameSite: 'lax'
+            };
+            
+            Cookies.set('token', accessToken, cookieOptions);
+            if (refreshToken) {
+              Cookies.set('refreshToken', refreshToken, { ...cookieOptions, expires: 30 });
+            }
+            if (jti) {
+              Cookies.set('jti', jti, cookieOptions);
+            }
+            Cookies.set('user', JSON.stringify(normalizedUser), cookieOptions);
+            Cookies.remove('companyId'); // No company yet
+            
+            setUser(normalizedUser);
+            console.log('User authenticated for company creation:', normalizedUser);
+            
+            return {
+              success: false,
+              needsCompanyCreation: true,
+              user: normalizedUser, // Include user data so login page can redirect
+              message: responseData.message || 'Please create your company first.',
+            };
+          }
+          
+          // Fallback if no tokens in response
+          return {
+            success: false,
+            needsCompanyCreation: true,
+            message: responseData.message || 'Please create your company first.',
+          };
+        }
+      }
+      
+      const requireCompany = !!responseData.require_company;
+      const companies = responseData.companies || [];
+      const needsCompanyCreation = !!responseData.needs_company_creation;
 
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.error || 
+      const errorMessage = responseData.message || 
+                          responseData.error || 
                           error.message || 
                           'Login failed. Please check your credentials.';
       
       if (requireCompany) {
+        console.log('Company selection required');
         return {
           success: false,
           requireCompany: true,
@@ -127,6 +192,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (needsCompanyCreation) {
+        console.log('Company creation needed');
         return {
           success: false,
           needsCompanyCreation: true,
@@ -134,6 +200,7 @@ export const AuthProvider = ({ children }) => {
         };
       }
 
+      console.log('Login failed with error:', errorMessage);
       return {
         success: false,
         message: errorMessage,
