@@ -269,7 +269,7 @@ export default function AdminDashboard() {
               { label: 'Dashboard' },
             ]}
           >
-            <div className="space-y-5">
+            <div className="space-y-5 w-full max-w-full">
             {loading ? (
               <div className="flex justify-center items-center h-64">
                 <LoadingSpinner size="lg" />
@@ -467,7 +467,7 @@ export default function AdminDashboard() {
             { label: 'Dashboard' },
           ]}
         >
-        <div className="space-y-5">
+        <div className="space-y-5 w-full max-w-full">
           {/* Stats Grid */}
           {loading ? (
             <div className="flex justify-center items-center h-64">
