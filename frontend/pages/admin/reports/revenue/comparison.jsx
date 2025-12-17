@@ -143,7 +143,7 @@ export default function RevenueComparisonReport() {
                 {reportData?.comparison?.growth_percentage > 0 ? '+' : ''}
                 {reportData?.comparison?.growth_percentage || 0}% growth
               </div>
-            </div>
+            </Card>
           </div>
 
           {/* Plan-wise Comparison */}
@@ -180,8 +180,8 @@ export default function RevenueComparisonReport() {
                   </div>
                 );
               })}
-            </Card>
-          </div>
+            </div>
+          </Card>
         </>
       )}
     </ReportLayout>
