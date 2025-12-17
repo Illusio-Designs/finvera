@@ -64,10 +64,18 @@ module.exports = (sequelize) => {
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    name: {
+    // Keep DB column name as `name` for backward compatibility,
+    // but expose as ledger_name to match controllers/UI.
+    ledger_name: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
+      field: 'name',
+    },
+    ledger_code: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      unique: false,
     },
     account_group_id: {
       type: DataTypes.UUID,
@@ -78,9 +86,14 @@ module.exports = (sequelize) => {
       type: DataTypes.DECIMAL(15, 2),
       defaultValue: 0.00,
     },
-    current_balance: {
-      type: DataTypes.DECIMAL(15, 2),
-      defaultValue: 0.00,
+    opening_balance_type: {
+      type: DataTypes.ENUM('Dr', 'Cr'),
+      defaultValue: 'Dr',
+    },
+    // Optional hint used by some screens; do not rely on it for reporting.
+    balance_type: {
+      type: DataTypes.ENUM('debit', 'credit'),
+      defaultValue: 'debit',
     },
     gstin: DataTypes.STRING(15),
     pan: DataTypes.STRING(10),
@@ -139,10 +152,17 @@ module.exports = (sequelize) => {
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
+    // Optional FK to a master voucher type (kept nullable because older flows
+    // and current multi-company refactor may use `voucher_type` string).
     voucher_type_id: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
       comment: 'References master DB voucher_types table',
+    },
+    voucher_type: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      comment: 'Logical voucher category (Sales/Purchase/Payment/Receipt/Journal/Contra)',
     },
     voucher_number: {
       type: DataTypes.STRING(50),
@@ -152,9 +172,43 @@ module.exports = (sequelize) => {
       type: DataTypes.DATEONLY,
       allowNull: false,
     },
+    party_ledger_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      comment: 'Customer/Supplier ledger id (in tenant DB)',
+    },
     reference_number: DataTypes.STRING(100),
     reference_date: DataTypes.DATEONLY,
     narration: DataTypes.TEXT,
+    place_of_supply: DataTypes.STRING(100),
+    is_reverse_charge: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    subtotal: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: true,
+    },
+    cgst_amount: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: true,
+    },
+    sgst_amount: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: true,
+    },
+    igst_amount: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: true,
+    },
+    cess_amount: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: true,
+    },
+    round_off: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: true,
+    },
     total_amount: {
       type: DataTypes.DECIMAL(15, 2),
       allowNull: false,
@@ -166,6 +220,73 @@ module.exports = (sequelize) => {
     created_by: DataTypes.UUID,
   }, {
     tableName: 'vouchers',
+    timestamps: true,
+  });
+
+  // Voucher Item model (invoice line items)
+  models.VoucherItem = sequelize.define('VoucherItem', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    voucher_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
+    item_code: DataTypes.STRING(100),
+    item_description: {
+      type: DataTypes.STRING(500),
+      allowNull: false,
+    },
+    hsn_sac_code: DataTypes.STRING(20),
+    uqc: DataTypes.STRING(20),
+    quantity: {
+      type: DataTypes.DECIMAL(15, 3),
+      defaultValue: 1,
+    },
+    rate: {
+      type: DataTypes.DECIMAL(15, 2),
+      defaultValue: 0,
+    },
+    discount_percent: {
+      type: DataTypes.DECIMAL(6, 2),
+      defaultValue: 0,
+    },
+    discount_amount: {
+      type: DataTypes.DECIMAL(15, 2),
+      defaultValue: 0,
+    },
+    taxable_amount: {
+      type: DataTypes.DECIMAL(15, 2),
+      defaultValue: 0,
+    },
+    gst_rate: {
+      type: DataTypes.DECIMAL(6, 2),
+      defaultValue: 0,
+    },
+    cgst_amount: {
+      type: DataTypes.DECIMAL(15, 2),
+      defaultValue: 0,
+    },
+    sgst_amount: {
+      type: DataTypes.DECIMAL(15, 2),
+      defaultValue: 0,
+    },
+    igst_amount: {
+      type: DataTypes.DECIMAL(15, 2),
+      defaultValue: 0,
+    },
+    cess_amount: {
+      type: DataTypes.DECIMAL(15, 2),
+      defaultValue: 0,
+    },
+    total_amount: {
+      type: DataTypes.DECIMAL(15, 2),
+      defaultValue: 0,
+    },
+  }, {
+    tableName: 'voucher_items',
     timestamps: true,
   });
 
@@ -184,17 +305,132 @@ module.exports = (sequelize) => {
       type: DataTypes.UUID,
       allowNull: false,
     },
-    debit: {
+    // Map to legacy DB columns `debit`/`credit` when they exist.
+    debit_amount: {
       type: DataTypes.DECIMAL(15, 2),
       defaultValue: 0.00,
+      field: 'debit',
     },
-    credit: {
+    credit_amount: {
       type: DataTypes.DECIMAL(15, 2),
       defaultValue: 0.00,
+      field: 'credit',
     },
     narration: DataTypes.TEXT,
   }, {
     tableName: 'voucher_ledger_entries',
+    timestamps: true,
+  });
+
+  // Basic inventory (avg-cost) for stock reporting and COGS.
+  models.InventoryItem = sequelize.define('InventoryItem', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    item_key: {
+      type: DataTypes.STRING(300),
+      allowNull: false,
+      unique: true,
+      comment: 'Stable key (item_code if present else item_description)',
+    },
+    item_code: DataTypes.STRING(100),
+    item_name: {
+      type: DataTypes.STRING(500),
+      allowNull: false,
+    },
+    hsn_sac_code: DataTypes.STRING(20),
+    uqc: DataTypes.STRING(20),
+    gst_rate: {
+      type: DataTypes.DECIMAL(6, 2),
+      allowNull: true,
+    },
+    quantity_on_hand: {
+      type: DataTypes.DECIMAL(15, 3),
+      defaultValue: 0,
+    },
+    avg_cost: {
+      type: DataTypes.DECIMAL(15, 4),
+      defaultValue: 0,
+    },
+    is_active: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
+  }, {
+    tableName: 'inventory_items',
+    timestamps: true,
+  });
+
+  models.StockMovement = sequelize.define('StockMovement', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    inventory_item_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
+    voucher_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
+    movement_type: {
+      type: DataTypes.ENUM('IN', 'OUT', 'ADJ'),
+      allowNull: false,
+    },
+    quantity: {
+      type: DataTypes.DECIMAL(15, 3),
+      allowNull: false,
+    },
+    rate: {
+      type: DataTypes.DECIMAL(15, 4),
+      allowNull: false,
+    },
+    amount: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false,
+    },
+    narration: DataTypes.STRING(500),
+  }, {
+    tableName: 'stock_movements',
+    timestamps: true,
+  });
+
+  // E-Way Bill model (generated for outward supply / sales)
+  models.EWayBill = sequelize.define('EWayBill', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    voucher_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      unique: true,
+    },
+    eway_bill_no: DataTypes.STRING(32),
+    generated_at: DataTypes.DATE,
+    valid_upto: DataTypes.DATE,
+    status: {
+      type: DataTypes.ENUM('pending', 'generated', 'cancelled', 'failed'),
+      defaultValue: 'pending',
+    },
+    transporter_id: DataTypes.STRING(50),
+    transporter_name: DataTypes.STRING(255),
+    transport_mode: DataTypes.STRING(20), // ROAD/RAIL/AIR/SHIP
+    vehicle_no: DataTypes.STRING(20),
+    distance_km: DataTypes.INTEGER,
+    from_pincode: DataTypes.STRING(10),
+    to_pincode: DataTypes.STRING(10),
+    supply_type: DataTypes.STRING(20), // OUTWARD/INWARD
+    doc_type: DataTypes.STRING(10), // INV/CHL/BIL
+    payload: DataTypes.JSON,
+    error_message: DataTypes.TEXT,
+  }, {
+    tableName: 'e_way_bills',
     timestamps: true,
   });
 
@@ -219,13 +455,46 @@ module.exports = (sequelize) => {
       type: DataTypes.DECIMAL(15, 2),
       allowNull: false,
     },
+    pending_amount: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false,
+      defaultValue: 0,
+    },
     due_date: DataTypes.DATEONLY,
     is_open: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
+    is_fully_paid: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
   }, {
     tableName: 'bill_wise_details',
+    timestamps: true,
+  });
+
+  // Bill allocation details (payments/receipts allocations against bills)
+  models.BillAllocation = sequelize.define('BillAllocation', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    payment_voucher_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
+    bill_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
+    allocated_amount: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false,
+    },
+  }, {
+    tableName: 'bill_allocations',
     timestamps: true,
   });
 
@@ -346,18 +615,35 @@ module.exports = (sequelize) => {
   // Define associations (within tenant DB)
   // NOTE: AccountGroup and VoucherType are in Master DB, so no foreign key constraints
 
+  models.Voucher.hasMany(models.VoucherItem, { foreignKey: 'voucher_id' });
+  models.VoucherItem.belongsTo(models.Voucher, { foreignKey: 'voucher_id' });
+
+  models.Voucher.belongsTo(models.Ledger, { foreignKey: 'party_ledger_id', as: 'partyLedger' });
+
   models.Voucher.hasMany(models.VoucherLedgerEntry, { foreignKey: 'voucher_id' });
   models.VoucherLedgerEntry.belongsTo(models.Voucher, { foreignKey: 'voucher_id' });
   models.VoucherLedgerEntry.belongsTo(models.Ledger, { foreignKey: 'ledger_id' });
 
   models.Voucher.hasMany(models.BillWiseDetail, { foreignKey: 'voucher_id' });
   models.BillWiseDetail.belongsTo(models.Voucher, { foreignKey: 'voucher_id' });
+  models.BillWiseDetail.belongsTo(models.Ledger, { foreignKey: 'ledger_id' });
+
+  models.BillWiseDetail.hasMany(models.BillAllocation, { foreignKey: 'bill_id' });
+  models.BillAllocation.belongsTo(models.BillWiseDetail, { foreignKey: 'bill_id' });
+  models.BillAllocation.belongsTo(models.Voucher, { foreignKey: 'payment_voucher_id', as: 'paymentVoucher' });
 
   models.GSTIN.hasMany(models.GSTRReturn, { foreignKey: 'gstin_id' });
   models.GSTRReturn.belongsTo(models.GSTIN, { foreignKey: 'gstin_id' });
 
   models.Voucher.hasOne(models.EInvoice, { foreignKey: 'voucher_id' });
   models.EInvoice.belongsTo(models.Voucher, { foreignKey: 'voucher_id' });
+
+  models.Voucher.hasOne(models.EWayBill, { foreignKey: 'voucher_id' });
+  models.EWayBill.belongsTo(models.Voucher, { foreignKey: 'voucher_id' });
+
+  models.InventoryItem.hasMany(models.StockMovement, { foreignKey: 'inventory_item_id' });
+  models.StockMovement.belongsTo(models.InventoryItem, { foreignKey: 'inventory_item_id' });
+  models.StockMovement.belongsTo(models.Voucher, { foreignKey: 'voucher_id' });
 
   return models;
 };

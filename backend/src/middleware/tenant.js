@@ -1,6 +1,7 @@
 const TenantMaster = require('../models/TenantMaster');
 const tenantConnectionManager = require('../config/tenantConnectionManager');
 const logger = require('../utils/logger');
+const masterModels = require('../models/masterModels');
 
 /**
  * Resolve tenant from subdomain or tenant_id
@@ -50,34 +51,72 @@ const resolveTenant = async (req, res, next) => {
       });
     }
 
-    // Check if database is provisioned
-    if (!tenant.db_provisioned) {
+    // Resolve company context (JWT claim or header)
+    const companyId =
+      req.company_id ||
+      req.headers['x-company-id'] ||
+      req.headers['x-companyid'] ||
+      req.query.company_id ||
+      req.body.company_id;
+
+    if (!companyId) {
+      const companies = await masterModels.Company.findAll({
+        where: { tenant_id: tenant.id, is_active: true },
+        attributes: ['id', 'company_name'],
+        order: [['createdAt', 'DESC']],
+      });
+
+      if (companies.length === 0) {
+        return res.status(409).json({
+          success: false,
+          message: 'No company found. Please create your company first.',
+        });
+      }
+      if (companies.length === 1) {
+        req.company_id = companies[0].id;
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'Company selection required',
+          require_company: true,
+          companies,
+        });
+      }
+    }
+
+    const company = await masterModels.Company.findOne({
+      where: { id: req.company_id || companyId, tenant_id: tenant.id, is_active: true },
+    });
+    if (!company) {
+      return res.status(404).json({ success: false, message: 'Company not found' });
+    }
+
+    if (!company.db_provisioned) {
       return res.status(503).json({
         success: false,
-        message: 'Tenant database is being provisioned',
+        message: 'Company database is being provisioned',
       });
     }
 
-    // Get database connection for this tenant
-    const dbPassword = decryptPassword(tenant.db_password);
+    const tenantProvisioningService = require('../services/tenantProvisioningService');
+    const dbPassword = tenantProvisioningService.decryptPassword(company.db_password);
     const tenantConnection = await tenantConnectionManager.getConnection({
-      id: tenant.id,
-      db_name: tenant.db_name,
-      db_host: tenant.db_host,
-      db_port: tenant.db_port,
-      db_user: process.env.USE_SEPARATE_DB_USERS === 'true' ? tenant.db_user : process.env.DB_USER,
+      id: company.id,
+      db_name: company.db_name,
+      db_host: company.db_host,
+      db_port: company.db_port,
+      db_user: process.env.USE_SEPARATE_DB_USERS === 'true' ? company.db_user : process.env.DB_USER,
       db_password: process.env.USE_SEPARATE_DB_USERS === 'true' ? dbPassword : process.env.DB_PASSWORD,
     });
 
     // Load tenant models (transactional data)
     const tenantModels = require('../services/tenantModels')(tenantConnection);
 
-    // Load master models (shared accounting structure)
-    const masterModels = require('../models/masterModels');
-
     // Attach to request
     req.tenant = tenant;
     req.tenant_id = tenant.id;
+    req.company = company;
+    req.company_id = company.id;
     req.tenantDb = tenantConnection;
     req.tenantModels = tenantModels; // Transactional data (ledgers, vouchers, etc.)
     req.masterModels = masterModels; // Shared structure (account groups, voucher types, etc.)

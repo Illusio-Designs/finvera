@@ -11,6 +11,7 @@ router.post('/register', validator(registerValidator), authController.register);
 router.post('/login', validator(loginValidator), authController.login);
 router.post('/logout', authController.logout);
 router.post('/refresh', authController.refresh);
+router.post('/switch-company', authenticate, authController.switchCompany);
 
 // Profile routes (require authentication)
 router.get('/profile', authenticate, authController.getProfile);

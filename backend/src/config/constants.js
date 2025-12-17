@@ -4,6 +4,7 @@ module.exports = {
     ADMIN: 'admin',
     ACCOUNTANT: 'accountant',
     USER: 'user',
+    TENANT_ADMIN: 'tenant_admin',
     DISTRIBUTOR: 'distributor',
     SALESMAN: 'salesman',
     FINANCE_MANAGER: 'finance_manager',

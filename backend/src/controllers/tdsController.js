@@ -1,24 +1,18 @@
-const { TDSDetail, Voucher, Ledger, VoucherLedgerEntry, Tenant } = require('../models');
 const { Op } = require('sequelize');
-const moment = require('moment');
 
 module.exports = {
   async list(req, res, next) {
     try {
       const { quarter, financial_year, ledger_id } = req.query;
-      const where = { tenant_id: req.tenant_id };
+      const where = {};
 
       if (quarter) where.quarter = quarter;
       if (financial_year) where.financial_year = financial_year;
       if (ledger_id) where.ledger_id = ledger_id;
 
-      const tdsDetails = await TDSDetail.findAll({
+      const tdsDetails = await req.tenantModels.TDSDetail.findAll({
         where,
-        include: [
-          { model: Voucher, attributes: ['voucher_number', 'voucher_date'] },
-          { model: Ledger, attributes: ['ledger_name', 'pan'] },
-        ],
-        order: [['payment_date', 'DESC']],
+        order: [['createdAt', 'DESC']],
       });
 
       res.json({ tdsDetails });
@@ -31,9 +25,8 @@ module.exports = {
     try {
       const { voucher_id, tds_section, tds_rate } = req.body;
 
-      const voucher = await Voucher.findOne({
-        where: { id: voucher_id, tenant_id: req.tenant_id },
-        include: [{ model: Ledger, as: 'partyLedger' }],
+      const voucher = await req.tenantModels.Voucher.findByPk(voucher_id, {
+        include: [{ model: req.tenantModels.Ledger, as: 'partyLedger' }],
       });
 
       if (!voucher) {
@@ -41,9 +34,7 @@ module.exports = {
       }
 
       const partyLedger = voucher.partyLedger;
-      if (!partyLedger || !partyLedger.tds_applicable) {
-        return res.status(400).json({ message: 'TDS is not applicable for this ledger' });
-      }
+      if (!partyLedger) return res.status(400).json({ message: 'Party ledger not found for voucher' });
 
       const grossAmount = parseFloat(voucher.total_amount);
       const rate = parseFloat(tds_rate) || parseFloat(partyLedger.tds_rate) || 10;
@@ -56,28 +47,18 @@ module.exports = {
       const financialYear = getFinancialYear(paymentDate);
 
       // Create TDS detail
-      const tdsDetail = await TDSDetail.create({
-        tenant_id: req.tenant_id,
+      const tdsDetail = await req.tenantModels.TDSDetail.create({
         voucher_id,
         ledger_id: voucher.party_ledger_id,
-        tds_section: tds_section || partyLedger.tds_section || '194C',
+        section: tds_section || partyLedger.tds_section || '194C',
         tds_rate: rate,
-        gross_amount: grossAmount,
+        taxable_amount: grossAmount,
         tds_amount: parseFloat(tdsAmount.toFixed(2)),
-        net_amount: parseFloat(netAmount.toFixed(2)),
-        payment_date: paymentDate,
         quarter,
         financial_year: financialYear,
-        pan_of_deductee: partyLedger.pan,
       });
 
-      // Update voucher with TDS amount
-      await voucher.update({
-        tds_amount: parseFloat(tdsAmount.toFixed(2)),
-        total_amount: parseFloat(netAmount.toFixed(2)),
-      });
-
-      res.status(201).json({ tdsDetail });
+      res.status(201).json({ tdsDetail, summary: { grossAmount, tdsAmount: parseFloat(tdsAmount.toFixed(2)), netAmount: parseFloat(netAmount.toFixed(2)) } });
     } catch (err) {
       next(err);
     }
@@ -88,29 +69,24 @@ module.exports = {
       const { quarter, financial_year } = req.body;
 
       const where = {
-        tenant_id: req.tenant_id,
         quarter,
         financial_year,
       };
 
-      const tdsDetails = await TDSDetail.findAll({
+      const tdsDetails = await req.tenantModels.TDSDetail.findAll({
         where,
-        include: [
-          { model: Ledger, attributes: ['ledger_name', 'pan', 'gstin'] },
-          { model: Voucher, attributes: ['voucher_number', 'voucher_date'] },
-        ],
       });
 
       // Group by TDS section
       const returnData = {
-        tan: req.tenant?.tan || '', // TAN of deductor
+        tan: req.company?.tan || '', // TAN of deductor
         financial_year,
         quarter,
         sections: {},
       };
 
       tdsDetails.forEach((tds) => {
-        const section = tds.tds_section;
+        const section = tds.section;
         if (!returnData.sections[section]) {
           returnData.sections[section] = {
             section,
@@ -121,11 +97,9 @@ module.exports = {
         }
 
         returnData.sections[section].deductees.push({
-          pan: tds.pan_of_deductee,
-          name: tds.ledger?.ledger_name,
-          gross_amount: tds.gross_amount,
+          ledger_id: tds.ledger_id,
+          gross_amount: tds.taxable_amount,
           tds_amount: tds.tds_amount,
-          payment_date: tds.payment_date,
         });
 
         returnData.sections[section].total_tds += parseFloat(tds.tds_amount);
@@ -151,18 +125,14 @@ module.exports = {
     try {
       const { id } = req.params;
 
-      const tdsDetail = await TDSDetail.findOne({
-        where: { id, tenant_id: req.tenant_id },
-        include: [
-          { model: Ledger, attributes: ['ledger_name', 'pan', 'address', 'city', 'state', 'pincode'] },
-          { model: Voucher, attributes: ['voucher_number', 'voucher_date'] },
-          { model: Tenant, attributes: ['company_name', 'pan', 'address'] },
-        ],
-      });
+      const tdsDetail = await req.tenantModels.TDSDetail.findByPk(id);
 
       if (!tdsDetail) {
         return res.status(404).json({ message: 'TDS detail not found' });
       }
+
+      const ledger = await req.tenantModels.Ledger.findByPk(tdsDetail.ledger_id);
+      const voucher = await req.tenantModels.Voucher.findByPk(tdsDetail.voucher_id);
 
       // Generate certificate number if not exists
       if (!tdsDetail.certificate_number) {
@@ -179,29 +149,28 @@ module.exports = {
         financial_year: tdsDetail.financial_year,
         quarter: tdsDetail.quarter,
         deductor: {
-          name: tdsDetail.tenant?.company_name,
-          pan: tdsDetail.tenant?.pan,
-          tan: req.tenant?.tan || '',
-          address: tdsDetail.tenant?.address,
+          name: req.company?.company_name || req.company?.name || '',
+          pan: req.company?.pan || '',
+          tan: req.company?.tan || '',
+          address: req.company?.registered_address || req.company?.address || '',
         },
         deductee: {
-          name: tdsDetail.ledger?.ledger_name,
-          pan: tdsDetail.pan_of_deductee,
-          address: `${tdsDetail.ledger?.address || ''}, ${tdsDetail.ledger?.city || ''}, ${tdsDetail.ledger?.state || ''} - ${tdsDetail.ledger?.pincode || ''}`,
+          name: ledger?.ledger_name,
+          pan: ledger?.pan,
+          address: `${ledger?.address || ''}, ${ledger?.city || ''}, ${ledger?.state || ''} - ${ledger?.pincode || ''}`,
         },
         tds_details: {
-          section: tdsDetail.tds_section,
+          section: tdsDetail.section,
           rate: tdsDetail.tds_rate,
-          gross_amount: tdsDetail.gross_amount,
+          gross_amount: tdsDetail.taxable_amount,
           tds_amount: tdsDetail.tds_amount,
-          payment_date: tdsDetail.payment_date,
-          voucher_number: tdsDetail.voucher?.voucher_number,
-          voucher_date: tdsDetail.voucher?.voucher_date,
+          voucher_number: voucher?.voucher_number,
+          voucher_date: voucher?.voucher_date,
         },
         issued_date: new Date().toISOString(),
       };
 
-      res.json({ certificate, tdsDetail });
+      res.json({ certificate, tdsDetail, ledger, voucher });
     } catch (err) {
       next(err);
     }

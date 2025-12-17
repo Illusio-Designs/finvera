@@ -1,4 +1,3 @@
-const { Ledger, AccountGroup, VoucherLedgerEntry } = require('../models');
 const { Op } = require('sequelize');
 const { Sequelize } = require('sequelize');
 const logger = require('../utils/logger');
@@ -8,7 +7,7 @@ module.exports = {
     try {
       const { page = 1, limit = 20, search, account_group_id } = req.query;
       const offset = (page - 1) * limit;
-      const where = { tenant_id: req.tenant_id };
+      const where = {};
 
       if (search) {
         where[Op.or] = [
@@ -21,21 +20,31 @@ module.exports = {
         where.account_group_id = account_group_id;
       }
 
-      const { count, rows } = await Ledger.findAndCountAll({
+      const { count, rows } = await req.tenantModels.Ledger.findAndCountAll({
         where,
         limit: parseInt(limit),
         offset: parseInt(offset),
-        include: [
-          {
-            association: 'account_group',
-            attributes: ['id', 'group_name', 'group_code'],
-          },
-        ],
         order: [['ledger_code', 'ASC']],
       });
 
+      // Enrich account group details from master DB
+      const groupIds = [...new Set(rows.map((r) => r.account_group_id).filter(Boolean))];
+      const groups = await req.masterModels.AccountGroup.findAll({ where: { id: groupIds } });
+      const groupMap = new Map(groups.map((g) => [g.id, g]));
+      const data = rows.map((l) => ({
+        ...l.toJSON(),
+        account_group: groupMap.get(l.account_group_id)
+          ? {
+              id: groupMap.get(l.account_group_id).id,
+              group_name: groupMap.get(l.account_group_id).name,
+              group_code: groupMap.get(l.account_group_id).group_code,
+              nature: groupMap.get(l.account_group_id).nature,
+            }
+          : null,
+      }));
+
       res.json({
-        data: rows,
+        data,
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
@@ -67,8 +76,7 @@ module.exports = {
         email,
       } = req.body;
 
-      const ledger = await Ledger.create({
-        tenant_id: req.tenant_id,
+      const ledger = await req.tenantModels.Ledger.create({
         ledger_name,
         ledger_code,
         account_group_id,
@@ -95,21 +103,24 @@ module.exports = {
   async getById(req, res, next) {
     try {
       const { id } = req.params;
-      const ledger = await Ledger.findOne({
-        where: { id, tenant_id: req.tenant_id },
-        include: [
-          {
-            association: 'account_group',
-            attributes: ['id', 'group_name', 'group_code', 'group_type'],
-          },
-        ],
-      });
+      const ledger = await req.tenantModels.Ledger.findByPk(id);
 
       if (!ledger) {
         return res.status(404).json({ message: 'Ledger not found' });
       }
 
-      res.json({ data: ledger });
+      const group = ledger.account_group_id
+        ? await req.masterModels.AccountGroup.findByPk(ledger.account_group_id)
+        : null;
+
+      res.json({
+        data: {
+          ...ledger.toJSON(),
+          account_group: group
+            ? { id: group.id, group_name: group.name, group_code: group.group_code, nature: group.nature }
+            : null,
+        },
+      });
     } catch (error) {
       logger.error('Ledger getById error:', error);
       next(error);
@@ -136,9 +147,7 @@ module.exports = {
         is_active,
       } = req.body;
 
-      const ledger = await Ledger.findOne({
-        where: { id, tenant_id: req.tenant_id },
-      });
+      const ledger = await req.tenantModels.Ledger.findByPk(id);
 
       if (!ledger) {
         return res.status(404).json({ message: 'Ledger not found' });
@@ -177,9 +186,7 @@ module.exports = {
       const { id } = req.params;
       const { from_date, to_date } = req.query;
 
-      const ledger = await Ledger.findOne({
-        where: { id, tenant_id: req.tenant_id },
-      });
+      const ledger = await req.tenantModels.Ledger.findByPk(id);
 
       if (!ledger) {
         return res.status(404).json({ message: 'Ledger not found' });
@@ -188,21 +195,21 @@ module.exports = {
       // Calculate balance from voucher ledger entries
       const where = {
         ledger_id: id,
-        tenant_id: req.tenant_id,
       };
 
       // If date range provided, join with Voucher to filter by date
       let queryOptions = {
         where,
         attributes: [
-          [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.debit_amount')), 'total_debit'],
-          [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.credit_amount')), 'total_credit'],
+          // Stored as DB columns `debit`/`credit` (mapped to debit_amount/credit_amount in model)
+          [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.debit')), 'total_debit'],
+          [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.credit')), 'total_credit'],
         ],
         raw: true,
       };
 
       if (from_date || to_date) {
-        const Voucher = require('../models').Voucher;
+        const Voucher = req.tenantModels.Voucher;
         queryOptions.include = [
           {
             model: Voucher,
@@ -223,7 +230,7 @@ module.exports = {
         }
       }
 
-      const entries = await VoucherLedgerEntry.findAll(queryOptions);
+      const entries = await req.tenantModels.VoucherLedgerEntry.findAll(queryOptions);
 
       const totalDebit = parseFloat(entries[0]?.total_debit || 0);
       const totalCredit = parseFloat(entries[0]?.total_credit || 0);

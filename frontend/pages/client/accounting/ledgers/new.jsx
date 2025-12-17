@@ -18,7 +18,7 @@ export default function NewLedger() {
   const groups = groupsData?.data || groupsData || [];
   const groupOptions = groups.map((g) => ({
     value: g.id,
-    label: `${g.group_code} - ${g.group_name}`,
+    label: `${g.group_code} - ${g.name}`,
   }));
 
   const { values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting } = useForm(

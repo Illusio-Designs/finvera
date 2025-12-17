@@ -18,6 +18,10 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    const companyId = Cookies.get("companyId");
+    if (companyId) {
+      config.headers["X-Company-Id"] = companyId;
+    }
     return config;
   },
   (error) => {
@@ -96,6 +100,7 @@ export const authAPI = {
   login: (data) => api.post("/auth/login", data),
   logout: (data) => api.post("/auth/logout", data),
   refresh: (data) => api.post("/auth/refresh", data),
+  switchCompany: (company_id) => api.post("/auth/switch-company", { company_id }),
   getProfile: () => api.get("/auth/profile"),
   updateProfile: (data) => api.put("/auth/profile", data),
   uploadProfileImage: (formData) => {
@@ -111,6 +116,18 @@ export const authAPI = {
 export const tenantAPI = {
   getProfile: () => api.get("/tenants/profile"),
   updateProfile: (data) => api.put("/tenants/profile", data),
+};
+
+// Company API (tenant-side)
+export const companyAPI = {
+  list: () => api.get("/companies"),
+  status: () => api.get("/companies/status"),
+  create: (data) => api.post("/companies", data),
+};
+
+export const hsnAPI = {
+  search: (q, params = {}) => api.get("/hsn/search", { params: { q, ...params } }),
+  get: (code) => api.get(`/hsn/${code}`),
 };
 
 // Admin API
@@ -283,12 +300,18 @@ export const reportsAPI = {
   balanceSheet: (params) => api.get("/reports/balance-sheet", { params }),
   profitLoss: (params) => api.get("/reports/profit-loss", { params }),
   ledgerStatement: (params) => api.get("/reports/ledger-statement", { params }),
+  stockSummary: (params) => api.get("/reports/stock-summary", { params }),
+  stockLedger: (params) => api.get("/reports/stock-ledger", { params }),
 };
 
 // GST API
 export const gstAPI = {
   gstins: {
     create: (data) => api.post("/gst/gstins", data),
+  },
+  rates: {
+    list: (params) => api.get("/gst/rates", { params }),
+    create: (data) => api.post("/gst/rates", data),
   },
   returns: {
     generateGSTR1: (data) => api.post("/gst/returns/gstr1", data),
@@ -309,6 +332,14 @@ export const eInvoiceAPI = {
   generate: (data) => api.post("/einvoice/generate", data),
   get: (voucherId) => api.get(`/einvoice/voucher/${voucherId}`),
   cancel: (voucherId, data) => api.post(`/einvoice/cancel/${voucherId}`, data),
+};
+
+// E-Way Bill API
+export const eWayBillAPI = {
+  list: (params) => api.get("/ewaybill", { params }),
+  generate: (data) => api.post("/ewaybill/generate", data),
+  get: (voucherId) => api.get(`/ewaybill/voucher/${voucherId}`),
+  cancel: (voucherId, data) => api.post(`/ewaybill/cancel/${voucherId}`, data),
 };
 
 // Additional APIs (not in backend docs, keeping for backward compatibility)

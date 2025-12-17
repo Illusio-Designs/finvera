@@ -1,78 +1,86 @@
-const { Voucher, VoucherItem, VoucherLedgerEntry, Ledger, AccountGroup } = require('../models');
 const { calculateGST, roundOff } = require('../utils/gstCalculator');
 
+function toNum(v, fallback = 0) {
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+async function getMasterGroupId(masterModels, groupCode) {
+  const group = await masterModels.AccountGroup.findOne({ where: { group_code: groupCode } });
+  if (!group) throw new Error(`Master AccountGroup not found for group_code=${groupCode}`);
+  return group.id;
+}
+
+async function getOrCreateSystemLedger({ tenantModels, masterModels }, { ledgerCode, ledgerName, groupCode }) {
+  const existing =
+    (ledgerCode ? await tenantModels.Ledger.findOne({ where: { ledger_code: ledgerCode } }) : null) ||
+    (ledgerName ? await tenantModels.Ledger.findOne({ where: { ledger_name: ledgerName } }) : null);
+
+  if (existing) return existing;
+
+  const groupId = await getMasterGroupId(masterModels, groupCode);
+  return tenantModels.Ledger.create({
+    ledger_name: ledgerName,
+    ledger_code: ledgerCode || null,
+    account_group_id: groupId,
+    opening_balance: 0,
+    opening_balance_type: 'Dr',
+    balance_type: 'debit',
+    is_active: true,
+  });
+}
+
 class VoucherService {
-  /**
-   * Create sales invoice with automatic GST and ledger entries
-   */
-  async createSalesInvoice(tenantId, invoiceData, userId) {
-    const {
-      voucher_date,
-      party_ledger_id,
-      items,
-      place_of_supply,
-      is_reverse_charge = false,
-      narration,
-      reference_number,
-    } = invoiceData;
+  async createSalesInvoice(ctx, invoiceData) {
+    const { tenantModels, masterModels, company } = ctx;
+    const { party_ledger_id, items = [], place_of_supply, is_reverse_charge = false, narration } = invoiceData || {};
 
-    // Get party ledger for GSTIN and state
-    const partyLedger = await Ledger.findByPk(party_ledger_id);
-    if (!partyLedger) {
-      throw new Error('Party ledger not found');
-    }
+    const partyLedger = await tenantModels.Ledger.findByPk(party_ledger_id);
+    if (!partyLedger) throw new Error('Party ledger not found');
 
-    // Get tenant for supplier state
-    const { Tenant } = require('../models');
-    const tenant = await Tenant.findByPk(tenantId);
-    const supplierState = tenant.state || 'Maharashtra'; // Default
+    const supplierState = company?.state || partyLedger?.state || 'Maharashtra';
+    const pos = place_of_supply || partyLedger?.state || supplierState;
 
-    // Calculate totals
     let subtotal = 0;
     let totalCGST = 0;
     let totalSGST = 0;
     let totalIGST = 0;
     let totalCess = 0;
 
-    const processedItems = items.map((item) => {
-      const quantity = parseFloat(item.quantity) || 1;
-      const rate = parseFloat(item.rate) || 0;
-      const discountPercent = parseFloat(item.discount_percent) || 0;
+    const processedItems = (items || []).map((item) => {
+      const quantity = toNum(item.quantity, 1);
+      const rate = toNum(item.rate, 0);
+      const discountPercent = toNum(item.discount_percent, 0);
       const discountAmount = (quantity * rate * discountPercent) / 100;
       const taxableAmount = quantity * rate - discountAmount;
 
       subtotal += taxableAmount;
 
-      // Calculate GST
-      const gstRate = parseFloat(item.gst_rate) || 18;
-      const gst = calculateGST(
-        taxableAmount,
-        gstRate,
-        supplierState,
-        place_of_supply || partyLedger.state || supplierState
-      );
+      const gstRate = toNum(item.gst_rate, 18);
+      const gst = calculateGST(taxableAmount, gstRate, supplierState, pos);
 
       totalCGST += gst.cgst;
       totalSGST += gst.sgst;
       totalIGST += gst.igst;
-      totalCess += parseFloat(item.cess_amount) || 0;
+      totalCess += toNum(item.cess_amount, 0);
 
+      const lineTotal = taxableAmount + gst.totalTax + toNum(item.cess_amount, 0);
       return {
-        ...item,
+        item_code: item.item_code || null,
+        item_description: item.item_description || item.description || item.item_name || 'Item',
+        hsn_sac_code: item.hsn_sac_code || item.hsn || null,
+        uqc: item.uqc || null,
         quantity,
         rate,
         discount_percent: discountPercent,
         discount_amount: discountAmount,
         taxable_amount: taxableAmount,
         gst_rate: gstRate,
-        cgst_rate: gst.cgst > 0 ? gstRate / 2 : 0,
-        sgst_rate: gst.sgst > 0 ? gstRate / 2 : 0,
-        igst_rate: gst.igst > 0 ? gstRate : 0,
         cgst_amount: gst.cgst,
         sgst_amount: gst.sgst,
         igst_amount: gst.igst,
-        cess_amount: parseFloat(item.cess_amount) || 0,
-        total_amount: taxableAmount + gst.totalTax + (parseFloat(item.cess_amount) || 0),
+        cess_amount: toNum(item.cess_amount, 0),
+        total_amount: lineTotal,
       };
     });
 
@@ -81,76 +89,56 @@ class VoucherService {
     const roundedTotal = roundOff(grandTotal);
     const roundOffAmount = roundedTotal - grandTotal;
 
-    // Create ledger entries (double-entry)
-    const ledgerEntries = [];
+    const salesLedger = await getOrCreateSystemLedger(
+      { tenantModels, masterModels },
+      { ledgerCode: 'SALES', ledgerName: 'Sales', groupCode: 'SAL' }
+    );
 
-    // Debit: Party (Debtor)
-    ledgerEntries.push({
-      ledger_id: party_ledger_id,
-      ledger_name: partyLedger.ledger_name,
-      debit_amount: roundedTotal,
-      credit_amount: 0,
-      narration: narration || `Sales invoice to ${partyLedger.ledger_name}`,
-    });
+    const ledgerEntries = [
+      {
+        ledger_id: party_ledger_id,
+        debit_amount: roundedTotal,
+        credit_amount: 0,
+        narration: narration || `Sales invoice to ${partyLedger.ledger_name}`,
+      },
+      {
+        ledger_id: salesLedger.id,
+        debit_amount: 0,
+        credit_amount: subtotal,
+        narration: 'Sales revenue',
+      },
+    ];
 
-    // Credit: Sales Account
-    const salesGroup = await AccountGroup.findOne({
-      where: { tenant_id: tenantId, group_code: 'SALES' },
-    });
-    if (salesGroup) {
-      const salesLedger = await Ledger.findOne({
-        where: { tenant_id: tenantId, account_group_id: salesGroup.id },
-      });
-      if (salesLedger) {
-        ledgerEntries.push({
-          ledger_id: salesLedger.id,
-          ledger_name: salesLedger.ledger_name,
-          debit_amount: 0,
-          credit_amount: subtotal,
-          narration: 'Sales revenue',
-        });
-      }
-    }
-
-    // Credit: GST Output Accounts
     if (totalCGST > 0) {
-      const cgstLedger = await this.getOrCreateGSTLedger(tenantId, 'CGST_OUTPUT', 'GST Output - CGST');
-      ledgerEntries.push({
-        ledger_id: cgstLedger.id,
-        ledger_name: cgstLedger.ledger_name,
-        debit_amount: 0,
-        credit_amount: totalCGST,
-        narration: 'CGST Output',
-      });
+      const cgst = await getOrCreateSystemLedger(
+        { tenantModels, masterModels },
+        { ledgerCode: 'CGST_OUTPUT', ledgerName: 'GST Output - CGST', groupCode: 'DT' }
+      );
+      ledgerEntries.push({ ledger_id: cgst.id, debit_amount: 0, credit_amount: totalCGST, narration: 'CGST Output' });
     }
-
     if (totalSGST > 0) {
-      const sgstLedger = await this.getOrCreateGSTLedger(tenantId, 'SGST_OUTPUT', 'GST Output - SGST');
-      ledgerEntries.push({
-        ledger_id: sgstLedger.id,
-        ledger_name: sgstLedger.ledger_name,
-        debit_amount: 0,
-        credit_amount: totalSGST,
-        narration: 'SGST Output',
-      });
+      const sgst = await getOrCreateSystemLedger(
+        { tenantModels, masterModels },
+        { ledgerCode: 'SGST_OUTPUT', ledgerName: 'GST Output - SGST', groupCode: 'DT' }
+      );
+      ledgerEntries.push({ ledger_id: sgst.id, debit_amount: 0, credit_amount: totalSGST, narration: 'SGST Output' });
     }
-
     if (totalIGST > 0) {
-      const igstLedger = await this.getOrCreateGSTLedger(tenantId, 'IGST_OUTPUT', 'GST Output - IGST');
-      ledgerEntries.push({
-        ledger_id: igstLedger.id,
-        ledger_name: igstLedger.ledger_name,
-        debit_amount: 0,
-        credit_amount: totalIGST,
-        narration: 'IGST Output',
-      });
+      const igst = await getOrCreateSystemLedger(
+        { tenantModels, masterModels },
+        { ledgerCode: 'IGST_OUTPUT', ledgerName: 'GST Output - IGST', groupCode: 'DT' }
+      );
+      ledgerEntries.push({ ledger_id: igst.id, debit_amount: 0, credit_amount: totalIGST, narration: 'IGST Output' });
     }
 
-    if (roundOffAmount !== 0) {
-      const roundOffLedger = await this.getOrCreateLedger(tenantId, 'ROUND_OFF', 'Round Off');
+    // Default round-off handling (computed always; posted only if non-zero)
+    if (Math.abs(roundOffAmount) > 0.000001) {
+      const roundOffLedger = await getOrCreateSystemLedger(
+        { tenantModels, masterModels },
+        { ledgerCode: 'ROUND_OFF', ledgerName: 'Round Off', groupCode: 'IND_EXP' }
+      );
       ledgerEntries.push({
         ledger_id: roundOffLedger.id,
-        ledger_name: roundOffLedger.ledger_name,
         debit_amount: roundOffAmount > 0 ? roundOffAmount : 0,
         credit_amount: roundOffAmount < 0 ? Math.abs(roundOffAmount) : 0,
         narration: 'Round off',
@@ -165,33 +153,23 @@ class VoucherService {
       cess_amount: totalCess,
       round_off: roundOffAmount,
       total_amount: roundedTotal,
+      place_of_supply: pos,
+      is_reverse_charge: !!is_reverse_charge,
       items: processedItems,
       ledger_entries: ledgerEntries,
     };
   }
 
-  /**
-   * Create purchase invoice with automatic GST and ledger entries
-   */
-  async createPurchaseInvoice(tenantId, invoiceData, userId) {
-    const {
-      voucher_date,
-      party_ledger_id,
-      items,
-      place_of_supply,
-      is_reverse_charge = false,
-      narration,
-    } = invoiceData;
+  async createPurchaseInvoice(ctx, invoiceData) {
+    const { tenantModels, masterModels, company } = ctx;
+    const { party_ledger_id, items = [], place_of_supply, is_reverse_charge = false, narration } = invoiceData || {};
 
-    const partyLedger = await Ledger.findByPk(party_ledger_id);
-    if (!partyLedger) {
-      throw new Error('Party ledger not found');
-    }
+    const partyLedger = await tenantModels.Ledger.findByPk(party_ledger_id);
+    if (!partyLedger) throw new Error('Party ledger not found');
 
-    const { Tenant } = require('../models');
-    const tenant = await Tenant.findByPk(tenantId);
-    const supplierState = partyLedger.state || 'Maharashtra';
-    const recipientState = tenant.state || 'Maharashtra';
+    const supplierState = partyLedger?.state || place_of_supply || 'Maharashtra';
+    const recipientState = company?.state || 'Maharashtra';
+    const pos = place_of_supply || recipientState;
 
     let subtotal = 0;
     let totalCGST = 0;
@@ -199,32 +177,40 @@ class VoucherService {
     let totalIGST = 0;
     let totalCess = 0;
 
-    const processedItems = items.map((item) => {
-      const quantity = parseFloat(item.quantity) || 1;
-      const rate = parseFloat(item.rate) || 0;
-      const discountAmount = (quantity * rate * (parseFloat(item.discount_percent) || 0)) / 100;
+    const processedItems = (items || []).map((item) => {
+      const quantity = toNum(item.quantity, 1);
+      const rate = toNum(item.rate, 0);
+      const discountPercent = toNum(item.discount_percent, 0);
+      const discountAmount = (quantity * rate * discountPercent) / 100;
       const taxableAmount = quantity * rate - discountAmount;
 
       subtotal += taxableAmount;
 
-      const gstRate = parseFloat(item.gst_rate) || 18;
-      const gst = calculateGST(taxableAmount, gstRate, supplierState, place_of_supply || recipientState);
+      const gstRate = toNum(item.gst_rate, 18);
+      const gst = calculateGST(taxableAmount, gstRate, supplierState, pos);
 
       totalCGST += gst.cgst;
       totalSGST += gst.sgst;
       totalIGST += gst.igst;
-      totalCess += parseFloat(item.cess_amount) || 0;
+      totalCess += toNum(item.cess_amount, 0);
 
+      const lineTotal = taxableAmount + gst.totalTax + toNum(item.cess_amount, 0);
       return {
-        ...item,
+        item_code: item.item_code || null,
+        item_description: item.item_description || item.description || item.item_name || 'Item',
+        hsn_sac_code: item.hsn_sac_code || item.hsn || null,
+        uqc: item.uqc || null,
         quantity,
         rate,
+        discount_percent: discountPercent,
+        discount_amount: discountAmount,
         taxable_amount: taxableAmount,
         gst_rate: gstRate,
         cgst_amount: gst.cgst,
         sgst_amount: gst.sgst,
         igst_amount: gst.igst,
-        total_amount: taxableAmount + gst.totalTax,
+        cess_amount: toNum(item.cess_amount, 0),
+        total_amount: lineTotal,
       };
     });
 
@@ -233,75 +219,54 @@ class VoucherService {
     const roundedTotal = roundOff(grandTotal);
     const roundOffAmount = roundedTotal - grandTotal;
 
-    const ledgerEntries = [];
+    // Perpetual inventory: debit inventory for taxable subtotal.
+    const inventoryLedger = await getOrCreateSystemLedger(
+      { tenantModels, masterModels },
+      { ledgerCode: 'INVENTORY', ledgerName: 'Stock-in-Hand', groupCode: 'INV' }
+    );
 
-    // Debit: Purchase Account
-    const purchaseGroup = await AccountGroup.findOne({
-      where: { tenant_id: tenantId, group_code: 'PURCHASE' },
-    });
-    if (purchaseGroup) {
-      const purchaseLedger = await Ledger.findOne({
-        where: { tenant_id: tenantId, account_group_id: purchaseGroup.id },
-      });
-      if (purchaseLedger) {
-        ledgerEntries.push({
-          ledger_id: purchaseLedger.id,
-          ledger_name: purchaseLedger.ledger_name,
-          debit_amount: subtotal,
-          credit_amount: 0,
-          narration: 'Purchase expense',
-        });
-      }
-    }
+    const ledgerEntries = [
+      { ledger_id: inventoryLedger.id, debit_amount: subtotal, credit_amount: 0, narration: 'Inventory purchase' },
+    ];
 
-    // Debit: GST Input Accounts
+    // GST Input ledgers (asset/ITC)
     if (totalCGST > 0) {
-      const cgstLedger = await this.getOrCreateGSTLedger(tenantId, 'CGST_INPUT', 'GST Input - CGST');
-      ledgerEntries.push({
-        ledger_id: cgstLedger.id,
-        ledger_name: cgstLedger.ledger_name,
-        debit_amount: totalCGST,
-        credit_amount: 0,
-        narration: 'CGST Input',
-      });
+      const cgst = await getOrCreateSystemLedger(
+        { tenantModels, masterModels },
+        { ledgerCode: 'CGST_INPUT', ledgerName: 'GST Input - CGST', groupCode: 'CA' }
+      );
+      ledgerEntries.push({ ledger_id: cgst.id, debit_amount: totalCGST, credit_amount: 0, narration: 'CGST Input' });
     }
-
     if (totalSGST > 0) {
-      const sgstLedger = await this.getOrCreateGSTLedger(tenantId, 'SGST_INPUT', 'GST Input - SGST');
-      ledgerEntries.push({
-        ledger_id: sgstLedger.id,
-        ledger_name: sgstLedger.ledger_name,
-        debit_amount: totalSGST,
-        credit_amount: 0,
-        narration: 'SGST Input',
-      });
+      const sgst = await getOrCreateSystemLedger(
+        { tenantModels, masterModels },
+        { ledgerCode: 'SGST_INPUT', ledgerName: 'GST Input - SGST', groupCode: 'CA' }
+      );
+      ledgerEntries.push({ ledger_id: sgst.id, debit_amount: totalSGST, credit_amount: 0, narration: 'SGST Input' });
     }
-
     if (totalIGST > 0) {
-      const igstLedger = await this.getOrCreateGSTLedger(tenantId, 'IGST_INPUT', 'GST Input - IGST');
-      ledgerEntries.push({
-        ledger_id: igstLedger.id,
-        ledger_name: igstLedger.ledger_name,
-        debit_amount: totalIGST,
-        credit_amount: 0,
-        narration: 'IGST Input',
-      });
+      const igst = await getOrCreateSystemLedger(
+        { tenantModels, masterModels },
+        { ledgerCode: 'IGST_INPUT', ledgerName: 'GST Input - IGST', groupCode: 'CA' }
+      );
+      ledgerEntries.push({ ledger_id: igst.id, debit_amount: totalIGST, credit_amount: 0, narration: 'IGST Input' });
     }
 
-    // Credit: Party (Creditor)
+    // Credit party (Creditor)
     ledgerEntries.push({
       ledger_id: party_ledger_id,
-      ledger_name: partyLedger.ledger_name,
       debit_amount: 0,
       credit_amount: roundedTotal,
       narration: narration || `Purchase invoice from ${partyLedger.ledger_name}`,
     });
 
-    if (roundOffAmount !== 0) {
-      const roundOffLedger = await this.getOrCreateLedger(tenantId, 'ROUND_OFF', 'Round Off');
+    if (Math.abs(roundOffAmount) > 0.000001) {
+      const roundOffLedger = await getOrCreateSystemLedger(
+        { tenantModels, masterModels },
+        { ledgerCode: 'ROUND_OFF', ledgerName: 'Round Off', groupCode: 'IND_EXP' }
+      );
       ledgerEntries.push({
         ledger_id: roundOffLedger.id,
-        ledger_name: roundOffLedger.ledger_name,
         debit_amount: roundOffAmount < 0 ? Math.abs(roundOffAmount) : 0,
         credit_amount: roundOffAmount > 0 ? roundOffAmount : 0,
         narration: 'Round off',
@@ -316,59 +281,11 @@ class VoucherService {
       cess_amount: totalCess,
       round_off: roundOffAmount,
       total_amount: roundedTotal,
+      place_of_supply: pos,
+      is_reverse_charge: !!is_reverse_charge,
       items: processedItems,
       ledger_entries: ledgerEntries,
     };
-  }
-
-  async getOrCreateGSTLedger(tenantId, code, name) {
-    let ledger = await Ledger.findOne({
-      where: { tenant_id: tenantId, ledger_code: code },
-    });
-
-    if (!ledger) {
-      const { AccountGroup } = require('../models');
-      const gstGroup = await AccountGroup.findOne({
-        where: { tenant_id: tenantId, group_code: 'GST' },
-      });
-
-      if (gstGroup) {
-        ledger = await Ledger.create({
-          tenant_id: tenantId,
-          account_group_id: gstGroup.id,
-          ledger_code: code,
-          ledger_name: name,
-          ledger_type: 'General',
-        });
-      }
-    }
-
-    return ledger;
-  }
-
-  async getOrCreateLedger(tenantId, code, name) {
-    let ledger = await Ledger.findOne({
-      where: { tenant_id: tenantId, ledger_code: code },
-    });
-
-    if (!ledger) {
-      const { AccountGroup } = require('../models');
-      const expenseGroup = await AccountGroup.findOne({
-        where: { tenant_id: tenantId, primary_group: 'Expense' },
-      });
-
-      if (expenseGroup) {
-        ledger = await Ledger.create({
-          tenant_id: tenantId,
-          account_group_id: expenseGroup.id,
-          ledger_code: code,
-          ledger_name: name,
-          ledger_type: 'General',
-        });
-      }
-    }
-
-    return ledger;
   }
 }
 

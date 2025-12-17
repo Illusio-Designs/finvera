@@ -1,5 +1,5 @@
 const { Router } = require('express');
-const eInvoiceController = require('../controllers/eInvoiceController');
+const eWayBillController = require('../controllers/eWayBillController');
 const { authenticate } = require('../middleware/auth');
 const { setTenantContext, requireTenant, resolveTenant } = require('../middleware/tenant');
 
@@ -10,10 +10,10 @@ router.use(setTenantContext);
 router.use(requireTenant);
 router.use(resolveTenant);
 
-router.get('/', eInvoiceController.listEInvoices);
-router.post('/generate', eInvoiceController.generateIRN);
-router.get('/voucher/:voucher_id', eInvoiceController.getEInvoice);
-router.post('/cancel/:voucher_id', eInvoiceController.cancelIRN);
+router.get('/', eWayBillController.list);
+router.post('/generate', eWayBillController.generate);
+router.get('/voucher/:voucher_id', eWayBillController.getByVoucher);
+router.post('/cancel/:voucher_id', eWayBillController.cancel);
 
 module.exports = router;
 

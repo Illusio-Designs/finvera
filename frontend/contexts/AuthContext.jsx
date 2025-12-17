@@ -35,10 +35,10 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (email, password, userType = 'client') => {
+  const login = async (email, password, userType = 'client', companyId = null) => {
     try {
       console.log('Attempting login for:', email);
-      const response = await authAPI.login({ email, password });
+      const response = await authAPI.login({ email, password, company_id: companyId || undefined });
       console.log('Login response:', response);
       console.log('Response data:', response.data);
       
@@ -89,6 +89,11 @@ export const AuthProvider = ({ children }) => {
         Cookies.set('jti', jti, cookieOptions);
       }
       Cookies.set('user', JSON.stringify(normalizedUser), cookieOptions);
+      if (normalizedUser.company_id) {
+        Cookies.set('companyId', normalizedUser.company_id, cookieOptions);
+      } else {
+        Cookies.remove('companyId');
+      }
       
       setUser(normalizedUser);
       console.log('Login successful for user:', normalizedUser);
@@ -103,11 +108,32 @@ export const AuthProvider = ({ children }) => {
         stack: error.stack
       });
       
+      const requireCompany = !!error.response?.data?.require_company;
+      const companies = error.response?.data?.companies || [];
+      const needsCompanyCreation = !!error.response?.data?.needs_company_creation;
+
       const errorMessage = error.response?.data?.message || 
                           error.response?.data?.error || 
                           error.message || 
                           'Login failed. Please check your credentials.';
       
+      if (requireCompany) {
+        return {
+          success: false,
+          requireCompany: true,
+          companies,
+          message: errorMessage,
+        };
+      }
+
+      if (needsCompanyCreation) {
+        return {
+          success: false,
+          needsCompanyCreation: true,
+          message: errorMessage,
+        };
+      }
+
       return {
         success: false,
         message: errorMessage,
@@ -203,6 +229,27 @@ export const AuthProvider = ({ children }) => {
     Cookies.set('user', JSON.stringify(updatedUser), { expires: 7, sameSite: 'lax' });
   };
 
+  const switchCompany = async (companyId) => {
+    const response = await authAPI.switchCompany(companyId);
+    const responseData = response.data?.data || response.data;
+    const userData = responseData.user || responseData;
+    const accessToken = responseData.accessToken || responseData.token;
+    const refreshTokenValue = responseData.refreshToken;
+    const jti = responseData.jti;
+
+    const cookieOptions = { expires: 7, sameSite: 'lax' };
+    if (accessToken) Cookies.set('token', accessToken, cookieOptions);
+    if (refreshTokenValue) Cookies.set('refreshToken', refreshTokenValue, { ...cookieOptions, expires: 30 });
+    if (jti) Cookies.set('jti', jti, cookieOptions);
+
+    if (userData?.company_id) {
+      Cookies.set('companyId', userData.company_id, cookieOptions);
+    }
+
+    updateUser(userData);
+    return { success: true, user: userData };
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -212,6 +259,7 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         refreshToken,
+        switchCompany,
         updateUser,
         isAuthenticated: !!user,
       }}

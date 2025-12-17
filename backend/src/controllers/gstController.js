@@ -1,14 +1,27 @@
-const { GSTIN, GSTRate, GSTRReturn, Voucher, VoucherItem, VoucherType, Ledger } = require('../models');
 const { Op } = require('sequelize');
+
+function toNum(v, fallback = 0) {
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function fyFromPeriod(period) {
+  // period: MM-YYYY
+  const [mmStr, yyyyStr] = String(period || '').split('-');
+  const mm = parseInt(mmStr, 10);
+  const yyyy = parseInt(yyyyStr, 10);
+  if (!mm || !yyyy) return null;
+  if (mm >= 4) return `${yyyy}-${yyyy + 1}`;
+  return `${yyyy - 1}-${yyyy}`;
+}
 
 module.exports = {
   async listGSTINs(req, res, next) {
     try {
-      const gstins = await GSTIN.findAll({
-        where: { tenant_id: req.tenant_id },
+      const gstins = await req.tenantModels.GSTIN.findAll({
+        where: {},
         order: [['is_primary', 'DESC'], ['created_at', 'ASC']],
       });
-
       res.json({ gstins });
     } catch (err) {
       next(err);
@@ -17,19 +30,11 @@ module.exports = {
 
   async createGSTIN(req, res, next) {
     try {
-      // If this is set as primary, unset others
       if (req.body.is_primary) {
-        await GSTIN.update(
-          { is_primary: false },
-          { where: { tenant_id: req.tenant_id } }
-        );
+        await req.tenantModels.GSTIN.update({ is_primary: false }, { where: {} });
       }
 
-      const gstin = await GSTIN.create({
-        ...req.body,
-        tenant_id: req.tenant_id,
-      });
-
+      const gstin = await req.tenantModels.GSTIN.create({ ...req.body });
       res.status(201).json({ gstin });
     } catch (err) {
       next(err);
@@ -39,20 +44,11 @@ module.exports = {
   async updateGSTIN(req, res, next) {
     try {
       const { id } = req.params;
-      const gstin = await GSTIN.findOne({
-        where: { id, tenant_id: req.tenant_id },
-      });
+      const gstin = await req.tenantModels.GSTIN.findByPk(id);
+      if (!gstin) return res.status(404).json({ message: 'GSTIN not found' });
 
-      if (!gstin) {
-        return res.status(404).json({ message: 'GSTIN not found' });
-      }
-
-      // If setting as primary, unset others
       if (req.body.is_primary) {
-        await GSTIN.update(
-          { is_primary: false },
-          { where: { tenant_id: req.tenant_id, id: { [Op.ne]: id } } }
-        );
+        await req.tenantModels.GSTIN.update({ is_primary: false }, { where: { id: { [Op.ne]: id } } });
       }
 
       await gstin.update(req.body);
@@ -64,9 +60,12 @@ module.exports = {
 
   async getGSTRates(req, res, next) {
     try {
+      const GSTRate = req.masterModels?.GSTRate;
+      if (!GSTRate) return res.status(500).json({ message: 'GSTRate model not available' });
+
       const { hsn_sac_code, item_type } = req.query;
       const where = {
-        [Op.or]: [{ tenant_id: req.tenant_id }, { tenant_id: null }], // Master + tenant-specific
+        [Op.or]: [{ tenant_id: req.tenant_id }, { tenant_id: null }],
         is_active: true,
       };
 
@@ -75,7 +74,7 @@ module.exports = {
 
       const rates = await GSTRate.findAll({
         where,
-        order: [['tenant_id', 'ASC'], ['hsn_sac_code', 'ASC']], // Tenant-specific first
+        order: [['tenant_id', 'ASC'], ['hsn_sac_code', 'ASC']],
       });
 
       res.json({ rates });
@@ -86,12 +85,29 @@ module.exports = {
 
   async createGSTRate(req, res, next) {
     try {
-      const rate = await GSTRate.create({
-        ...req.body,
-        tenant_id: req.tenant_id,
+      const GSTRate = req.masterModels?.GSTRate;
+      if (!GSTRate) return res.status(500).json({ message: 'GSTRate model not available' });
+
+      const rate = await GSTRate.create({ ...req.body, tenant_id: req.tenant_id });
+      res.status(201).json({ rate });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async listReturns(req, res, next) {
+    try {
+      const { return_type, return_period } = req.query;
+      const where = {};
+      if (return_type) where.return_type = return_type;
+      if (return_period) where.return_period = return_period;
+
+      const returns = await req.tenantModels.GSTRReturn.findAll({
+        where,
+        order: [['createdAt', 'DESC']],
       });
 
-      res.status(201).json({ rate });
+      res.json({ returns });
     } catch (err) {
       next(err);
     }
@@ -99,32 +115,25 @@ module.exports = {
 
   async generateGSTR1(req, res, next) {
     try {
-      const { gstin, period } = req.body; // period format: MM-YYYY
-
-      const [month, year] = period.split('-');
+      const { gstin, period } = req.body; // MM-YYYY
+      const [month, year] = String(period).split('-').map((s) => parseInt(s, 10));
       const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 0, 23, 59, 59);
 
-      // Get all sales invoices for the period
-      const salesVouchers = await Voucher.findAll({
+      const salesVouchers = await req.tenantModels.Voucher.findAll({
         where: {
-          tenant_id: req.tenant_id,
           voucher_date: { [Op.between]: [startDate, endDate] },
           status: 'posted',
+          voucher_type: 'Sales',
         },
         include: [
-          {
-            model: VoucherType,
-            where: { voucher_category: 'Sales' },
-          },
-          { model: VoucherItem },
-          { model: Ledger, as: 'partyLedger' },
+          { model: req.tenantModels.VoucherItem },
+          { model: req.tenantModels.Ledger, as: 'partyLedger' },
         ],
       });
 
-      // Build GSTR-1 JSON structure
       const gstr1Data = {
-        gstin: gstin,
+        gstin,
         ret_period: period,
         b2b: [],
         b2cl: [],
@@ -141,75 +150,72 @@ module.exports = {
         const partyState = voucher.partyLedger?.state || '';
         const isInterstate = partyState !== voucher.place_of_supply;
 
-        voucher.voucher_items?.forEach((item) => {
-          const taxableValue = parseFloat(item.taxable_amount);
-          const cgst = parseFloat(item.cgst_amount);
-          const sgst = parseFloat(item.sgst_amount);
-          const igst = parseFloat(item.igst_amount);
+        (voucher.voucher_items || []).forEach((item) => {
+          const taxableValue = toNum(item.taxable_amount, 0);
+          const cgst = toNum(item.cgst_amount, 0);
+          const sgst = toNum(item.sgst_amount, 0);
+          const igst = toNum(item.igst_amount, 0);
           const tax = cgst + sgst + igst;
 
           totalTaxableValue += taxableValue;
           totalTax += tax;
 
-          // B2B (Business to Business)
           if (voucher.partyLedger?.gstin) {
             gstr1Data.b2b.push({
               ctin: voucher.partyLedger.gstin,
               inv: [
                 {
-                  inum: voucher.invoice_number || voucher.voucher_number,
-                  idt: voucher.voucher_date.toISOString().split('T')[0],
-                  val: parseFloat(voucher.total_amount),
+                  inum: voucher.voucher_number,
+                  idt: String(voucher.voucher_date),
+                  val: toNum(voucher.total_amount, 0),
                   pos: voucher.place_of_supply,
                   rchrg: voucher.is_reverse_charge ? 'Y' : 'N',
-                  inv_typ: 'R', // Regular
+                  inv_typ: 'R',
                   itms: [
                     {
                       num: 1,
                       hsn_sc: item.hsn_sac_code,
-                      qty: parseFloat(item.quantity),
-                      rt: parseFloat(item.gst_rate),
+                      qty: toNum(item.quantity, 0),
+                      rt: toNum(item.gst_rate, 0),
                       txval: taxableValue,
                       iamt: igst,
                       camt: cgst,
                       samt: sgst,
-                      csamt: parseFloat(item.cess_amount) || 0,
+                      csamt: toNum(item.cess_amount, 0),
                     },
                   ],
                 },
               ],
             });
           } else if (isInterstate && taxableValue >= 250000) {
-            // B2CL (Business to Consumer Large - Interstate)
             gstr1Data.b2cl.push({
               pos: voucher.place_of_supply,
-              typ: 'OE', // Outward Exempted
+              typ: 'OE',
               etin: '',
-              rt: parseFloat(item.gst_rate),
+              rt: toNum(item.gst_rate, 0),
               ad_amt: taxableValue,
               iamt: igst,
-              csamt: parseFloat(item.cess_amount) || 0,
+              csamt: toNum(item.cess_amount, 0),
             });
           } else {
-            // B2CS (Business to Consumer Small)
             gstr1Data.b2cs.push({
               typ: 'OE',
               pos: voucher.place_of_supply,
-              rt: parseFloat(item.gst_rate),
+              rt: toNum(item.gst_rate, 0),
               ad_amt: taxableValue,
               iamt: igst,
               camt: cgst,
               samt: sgst,
-              csamt: parseFloat(item.cess_amount) || 0,
+              csamt: toNum(item.cess_amount, 0),
             });
           }
 
-          // HSN Summary
-          if (!gstr1Data.hsn[item.hsn_sac_code]) {
-            gstr1Data.hsn[item.hsn_sac_code] = {
-              num: item.hsn_sac_code,
+          const code = item.hsn_sac_code || 'NA';
+          if (!gstr1Data.hsn[code]) {
+            gstr1Data.hsn[code] = {
+              num: code,
               qty: 0,
-              rt: parseFloat(item.gst_rate),
+              rt: toNum(item.gst_rate, 0),
               txval: 0,
               iamt: 0,
               camt: 0,
@@ -218,28 +224,31 @@ module.exports = {
             };
           }
 
-          gstr1Data.hsn[item.hsn_sac_code].qty += parseFloat(item.quantity);
-          gstr1Data.hsn[item.hsn_sac_code].txval += taxableValue;
-          gstr1Data.hsn[item.hsn_sac_code].iamt += igst;
-          gstr1Data.hsn[item.hsn_sac_code].camt += cgst;
-          gstr1Data.hsn[item.hsn_sac_code].samt += sgst;
-          gstr1Data.hsn[item.hsn_sac_code].csamt += parseFloat(item.cess_amount) || 0;
+          gstr1Data.hsn[code].qty += toNum(item.quantity, 0);
+          gstr1Data.hsn[code].txval += taxableValue;
+          gstr1Data.hsn[code].iamt += igst;
+          gstr1Data.hsn[code].camt += cgst;
+          gstr1Data.hsn[code].samt += sgst;
+          gstr1Data.hsn[code].csamt += toNum(item.cess_amount, 0);
         });
       });
 
-      // Convert HSN object to array
       gstr1Data.hsn = Object.values(gstr1Data.hsn);
 
-      // Save return record
-      const gstrReturn = await GSTRReturn.create({
-        tenant_id: req.tenant_id,
-        gstin,
+      const gstinRow = gstin ? await req.tenantModels.GSTIN.findOne({ where: { gstin } }) : null;
+      const gstrReturn = await req.tenantModels.GSTRReturn.create({
+        gstin_id: gstinRow?.id || null,
         return_type: 'GSTR1',
         return_period: period,
-        filing_status: 'draft',
-        total_taxable_value: totalTaxableValue,
-        total_tax: totalTax,
-        json_data: gstr1Data,
+        financial_year: fyFromPeriod(period),
+        status: 'draft',
+        return_data: {
+          ...gstr1Data,
+          summary: {
+            totalTaxableValue: parseFloat(totalTaxableValue.toFixed(2)),
+            totalTax: parseFloat(totalTax.toFixed(2)),
+          },
+        },
       });
 
       res.json({
@@ -261,35 +270,22 @@ module.exports = {
   async generateGSTR3B(req, res, next) {
     try {
       const { gstin, period } = req.body;
-
-      const [month, year] = period.split('-');
+      const [month, year] = String(period).split('-').map((s) => parseInt(s, 10));
       const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 0, 23, 59, 59);
 
-      // Get GSTR-1 data for summary
-      const gstr1 = await GSTRReturn.findOne({
-        where: {
-          tenant_id: req.tenant_id,
-          gstin,
-          return_type: 'GSTR1',
-          return_period: period,
-        },
+      const gstinRow = gstin ? await req.tenantModels.GSTIN.findOne({ where: { gstin } }) : null;
+      const gstr1 = await req.tenantModels.GSTRReturn.findOne({
+        where: { gstin_id: gstinRow?.id || null, return_type: 'GSTR1', return_period: period },
       });
 
-      // Get purchase invoices for input tax credit
-      const purchaseVouchers = await Voucher.findAll({
+      const purchaseVouchers = await req.tenantModels.Voucher.findAll({
         where: {
-          tenant_id: req.tenant_id,
           voucher_date: { [Op.between]: [startDate, endDate] },
           status: 'posted',
+          voucher_type: 'Purchase',
         },
-        include: [
-          {
-            model: VoucherType,
-            where: { voucher_category: 'Purchase' },
-          },
-          { model: VoucherItem },
-        ],
+        include: [{ model: req.tenantModels.VoucherItem }],
       });
 
       let totalInputCGST = 0;
@@ -298,64 +294,42 @@ module.exports = {
       let totalInputCess = 0;
 
       purchaseVouchers.forEach((voucher) => {
-        voucher.voucher_items?.forEach((item) => {
-          totalInputCGST += parseFloat(item.cgst_amount);
-          totalInputSGST += parseFloat(item.sgst_amount);
-          totalInputIGST += parseFloat(item.igst_amount);
-          totalInputCess += parseFloat(item.cess_amount);
+        (voucher.voucher_items || []).forEach((item) => {
+          totalInputCGST += toNum(item.cgst_amount, 0);
+          totalInputSGST += toNum(item.sgst_amount, 0);
+          totalInputIGST += toNum(item.igst_amount, 0);
+          totalInputCess += toNum(item.cess_amount, 0);
         });
       });
 
-      const gstr1Data = gstr1?.json_data || {};
-      const totalOutputCGST = gstr1Data.hsn?.reduce((sum, h) => sum + (h.camt || 0), 0) || 0;
-      const totalOutputSGST = gstr1Data.hsn?.reduce((sum, h) => sum + (h.samt || 0), 0) || 0;
-      const totalOutputIGST = gstr1Data.hsn?.reduce((sum, h) => sum + (h.iamt || 0), 0) || 0;
-      const totalOutputCess = gstr1Data.hsn?.reduce((sum, h) => sum + (h.csamt || 0), 0) || 0;
+      const gstr1Data = gstr1?.return_data || {};
+      const totalOutputCGST = (gstr1Data.hsn || []).reduce((sum, h) => sum + toNum(h.camt, 0), 0);
+      const totalOutputSGST = (gstr1Data.hsn || []).reduce((sum, h) => sum + toNum(h.samt, 0), 0);
+      const totalOutputIGST = (gstr1Data.hsn || []).reduce((sum, h) => sum + toNum(h.iamt, 0), 0);
+      const totalOutputCess = (gstr1Data.hsn || []).reduce((sum, h) => sum + toNum(h.csamt, 0), 0);
 
       const gstr3bData = {
-        gstin: gstin,
+        gstin,
         ret_period: period,
         sup_details: {
           osup_det: {
-            txval: gstr1?.total_taxable_value || 0,
+            txval: gstr1Data?.summary?.totalTaxableValue || 0,
             iamt: totalOutputIGST,
             camt: totalOutputCGST,
             samt: totalOutputSGST,
             csamt: totalOutputCess,
           },
         },
-        inter_sup: {
-          unreg_details: [],
-          comp_details: [],
-          uin_details: [],
-        },
         itc_elg: {
           itc_avl: [
             {
-              ty: 'IMPG',
+              ty: 'ALL',
               iamt: totalInputIGST,
               camt: totalInputCGST,
               samt: totalInputSGST,
               csamt: totalInputCess,
             },
-            {
-              ty: 'ISRC',
-              iamt: 0,
-              camt: 0,
-              samt: 0,
-              csamt: 0,
-            },
-            {
-              ty: 'ISD',
-              iamt: 0,
-              camt: 0,
-              samt: 0,
-              csamt: 0,
-            },
           ],
-        },
-        inward_sup: {
-          isup_details: [],
         },
       };
 
@@ -364,64 +338,30 @@ module.exports = {
       const netIGST = Math.max(0, totalOutputIGST - totalInputIGST);
       const netCess = Math.max(0, totalOutputCess - totalInputCess);
 
-      const gstrReturn = await GSTRReturn.create({
-        tenant_id: req.tenant_id,
-        gstin,
+      const gstrReturn = await req.tenantModels.GSTRReturn.create({
+        gstin_id: gstinRow?.id || null,
         return_type: 'GSTR3B',
         return_period: period,
-        filing_status: 'draft',
-        total_taxable_value: gstr1?.total_taxable_value || 0,
-        total_tax: netCGST + netSGST + netIGST + netCess,
-        json_data: gstr3bData,
+        financial_year: fyFromPeriod(period),
+        status: 'draft',
+        return_data: {
+          ...gstr3bData,
+          summary: {
+            totalOutput: { cgst: totalOutputCGST, sgst: totalOutputSGST, igst: totalOutputIGST, cess: totalOutputCess },
+            totalInput: { cgst: totalInputCGST, sgst: totalInputSGST, igst: totalInputIGST, cess: totalInputCess },
+            netPayable: { cgst: netCGST, sgst: netSGST, igst: netIGST, cess: netCess },
+            totalTaxPayable: parseFloat((netCGST + netSGST + netIGST + netCess).toFixed(2)),
+          },
+        },
       });
 
       res.json({
         return: gstrReturn,
         data: gstr3bData,
-        summary: {
-          outputTax: {
-            cgst: parseFloat(totalOutputCGST.toFixed(2)),
-            sgst: parseFloat(totalOutputSGST.toFixed(2)),
-            igst: parseFloat(totalOutputIGST.toFixed(2)),
-            cess: parseFloat(totalOutputCess.toFixed(2)),
-          },
-          inputTaxCredit: {
-            cgst: parseFloat(totalInputCGST.toFixed(2)),
-            sgst: parseFloat(totalInputSGST.toFixed(2)),
-            igst: parseFloat(totalInputIGST.toFixed(2)),
-            cess: parseFloat(totalInputCess.toFixed(2)),
-          },
-          netPayable: {
-            cgst: parseFloat(netCGST.toFixed(2)),
-            sgst: parseFloat(netSGST.toFixed(2)),
-            igst: parseFloat(netIGST.toFixed(2)),
-            cess: parseFloat(netCess.toFixed(2)),
-            total: parseFloat((netCGST + netSGST + netIGST + netCess).toFixed(2)),
-          },
-        },
+        summary: gstrReturn.return_data?.summary,
       });
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  async listReturns(req, res, next) {
-    try {
-      const { return_type, period } = req.query;
-      const where = { tenant_id: req.tenant_id };
-
-      if (return_type) where.return_type = return_type;
-      if (period) where.return_period = period;
-
-      const returns = await GSTRReturn.findAll({
-        where,
-        order: [['return_period', 'DESC'], ['created_at', 'DESC']],
-      });
-
-      res.json({ returns });
     } catch (err) {
       next(err);
     }
   },
 };
-

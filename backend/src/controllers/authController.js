@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { signTokens, revokeSession } = require('../utils/jwt');
 const { User, Tenant } = require('../models');
-const { TenantMaster } = require('../models/masterModels');
+const masterModels = require('../models/masterModels');
 const { uploadDir } = require('../config/multer');
 
 module.exports = {
@@ -40,7 +40,7 @@ module.exports = {
 
   async login(req, res, next) {
     try {
-      const { email, password } = req.body;
+      const { email, password, company_id } = req.body;
       
       if (!email || !password) {
         return res.status(400).json({ message: 'Email and password are required' });
@@ -73,7 +73,7 @@ module.exports = {
       // If user not found, check tenant_master table
       if (!user) {
         console.log(`User not found in users table, checking tenant_master for email: ${email}`);
-        const tenant = await TenantMaster.findOne({ where: { email } });
+        const tenant = await masterModels.TenantMaster.findOne({ where: { email } });
         
         if (tenant) {
           console.log(`Tenant found in tenant_master: ${tenant.id}`);
@@ -144,18 +144,66 @@ module.exports = {
       }
 
       console.log(`Login successful for user: ${user.id}, role: ${user.role}`);
-      
-      const tokens = await signTokens({ id: user.id, tenant_id: user.tenant_id || null, role: user.role });
-      return res.json({ 
-        user: { 
-          id: user.id, 
-          email: user.email, 
-          tenant_id: user.tenant_id || null, 
+
+      // If this is a tenant-side user, require a company selection (or auto-pick if only one)
+      let selectedCompany = null;
+      if (user.tenant_id && ['tenant_admin', 'user', 'accountant'].includes(user.role)) {
+        const companies = await masterModels.Company.findAll({
+          where: { tenant_id: user.tenant_id, is_active: true },
+          attributes: ['id', 'company_name', 'db_provisioned'],
+          order: [['createdAt', 'DESC']],
+        });
+
+        if (companies.length === 0) {
+          return res.status(409).json({
+            message: 'No company found. Please create your company first.',
+            needs_company_creation: true,
+          });
+        }
+
+        if (companies.length === 1) {
+          selectedCompany = companies[0];
+        } else {
+          if (!company_id) {
+            return res.status(400).json({
+              message: 'Company selection required',
+              require_company: true,
+              companies,
+            });
+          }
+          selectedCompany = companies.find((c) => c.id === company_id);
+          if (!selectedCompany) {
+            return res.status(403).json({ message: 'Invalid company selection' });
+          }
+        }
+
+        if (!selectedCompany.db_provisioned) {
+          return res.status(503).json({
+            message: 'Company database is being provisioned',
+            company_id: selectedCompany.id,
+          });
+        }
+      }
+
+      const tokens = await signTokens({
+        id: user.id,
+        tenant_id: user.tenant_id || null,
+        company_id: selectedCompany?.id || null,
+        role: user.role,
+      });
+
+      return res.json({
+        user: {
+          id: user.id,
+          email: user.email,
+          tenant_id: user.tenant_id || null,
+          company_id: selectedCompany?.id || null,
+          company_name: selectedCompany?.company_name || null,
           role: user.role,
           full_name: user.name || user.full_name || null,
-          profile_image: user.profile_image || null
-        }, 
-        ...tokens 
+          profile_image: user.profile_image || null,
+        },
+        ...tokens,
       });
     } catch (err) {
       console.error('Login error:', err);
@@ -190,6 +238,59 @@ module.exports = {
       }
 
       return res.json(tokens);
+    } catch (err) {
+      return next(err);
+    }
+  },
+
+  async switchCompany(req, res, next) {
+    try {
+      const userId = req.user_id || req.user?.id || req.user?.sub;
+      const tenantId = req.tenant_id;
+      const role = req.role;
+      const { company_id } = req.body || {};
+
+      if (!userId || !tenantId) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      if (!['tenant_admin', 'user', 'accountant'].includes(role)) {
+        return res.status(403).json({ message: 'Company switching is only for tenant users' });
+      }
+
+      if (!company_id) {
+        return res.status(400).json({ message: 'company_id is required' });
+      }
+
+      const company = await masterModels.Company.findOne({
+        where: { id: company_id, tenant_id: tenantId, is_active: true },
+      });
+
+      if (!company) {
+        return res.status(404).json({ message: 'Company not found' });
+      }
+
+      if (!company.db_provisioned) {
+        return res.status(503).json({ message: 'Company database is being provisioned' });
+      }
+
+      const tokens = await signTokens({
+        id: userId,
+        tenant_id: tenantId,
+        company_id: company.id,
+        role,
+      });
+
+      return res.json({
+        user: {
+          id: userId,
+          tenant_id: tenantId,
+          company_id: company.id,
+          company_name: company.company_name,
+          role,
+        },
+        ...tokens,
+      });
     } catch (err) {
       return next(err);
     }
