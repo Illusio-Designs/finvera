@@ -1,6 +1,5 @@
 const voucherService = require('../services/voucherService');
 const voucherController = require('./voucherController');
-const { Voucher, VoucherType } = require('../models');
 
 module.exports = {
   /**
@@ -8,29 +7,14 @@ module.exports = {
    */
   async createSalesInvoice(req, res, next) {
     try {
-      const salesVoucherType = await VoucherType.findOne({
-        where: {
-          tenant_id: req.tenant_id,
-          voucher_category: 'Sales',
-        },
-      });
-
-      if (!salesVoucherType) {
-        return res.status(404).json({ message: 'Sales voucher type not found. Please create one first.' });
-      }
-
       // Calculate invoice totals and ledger entries using service
       const invoiceData = await voucherService.createSalesInvoice(
-        req.tenant_id,
-        {
-          ...req.body,
-          voucher_type_id: salesVoucherType.id,
-        },
-        req.user.id
+        { tenantModels: req.tenantModels, masterModels: req.masterModels, company: req.company },
+        req.body
       );
 
       // Create voucher using the calculated data
-      req.body.voucher_type_id = salesVoucherType.id;
+      req.body.voucher_type = 'Sales';
       req.body.items = invoiceData.items;
       req.body.ledger_entries = invoiceData.ledger_entries;
       req.body.subtotal = invoiceData.subtotal;
@@ -40,6 +24,8 @@ module.exports = {
       req.body.cess_amount = invoiceData.cess_amount;
       req.body.round_off = invoiceData.round_off;
       req.body.total_amount = invoiceData.total_amount;
+      req.body.place_of_supply = invoiceData.place_of_supply;
+      req.body.is_reverse_charge = invoiceData.is_reverse_charge;
 
       return voucherController.create(req, res, next);
     } catch (err) {
@@ -52,27 +38,12 @@ module.exports = {
    */
   async createPurchaseInvoice(req, res, next) {
     try {
-      const purchaseVoucherType = await VoucherType.findOne({
-        where: {
-          tenant_id: req.tenant_id,
-          voucher_category: 'Purchase',
-        },
-      });
-
-      if (!purchaseVoucherType) {
-        return res.status(404).json({ message: 'Purchase voucher type not found. Please create one first.' });
-      }
-
       const invoiceData = await voucherService.createPurchaseInvoice(
-        req.tenant_id,
-        {
-          ...req.body,
-          voucher_type_id: purchaseVoucherType.id,
-        },
-        req.user.id
+        { tenantModels: req.tenantModels, masterModels: req.masterModels, company: req.company },
+        req.body
       );
 
-      req.body.voucher_type_id = purchaseVoucherType.id;
+      req.body.voucher_type = 'Purchase';
       req.body.items = invoiceData.items;
       req.body.ledger_entries = invoiceData.ledger_entries;
       req.body.subtotal = invoiceData.subtotal;
@@ -82,6 +53,8 @@ module.exports = {
       req.body.cess_amount = invoiceData.cess_amount;
       req.body.round_off = invoiceData.round_off;
       req.body.total_amount = invoiceData.total_amount;
+      req.body.place_of_supply = invoiceData.place_of_supply;
+      req.body.is_reverse_charge = invoiceData.is_reverse_charge;
 
       return voucherController.create(req, res, next);
     } catch (err) {
@@ -94,17 +67,6 @@ module.exports = {
    */
   async createPayment(req, res, next) {
     try {
-      const paymentVoucherType = await VoucherType.findOne({
-        where: {
-          tenant_id: req.tenant_id,
-          voucher_category: 'Payment',
-        },
-      });
-
-      if (!paymentVoucherType) {
-        return res.status(404).json({ message: 'Payment voucher type not found' });
-      }
-
       const { party_ledger_id, amount, payment_mode, bank_ledger_id, narration } = req.body;
 
       // Create ledger entries for payment
@@ -123,7 +85,7 @@ module.exports = {
         },
       ];
 
-      req.body.voucher_type_id = paymentVoucherType.id;
+      req.body.voucher_type = 'Payment';
       req.body.ledger_entries = ledgerEntries;
       req.body.total_amount = parseFloat(amount);
       req.body.payment_mode = payment_mode;
@@ -139,17 +101,6 @@ module.exports = {
    */
   async createReceipt(req, res, next) {
     try {
-      const receiptVoucherType = await VoucherType.findOne({
-        where: {
-          tenant_id: req.tenant_id,
-          voucher_category: 'Receipt',
-        },
-      });
-
-      if (!receiptVoucherType) {
-        return res.status(404).json({ message: 'Receipt voucher type not found' });
-      }
-
       const { party_ledger_id, amount, payment_mode, bank_ledger_id, narration } = req.body;
 
       const ledgerEntries = [
@@ -167,7 +118,7 @@ module.exports = {
         },
       ];
 
-      req.body.voucher_type_id = receiptVoucherType.id;
+      req.body.voucher_type = 'Receipt';
       req.body.ledger_entries = ledgerEntries;
       req.body.total_amount = parseFloat(amount);
       req.body.payment_mode = payment_mode;
@@ -183,17 +134,6 @@ module.exports = {
    */
   async createJournal(req, res, next) {
     try {
-      const journalVoucherType = await VoucherType.findOne({
-        where: {
-          tenant_id: req.tenant_id,
-          voucher_category: 'Journal',
-        },
-      });
-
-      if (!journalVoucherType) {
-        return res.status(404).json({ message: 'Journal voucher type not found' });
-      }
-
       const { ledger_entries, narration } = req.body;
 
       // Validate double-entry
@@ -208,7 +148,7 @@ module.exports = {
         });
       }
 
-      req.body.voucher_type_id = journalVoucherType.id;
+      req.body.voucher_type = 'Journal';
       req.body.total_amount = totalDebit;
       req.body.narration = narration;
 
@@ -223,17 +163,6 @@ module.exports = {
    */
   async createContra(req, res, next) {
     try {
-      const contraVoucherType = await VoucherType.findOne({
-        where: {
-          tenant_id: req.tenant_id,
-          voucher_category: 'Contra',
-        },
-      });
-
-      if (!contraVoucherType) {
-        return res.status(404).json({ message: 'Contra voucher type not found' });
-      }
-
       const { from_ledger_id, to_ledger_id, amount, narration } = req.body;
 
       const ledgerEntries = [
@@ -251,7 +180,7 @@ module.exports = {
         },
       ];
 
-      req.body.voucher_type_id = contraVoucherType.id;
+      req.body.voucher_type = 'Contra';
       req.body.ledger_entries = ledgerEntries;
       req.body.total_amount = parseFloat(amount);
 
