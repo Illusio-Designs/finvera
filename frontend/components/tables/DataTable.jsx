@@ -96,7 +96,7 @@ export default function DataTable({
   const displayData = filteredData.length > 0 ? filteredData : data;
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden ${className}`}>
+    <div className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden w-full ${className}`}>
       {/* Filter Bar */}
       {(searchable || showFilters) && (
         <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">

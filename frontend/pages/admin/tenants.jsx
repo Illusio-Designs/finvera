@@ -345,7 +345,7 @@ export default function TenantsList() {
             </Button>
           }
         >
-          <Card className="shadow-sm border border-gray-200">
+          <Card className="shadow-sm border border-gray-200 w-full">
           <DataTable
             columns={columns}
             data={tableData?.data || tableData || []}

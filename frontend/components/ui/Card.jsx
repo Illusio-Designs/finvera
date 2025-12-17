@@ -10,6 +10,7 @@ export default function Card({ children, title, actions, className = '', ...prop
         transition-shadow
         duration-200
         hover:shadow-md
+        w-full
         ${className}
       `.replace(/\s+/g, ' ').trim()} 
       {...props}

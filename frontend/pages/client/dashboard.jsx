@@ -83,7 +83,7 @@ export default function ClientDashboard() {
     <ProtectedRoute portalType="client">
       <ClientLayout title="Dashboard">
         <Toaster />
-        <div className="space-y-6">
+        <div className="space-y-6 w-full max-w-full">
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
