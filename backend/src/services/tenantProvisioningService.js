@@ -207,41 +207,184 @@ class TenantProvisioningService {
   }
 
   /**
-   * Seed default data for new tenant
+   * Seed default data for new tenant/company
    * @param {Sequelize} connection - Tenant database connection
-   * @param {Object} tenant - Tenant master record
+   * @param {Object} tenantOrCompany - Tenant master record or Company record
    */
-  async seedDefaultData(connection, tenant) {
+  async seedDefaultData(connection, tenantOrCompany) {
     // Load tenant models
     const models = require('./tenantModels')(connection);
+    const masterModels = require('../models/masterModels');
 
     // NOTE: Account groups and voucher types are in Master DB (shared)
     // No need to seed them per tenant
 
-    // Create default admin user for the tenant
-    const bcrypt = require('bcryptjs');
-    await models.User.create({
-      name: 'Admin',
-      email: tenant.email,
-      role: 'admin',
-      is_active: true,
-      password: bcrypt.hashSync('ChangeMe@123', 10),
-    });
-
-    // Create default GSTIN if provided
-    if (tenant.gstin) {
-      await models.GSTIN.create({
-        gstin: tenant.gstin,
-        legal_name: tenant.company_name,
-        trade_name: tenant.company_name,
-        state: tenant.state,
-        address: tenant.address,
-        gstin_status: 'active',
-        is_primary: true,
-      });
+    // Run migration to ensure all columns exist
+    try {
+      const migration = require('../migrations/20251218-add-ledger-fields');
+      const queryInterface = connection.getQueryInterface();
+      await migration.up(queryInterface, Sequelize);
+      logger.info('Ledger migration completed during seeding');
+    } catch (error) {
+      // If columns already exist, that's fine
+      if (!error.message || (!error.message.includes('Duplicate column') && !error.message.includes('already exists'))) {
+        logger.warn('Migration during seeding failed (non-critical):', error.message);
+      }
     }
 
-    logger.info('Default data seeded for tenant (admin user created)');
+    // Get email and company name (works for both tenant and company objects)
+    const email = tenantOrCompany.email;
+    const companyName = tenantOrCompany.company_name || tenantOrCompany.name;
+    const gstin = tenantOrCompany.gstin;
+    const state = tenantOrCompany.state;
+    const address = tenantOrCompany.address || tenantOrCompany.registered_address;
+
+    // Create default admin user for the tenant/company
+    const bcrypt = require('bcryptjs');
+    if (email) {
+      // Check if user already exists
+      const existingUser = await models.User.findOne({ where: { email } });
+      if (!existingUser) {
+        await models.User.create({
+          name: 'Admin',
+          email: email,
+          role: 'admin',
+          is_active: true,
+          password: bcrypt.hashSync('ChangeMe@123', 10),
+        });
+        logger.info('Default admin user created');
+      }
+    }
+
+    // Create default GSTIN if provided
+    if (gstin) {
+      const existingGSTIN = await models.GSTIN.findOne({ where: { gstin } });
+      if (!existingGSTIN) {
+        await models.GSTIN.create({
+          gstin: gstin,
+          legal_name: companyName,
+          trade_name: companyName,
+          state: state,
+          address: address,
+          gstin_status: 'active',
+          is_primary: true,
+        });
+        logger.info('Default GSTIN created');
+      }
+    }
+
+    // Create default ledgers
+    await this.createDefaultLedgers(models, masterModels);
+
+    logger.info('Default data seeded (admin user, GSTIN, and default ledgers)');
+  }
+
+  /**
+   * Create default ledgers for a new company
+   * @param {Object} tenantModels - Tenant database models
+   * @param {Object} masterModels - Master database models
+   */
+  async createDefaultLedgers(tenantModels, masterModels) {
+    try {
+      // Get account groups from master DB
+      const accountGroups = await masterModels.AccountGroup.findAll({
+        where: { is_system: true },
+      });
+
+      // Create a map of group codes to IDs
+      const groupMap = new Map();
+      accountGroups.forEach((group) => {
+        groupMap.set(group.group_code, group.id);
+      });
+
+      // Default ledgers to create
+      const defaultLedgers = [
+        {
+          ledger_name: 'CGST',
+          ledger_code: 'CGST-001',
+          account_group_code: 'DT', // Duties & Taxes
+          balance_type: 'credit',
+          opening_balance: 0,
+        },
+        {
+          ledger_name: 'SGST',
+          ledger_code: 'SGST-001',
+          account_group_code: 'DT', // Duties & Taxes
+          balance_type: 'credit',
+          opening_balance: 0,
+        },
+        {
+          ledger_name: 'IGST',
+          ledger_code: 'IGST-001',
+          account_group_code: 'DT', // Duties & Taxes
+          balance_type: 'credit',
+          opening_balance: 0,
+        },
+        {
+          ledger_name: 'Cash on Hand',
+          ledger_code: 'CASH-001',
+          account_group_code: 'CASH', // Cash-in-Hand
+          balance_type: 'debit',
+          opening_balance: 0,
+        },
+        {
+          ledger_name: 'Stock in Hand',
+          ledger_code: 'INV-001',
+          account_group_code: 'INV', // Stock-in-Hand
+          balance_type: 'debit',
+          opening_balance: 0,
+        },
+        {
+          ledger_name: 'Sales',
+          ledger_code: 'SAL-001',
+          account_group_code: 'SAL', // Sales Accounts
+          balance_type: 'credit',
+          opening_balance: 0,
+        },
+        {
+          ledger_name: 'Purchase',
+          ledger_code: 'PUR-001',
+          account_group_code: 'PUR', // Purchase Accounts
+          balance_type: 'debit',
+          opening_balance: 0,
+        },
+      ];
+
+      // Create each default ledger
+      for (const ledgerData of defaultLedgers) {
+        const groupId = groupMap.get(ledgerData.account_group_code);
+        if (!groupId) {
+          logger.warn(`Account group ${ledgerData.account_group_code} not found, skipping ledger ${ledgerData.ledger_name}`);
+          continue;
+        }
+
+        // Check if ledger already exists
+        const existing = await tenantModels.Ledger.findOne({
+          where: {
+            ledger_code: ledgerData.ledger_code,
+          },
+        });
+
+        if (!existing) {
+          await tenantModels.Ledger.create({
+            ledger_name: ledgerData.ledger_name,
+            ledger_code: ledgerData.ledger_code,
+            account_group_id: groupId,
+            opening_balance: ledgerData.opening_balance,
+            opening_balance_type: ledgerData.balance_type === 'debit' ? 'Dr' : 'Cr',
+            balance_type: ledgerData.balance_type,
+            currency: 'INR',
+            is_active: true,
+          });
+          logger.info(`Created default ledger: ${ledgerData.ledger_name}`);
+        }
+      }
+
+      logger.info(`Default ledgers created successfully`);
+    } catch (error) {
+      logger.error('Error creating default ledgers:', error);
+      // Don't throw - allow tenant creation to continue even if default ledgers fail
+    }
   }
 
   /**

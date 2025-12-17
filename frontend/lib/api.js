@@ -303,6 +303,16 @@ export const accountingAPI = {
     allocate: (data) => api.post("/accounting/bills/allocate", data),
     getAging: (params) => api.get("/accounting/bills/aging", { params }),
   },
+  // Inventory Items
+  inventory: {
+    items: {
+      list: (params) => api.get("/accounting/inventory/items", { params }),
+      get: (id) => api.get(`/accounting/inventory/items/${id}`),
+      create: (data) => api.post("/accounting/inventory/items", data),
+      update: (id, data) => api.put(`/accounting/inventory/items/${id}`, data),
+      delete: (id) => api.delete(`/accounting/inventory/items/${id}`),
+    },
+  },
 };
 
 // Reports API

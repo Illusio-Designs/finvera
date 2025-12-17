@@ -31,7 +31,7 @@ const getClientMenuItems = () => [
     label: 'Inventory',
     icon: FiPackage,
     children: [
-      { label: 'Items', href: '/client/inventory-items', icon: FiPackage },
+      { label: 'Items', href: '/client/inventory/items', icon: FiPackage },
       { label: 'Stock Adjustment', href: '/client/inventory-adjustment', icon: FiEdit },
       { label: 'Stock Transfer', href: '/client/inventory-transfer', icon: FiMove },
     ],

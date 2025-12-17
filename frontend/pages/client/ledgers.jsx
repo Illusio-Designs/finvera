@@ -88,13 +88,23 @@ export default function LedgersList() {
 
   // Fetch selected ledger details
   const { data: ledgerData, loading: ledgerLoading, execute: fetchLedger } = useApi(
-    () => accountingAPI.ledgers.get(selectedLedgerId),
+    (id) => {
+      if (!id) {
+        return Promise.reject(new Error('Ledger ID is required'));
+      }
+      return accountingAPI.ledgers.get(id);
+    },
     false
   );
 
   // Fetch ledger balance
   const { data: balanceData, execute: fetchBalance } = useApi(
-    () => accountingAPI.ledgers.getBalance(selectedLedgerId, {}),
+    (id) => {
+      if (!id) {
+        return Promise.reject(new Error('Ledger ID is required'));
+      }
+      return accountingAPI.ledgers.getBalance(id, {});
+    },
     false
   );
 
@@ -110,12 +120,24 @@ export default function LedgersList() {
       setSelectedLedgerId(id);
       if (view === 'detail') {
         setShowDetail(true);
-        fetchLedger();
-        fetchBalance();
+        fetchLedger(id).catch(err => {
+          console.error('Error fetching ledger from URL:', err);
+          if (err.response?.status === 404) {
+            toast.error('Ledger not found');
+            setShowDetail(false);
+          }
+        });
+        fetchBalance(id).catch(err => console.error('Error fetching balance:', err));
       } else if (view === 'statement') {
         setShowStatement(true);
-        fetchLedger();
-        fetchStatement();
+        fetchLedger(id).catch(err => {
+          console.error('Error fetching ledger from URL:', err);
+          if (err.response?.status === 404) {
+            toast.error('Ledger not found');
+            setShowStatement(false);
+          }
+        });
+        fetchStatement().catch(err => console.error('Error fetching statement:', err));
       }
     }
   }, [id, view]);
@@ -270,18 +292,48 @@ export default function LedgersList() {
     }
   };
 
-  const handleView = (ledger) => {
+  const handleView = async (ledger) => {
+    if (!ledger || !ledger.id) {
+      toast.error('Invalid ledger data');
+      return;
+    }
     setSelectedLedgerId(ledger.id);
     setShowDetail(true);
-    fetchLedger();
-    fetchBalance();
+    try {
+      await fetchLedger(ledger.id);
+      await fetchBalance(ledger.id);
+    } catch (error) {
+      if (error.response?.status === 404) {
+        toast.error('Ledger not found');
+        setShowDetail(false);
+        setSelectedLedgerId(null);
+      } else {
+        toast.error('Failed to load ledger details');
+        console.error('Error fetching ledger:', error);
+      }
+    }
   };
 
-  const handleViewStatement = (ledger) => {
+  const handleViewStatement = async (ledger) => {
+    if (!ledger || !ledger.id) {
+      toast.error('Invalid ledger data');
+      return;
+    }
     setSelectedLedgerId(ledger.id);
     setShowStatement(true);
-    fetchLedger();
-    fetchStatement();
+    try {
+      await fetchLedger(ledger.id);
+      await fetchStatement();
+    } catch (error) {
+      if (error.response?.status === 404) {
+        toast.error('Ledger not found');
+        setShowStatement(false);
+        setSelectedLedgerId(null);
+      } else {
+        toast.error('Failed to load ledger statement');
+        console.error('Error fetching ledger:', error);
+      }
+    }
   };
 
   const handleCloseDetail = () => {

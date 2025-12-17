@@ -23,6 +23,8 @@ export default function Header({ onMenuClick, title, actions }) {
   const menuRef = useRef(null);
   const companyDropdownRef = useRef(null);
   const fetchingCompaniesRef = useRef(false);
+  const companiesFetchedRef = useRef(false);
+  const lastUserIdRef = useRef(null);
 
   useEffect(() => {
     setMounted(true);
@@ -40,13 +42,22 @@ export default function Header({ onMenuClick, title, actions }) {
       // Check if user is authenticated and is a client user
       if (!user || !canAccessClientPortal(user.role)) {
         setCompanies([]);
+        companiesFetchedRef.current = false;
+        lastUserIdRef.current = null;
         return;
+      }
+
+      // Check if we already fetched companies for this user
+      const currentUserId = user.id || user.user_id;
+      if (companiesFetchedRef.current && lastUserIdRef.current === currentUserId && companies.length > 0) {
+        return; // Already fetched and user hasn't changed
       }
 
       // Check if we have a token before making the request
       const token = Cookies.get('token');
       if (!token) {
         setCompanies([]);
+        companiesFetchedRef.current = false;
         return;
       }
 
@@ -59,6 +70,8 @@ export default function Header({ onMenuClick, title, actions }) {
         // Ensure we have an array
         if (!Array.isArray(companiesData)) {
           setCompanies([]);
+          companiesFetchedRef.current = true;
+          lastUserIdRef.current = currentUserId;
           return;
         }
         
@@ -79,11 +92,20 @@ export default function Header({ onMenuClick, title, actions }) {
           .filter(company => company.company_name); // Ensure company has a name
         
         setCompanies(uniqueCompanies);
+        companiesFetchedRef.current = true;
+        lastUserIdRef.current = currentUserId;
       } catch (error) {
         // Silently handle network errors - don't break the UI
         // Network errors can occur if API is not available or user is offline
-        if (error.code !== 'ERR_NETWORK') {
+        if (error.code !== 'ERR_NETWORK' && error.response?.status !== 429) {
           console.error('Error fetching companies:', error);
+        }
+        // Don't mark as fetched on error so it can retry
+        if (error.response?.status === 429) {
+          // Rate limited - wait a bit before allowing retry
+          setTimeout(() => {
+            companiesFetchedRef.current = false;
+          }, 5000);
         }
         setCompanies([]);
       } finally {
@@ -95,7 +117,7 @@ export default function Header({ onMenuClick, title, actions }) {
     if (mounted && user) {
       fetchCompanies();
     }
-  }, [user, mounted]);
+  }, [user?.id, user?.user_id, mounted]); // Only depend on user ID, not the whole user object
 
   useEffect(() => {
     const handleClickOutside = (event) => {

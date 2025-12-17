@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 /**
  * Custom hook for table data management with pagination, sorting, and filtering
@@ -15,8 +15,38 @@ export const useTable = (fetchFunction, initialParams = {}) => {
   });
   const [sort, setSort] = useState({ field: null, order: 'asc' });
   const [filters, setFilters] = useState(initialParams);
+  
+  // Use refs to store stable references
+  const fetchFunctionRef = useRef(fetchFunction);
+  const fetchingRef = useRef(false);
+  const isMountedRef = useRef(true);
+  
+  // Update ref when fetchFunction changes
+  useEffect(() => {
+    fetchFunctionRef.current = fetchFunction;
+  }, [fetchFunction]);
+
+  // Track mounted state
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // Store filters in ref to avoid dependency issues
+  const filtersRef = useRef(filters);
+  useEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
 
   const fetchData = useCallback(async () => {
+    // Prevent multiple simultaneous calls
+    if (fetchingRef.current) {
+      return;
+    }
+    
+    fetchingRef.current = true;
     setLoading(true);
     setError(null);
     
@@ -24,7 +54,7 @@ export const useTable = (fetchFunction, initialParams = {}) => {
       const params = {
         page: pagination.page,
         limit: pagination.limit,
-        ...filters,
+        ...filtersRef.current,
       };
 
       if (sort.field) {
@@ -32,7 +62,14 @@ export const useTable = (fetchFunction, initialParams = {}) => {
         params.sortOrder = sort.order;
       }
 
-      const response = await fetchFunction(params);
+      const response = await fetchFunctionRef.current(params);
+      
+      // Only update state if component is still mounted
+      if (!isMountedRef.current) {
+        fetchingRef.current = false;
+        return;
+      }
+      
       const responseData = response.data || response;
       
       setData(responseData.data || responseData.items || []);
@@ -53,15 +90,58 @@ export const useTable = (fetchFunction, initialParams = {}) => {
         }));
       }
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to fetch data');
+      // Only update state if component is still mounted
+      if (!isMountedRef.current) {
+        fetchingRef.current = false;
+        return;
+      }
+      
+      // Don't log 429 errors (rate limiting)
+      if (err.response?.status !== 429) {
+        setError(err.response?.data?.message || err.message || 'Failed to fetch data');
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
+      fetchingRef.current = false;
     }
-  }, [fetchFunction, pagination.page, pagination.limit, sort, filters]);
+  }, [pagination.page, pagination.limit, sort.field, sort.order]);
 
+  // Track previous values to prevent unnecessary refetches
+  const prevParamsRef = useRef({
+    page: pagination.page,
+    limit: pagination.limit,
+    sortField: sort.field,
+    sortOrder: sort.order,
+    filters: JSON.stringify(filters),
+  });
+
+  // Single effect to handle all data fetching
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    const currentParams = {
+      page: pagination.page,
+      limit: pagination.limit,
+      sortField: sort.field,
+      sortOrder: sort.order,
+      filters: JSON.stringify(filters),
+    };
+
+    // Only fetch if parameters actually changed
+    const paramsChanged = 
+      prevParamsRef.current.page !== currentParams.page ||
+      prevParamsRef.current.limit !== currentParams.limit ||
+      prevParamsRef.current.sortField !== currentParams.sortField ||
+      prevParamsRef.current.sortOrder !== currentParams.sortOrder ||
+      prevParamsRef.current.filters !== currentParams.filters;
+
+    if (paramsChanged) {
+      prevParamsRef.current = currentParams;
+      // Call fetchData directly using the ref to avoid dependency issues
+      fetchData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagination.page, pagination.limit, sort.field, sort.order, filters]);
 
   const handlePageChange = useCallback((newPage) => {
     setPagination((prev) => ({ ...prev, page: newPage }));
