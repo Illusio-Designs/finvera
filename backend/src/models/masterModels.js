@@ -12,6 +12,149 @@ const models = {};
 // Tenant Master Model (already exists)
 models.TenantMaster = require('./TenantMaster');
 
+// Company Model (stored in master DB; created by tenant users)
+models.Company = masterSequelize.define('Company', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+  },
+  tenant_id: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    comment: 'TenantMaster.id',
+  },
+  created_by_user_id: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    comment: 'users.id (main database) who created this company',
+  },
+
+  // Basic Company Information
+  company_name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  company_type: {
+    type: DataTypes.ENUM(
+      'sole_proprietorship',
+      'partnership_firm',
+      'llp',
+      'opc',
+      'private_limited',
+      'public_limited',
+      'section_8'
+    ),
+    allowNull: false,
+  },
+  registration_number: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    comment: 'CIN / LLPIN / other registration number',
+  },
+  incorporation_date: {
+    type: DataTypes.DATEONLY,
+    allowNull: true,
+  },
+  pan: {
+    type: DataTypes.STRING(10),
+    allowNull: true,
+  },
+  tan: {
+    type: DataTypes.STRING(10),
+    allowNull: true,
+  },
+  gstin: {
+    type: DataTypes.STRING(15),
+    allowNull: true,
+  },
+
+  // Registered Office Details
+  registered_address: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  state: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+  },
+  pincode: {
+    type: DataTypes.STRING(10),
+    allowNull: true,
+  },
+  contact_number: {
+    type: DataTypes.STRING(15),
+    allowNull: true,
+  },
+  email: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    validate: { isEmail: true },
+  },
+
+  // Director/Partner/Proprietor Information (store as JSON array)
+  principals: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    comment: 'Array of directors/partners/proprietor objects (name, din, pan, contact, address, etc.)',
+  },
+
+  // Financial Details
+  financial_year_start: {
+    type: DataTypes.DATEONLY,
+    allowNull: true,
+  },
+  financial_year_end: {
+    type: DataTypes.DATEONLY,
+    allowNull: true,
+  },
+  authorized_capital: {
+    type: DataTypes.DECIMAL(18, 2),
+    allowNull: true,
+  },
+  accounting_method: {
+    type: DataTypes.ENUM('cash', 'accrual'),
+    allowNull: true,
+  },
+  currency: {
+    type: DataTypes.STRING(3),
+    allowNull: false,
+    defaultValue: 'INR',
+  },
+  books_beginning_date: {
+    type: DataTypes.DATEONLY,
+    allowNull: true,
+  },
+
+  // Banking + Compliance (JSON blobs)
+  bank_details: {
+    type: DataTypes.JSON,
+    allowNull: true,
+  },
+  compliance: {
+    type: DataTypes.JSON,
+    allowNull: true,
+  },
+
+  // Track provisioning status at company level (mirrors tenant provisioning for now)
+  db_provisioned: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  db_provisioned_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+  },
+}, {
+  tableName: 'companies',
+  timestamps: true,
+});
+
 // Account Group Model (SHARED - Same chart of accounts for all tenants)
 models.AccountGroup = masterSequelize.define('AccountGroup', {
   id: {
@@ -225,6 +368,9 @@ async function syncMasterModels() {
     }
   }
   
+  // Company model can evolve (tenant-controlled metadata)
+  await models.Company.sync({ alter: true });
+
   await models.AccountGroup.sync({ alter: false });
   await models.VoucherType.sync({ alter: false });
   await models.GSTRate.sync({ alter: false });

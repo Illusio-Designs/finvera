@@ -5,13 +5,14 @@ const voucherTypeController = require('../controllers/voucherTypeController');
 const voucherController = require('../controllers/voucherController');
 const transactionController = require('../controllers/transactionController');
 const { authenticate } = require('../middleware/auth');
-const { setTenantContext, requireTenant } = require('../middleware/tenant');
+const { setTenantContext, requireTenant, resolveTenant } = require('../middleware/tenant');
 
 const router = Router();
 
 router.use(authenticate);
 router.use(setTenantContext);
 router.use(requireTenant);
+router.use(resolveTenant);
 
 // Account Groups
 router.get('/groups', accountGroupController.list);
