@@ -42,6 +42,7 @@ const authenticate = async (req, res, next) => {
     req.user = decoded;
     req.user_id = decoded.user_id || decoded.id || decoded.sub;
     req.tenant_id = decoded.tenant_id;
+    req.company_id = decoded.company_id;
     req.role = decoded.role;
 
     next();
@@ -87,6 +88,7 @@ const optionalAuth = async (req, res, next) => {
           req.user = decoded;
           req.user_id = decoded.user_id || decoded.id || decoded.sub;
           req.tenant_id = decoded.tenant_id;
+        req.company_id = decoded.company_id;
           req.role = decoded.role;
         }
       } else {
@@ -94,6 +96,7 @@ const optionalAuth = async (req, res, next) => {
         req.user = decoded;
         req.user_id = decoded.user_id || decoded.id || decoded.sub;
         req.tenant_id = decoded.tenant_id;
+        req.company_id = decoded.company_id;
         req.role = decoded.role;
       }
     }

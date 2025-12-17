@@ -1,6 +1,7 @@
 const logger = require('../utils/logger');
 const TenantMaster = require('../models/TenantMaster');
 const masterModels = require('../models/masterModels');
+const { SubscriptionPlan } = require('../models');
 
 module.exports = {
   async list(req, res, next) {
@@ -19,14 +20,27 @@ module.exports = {
   async status(req, res, next) {
     try {
       const Company = masterModels.Company;
-      const count = await Company.count({ where: { tenant_id: req.tenant_id, is_active: true } });
-      const tenant = await TenantMaster.findByPk(req.tenant_id);
+      const [count, provisionedCount, tenant] = await Promise.all([
+        Company.count({ where: { tenant_id: req.tenant_id, is_active: true } }),
+        Company.count({ where: { tenant_id: req.tenant_id, is_active: true, db_provisioned: true } }),
+        TenantMaster.findByPk(req.tenant_id),
+      ]);
+
+      let maxCompanies = 1;
+      if (tenant?.subscription_plan) {
+        const plan = await SubscriptionPlan.findOne({
+          where: { plan_code: tenant.subscription_plan, is_active: true },
+        });
+        if (plan?.max_companies != null) maxCompanies = parseInt(plan.max_companies, 10) || 1;
+      }
+
       return res.json({
         success: true,
         data: {
           has_company: count > 0,
           company_count: count,
-          db_provisioned: !!tenant?.db_provisioned,
+          provisioned_company_count: provisionedCount,
+          max_companies: maxCompanies,
         },
       });
     } catch (err) {
@@ -44,6 +58,23 @@ module.exports = {
       }
       if (tenant.is_suspended) {
         return res.status(403).json({ success: false, message: 'Tenant account is suspended' });
+      }
+
+      // Enforce plan company limit
+      let maxCompanies = 1;
+      if (tenant.subscription_plan) {
+        const plan = await SubscriptionPlan.findOne({
+          where: { plan_code: tenant.subscription_plan, is_active: true },
+        });
+        if (plan?.max_companies != null) maxCompanies = parseInt(plan.max_companies, 10) || 1;
+      }
+
+      const existingCount = await Company.count({ where: { tenant_id: req.tenant_id, is_active: true } });
+      if (existingCount >= maxCompanies) {
+        return res.status(403).json({
+          success: false,
+          message: `Company limit reached for your plan (max ${maxCompanies}). Please upgrade to add more companies.`,
+        });
       }
 
       const {
@@ -77,6 +108,21 @@ module.exports = {
         });
       }
 
+      const tenantProvisioningService = require('../services/tenantProvisioningService');
+      const crypto = require('crypto');
+
+      const generateSecurePassword = (length = 20) => {
+        return crypto.randomBytes(length).toString('base64').slice(0, length);
+      };
+
+      const dbPassword = generateSecurePassword();
+      const dbName = tenantProvisioningService.generateDatabaseName(
+        `${tenant.subdomain}_${company_name}`.toLowerCase()
+      );
+      const dbUser = tenantProvisioningService.generateDatabaseUser(
+        `${tenant.subdomain}_${company_name}`.toLowerCase()
+      );
+
       // Create company record first (so we always track creation attempt)
       const company = await Company.create({
         tenant_id: req.tenant_id,
@@ -102,32 +148,28 @@ module.exports = {
         books_beginning_date: books_beginning_date || null,
         bank_details: bank_details || null,
         compliance: compliance || null,
-        db_provisioned: !!tenant.db_provisioned,
-        db_provisioned_at: tenant.db_provisioned_at || null,
+        db_name: dbName,
+        db_host: process.env.DB_HOST || 'localhost',
+        db_port: parseInt(process.env.DB_PORT) || 3306,
+        db_user: dbUser,
+        db_password: tenantProvisioningService.encryptPassword(dbPassword),
+        db_provisioned: false,
+        db_provisioned_at: null,
         is_active: true,
       });
 
-      // Provision tenant database ONLY on company creation (first company)
-      if (!tenant.db_provisioned) {
-        try {
-          logger.info(`Provisioning tenant database on company creation: tenant=${tenant.id}, company=${company.id}`);
-          const tenantProvisioningService = require('../services/tenantProvisioningService');
-          const plainPassword = tenantProvisioningService.decryptPassword(tenant.db_password);
-          await tenantProvisioningService.provisionDatabase(tenant, plainPassword);
-          await tenant.reload();
-
-          await company.update({
-            db_provisioned: true,
-            db_provisioned_at: tenant.db_provisioned_at || new Date(),
-          });
-        } catch (provisionError) {
-          logger.error('Database provisioning failed during company creation:', provisionError);
-          return res.status(503).json({
-            success: false,
-            message: 'Company created, but database provisioning failed. Please try again later or contact support.',
-            data: { company_id: company.id },
-          });
-        }
+      // Provision COMPANY database on company creation
+      try {
+        logger.info(`Provisioning company database: tenant=${tenant.id}, company=${company.id}`);
+        await tenantProvisioningService.provisionDatabase(company, dbPassword);
+        await company.reload();
+      } catch (provisionError) {
+        logger.error('Database provisioning failed during company creation:', provisionError);
+        return res.status(503).json({
+          success: false,
+          message: 'Company created, but database provisioning failed. Please try again later or contact support.',
+          data: { company_id: company.id },
+        });
       }
 
       return res.status(201).json({ success: true, data: company });

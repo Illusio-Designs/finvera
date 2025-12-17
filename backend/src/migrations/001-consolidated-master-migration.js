@@ -260,6 +260,13 @@ module.exports = {
         bank_details: Sequelize.JSON,
         compliance: Sequelize.JSON,
 
+        // Database connection info (per company)
+        db_name: Sequelize.STRING(100),
+        db_host: Sequelize.STRING(255),
+        db_port: Sequelize.INTEGER,
+        db_user: Sequelize.STRING(100),
+        db_password: Sequelize.STRING(255),
+
         db_provisioned: {
           type: Sequelize.BOOLEAN,
           defaultValue: false,
@@ -278,6 +285,7 @@ module.exports = {
       await addIndexIfNotExists('companies', ['tenant_id'], { name: 'idx_companies_tenant_id' });
       await addIndexIfNotExists('companies', ['created_by_user_id'], { name: 'idx_companies_created_by' });
       await addIndexIfNotExists('companies', ['company_name'], { name: 'idx_companies_name' });
+      await addIndexIfNotExists('companies', ['db_name'], { name: 'idx_companies_db_name' });
     }
   },
 
