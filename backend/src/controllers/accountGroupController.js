@@ -95,24 +95,10 @@ module.exports = {
 
   async create(req, res, next) {
     try {
-      const AccountGroup = req.masterModels?.AccountGroup;
-      if (!AccountGroup) {
-        return res.status(500).json({ 
-          success: false,
-          message: 'AccountGroup model not available' 
-        });
-      }
-
-      const { name, group_code, parent_id, nature } = req.body;
-
-      const group = await AccountGroup.create({
-        name: name || req.body.group_name, // Support both field names
-        group_code,
-        parent_id: parent_id || null,
-        nature: nature || req.body.group_type || 'asset', // Use 'nature' field
+      return res.status(403).json({
+        success: false,
+        message: 'Account groups are read-only (managed by system)',
       });
-
-      res.status(201).json({ data: group });
     } catch (error) {
       logger.error('AccountGroup create error:', error);
       next(error);
@@ -154,36 +140,10 @@ module.exports = {
 
   async update(req, res, next) {
     try {
-      const AccountGroup = req.masterModels?.AccountGroup;
-      if (!AccountGroup) {
-        return res.status(500).json({ 
-          success: false,
-          message: 'AccountGroup model not available' 
-        });
-      }
-
-      const { id } = req.params;
-      const { name, group_code, parent_id, nature } = req.body;
-
-      const group = await AccountGroup.findOne({
-        where: { id }, // AccountGroup is shared, no tenant_id filter
+      return res.status(403).json({
+        success: false,
+        message: 'Account groups are read-only (managed by system)',
       });
-
-      if (!group) {
-        return res.status(404).json({ 
-          success: false,
-          message: 'Account group not found' 
-        });
-      }
-
-      await group.update({
-        name: name || req.body.group_name, // Support both field names
-        group_code,
-        parent_id: parent_id || null,
-        nature: nature || req.body.group_type, // Use 'nature' field
-      });
-
-      res.json({ data: group });
     } catch (error) {
       logger.error('AccountGroup update error:', error);
       next(error);
