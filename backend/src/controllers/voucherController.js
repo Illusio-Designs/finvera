@@ -294,6 +294,21 @@ module.exports = {
         );
       }
 
+      // Optional: auto-generate E-Way Bill for Sales vouchers if requested.
+      // Note: real NIC API integration is not implemented; this stores a stub in company DB.
+      if (resolvedStatus === 'posted' && resolvedType === 'Sales' && req.body?.auto_generate_ewaybill) {
+        const eWayBillService = require('../services/eWayBillService');
+        try {
+          await eWayBillService.generate(
+            { tenantModels: req.tenantModels, masterModels: req.masterModels, company: req.company },
+            voucher.id,
+            req.body?.ewaybill_details || {}
+          );
+        } catch (e) {
+          // Do not fail invoice creation if EWB generation fails
+        }
+      }
+
       await t.commit();
 
       const createdVoucher = await req.tenantModels.Voucher.findByPk(voucher.id, {
