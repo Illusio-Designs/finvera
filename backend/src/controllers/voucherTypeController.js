@@ -1,17 +1,18 @@
-const { VoucherType } = require('../models');
-
 module.exports = {
   async list(req, res, next) {
     try {
       const { is_active, voucher_category } = req.query;
-      const where = { tenant_id: req.tenant_id };
+      const VoucherType = req.masterModels?.VoucherType;
+      if (!VoucherType) return res.status(500).json({ message: 'VoucherType model not available' });
+
+      const where = {}; // shared master data
 
       if (is_active !== undefined) where.is_active = is_active === 'true';
-      if (voucher_category) where.voucher_category = voucher_category;
+      if (voucher_category) where.type_category = String(voucher_category).toLowerCase();
 
       const voucherTypes = await VoucherType.findAll({
         where,
-        order: [['voucher_category', 'ASC'], ['voucher_name', 'ASC']],
+        order: [['type_category', 'ASC'], ['name', 'ASC']],
       });
 
       res.json({ voucherTypes });
@@ -22,12 +23,7 @@ module.exports = {
 
   async create(req, res, next) {
     try {
-      const voucherType = await VoucherType.create({
-        ...req.body,
-        tenant_id: req.tenant_id,
-      });
-
-      res.status(201).json({ voucherType });
+      return res.status(403).json({ message: 'Voucher types are read-only (managed by system)' });
     } catch (err) {
       next(err);
     }
@@ -36,8 +32,10 @@ module.exports = {
   async getById(req, res, next) {
     try {
       const { id } = req.params;
+      const VoucherType = req.masterModels?.VoucherType;
+      if (!VoucherType) return res.status(500).json({ message: 'VoucherType model not available' });
       const voucherType = await VoucherType.findOne({
-        where: { id, tenant_id: req.tenant_id },
+        where: { id },
       });
 
       if (!voucherType) {
@@ -52,21 +50,7 @@ module.exports = {
 
   async update(req, res, next) {
     try {
-      const { id } = req.params;
-      const voucherType = await VoucherType.findOne({
-        where: { id, tenant_id: req.tenant_id },
-      });
-
-      if (!voucherType) {
-        return res.status(404).json({ message: 'Voucher type not found' });
-      }
-
-      if (voucherType.is_system_voucher) {
-        return res.status(403).json({ message: 'System voucher types cannot be modified' });
-      }
-
-      await voucherType.update(req.body);
-      res.json({ voucherType });
+      return res.status(403).json({ message: 'Voucher types are read-only (managed by system)' });
     } catch (err) {
       next(err);
     }

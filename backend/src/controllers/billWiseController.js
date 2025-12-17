@@ -1,27 +1,24 @@
-const { BillWiseDetail, BillAllocation, Voucher, Ledger } = require('../models');
 const { Op } = require('sequelize');
-const sequelize = require('../config/database');
 
 module.exports = {
   async getOutstanding(req, res, next) {
     try {
       const { ledger_id, as_on_date } = req.query;
       const where = {
-        tenant_id: req.tenant_id,
         is_fully_paid: false,
         pending_amount: { [Op.gt]: 0 },
       };
 
       if (ledger_id) where.ledger_id = ledger_id;
       if (as_on_date) {
-        where.bill_date = { [Op.lte]: new Date(as_on_date) };
+        where.bill_date = { [Op.lte]: as_on_date };
       }
 
-      const bills = await BillWiseDetail.findAll({
+      const bills = await req.tenantModels.BillWiseDetail.findAll({
         where,
         include: [
-          { model: Voucher, attributes: ['voucher_number', 'voucher_date'] },
-          { model: Ledger, attributes: ['ledger_name', 'ledger_code'] },
+          { model: req.tenantModels.Voucher, attributes: ['voucher_number', 'voucher_date'] },
+          { model: req.tenantModels.Ledger, attributes: ['ledger_name', 'ledger_code'] },
         ],
         order: [['due_date', 'ASC']],
       });
@@ -48,14 +45,12 @@ module.exports = {
   },
 
   async allocatePayment(req, res, next) {
-    const transaction = await sequelize.transaction();
+    const transaction = await req.tenantDb.transaction();
     try {
       const { payment_voucher_id, allocations } = req.body;
 
       // Validate payment voucher exists
-      const paymentVoucher = await Voucher.findOne({
-        where: { id: payment_voucher_id, tenant_id: req.tenant_id },
-      });
+      const paymentVoucher = await req.tenantModels.Voucher.findByPk(payment_voucher_id, { transaction });
 
       if (!paymentVoucher) {
         await transaction.rollback();
@@ -76,9 +71,7 @@ module.exports = {
       // Create allocations and update bills
       const createdAllocations = [];
       for (const allocation of allocations) {
-        const bill = await BillWiseDetail.findOne({
-          where: { id: allocation.bill_id, tenant_id: req.tenant_id },
-        });
+        const bill = await req.tenantModels.BillWiseDetail.findByPk(allocation.bill_id, { transaction });
 
         if (!bill) {
           await transaction.rollback();
@@ -96,9 +89,8 @@ module.exports = {
         }
 
         // Create allocation
-        const allocationRecord = await BillAllocation.create(
+        const allocationRecord = await req.tenantModels.BillAllocation.create(
           {
-            tenant_id: req.tenant_id,
             payment_voucher_id,
             bill_id: allocation.bill_id,
             allocated_amount: allocatedAmount,
@@ -112,6 +104,7 @@ module.exports = {
           {
             pending_amount: newPendingAmount,
             is_fully_paid: newPendingAmount <= 0,
+            is_open: newPendingAmount > 0,
           },
           { transaction }
         );
@@ -131,16 +124,15 @@ module.exports = {
     try {
       const { ledger_id, as_on_date } = req.query;
       const where = {
-        tenant_id: req.tenant_id,
         is_fully_paid: false,
         pending_amount: { [Op.gt]: 0 },
       };
 
       if (ledger_id) where.ledger_id = ledger_id;
 
-      const bills = await BillWiseDetail.findAll({
+      const bills = await req.tenantModels.BillWiseDetail.findAll({
         where,
-        include: [{ model: Ledger, attributes: ['ledger_name'] }],
+        include: [{ model: req.tenantModels.Ledger, attributes: ['ledger_name'] }],
       });
 
       const today = as_on_date ? new Date(as_on_date) : new Date();

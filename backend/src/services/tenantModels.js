@@ -420,13 +420,46 @@ module.exports = (sequelize) => {
       type: DataTypes.DECIMAL(15, 2),
       allowNull: false,
     },
+    pending_amount: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false,
+      defaultValue: 0,
+    },
     due_date: DataTypes.DATEONLY,
     is_open: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
+    is_fully_paid: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
   }, {
     tableName: 'bill_wise_details',
+    timestamps: true,
+  });
+
+  // Bill allocation details (payments/receipts allocations against bills)
+  models.BillAllocation = sequelize.define('BillAllocation', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    payment_voucher_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
+    bill_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
+    allocated_amount: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false,
+    },
+  }, {
+    tableName: 'bill_allocations',
     timestamps: true,
   });
 
@@ -558,6 +591,11 @@ module.exports = (sequelize) => {
 
   models.Voucher.hasMany(models.BillWiseDetail, { foreignKey: 'voucher_id' });
   models.BillWiseDetail.belongsTo(models.Voucher, { foreignKey: 'voucher_id' });
+  models.BillWiseDetail.belongsTo(models.Ledger, { foreignKey: 'ledger_id' });
+
+  models.BillWiseDetail.hasMany(models.BillAllocation, { foreignKey: 'bill_id' });
+  models.BillAllocation.belongsTo(models.BillWiseDetail, { foreignKey: 'bill_id' });
+  models.BillAllocation.belongsTo(models.Voucher, { foreignKey: 'payment_voucher_id', as: 'paymentVoucher' });
 
   models.GSTIN.hasMany(models.GSTRReturn, { foreignKey: 'gstin_id' });
   models.GSTRReturn.belongsTo(models.GSTIN, { foreignKey: 'gstin_id' });
