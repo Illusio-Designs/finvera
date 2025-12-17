@@ -165,7 +165,7 @@ export default function DistributorsList() {
       errors.password = 'Password is required';
     }
     if (!formData.full_name.trim()) errors.full_name = 'Full name is required';
-    if (!formData.distributor_code.trim()) errors.distributor_code = 'Distributor code is required';
+    // Distributor code is immutable and auto-generated/assigned; don't validate in UI
     if (!formData.company_name.trim()) errors.company_name = 'Company name is required';
 
     if (Object.keys(errors).length > 0) {
@@ -179,6 +179,12 @@ export default function DistributorsList() {
         ...formData,
         territory: selectedStates,
       };
+      // Codes are immutable; never send on update. On create, omit if blank to auto-generate.
+      if (modalMode === 'edit') {
+        delete payload.distributor_code;
+      } else if (!payload.distributor_code?.trim()) {
+        delete payload.distributor_code;
+      }
       if (modalMode === 'edit' && !payload.password) {
         delete payload.password; // Don't update password if empty
       }
@@ -385,13 +391,13 @@ export default function DistributorsList() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormInput
                     name="distributor_code"
-                    label="Distributor Code"
+                    label="Distributor Code (leave blank to auto-generate)"
                     value={formData.distributor_code}
                     onChange={handleChange}
                     error={formErrors.distributor_code}
                     touched={!!formErrors.distributor_code}
-                    required
-                    placeholder="DIST001"
+                    disabled={modalMode === 'edit'}
+                    placeholder="e.g. DIST001 (or leave blank)"
                   />
 
                   <FormInput
