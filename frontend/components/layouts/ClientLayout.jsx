@@ -24,7 +24,6 @@ const getClientMenuItems = () => [
     label: 'Accounting',
     icon: FiFolder,
     children: [
-      { label: 'Account Groups', href: '/client/accounting/groups', icon: FiFolder },
       { label: 'Ledgers', href: '/client/accounting/ledgers', icon: FiFileText },
       { label: 'Outstanding Bills', href: '/client/accounting/bills/outstanding', icon: FiBarChart2 },
     ],

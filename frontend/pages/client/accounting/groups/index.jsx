@@ -3,7 +3,6 @@ import ProtectedRoute from '../../../../components/ProtectedRoute';
 import ClientLayout from '../../../../components/layouts/ClientLayout';
 import PageLayout from '../../../../components/layouts/PageLayout';
 import DataTable from '../../../../components/tables/DataTable';
-import Button from '../../../../components/ui/Button';
 import { useTable } from '../../../../hooks/useTable';
 import { accountingAPI } from '../../../../lib/api';
 import Badge from '../../../../components/ui/Badge';
@@ -60,14 +59,6 @@ export default function AccountGroupsList() {
             { label: 'Accounting', href: '/client/accounting/groups' },
             { label: 'Account Groups' },
           ]}
-          actions={
-            <Button
-              variant="outline"
-              onClick={() => router.push('/client/accounting/groups/tree')}
-            >
-              Tree View
-            </Button>
-          }
         >
           <DataTable
             columns={columns}
@@ -78,7 +69,6 @@ export default function AccountGroupsList() {
             onSort={handleSort}
             sortField={sort.field}
             sortOrder={sort.order}
-            onRowClick={(row) => router.push(`/client/accounting/groups/${row.id}`)}
           />
         </PageLayout>
       </ClientLayout>
