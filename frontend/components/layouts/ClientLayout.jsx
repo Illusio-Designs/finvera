@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { useAuth } from '../../contexts/AuthContext';
+import { companyAPI } from '../../lib/api';
 import {
   FiHome, FiFolder, FiFileText, FiTrendingUp, FiTrendingDown,
   FiDollarSign, FiCreditCard, FiRefreshCw, FiFile, FiBarChart2,
@@ -98,6 +100,35 @@ export default function ClientLayout({ children, title = 'Client Portal - Finver
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { user } = useAuth();
+  const router = useRouter();
+
+  // Ensure a company exists before accessing most tenant features
+  useEffect(() => {
+    const path = router.pathname || '';
+    if (!user) return;
+
+    // Allow these pages even without a company
+    if (path.includes('/client/login') || path.includes('/client/register') || path.includes('/client/company/new')) {
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await companyAPI.status();
+        const hasCompany = !!res?.data?.data?.has_company;
+        if (!hasCompany && !cancelled) {
+          router.replace('/client/company/new');
+        }
+      } catch (e) {
+        // If unauthenticated, ProtectedRoute will handle redirect
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [router, router.pathname, user]);
 
   return (
     <>

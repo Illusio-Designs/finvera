@@ -51,10 +51,11 @@ const resolveTenant = async (req, res, next) => {
     }
 
     // Check if database is provisioned
+    // Provisioning is now triggered on COMPANY creation (tenant-side).
     if (!tenant.db_provisioned) {
-      return res.status(503).json({
+      return res.status(409).json({
         success: false,
-        message: 'Tenant database is being provisioned',
+        message: 'No company database is provisioned yet. Please create your company first.',
       });
     }
 

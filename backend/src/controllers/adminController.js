@@ -471,17 +471,9 @@ module.exports = {
         db_provisioned: false,
       });
 
-      // Provision the tenant database
-      try {
-        logger.info(`Provisioning database for tenant ${tenant.id}...`);
-        const tenantProvisioningService = require('../services/tenantProvisioningService');
-        await tenantProvisioningService.provisionDatabase(tenant, dbPassword);
-        logger.info(`Database provisioned successfully for tenant ${tenant.id}`);
-      } catch (provisionError) {
-        logger.error(`Failed to provision database for tenant ${tenant.id}:`, provisionError);
-        // Don't fail tenant creation if provisioning fails - can be done later
-        // But log the error for admin to fix
-      }
+      // IMPORTANT:
+      // Database provisioning is moved to COMPANY creation (tenant-side).
+      // Tenant creation should only create the tenant metadata + credentials.
 
       // Auto-generate referral code for the new tenant
       try {

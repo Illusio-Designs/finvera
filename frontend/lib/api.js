@@ -113,6 +113,13 @@ export const tenantAPI = {
   updateProfile: (data) => api.put("/tenants/profile", data),
 };
 
+// Company API (tenant-side)
+export const companyAPI = {
+  list: () => api.get("/companies"),
+  status: () => api.get("/companies/status"),
+  create: (data) => api.post("/companies", data),
+};
+
 // Admin API
 export const adminAPI = {
   dashboard: () => api.get("/admin/dashboard"),

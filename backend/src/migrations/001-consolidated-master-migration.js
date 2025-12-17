@@ -194,6 +194,91 @@ module.exports = {
       });
       console.log('✅ Added acquisition_category column to tenant_master table');
     }
+
+    // ============================================
+    // CREATE COMPANIES TABLE (tenant-side company metadata)
+    // ============================================
+    const [companyTables] = await queryInterface.sequelize.query("SHOW TABLES LIKE 'companies'");
+    if (companyTables.length === 0) {
+      await queryInterface.createTable('companies', {
+        id: {
+          type: Sequelize.UUID,
+          defaultValue: Sequelize.UUIDV4,
+          primaryKey: true,
+        },
+        tenant_id: {
+          type: Sequelize.UUID,
+          allowNull: false,
+        },
+        created_by_user_id: {
+          type: Sequelize.UUID,
+          allowNull: false,
+          comment: 'users.id (main db) who created the company',
+        },
+
+        company_name: {
+          type: Sequelize.STRING,
+          allowNull: false,
+        },
+        company_type: {
+          type: Sequelize.ENUM(
+            'sole_proprietorship',
+            'partnership_firm',
+            'llp',
+            'opc',
+            'private_limited',
+            'public_limited',
+            'section_8'
+          ),
+          allowNull: false,
+        },
+        registration_number: Sequelize.STRING(50),
+        incorporation_date: Sequelize.DATEONLY,
+        pan: Sequelize.STRING(10),
+        tan: Sequelize.STRING(10),
+        gstin: Sequelize.STRING(15),
+
+        registered_address: Sequelize.TEXT,
+        state: Sequelize.STRING(100),
+        pincode: Sequelize.STRING(10),
+        contact_number: Sequelize.STRING(15),
+        email: Sequelize.STRING(255),
+
+        principals: Sequelize.JSON,
+
+        financial_year_start: Sequelize.DATEONLY,
+        financial_year_end: Sequelize.DATEONLY,
+        authorized_capital: Sequelize.DECIMAL(18, 2),
+        accounting_method: Sequelize.ENUM('cash', 'accrual'),
+        currency: {
+          type: Sequelize.STRING(3),
+          allowNull: false,
+          defaultValue: 'INR',
+        },
+        books_beginning_date: Sequelize.DATEONLY,
+
+        bank_details: Sequelize.JSON,
+        compliance: Sequelize.JSON,
+
+        db_provisioned: {
+          type: Sequelize.BOOLEAN,
+          defaultValue: false,
+        },
+        db_provisioned_at: Sequelize.DATE,
+
+        is_active: {
+          type: Sequelize.BOOLEAN,
+          defaultValue: true,
+        },
+
+        createdAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
+        updatedAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
+      });
+
+      await addIndexIfNotExists('companies', ['tenant_id'], { name: 'idx_companies_tenant_id' });
+      await addIndexIfNotExists('companies', ['created_by_user_id'], { name: 'idx_companies_created_by' });
+      await addIndexIfNotExists('companies', ['company_name'], { name: 'idx_companies_name' });
+    }
   },
 
   down: async (queryInterface, Sequelize) => {

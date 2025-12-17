@@ -1,13 +1,14 @@
 const { Router } = require('express');
 const tdsController = require('../controllers/tdsController');
 const { authenticate } = require('../middleware/auth');
-const { setTenantContext, requireTenant } = require('../middleware/tenant');
+const { setTenantContext, requireTenant, resolveTenant } = require('../middleware/tenant');
 
 const router = Router();
 
 router.use(authenticate);
 router.use(setTenantContext);
 router.use(requireTenant);
+router.use(resolveTenant);
 
 router.get('/', tdsController.list);
 router.post('/calculate', tdsController.calculateTDS);
