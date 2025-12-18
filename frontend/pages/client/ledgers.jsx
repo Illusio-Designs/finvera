@@ -1010,7 +1010,7 @@ export default function LedgersList() {
                     </div>
                   ) : (
                     <div className="text-center py-8 text-gray-500 text-sm">
-                      No shipping locations added. Click "Add Location" to add one.
+                      No shipping locations added. Click &quot;Add Location&quot; to add one.
                     </div>
                   )}
                 </div>
