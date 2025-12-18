@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/router';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import ClientLayout from '../../components/layouts/ClientLayout';
@@ -19,12 +19,13 @@ import { formatCurrency, formatDate, extractPANFromGSTIN } from '../../lib/forma
 import { getStartOfMonth, getEndOfMonth } from '../../lib/dateUtils';
 import { getLedgerFieldsForGroup } from '../../lib/ledgerFieldConfig';
 import toast from 'react-hot-toast';
-import { FiPlus, FiEdit, FiTrash2, FiSave, FiX, FiEye, FiFileText, FiArrowLeft, FiMinus } from 'react-icons/fi';
+import { FiPlus, FiEdit, FiTrash2, FiSave, FiX, FiEye, FiFileText, FiArrowLeft, FiMinus, FiPrinter } from 'react-icons/fi';
 import { useApi } from '../../hooks/useApi';
 
 export default function LedgersList() {
   const router = useRouter();
   const { id, view } = router.query; // Support ?id=xxx&view=detail or ?id=xxx&view=statement
+  const printRef = useRef(null);
 
   const [showForm, setShowForm] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
@@ -357,6 +358,133 @@ export default function LedgersList() {
     if (selectedLedgerId) {
       fetchStatement();
     }
+  };
+
+  const handlePrint = () => {
+    if (!printRef.current) return;
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Please allow popups to print');
+      return;
+    }
+
+    const printContent = printRef.current.innerHTML;
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${ledger?.ledger_name || 'Ledger Details'}</title>
+          <style>
+            @media print {
+              @page {
+                margin: 0.5cm;
+                size: A4;
+              }
+              body {
+                font-family: 'Arial', sans-serif;
+                font-size: 12px;
+                color: #000;
+                margin: 0;
+                padding: 0;
+              }
+              .no-print {
+                display: none !important;
+              }
+            }
+            body {
+              font-family: 'Arial', sans-serif;
+              font-size: 12px;
+              padding: 20px;
+              color: #000;
+              background: #fff;
+            }
+            .print-container {
+              max-width: 210mm;
+              margin: 0 auto;
+              background: #fff;
+            }
+            .print-header {
+              border-bottom: 2px solid #000;
+              padding-bottom: 15px;
+              margin-bottom: 20px;
+            }
+            .print-title {
+              font-size: 24px;
+              font-weight: bold;
+              margin-bottom: 10px;
+            }
+            .print-section {
+              margin-bottom: 20px;
+              padding-bottom: 15px;
+              border-bottom: 1px solid #ddd;
+            }
+            .print-section-title {
+              font-size: 16px;
+              font-weight: bold;
+              margin-bottom: 10px;
+              color: #333;
+            }
+            .print-grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 15px;
+              margin-bottom: 15px;
+            }
+            .print-item {
+              margin-bottom: 8px;
+            }
+            .print-label {
+              font-weight: bold;
+              color: #666;
+              font-size: 11px;
+              margin-bottom: 3px;
+            }
+            .print-value {
+              color: #000;
+              font-size: 12px;
+            }
+            .print-badge {
+              display: inline-block;
+              padding: 4px 8px;
+              border-radius: 4px;
+              font-size: 10px;
+              font-weight: bold;
+            }
+            .print-badge-danger {
+              background-color: #fee;
+              color: #c00;
+            }
+            .print-badge-success {
+              background-color: #efe;
+              color: #060;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 10px;
+            }
+            th, td {
+              border: 1px solid #ddd;
+              padding: 8px;
+              text-align: left;
+            }
+            th {
+              background-color: #f5f5f5;
+              font-weight: bold;
+            }
+          </style>
+        </head>
+        <body>
+          ${printContent}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 250);
   };
 
   const resetForm = () => {
@@ -1051,6 +1179,103 @@ export default function LedgersList() {
               </div>
             ) : ledger ? (
               <div className="space-y-6">
+                {/* Print Content - Hidden in display, shown in print */}
+                <div ref={printRef} style={{ display: 'none' }}>
+                  <div className="print-container">
+                    <div className="print-header">
+                      <div className="print-title">{ledger.ledger_name || 'Ledger Details'}</div>
+                      <div className="text-sm text-gray-600">Ledger Code: {ledger.ledger_code}</div>
+                    </div>
+
+                    <div className="print-section">
+                      <div className="print-section-title">Balance Information</div>
+                      <div className="print-grid">
+                        <div className="print-item">
+                          <div className="print-label">Current Balance</div>
+                          <div className="print-value">{formatCurrency(balance.current_balance || 0)}</div>
+                          <div className="print-value">
+                            <span className={`print-badge ${balance.balance_type === 'debit' ? 'print-badge-danger' : 'print-badge-success'}`}>
+                              {balance.balance_type || 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="print-item">
+                          <div className="print-label">Opening Balance</div>
+                          <div className="print-value">{formatCurrency(ledger.opening_balance || 0)}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="print-section">
+                      <div className="print-section-title">Ledger Information</div>
+                      <div className="print-grid">
+                        <div className="print-item">
+                          <div className="print-label">Ledger Code</div>
+                          <div className="print-value">{ledger.ledger_code}</div>
+                        </div>
+                        <div className="print-item">
+                          <div className="print-label">Account Group</div>
+                          <div className="print-value">
+                            {ledger.account_group?.group_name || ledger.account_group?.name || 'N/A'}
+                          </div>
+                        </div>
+                        <div className="print-item">
+                          <div className="print-label">Balance Type</div>
+                          <div className="print-value">
+                            <span className={`print-badge ${ledger.balance_type === 'debit' ? 'print-badge-danger' : 'print-badge-success'}`}>
+                              {ledger.balance_type || 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {(ledger.gstin || ledger.pan || ledger.address || ledger.phone || ledger.email) && (
+                      <div className="print-section">
+                        <div className="print-section-title">Contact Information</div>
+                        <div className="print-grid">
+                          {ledger.gstin && (
+                            <div className="print-item">
+                              <div className="print-label">GSTIN</div>
+                              <div className="print-value">{ledger.gstin}</div>
+                            </div>
+                          )}
+                          {ledger.pan && (
+                            <div className="print-item">
+                              <div className="print-label">PAN</div>
+                              <div className="print-value">{ledger.pan}</div>
+                            </div>
+                          )}
+                          {ledger.address && (
+                            <div className="print-item" style={{ gridColumn: '1 / -1' }}>
+                              <div className="print-label">Address</div>
+                              <div className="print-value">
+                                {ledger.address}
+                                {ledger.city && `, ${ledger.city}`}
+                                {ledger.state && `, ${ledger.state}`}
+                                {ledger.pincode && ` - ${ledger.pincode}`}
+                              </div>
+                            </div>
+                          )}
+                          {ledger.phone && (
+                            <div className="print-item">
+                              <div className="print-label">Phone</div>
+                              <div className="print-value">{ledger.phone}</div>
+                            </div>
+                          )}
+                          {ledger.email && (
+                            <div className="print-item">
+                              <div className="print-label">Email</div>
+                              <div className="print-value">{ledger.email}</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Display Content */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Card>
                     <div className="text-gray-500 text-sm font-medium">Current Balance</div>
@@ -1143,6 +1368,10 @@ export default function LedgersList() {
                     <FiArrowLeft className="h-4 w-4 mr-2" />
                     Back
                   </Button>
+                  <Button variant="outline" onClick={handlePrint}>
+                    <FiPrinter className="h-4 w-4 mr-2" />
+                    Print
+                  </Button>
                   <Button
                     onClick={() => {
                       setShowDetail(false);
@@ -1217,38 +1446,45 @@ export default function LedgersList() {
                   </Card>
                 )}
 
-                {statement.closing_balance !== undefined && (
+                {statement.summary && (
                   <Card title="Summary">
                     <dl className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
                         <dt className="text-sm font-medium text-gray-500">Opening Balance</dt>
                         <dd className="mt-1 text-lg font-semibold text-gray-900">
-                          {formatCurrency(statement.ledger?.opening_balance || 0)}
+                          {formatCurrency(statement.summary.opening_balance || 0)}
+                          <span className="ml-2 text-sm text-gray-500">
+                            ({statement.summary.opening_balance_type || 'Dr'})
+                          </span>
                         </dd>
                       </div>
                       <div>
                         <dt className="text-sm font-medium text-gray-500">Total Debit</dt>
                         <dd className="mt-1 text-lg font-semibold text-gray-900">
-                          {formatCurrency(
-                            statement.statement?.reduce((sum, t) => sum + (t.debit || 0), 0) || 0
-                          )}
+                          {formatCurrency(statement.summary.total_debit || 0)}
                         </dd>
                       </div>
                       <div>
                         <dt className="text-sm font-medium text-gray-500">Total Credit</dt>
                         <dd className="mt-1 text-lg font-semibold text-gray-900">
-                          {formatCurrency(
-                            statement.statement?.reduce((sum, t) => sum + (t.credit || 0), 0) || 0
-                          )}
+                          {formatCurrency(statement.summary.total_credit || 0)}
                         </dd>
                       </div>
                       <div>
                         <dt className="text-sm font-medium text-gray-500">Closing Balance</dt>
                         <dd className="mt-1 text-lg font-semibold text-gray-900">
-                          {formatCurrency(statement.closing_balance || 0)}
+                          {formatCurrency(statement.summary.closing_balance || 0)}
+                          <span className="ml-2 text-sm text-gray-500">
+                            ({statement.summary.closing_balance_type || 'Dr'})
+                          </span>
                         </dd>
                       </div>
                     </dl>
+                    {statement.summary.transaction_count !== undefined && (
+                      <div className="mt-4 text-sm text-gray-500">
+                        Total Transactions: {statement.summary.transaction_count}
+                      </div>
+                    )}
                   </Card>
                 )}
 
@@ -1267,19 +1503,26 @@ export default function LedgersList() {
           </Modal>
 
           {/* Main List Table */}
-          <Card className="shadow-sm border border-gray-200">
-            <DataTable
-              columns={columns}
-              data={tableData?.data || tableData || []}
-              loading={loading}
-              pagination={pagination}
-              onPageChange={handlePageChange}
-              onSort={handleSort}
-              sortField={sort.field}
-              sortOrder={sort.order}
-              onRowClick={(row) => handleView(row)}
-            />
-          </Card>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">All Ledgers</h2>
+            </div>
+            <Card className="shadow-sm border border-gray-200">
+              <DataTable
+                columns={columns}
+                data={tableData?.data || tableData || []}
+                loading={loading}
+                pagination={pagination}
+                onPageChange={handlePageChange}
+                onSort={handleSort}
+                sortField={sort.field}
+                sortOrder={sort.order}
+                onRowClick={(row) => handleView(row)}
+                searchable={true}
+                searchPlaceholder="Search ledgers..."
+              />
+            </Card>
+          </div>
         </PageLayout>
       </ClientLayout>
     </ProtectedRoute>
