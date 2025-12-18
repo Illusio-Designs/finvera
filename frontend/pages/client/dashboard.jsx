@@ -74,33 +74,41 @@ export default function ClientDashboard() {
         recent_activity: data.recent_activity || [],
       });
     } catch (error) {
-      // If 404, the endpoint might not exist yet - use default empty data
-      if (error.response?.status === 404) {
+      // Handle network errors and other errors
+      const isNetworkError = error.code === 'ERR_NETWORK' || error.message === 'Network Error';
+      const is404 = error.response?.status === 404;
+      
+      if (isNetworkError) {
+        console.error('Network error - unable to reach server:', error);
+        toast.error('Unable to connect to server. Please check your connection.');
+      } else if (is404) {
         console.warn('Dashboard endpoint not found, using default data');
-        setDashboardData({
-          stats: {
-            total_vouchers: 0,
-            total_ledgers: 0,
-            total_invoices: 0,
-            total_sales_invoices: 0,
-            total_purchase_invoices: 0,
-            total_payments: 0,
-            total_receipts: 0,
-            pending_bills: 0,
-            total_outstanding: 0,
-            receivables: 0,
-            payables: 0,
-            gst_credit: 0,
-            current_month_sales: 0,
-            current_month_purchase: 0,
-            active_ledgers: 0,
-          },
-          recent_activity: [],
-        });
       } else {
-        toast.error('Failed to load dashboard data');
         console.error('Dashboard error:', error);
+        toast.error(error.response?.data?.message || 'Failed to load dashboard data');
       }
+      
+      // Use default empty data for any error
+      setDashboardData({
+        stats: {
+          total_vouchers: 0,
+          total_ledgers: 0,
+          total_invoices: 0,
+          total_sales_invoices: 0,
+          total_purchase_invoices: 0,
+          total_payments: 0,
+          total_receipts: 0,
+          pending_bills: 0,
+          total_outstanding: 0,
+          receivables: 0,
+          payables: 0,
+          gst_credit: 0,
+          current_month_sales: 0,
+          current_month_purchase: 0,
+          active_ledgers: 0,
+        },
+        recent_activity: [],
+      });
     } finally {
       setLoading(false);
     }
