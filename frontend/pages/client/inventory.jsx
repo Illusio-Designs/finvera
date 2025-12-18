@@ -1,18 +1,18 @@
 import { useState, useEffect, useMemo } from 'react';
-import ProtectedRoute from '../components/ProtectedRoute';
-import ClientLayout from '../components/layouts/ClientLayout';
-import PageLayout from '../components/layouts/PageLayout';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
-import FormInput from '../components/forms/FormInput';
-import FormSelect from '../components/forms/FormSelect';
-import SearchableHSNSelect from '../components/forms/SearchableHSNSelect';
-import DataTable from '../components/tables/DataTable';
-import { accountingAPI } from '../lib/api';
-import { useTable } from '../hooks/useTable';
+import ProtectedRoute from '../../components/ProtectedRoute';
+import ClientLayout from '../../components/layouts/ClientLayout';
+import PageLayout from '../../components/layouts/PageLayout';
+import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import FormInput from '../../components/forms/FormInput';
+import FormSelect from '../../components/forms/FormSelect';
+import SearchableHSNSelect from '../../components/forms/SearchableHSNSelect';
+import DataTable from '../../components/tables/DataTable';
+import { accountingAPI } from '../../lib/api';
+import { useTable } from '../../hooks/useTable';
 import toast from 'react-hot-toast';
 import { FiPlus, FiEdit, FiTrash2, FiX, FiSave } from 'react-icons/fi';
-import { formatCurrency } from '../lib/formatters';
+import { formatCurrency } from '../../lib/formatters';
 
 export default function InventoryPage() {
   const [showForm, setShowForm] = useState(false);
@@ -54,18 +54,22 @@ export default function InventoryPage() {
     const fetchWarehouses = async () => {
       try {
         const response = await accountingAPI.warehouses.getAll({ is_active: true });
-        setWarehouses(response.data || []);
+        const warehousesData = response.data?.data || response.data || [];
+        setWarehouses(Array.isArray(warehousesData) ? warehousesData : []);
       } catch (error) {
         console.error('Error fetching warehouses:', error);
+        setWarehouses([]);
       }
     };
     fetchWarehouses();
   }, []);
 
-  const warehouseOptions = warehouses.map((wh) => ({
-    value: wh.id,
-    label: wh.warehouse_name + (wh.warehouse_code ? ` (${wh.warehouse_code})` : ''),
-  }));
+  const warehouseOptions = Array.isArray(warehouses) 
+    ? warehouses.map((wh) => ({
+        value: wh.id,
+        label: wh.warehouse_name + (wh.warehouse_code ? ` (${wh.warehouse_code})` : ''),
+      }))
+    : [];
 
   const resetForm = () => {
     setFormData({

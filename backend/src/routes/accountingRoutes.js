@@ -7,6 +7,8 @@ const transactionController = require('../controllers/transactionController');
 const dashboardController = require('../controllers/dashboardController');
 const inventoryController = require('../controllers/inventoryController');
 const warehouseController = require('../controllers/warehouseController');
+const stockAdjustmentController = require('../controllers/stockAdjustmentController');
+const stockTransferController = require('../controllers/stockTransferController');
 const { authenticate } = require('../middleware/auth');
 const { setTenantContext, requireTenant, resolveTenant } = require('../middleware/tenant');
 
@@ -78,6 +80,14 @@ router.post('/warehouses', warehouseController.create);
 router.get('/warehouses/:id', warehouseController.getById);
 router.put('/warehouses/:id', warehouseController.update);
 router.delete('/warehouses/:id', warehouseController.delete);
+
+// Stock Adjustments
+router.get('/stock-adjustments', stockAdjustmentController.list);
+router.post('/stock-adjustments', stockAdjustmentController.create);
+
+// Stock Transfers
+router.get('/stock-transfers', stockTransferController.list);
+router.post('/stock-transfers', stockTransferController.create);
 
 module.exports = router;
 
