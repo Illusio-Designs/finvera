@@ -1,4 +1,5 @@
 const { Op, Sequelize } = require('sequelize');
+const logger = require('../utils/logger');
 
 function toNum(v, fallback = 0) {
   const n = parseFloat(v);
@@ -30,11 +31,13 @@ async function movementByLedger(tenantModels, { fromDate, toDate, asOnDate, befo
     voucherWhere.voucher_date = { [Op.lte]: toDate };
   }
 
+  // When using includes, Sequelize.col() needs the model name prefix with attribute name
+  // The model maps debit_amount -> debit column, so we use the attribute name with model prefix
   const rows = await tenantModels.VoucherLedgerEntry.findAll({
     attributes: [
       'ledger_id',
-      [Sequelize.fn('SUM', Sequelize.col('debit')), 'total_debit'],
-      [Sequelize.fn('SUM', Sequelize.col('credit')), 'total_credit'],
+      [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.debit')), 'total_debit'],
+      [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.credit')), 'total_credit'],
     ],
     include: [{ model: tenantModels.Voucher, attributes: [], where: voucherWhere, required: true }],
     group: ['ledger_id'],
@@ -239,45 +242,147 @@ module.exports = {
       const beforeMove = beforeMoveMap.get(ledger.id) || { debit: 0, credit: 0 };
       const openingBalSigned = openingSigned(ledger) + (beforeMove.debit - beforeMove.credit);
 
+      // Find all voucher ledger entries for this ledger within the date range
+      // DATEONLY fields work directly with date strings in YYYY-MM-DD format
       const entries = await req.tenantModels.VoucherLedgerEntry.findAll({
         where: { ledger_id },
         include: [
           {
             model: req.tenantModels.Voucher,
-            where: { status: 'posted', voucher_date: { [Op.between]: [from, to] } },
+            where: { 
+              status: 'posted',
+              voucher_date: { [Op.between]: [from, to] }
+            },
             required: true,
+            attributes: ['id', 'voucher_date', 'voucher_number', 'voucher_type', 'narration'],
           },
         ],
-        order: [[req.tenantModels.Voucher, 'voucher_date', 'ASC'], ['createdAt', 'ASC']],
+        order: [[req.tenantModels.Voucher, 'voucher_date', 'ASC'], [req.tenantModels.Voucher, 'voucher_number', 'ASC'], ['createdAt', 'ASC']],
       });
 
+      logger.info(`Found ${entries.length} voucher ledger entries for ledger ${ledger_id} (${ledger.ledger_name}) between ${from} and ${to}`);
+      
+      // Debug: Log first few entries if any
+      if (entries.length > 0) {
+        logger.info(`Sample entries:`, JSON.stringify(entries.slice(0, 5).map(e => ({
+          voucher_number: e.voucher?.voucher_number,
+          voucher_date: e.voucher?.voucher_date,
+          voucher_type: e.voucher?.voucher_type,
+          debit: parseFloat(e.debit_amount) || 0,
+          credit: parseFloat(e.credit_amount) || 0,
+          narration: e.narration
+        })), null, 2));
+      } else {
+        // Check if there are any entries for this ledger at all (without date filter)
+        const allEntriesCount = await req.tenantModels.VoucherLedgerEntry.count({
+          where: { ledger_id },
+          include: [{
+            model: req.tenantModels.Voucher,
+            where: { status: 'posted' },
+            required: true,
+          }],
+        });
+        logger.info(`Total posted voucher entries for ledger ${ledger_id} (${ledger.ledger_name}): ${allEntriesCount}`);
+        
+        if (allEntriesCount > 0) {
+          // Get sample entries to see what dates they have
+          const sampleEntries = await req.tenantModels.VoucherLedgerEntry.findAll({
+            where: { ledger_id },
+            include: [{
+              model: req.tenantModels.Voucher,
+              where: { status: 'posted' },
+              required: true,
+              attributes: ['voucher_date', 'voucher_number', 'voucher_type'],
+            }],
+            limit: 5,
+            order: [[req.tenantModels.Voucher, 'voucher_date', 'DESC']],
+          });
+          logger.info(`Sample posted entries (any date):`, JSON.stringify(sampleEntries.map(e => ({
+            voucher_number: e.voucher?.voucher_number,
+            voucher_date: e.voucher?.voucher_date,
+            voucher_type: e.voucher?.voucher_type,
+            debit: parseFloat(e.debit_amount) || 0,
+            credit: parseFloat(e.credit_amount) || 0,
+          })), null, 2));
+        }
+        
+        // Also check without status filter
+        const allEntriesAnyStatus = await req.tenantModels.VoucherLedgerEntry.count({
+          where: { ledger_id },
+          include: [{
+            model: req.tenantModels.Voucher,
+            required: true,
+          }],
+        });
+        logger.info(`Total voucher entries (any status) for ledger ${ledger_id}: ${allEntriesAnyStatus}`);
+      }
+
+      // Start with opening balance
       let running = openingBalSigned;
       const statement = [
         {
           date: from,
           voucher_number: 'Opening Balance',
           voucher_type: null,
-          debit: openingBalSigned > 0 ? parseFloat(openingBalSigned.toFixed(2)) : 0,
+          debit: openingBalSigned > 0 ? parseFloat(Math.abs(openingBalSigned).toFixed(2)) : 0,
           credit: openingBalSigned < 0 ? parseFloat(Math.abs(openingBalSigned).toFixed(2)) : 0,
           balance: parseFloat(running.toFixed(2)),
           narration: 'Opening Balance',
         },
       ];
 
+      // Add all transactions within the period
+      let periodTotalDebit = 0;
+      let periodTotalCredit = 0;
+
       for (const e of entries) {
+        // Ensure voucher is loaded
+        if (!e.voucher) {
+          logger.warn(`Voucher not found for entry ${e.id}`);
+          continue;
+        }
+
         const debit = toNum(e.debit_amount, 0);
         const credit = toNum(e.credit_amount, 0);
+        
+        // Update running balance: Debit increases balance (for asset/expense), Credit decreases (for liability/income)
+        // For ledger statement: Debit = positive for asset accounts, Credit = negative
+        // Running balance = Opening + Debits - Credits
         running += debit - credit;
+        
+        periodTotalDebit += debit;
+        periodTotalCredit += credit;
+        
         statement.push({
           date: e.voucher.voucher_date,
-          voucher_number: e.voucher.voucher_number,
-          voucher_type: e.voucher.voucher_type,
+          voucher_number: e.voucher.voucher_number || '',
+          voucher_type: e.voucher.voucher_type || null,
           debit: parseFloat(debit.toFixed(2)),
           credit: parseFloat(credit.toFixed(2)),
           balance: parseFloat(running.toFixed(2)),
-          narration: e.narration,
+          narration: e.narration || e.voucher.narration || null,
         });
       }
+
+      // Add closing balance as final row
+      const closingBalSigned = running;
+      statement.push({
+        date: to,
+        voucher_number: 'Closing Balance',
+        voucher_type: null,
+        debit: closingBalSigned > 0 ? parseFloat(Math.abs(closingBalSigned).toFixed(2)) : 0,
+        credit: closingBalSigned < 0 ? parseFloat(Math.abs(closingBalSigned).toFixed(2)) : 0,
+        balance: parseFloat(closingBalSigned.toFixed(2)),
+        narration: 'Closing Balance',
+      });
+
+      // Calculate totals for summary (excluding opening and closing balance rows)
+      // Only count actual transaction entries, not the opening/closing balance placeholder rows
+      const transactionEntries = statement.filter(
+        (entry) => entry.voucher_number !== 'Opening Balance' && entry.voucher_number !== 'Closing Balance'
+      );
+      const totalDebit = transactionEntries.reduce((sum, entry) => sum + (entry.debit || 0), 0);
+      const totalCredit = transactionEntries.reduce((sum, entry) => sum + (entry.credit || 0), 0);
 
       res.json({
         ledger: {
@@ -286,10 +391,20 @@ module.exports = {
           opening_balance: parseFloat(Math.abs(openingBalSigned).toFixed(2)),
           opening_balance_type: openingBalSigned < 0 ? 'Cr' : 'Dr',
         },
-        statement,
-        closing_balance: parseFloat(Math.abs(running).toFixed(2)),
-        closing_balance_type: running < 0 ? 'Cr' : 'Dr',
+        statement, // Array of all transactions including opening balance and closing balance
+        transactions: statement.slice(1, -1), // Only actual transactions (excluding opening/closing balance)
+        closing_balance: parseFloat(Math.abs(closingBalSigned).toFixed(2)),
+        closing_balance_type: closingBalSigned < 0 ? 'Cr' : 'Dr',
         period: { from_date: from, to_date: to },
+        summary: {
+          opening_balance: parseFloat(Math.abs(openingBalSigned).toFixed(2)),
+          opening_balance_type: openingBalSigned < 0 ? 'Cr' : 'Dr',
+          total_debit: parseFloat(totalDebit.toFixed(2)),
+          total_credit: parseFloat(totalCredit.toFixed(2)),
+          closing_balance: parseFloat(Math.abs(closingBalSigned).toFixed(2)),
+          closing_balance_type: closingBalSigned < 0 ? 'Cr' : 'Dr',
+          transaction_count: entries.length, // Only actual voucher transactions, not opening/closing balance rows
+        },
       });
     } catch (err) {
       next(err);

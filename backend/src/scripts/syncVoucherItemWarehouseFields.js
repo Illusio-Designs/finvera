@@ -4,6 +4,10 @@
  * Usage: node src/scripts/syncVoucherItemWarehouseFields.js
  */
 
+// Load environment variables - ensure .env is loaded from backend directory
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+
 const tenantConnectionManager = require('../config/tenantConnectionManager');
 const tenantProvisioningService = require('../services/tenantProvisioningService');
 const masterSequelize = require('../config/masterDatabase');
@@ -20,7 +24,12 @@ async function syncVoucherItemWarehouseFields() {
       await masterSequelize.authenticate();
       logger.info('✅ Master database connection established');
     } catch (authError) {
-      logger.error('❌ Failed to connect to master database. Please check your DB_USER and DB_PASSWORD in .env file.');
+      logger.error('❌ Failed to connect to master database.');
+      logger.error('Please ensure your .env file has the correct database credentials:');
+      logger.error('  - DB_USER (current: ' + (process.env.DB_USER || 'root') + ')');
+      logger.error('  - DB_PASSWORD (currently ' + (process.env.DB_PASSWORD ? 'set' : 'NOT SET - this may be the problem') + ')');
+      logger.error('  - DB_HOST (current: ' + (process.env.DB_HOST || 'localhost') + ')');
+      logger.error('  - DB_PORT (current: ' + (process.env.DB_PORT || '3306') + ')');
       throw authError;
     }
 
@@ -46,19 +55,9 @@ async function syncVoucherItemWarehouseFields() {
       try {
         logger.info(`\n📦 Migrating database: ${company.db_name} (${company.company_name})`);
 
-        // Decrypt password if needed
-        let dbPassword = company.db_password;
-        if (dbPassword) {
-          try {
-            dbPassword = tenantProvisioningService.decryptPassword(dbPassword);
-          } catch (e) {
-            // If decryption fails, use environment password
-            dbPassword = process.env.DB_PASSWORD;
-          }
-        } else {
-          dbPassword = process.env.DB_PASSWORD;
-        }
-
+        // For tenant databases, use environment password (all tenant DBs use same root credentials)
+        // The stored password in company.db_password might be encrypted/outdated
+        const dbPassword = process.env.DB_PASSWORD;
         const dbUser = process.env.USE_SEPARATE_DB_USERS === 'true' && company.db_user 
           ? company.db_user 
           : process.env.DB_USER;
