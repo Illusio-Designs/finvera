@@ -260,11 +260,11 @@ export default function PurchaseInvoicePage() {
 
     try {
       const response = await accountingAPI.inventory.items.getWarehouseStock(inventoryItemId, { warehouse_id: warehouseId });
-      const stockData = response.data?.data || response.data;
-      // Find the specific warehouse stock
+      const stockData = response?.data?.data || response?.data;
+      // Handle both single object and array responses
       const warehouseStock = Array.isArray(stockData) 
-        ? stockData.find((ws) => ws.warehouse_id === warehouseId)
-        : stockData;
+        ? stockData.find((ws) => ws.warehouse_id === warehouseId) || { quantity: 0 }
+        : stockData || { quantity: 0 };
       const availableStock = parseFloat(warehouseStock?.quantity || 0);
 
       setItems((prev) =>

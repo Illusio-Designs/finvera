@@ -257,6 +257,16 @@ module.exports = (sequelize) => {
       type: DataTypes.UUID,
       allowNull: false,
     },
+    inventory_item_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      comment: 'Reference to inventory item if selected from inventory',
+    },
+    warehouse_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      comment: 'Warehouse from which stock is taken (for sales) or added to (for purchase)',
+    },
     item_code: DataTypes.STRING(100),
     item_description: {
       type: DataTypes.STRING(500),

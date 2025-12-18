@@ -313,6 +313,7 @@ module.exports = {
           {
             model: req.tenantModels.Warehouse,
             attributes: ['id', 'warehouse_name', 'warehouse_code'],
+            required: false, // Left join - don't fail if warehouse doesn't exist
           },
         ],
       });
@@ -326,9 +327,23 @@ module.exports = {
         stock_value: (parseFloat(ws.quantity) || 0) * (parseFloat(ws.avg_cost) || 0),
       }));
 
-      // If warehouse_id is specified and we found a match, return single object; otherwise return array
-      if (warehouse_id && data.length === 1) {
-        res.json({ data: data[0] });
+      // If warehouse_id is specified, return single object or null if not found; otherwise return array
+      if (warehouse_id) {
+        if (data.length === 1) {
+          res.json({ data: data[0] });
+        } else {
+          // No warehouse stock found for this warehouse - return default structure
+          res.json({ 
+            data: {
+              warehouse_id: warehouse_id,
+              warehouse_name: null,
+              warehouse_code: null,
+              quantity: 0,
+              avg_cost: 0,
+              stock_value: 0,
+            }
+          });
+        }
       } else {
         res.json({ data });
       }

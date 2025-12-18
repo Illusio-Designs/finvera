@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function WebsiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -32,10 +33,13 @@ export default function WebsiteHeader() {
         <div className="flex justify-between items-center">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <img 
+            <Image 
               src="/logo.png" 
               alt="Finvera" 
+              width={200}
+              height={176}
               className="h-[11rem] w-auto object-contain"
+              priority
             />
           </Link>
 
