@@ -6,6 +6,7 @@ const voucherController = require('../controllers/voucherController');
 const transactionController = require('../controllers/transactionController');
 const dashboardController = require('../controllers/dashboardController');
 const inventoryController = require('../controllers/inventoryController');
+const warehouseController = require('../controllers/warehouseController');
 const { authenticate } = require('../middleware/auth');
 const { setTenantContext, requireTenant, resolveTenant } = require('../middleware/tenant');
 
@@ -67,6 +68,16 @@ router.post('/inventory/items', inventoryController.create);
 router.get('/inventory/items/:id', inventoryController.getById);
 router.put('/inventory/items/:id', inventoryController.update);
 router.delete('/inventory/items/:id', inventoryController.delete);
+router.post('/inventory/items/:id/opening-stock', inventoryController.setOpeningStockByWarehouse);
+router.get('/inventory/items/:id/warehouse-stock', inventoryController.getStockByWarehouse);
+
+// Warehouses
+router.get('/warehouses', warehouseController.list);
+router.get('/warehouses/all', warehouseController.getAll);
+router.post('/warehouses', warehouseController.create);
+router.get('/warehouses/:id', warehouseController.getById);
+router.put('/warehouses/:id', warehouseController.update);
+router.delete('/warehouses/:id', warehouseController.delete);
 
 module.exports = router;
 

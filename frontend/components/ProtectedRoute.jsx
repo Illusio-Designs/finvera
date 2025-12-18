@@ -35,7 +35,7 @@ export default function ProtectedRoute({ children, portalType = null }) {
       return;
     }
 
-    const isCompanyCreationPage = currentPath === '/client/company/new';
+    const isCompanyCreationPage = currentPath === '/client/companies';
     
     // If we have a token but auth is still loading, wait
     if (loading && hasToken) {
@@ -98,13 +98,13 @@ export default function ProtectedRoute({ children, portalType = null }) {
       // For client portal users, check if they have a company
       // Allow access to company creation page, but redirect other pages
       if (portalType === 'client' && canAccessClientPortal(userRole)) {
-        const isCompanyCreationPage = currentPath === '/client/company/new';
+        const isCompanyCreationPage = currentPath === '/client/companies';
         const hasCompany = !!user.company_id;
         
         // If user doesn't have a company and is not on company creation page, redirect
         if (!hasCompany && !isCompanyCreationPage) {
           console.log('User does not have a company, redirecting to company creation');
-          router.replace('/client/company/new');
+          router.replace('/client/companies');
           setHasChecked(true);
           return;
         }
@@ -123,7 +123,7 @@ export default function ProtectedRoute({ children, portalType = null }) {
     );
   }
 
-  const isCompanyCreationPage = router.pathname === '/client/company/new';
+  const isCompanyCreationPage = router.pathname === '/client/companies';
 
   // Show loading spinner while checking
   if (loading || !hasChecked) {

@@ -311,7 +311,18 @@ export const accountingAPI = {
       create: (data) => api.post("/accounting/inventory/items", data),
       update: (id, data) => api.put(`/accounting/inventory/items/${id}`, data),
       delete: (id) => api.delete(`/accounting/inventory/items/${id}`),
+      setOpeningStock: (id, data) => api.post(`/accounting/inventory/items/${id}/opening-stock`, data),
+      getWarehouseStock: (id) => api.get(`/accounting/inventory/items/${id}/warehouse-stock`),
     },
+  },
+  // Warehouses
+  warehouses: {
+    list: (params) => api.get("/accounting/warehouses", { params }),
+    getAll: (params) => api.get("/accounting/warehouses/all", { params }),
+    get: (id) => api.get(`/accounting/warehouses/${id}`),
+    create: (data) => api.post("/accounting/warehouses", data),
+    update: (id, data) => api.put(`/accounting/warehouses/${id}`, data),
+    delete: (id) => api.delete(`/accounting/warehouses/${id}`),
   },
 };
 

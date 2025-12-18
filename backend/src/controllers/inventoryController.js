@@ -208,4 +208,122 @@ module.exports = {
       next(error);
     }
   },
+
+  async setOpeningStockByWarehouse(req, res, next) {
+    try {
+      const { id } = req.params; // inventory_item_id
+      const { warehouse_id, quantity, avg_cost } = req.body;
+
+      if (!warehouse_id) {
+        return res.status(400).json({ error: 'Warehouse ID is required' });
+      }
+
+      const item = await req.tenantModels.InventoryItem.findByPk(id);
+      if (!item) {
+        return res.status(404).json({ error: 'Inventory item not found' });
+      }
+
+      const warehouse = await req.tenantModels.Warehouse.findByPk(warehouse_id);
+      if (!warehouse) {
+        return res.status(404).json({ error: 'Warehouse not found' });
+      }
+
+      const qty = parseFloat(quantity) || 0;
+      const cost = parseFloat(avg_cost) || 0;
+
+      // Find or create warehouse stock record
+      const [warehouseStock] = await req.tenantModels.WarehouseStock.findOrCreate({
+        where: {
+          inventory_item_id: id,
+          warehouse_id: warehouse_id,
+        },
+        defaults: {
+          inventory_item_id: id,
+          warehouse_id: warehouse_id,
+          quantity: qty,
+          avg_cost: cost,
+        },
+      });
+
+      // Update if already exists
+      if (warehouseStock.quantity !== qty || warehouseStock.avg_cost !== cost) {
+        warehouseStock.quantity = qty;
+        warehouseStock.avg_cost = cost;
+        await warehouseStock.save();
+      }
+
+      // Create stock movement entry for opening stock
+      await req.tenantModels.StockMovement.create({
+        inventory_item_id: id,
+        warehouse_id: warehouse_id,
+        voucher_id: null,
+        movement_type: 'IN',
+        quantity: qty,
+        rate: cost,
+        amount: qty * cost,
+        narration: `Opening Stock - ${warehouse.warehouse_name}`,
+      });
+
+      // Recalculate aggregate quantity_on_hand and avg_cost for the item
+      const allWarehouseStocks = await req.tenantModels.WarehouseStock.findAll({
+        where: { inventory_item_id: id },
+      });
+
+      let totalQty = 0;
+      let totalValue = 0;
+      allWarehouseStocks.forEach((ws) => {
+        totalQty += parseFloat(ws.quantity) || 0;
+        totalValue += (parseFloat(ws.quantity) || 0) * (parseFloat(ws.avg_cost) || 0);
+      });
+
+      const aggregateAvgCost = totalQty > 0 ? totalValue / totalQty : 0;
+      await item.update({
+        quantity_on_hand: totalQty,
+        avg_cost: aggregateAvgCost,
+      });
+
+      res.json({
+        data: warehouseStock,
+        message: 'Opening stock set successfully',
+      });
+    } catch (error) {
+      logger.error('Error setting opening stock by warehouse:', error);
+      next(error);
+    }
+  },
+
+  async getStockByWarehouse(req, res, next) {
+    try {
+      const { id } = req.params; // inventory_item_id
+
+      const item = await req.tenantModels.InventoryItem.findByPk(id);
+      if (!item) {
+        return res.status(404).json({ error: 'Inventory item not found' });
+      }
+
+      const warehouseStocks = await req.tenantModels.WarehouseStock.findAll({
+        where: { inventory_item_id: id },
+        include: [
+          {
+            model: req.tenantModels.Warehouse,
+            attributes: ['id', 'warehouse_name', 'warehouse_code'],
+          },
+        ],
+      });
+
+      const data = warehouseStocks.map((ws) => ({
+        warehouse_id: ws.warehouse_id,
+        warehouse_name: ws.Warehouse?.warehouse_name,
+        warehouse_code: ws.Warehouse?.warehouse_code,
+        quantity: parseFloat(ws.quantity) || 0,
+        avg_cost: parseFloat(ws.avg_cost) || 0,
+        stock_value: (parseFloat(ws.quantity) || 0) * (parseFloat(ws.avg_cost) || 0),
+      }));
+
+      res.json({ data });
+    } catch (error) {
+      logger.error('Error getting stock by warehouse:', error);
+      next(error);
+    }
+  },
 };

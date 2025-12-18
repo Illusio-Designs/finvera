@@ -39,7 +39,7 @@ export default function ClientLogin() {
             // Wait 2 seconds to see logs, then redirect
             toast.success('Login successful! Redirecting to company creation...');
             setTimeout(() => {
-              window.location.href = '/client/company/new';
+              window.location.href = '/client/companies';
             }, 2000);
             return;
           }
@@ -84,7 +84,7 @@ export default function ClientLogin() {
         toast.success('Login successful! Redirecting to company creation...');
         setTimeout(() => {
           console.log('Redirecting to company creation page now...');
-          window.location.href = '/client/company/new';
+          window.location.href = '/client/companies';
         }, 2000);
         return;
       } else {

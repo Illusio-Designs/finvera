@@ -396,6 +396,11 @@ module.exports = (sequelize) => {
       type: DataTypes.UUID,
       allowNull: false,
     },
+    warehouse_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      comment: 'Warehouse for this movement (null = aggregate/all warehouses)',
+    },
     voucher_id: {
       type: DataTypes.UUID,
       allowNull: true,
@@ -420,6 +425,74 @@ module.exports = (sequelize) => {
   }, {
     tableName: 'stock_movements',
     timestamps: true,
+  });
+
+  // Warehouse model
+  models.Warehouse = sequelize.define('Warehouse', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    warehouse_code: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      unique: true,
+    },
+    warehouse_name: {
+      type: DataTypes.STRING(500),
+      allowNull: false,
+    },
+    address: DataTypes.TEXT,
+    city: DataTypes.STRING(100),
+    state: DataTypes.STRING(100),
+    pincode: DataTypes.STRING(10),
+    contact_person: DataTypes.STRING(255),
+    contact_phone: DataTypes.STRING(20),
+    contact_email: DataTypes.STRING(255),
+    is_active: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
+  }, {
+    tableName: 'warehouses',
+    timestamps: true,
+  });
+
+  // Warehouse Stock model - tracks quantity and cost per item per warehouse
+  models.WarehouseStock = sequelize.define('WarehouseStock', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    inventory_item_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
+    warehouse_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
+    quantity: {
+      type: DataTypes.DECIMAL(15, 3),
+      defaultValue: 0,
+      allowNull: false,
+    },
+    avg_cost: {
+      type: DataTypes.DECIMAL(15, 4),
+      defaultValue: 0,
+      allowNull: false,
+    },
+  }, {
+    tableName: 'warehouse_stocks',
+    timestamps: true,
+    indexes: [
+      {
+        unique: true,
+        fields: ['inventory_item_id', 'warehouse_id'],
+      },
+    ],
   });
 
   // E-Way Bill model (generated for outward supply / sales)
@@ -665,6 +738,14 @@ module.exports = (sequelize) => {
   models.EWayBill.belongsTo(models.Voucher, { foreignKey: 'voucher_id' });
 
   models.InventoryItem.hasMany(models.StockMovement, { foreignKey: 'inventory_item_id' });
+  models.InventoryItem.hasMany(models.WarehouseStock, { foreignKey: 'inventory_item_id' });
+
+  models.Warehouse.hasMany(models.StockMovement, { foreignKey: 'warehouse_id' });
+  models.Warehouse.hasMany(models.WarehouseStock, { foreignKey: 'warehouse_id' });
+
+  models.StockMovement.belongsTo(models.Warehouse, { foreignKey: 'warehouse_id' });
+  models.WarehouseStock.belongsTo(models.InventoryItem, { foreignKey: 'inventory_item_id' });
+  models.WarehouseStock.belongsTo(models.Warehouse, { foreignKey: 'warehouse_id' });
   models.StockMovement.belongsTo(models.InventoryItem, { foreignKey: 'inventory_item_id' });
   models.StockMovement.belongsTo(models.Voucher, { foreignKey: 'voucher_id' });
 
