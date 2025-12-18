@@ -66,6 +66,8 @@ class VoucherService {
 
       const lineTotal = taxableAmount + gst.totalTax + toNum(item.cess_amount, 0);
       return {
+        inventory_item_id: item.inventory_item_id || null,
+        warehouse_id: item.warehouse_id || null,
         item_code: item.item_code || null,
         item_description: item.item_description || item.description || item.item_name || 'Item',
         hsn_sac_code: item.hsn_sac_code || item.hsn || null,
@@ -196,6 +198,8 @@ class VoucherService {
 
       const lineTotal = taxableAmount + gst.totalTax + toNum(item.cess_amount, 0);
       return {
+        inventory_item_id: item.inventory_item_id || null,
+        warehouse_id: item.warehouse_id || null,
         item_code: item.item_code || null,
         item_description: item.item_description || item.description || item.item_name || 'Item',
         hsn_sac_code: item.hsn_sac_code || item.hsn || null,

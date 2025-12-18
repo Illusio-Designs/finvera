@@ -524,6 +524,17 @@ export default function VoucherDetail() {
                           <td className="border border-gray-300 p-2 text-right font-medium">{formatCurrency(item.total_amount || 0, false)}</td>
                         </tr>
                       ))}
+                      {(voucher.voucher_type === 'Sales' || voucher.voucher_type === 'Purchase') && (
+                        <tr className="bg-gray-100 font-semibold">
+                          <td colSpan="5" className="border border-gray-300 p-2 text-right">Total</td>
+                          <td className="border border-gray-300 p-2 text-right">{formatCurrency(subtotal, false)}</td>
+                          <td className="border border-gray-300 p-2"></td>
+                          <td className="border border-gray-300 p-2 text-right">{formatCurrency(totalCGST, false)}</td>
+                          <td className="border border-gray-300 p-2 text-right">{formatCurrency(totalSGST, false)}</td>
+                          <td className="border border-gray-300 p-2 text-right">{formatCurrency(totalIGST, false)}</td>
+                          <td className="border border-gray-300 p-2 text-right">{formatCurrency(grandTotal, false)}</td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>

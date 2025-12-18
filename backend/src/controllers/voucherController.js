@@ -465,9 +465,13 @@ module.exports = {
 
       const createdVoucher = await req.tenantModels.Voucher.findByPk(voucher.id, {
         include: [
-          { model: req.tenantModels.VoucherItem },
-          { model: req.tenantModels.VoucherLedgerEntry, include: [{ model: req.tenantModels.Ledger }] },
-          { model: req.tenantModels.Ledger, as: 'partyLedger' },
+          { model: req.tenantModels.VoucherItem, required: false },
+          { 
+            model: req.tenantModels.VoucherLedgerEntry, 
+            required: false,
+            include: [{ model: req.tenantModels.Ledger, required: false }] 
+          },
+          { model: req.tenantModels.Ledger, as: 'partyLedger', required: false },
         ],
       });
 
@@ -482,20 +486,42 @@ module.exports = {
     try {
       const { id } = req.params;
       
-      const voucher = await req.tenantModels.Voucher.findByPk(id, {
-        include: [
-          { model: req.tenantModels.VoucherItem, required: false },
-          { 
-            model: req.tenantModels.VoucherLedgerEntry, 
-            required: false,
-            include: [{ 
-              model: req.tenantModels.Ledger,
+      // Try to get voucher with all includes
+      let voucher;
+      try {
+        voucher = await req.tenantModels.Voucher.findByPk(id, {
+          include: [
+            { model: req.tenantModels.VoucherItem, required: false },
+            { 
+              model: req.tenantModels.VoucherLedgerEntry, 
               required: false,
-            }] 
-          },
-          { model: req.tenantModels.Ledger, as: 'partyLedger', required: false },
-        ],
-      });
+              include: [{ 
+                model: req.tenantModels.Ledger,
+                required: false,
+              }] 
+            },
+            { model: req.tenantModels.Ledger, as: 'partyLedger', required: false },
+          ],
+        });
+      } catch (includeError) {
+        // If include fails (e.g., missing columns), try without includes first
+        logger.warn('Error with includes, retrying without:', includeError.message);
+        voucher = await req.tenantModels.Voucher.findByPk(id);
+        if (voucher) {
+          // Manually load related data
+          voucher.voucher_items = await req.tenantModels.VoucherItem.findAll({ 
+            where: { voucher_id: id } 
+          }).catch(() => []);
+          voucher.voucher_ledger_entries = await req.tenantModels.VoucherLedgerEntry.findAll({ 
+            where: { voucher_id: id },
+            include: [{ model: req.tenantModels.Ledger, required: false }]
+          }).catch(() => []);
+          if (voucher.party_ledger_id) {
+            voucher.partyLedger = await req.tenantModels.Ledger.findByPk(voucher.party_ledger_id)
+              .catch(() => null);
+          }
+        }
+      }
       
       if (!voucher) return res.status(404).json({ message: 'Voucher not found' });
       
@@ -575,9 +601,13 @@ module.exports = {
       await t.commit();
       const updatedVoucher = await req.tenantModels.Voucher.findByPk(voucher.id, {
         include: [
-          { model: req.tenantModels.VoucherItem },
-          { model: req.tenantModels.VoucherLedgerEntry, include: [{ model: req.tenantModels.Ledger }] },
-          { model: req.tenantModels.Ledger, as: 'partyLedger' },
+          { model: req.tenantModels.VoucherItem, required: false },
+          { 
+            model: req.tenantModels.VoucherLedgerEntry, 
+            required: false,
+            include: [{ model: req.tenantModels.Ledger, required: false }] 
+          },
+          { model: req.tenantModels.Ledger, as: 'partyLedger', required: false },
         ],
       });
       res.json({ voucher: updatedVoucher });
