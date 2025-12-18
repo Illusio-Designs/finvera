@@ -56,6 +56,20 @@ module.exports = {
   async getDashboard(req, res, next) {
     try {
       const { tenantModels, tenantDb, masterModels } = req;
+      
+      if (!tenantModels) {
+        return res.status(500).json({
+          success: false,
+          message: 'Tenant models not available',
+        });
+      }
+      
+      if (!masterModels) {
+        return res.status(500).json({
+          success: false,
+          message: 'Master models not available',
+        });
+      }
 
       // Calculate date ranges
       const now = new Date();
