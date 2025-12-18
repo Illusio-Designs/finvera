@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   FiHome, FiFolder, FiFileText, FiTrendingUp, FiTrendingDown,
   FiDollarSign, FiCreditCard, FiRefreshCw, FiFile, FiBarChart2,
-  FiShield, FiPercent, FiFileMinus, FiMail, FiSettings, FiUser, FiGift,
+  FiShield, FiPercent, FiFileMinus, FiFilePlus, FiMail, FiSettings, FiUser, FiGift,
   FiPackage, FiLayers, FiMove, FiEdit
 } from 'react-icons/fi';
 
@@ -51,6 +51,12 @@ const getClientMenuItems = () => [
       { label: 'Receipt', href: '/client/vouchers/receipt', icon: FiCreditCard },
       { label: 'Journal', href: '/client/vouchers/journal', icon: FiFileText },
       { label: 'Contra', href: '/client/vouchers/contra', icon: FiRefreshCw },
+      { label: 'Debit Note', href: '/client/vouchers/debit-note', icon: FiFileMinus },
+      { label: 'Credit Note', href: '/client/vouchers/credit-note', icon: FiFilePlus },
+      { label: 'GST Payment', href: '/client/vouchers/gst-payment', icon: FiShield },
+      { label: 'GST Utilization', href: '/client/vouchers/gst-utilization', icon: FiShield },
+      { label: 'TDS Payment', href: '/client/vouchers/tds-payment', icon: FiPercent },
+      { label: 'TDS Settlement', href: '/client/vouchers/tds-settlement', icon: FiPercent },
     ],
   },
   {

@@ -8,6 +8,8 @@ import Button from '../../components/ui/Button';
 import FormInput from '../../components/forms/FormInput';
 import FormSelect from '../../components/forms/FormSelect';
 import FormTextarea from '../../components/forms/FormTextarea';
+import FormDatePicker from '../../components/forms/FormDatePicker';
+import FormPasswordInput from '../../components/forms/FormPasswordInput';
 import DataTable from '../../components/tables/DataTable';
 import toast from 'react-hot-toast';
 import { companyAPI } from '../../lib/api';
@@ -63,6 +65,19 @@ export default function CompaniesPage() {
     tds_applicable: false,
     gst_registered: false,
     professional_tax_registered: false,
+    // E-Invoice Configuration
+    e_invoice_applicable: false,
+    e_invoice_username: '',
+    e_invoice_password: '',
+    e_invoice_client_id: '',
+    e_invoice_client_secret: '',
+    e_invoice_threshold: '50000000', // 5 Crore default threshold
+    // E-Way Bill Configuration
+    e_way_bill_applicable: false,
+    e_way_bill_username: '',
+    e_way_bill_password: '',
+    e_way_bill_client_id: '',
+    e_way_bill_client_secret: '',
   });
 
   // Fetch companies and status
@@ -124,9 +139,33 @@ export default function CompaniesPage() {
       bank_branch: '',
       bank_account_number: '',
       bank_ifsc: '',
+      // E-Invoice Configuration
+      e_invoice_applicable: false,
+      e_invoice_username: '',
+      e_invoice_password: '',
+      e_invoice_client_id: '',
+      e_invoice_client_secret: '',
+      e_invoice_threshold: '50000000',
+      // E-Way Bill Configuration
+      e_way_bill_applicable: false,
+      e_way_bill_username: '',
+      e_way_bill_password: '',
+      e_way_bill_client_id: '',
+      e_way_bill_client_secret: '',
       tds_applicable: false,
       gst_registered: false,
       professional_tax_registered: false,
+      e_invoice_applicable: false,
+      e_invoice_username: '',
+      e_invoice_password: '',
+      e_invoice_client_id: '',
+      e_invoice_client_secret: '',
+      e_invoice_threshold: '50000000',
+      e_way_bill_applicable: false,
+      e_way_bill_username: '',
+      e_way_bill_password: '',
+      e_way_bill_client_id: '',
+      e_way_bill_client_secret: '',
     });
     setFormErrors({});
     setShowForm(false);
@@ -197,6 +236,23 @@ export default function CompaniesPage() {
         tds_applicable: !!formData.tds_applicable,
         gst_registered: !!formData.gst_registered,
         professional_tax_registered: !!formData.professional_tax_registered,
+        // E-Invoice Configuration
+        e_invoice: {
+          applicable: formData.e_invoice_applicable,
+          username: formData.e_invoice_username?.trim() || null,
+          password: formData.e_invoice_password?.trim() || null,
+          client_id: formData.e_invoice_client_id?.trim() || null,
+          client_secret: formData.e_invoice_client_secret?.trim() || null,
+          threshold: formData.e_invoice_threshold ? parseFloat(formData.e_invoice_threshold) : 50000000,
+        },
+        // E-Way Bill Configuration
+        e_way_bill: {
+          applicable: formData.e_way_bill_applicable,
+          username: formData.e_way_bill_username?.trim() || null,
+          password: formData.e_way_bill_password?.trim() || null,
+          client_id: formData.e_way_bill_client_id?.trim() || null,
+          client_secret: formData.e_way_bill_client_secret?.trim() || null,
+        },
       },
     };
   }, [formData]);
@@ -362,10 +418,9 @@ export default function CompaniesPage() {
                         placeholder="e.g. U12345MH2025PTC123456"
                       />
                     )}
-                    <FormInput
+                    <FormDatePicker
                       name="incorporation_date"
                       label="Date of Incorporation"
-                      type="date"
                       value={formData.incorporation_date}
                       onChange={handleChange}
                     />
@@ -512,17 +567,15 @@ export default function CompaniesPage() {
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-gray-900">Financial & Accounting</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormInput
+                    <FormDatePicker
                       name="financial_year_start"
                       label="Financial Year Start"
-                      type="date"
                       value={formData.financial_year_start}
                       onChange={handleChange}
                     />
-                    <FormInput
+                    <FormDatePicker
                       name="financial_year_end"
                       label="Financial Year End"
-                      type="date"
                       value={formData.financial_year_end}
                       onChange={handleChange}
                     />
@@ -534,10 +587,9 @@ export default function CompaniesPage() {
                       error={formErrors.currency}
                       touched={!!formErrors.currency}
                     />
-                    <FormInput
+                    <FormDatePicker
                       name="books_beginning_date"
                       label="Books Beginning Date"
-                      type="date"
                       value={formData.books_beginning_date}
                       onChange={handleChange}
                     />
@@ -575,20 +627,133 @@ export default function CompaniesPage() {
                 </div>
 
                 {formData.gstin && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Compliance</h3>
-                    <div className="grid grid-cols-1 gap-4">
-                      <label className="flex items-center gap-2 text-sm text-gray-700">
-                        <input
-                          type="checkbox"
-                          checked={formData.professional_tax_registered}
-                          onChange={(e) =>
-                            handleChange('professional_tax_registered', e.target.checked)
-                          }
-                          className="h-4 w-4"
-                        />
-                        Professional tax registered
-                      </label>
+                  <div className="space-y-6">
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-gray-900">Compliance</h3>
+                      <div className="grid grid-cols-1 gap-4">
+                        <label className="flex items-center gap-2 text-sm text-gray-700">
+                          <input
+                            type="checkbox"
+                            checked={formData.professional_tax_registered}
+                            onChange={(e) =>
+                              handleChange('professional_tax_registered', e.target.checked)
+                            }
+                            className="h-4 w-4"
+                          />
+                          Professional tax registered
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* E-Invoice Configuration */}
+                    <div className="space-y-4 border-t pt-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-gray-900">E-Invoice Configuration</h3>
+                        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.e_invoice_applicable}
+                            onChange={(e) => handleChange('e_invoice_applicable', e.target.checked)}
+                            className="h-4 w-4"
+                          />
+                          <span>E-Invoice Applicable</span>
+                        </label>
+                      </div>
+                      
+                      {formData.e_invoice_applicable && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                          <FormInput
+                            name="e_invoice_username"
+                            label="API Username"
+                            type="text"
+                            value={formData.e_invoice_username}
+                            onChange={handleChange}
+                            placeholder="E-invoice portal username"
+                          />
+                          <FormPasswordInput
+                            name="e_invoice_password"
+                            label="API Password"
+                            value={formData.e_invoice_password}
+                            onChange={handleChange}
+                            placeholder="E-invoice portal password"
+                          />
+                          <FormInput
+                            name="e_invoice_client_id"
+                            label="Client ID"
+                            type="text"
+                            value={formData.e_invoice_client_id}
+                            onChange={handleChange}
+                            placeholder="GSP/Client ID"
+                          />
+                          <FormPasswordInput
+                            name="e_invoice_client_secret"
+                            label="Client Secret"
+                            value={formData.e_invoice_client_secret}
+                            onChange={handleChange}
+                            placeholder="GSP/Client Secret"
+                          />
+                          <FormInput
+                            name="e_invoice_threshold"
+                            label="E-Invoice Threshold (₹)"
+                            type="number"
+                            value={formData.e_invoice_threshold}
+                            onChange={handleChange}
+                            placeholder="50000000"
+                            helperText="Annual turnover threshold for e-invoice applicability (default: 5 Crore)"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* E-Way Bill Configuration */}
+                    <div className="space-y-4 border-t pt-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-gray-900">E-Way Bill Configuration</h3>
+                        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.e_way_bill_applicable}
+                            onChange={(e) => handleChange('e_way_bill_applicable', e.target.checked)}
+                            className="h-4 w-4"
+                          />
+                          <span>E-Way Bill Applicable</span>
+                        </label>
+                      </div>
+                      
+                      {formData.e_way_bill_applicable && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                          <FormInput
+                            name="e_way_bill_username"
+                            label="API Username"
+                            type="text"
+                            value={formData.e_way_bill_username}
+                            onChange={handleChange}
+                            placeholder="E-way bill portal username"
+                          />
+                          <FormPasswordInput
+                            name="e_way_bill_password"
+                            label="API Password"
+                            value={formData.e_way_bill_password}
+                            onChange={handleChange}
+                            placeholder="E-way bill portal password"
+                          />
+                          <FormInput
+                            name="e_way_bill_client_id"
+                            label="Client ID"
+                            type="text"
+                            value={formData.e_way_bill_client_id}
+                            onChange={handleChange}
+                            placeholder="GSP/Client ID"
+                          />
+                          <FormPasswordInput
+                            name="e_way_bill_client_secret"
+                            label="Client Secret"
+                            value={formData.e_way_bill_client_secret}
+                            onChange={handleChange}
+                            placeholder="GSP/Client Secret"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

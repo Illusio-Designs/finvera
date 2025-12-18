@@ -73,8 +73,8 @@ export const useTable = (fetchFunction, initialParams = {}) => {
       // Handle axios response structure: response.data contains the actual data
       const responseData = response.data || response;
       
-      // Extract data array - could be in responseData.data or responseData.items
-      const items = responseData.data || responseData.items || [];
+      // Extract data array - could be in responseData.data, responseData.items, or responseData.vouchers
+      const items = responseData.data || responseData.items || responseData.vouchers || [];
       setData(Array.isArray(items) ? items : []);
       
       // Handle pagination in nested object or direct format

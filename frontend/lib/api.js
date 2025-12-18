@@ -123,6 +123,8 @@ export const companyAPI = {
   list: () => api.get("/companies"),
   status: () => api.get("/companies/status"),
   create: (data) => api.post("/companies", data),
+  get: (id) => api.get(`/companies/${id}`),
+  update: (id, data) => api.put(`/companies/${id}`, data),
 };
 
 export const hsnAPI = {
@@ -275,6 +277,10 @@ export const accountingAPI = {
   journals: {
     create: (data) => api.post("/accounting/journals", data),
   },
+  // Contra
+  contra: {
+    create: (data) => api.post("/accounting/contra", data),
+  },
   // Vouchers
   vouchers: {
     list: (params) => api.get("/accounting/vouchers", { params }),
@@ -312,7 +318,7 @@ export const accountingAPI = {
       update: (id, data) => api.put(`/accounting/inventory/items/${id}`, data),
       delete: (id) => api.delete(`/accounting/inventory/items/${id}`),
       setOpeningStock: (id, data) => api.post(`/accounting/inventory/items/${id}/opening-stock`, data),
-      getWarehouseStock: (id) => api.get(`/accounting/inventory/items/${id}/warehouse-stock`),
+      getWarehouseStock: (id, params) => api.get(`/accounting/inventory/items/${id}/warehouse-stock`, { params }),
     },
   },
   // Warehouses

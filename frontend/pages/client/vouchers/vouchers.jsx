@@ -12,7 +12,7 @@ import { accountingAPI } from '../../../lib/api';
 import Badge from '../../../components/ui/Badge';
 import { formatCurrency, formatDate } from '../../../lib/formatters';
 import toast from 'react-hot-toast';
-import { FiPlus, FiEdit, FiTrash2, FiSave, FiX, FiEye, FiFileText, FiArrowLeft, FiTrendingUp, FiTrendingDown, FiDollarSign, FiCreditCard, FiRefreshCw } from 'react-icons/fi';
+import { FiPlus, FiEdit, FiTrash2, FiSave, FiX, FiEye, FiFileText, FiArrowLeft, FiTrendingUp, FiTrendingDown, FiDollarSign, FiCreditCard, FiRefreshCw, FiFileMinus, FiFilePlus, FiShield, FiPercent } from 'react-icons/fi';
 
 const VOUCHER_TYPES = [
   { value: 'sales_invoice', label: 'Sales Invoice', icon: FiTrendingUp, href: '/client/vouchers/sales-invoice' },
@@ -21,6 +21,12 @@ const VOUCHER_TYPES = [
   { value: 'receipt', label: 'Receipt', icon: FiCreditCard, href: '/client/vouchers/receipt' },
   { value: 'journal', label: 'Journal', icon: FiFileText, href: '/client/vouchers/journal' },
   { value: 'contra', label: 'Contra', icon: FiRefreshCw, href: '/client/vouchers/contra' },
+  { value: 'debit_note', label: 'Debit Note', icon: FiFileMinus, href: '/client/vouchers/debit-note' },
+  { value: 'credit_note', label: 'Credit Note', icon: FiFilePlus, href: '/client/vouchers/credit-note' },
+  { value: 'gst_payment', label: 'GST Payment', icon: FiShield, href: '/client/vouchers/gst-payment' },
+  { value: 'gst_utilization', label: 'GST Utilization', icon: FiShield, href: '/client/vouchers/gst-utilization' },
+  { value: 'tds_payment', label: 'TDS Payment', icon: FiPercent, href: '/client/vouchers/tds-payment' },
+  { value: 'tds_settlement', label: 'TDS Settlement', icon: FiPercent, href: '/client/vouchers/tds-settlement' },
 ];
 
 export default function VouchersList() {
@@ -44,17 +50,38 @@ export default function VouchersList() {
       label: 'Type',
       sortable: true,
       render: (value) => {
+        // Normalize voucher type for color mapping (handle both backend and frontend formats)
+        const normalizedType = (value || '').toLowerCase().replace(/\s+/g, '_');
+        
         const typeColors = {
+          sales: 'success',
           sales_invoice: 'success',
+          purchase: 'warning',
           purchase_invoice: 'warning',
           payment: 'primary',
           receipt: 'success',
           journal: 'default',
           contra: 'primary',
+          debit_note: 'warning',
+          'debit note': 'warning',
+          credit_note: 'success',
+          'credit note': 'success',
+          gst_payment: 'primary',
+          'gst payment': 'primary',
+          gst_utilization: 'primary',
+          'gst utilization': 'primary',
+          tds_payment: 'warning',
+          'tds payment': 'warning',
+          tds_settlement: 'warning',
+          'tds settlement': 'warning',
         };
+        
+        const badgeColor = typeColors[normalizedType] || typeColors[value?.toLowerCase()] || 'default';
+        const displayValue = value || 'N/A';
+        
         return (
-          <Badge variant={typeColors[value] || 'default'}>
-            {value ? value.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A'}
+          <Badge variant={badgeColor}>
+            {displayValue}
           </Badge>
         );
       },
@@ -175,7 +202,7 @@ export default function VouchersList() {
         >
           {/* Voucher Type Quick Actions */}
           <Card title="Create Voucher" className="mb-6">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
               {VOUCHER_TYPES.map((voucherType) => {
                 const Icon = voucherType.icon;
                 return (
@@ -197,7 +224,7 @@ export default function VouchersList() {
           <Card className="shadow-sm border border-gray-200">
             <DataTable
               columns={columns}
-              data={tableData?.data || tableData || []}
+              data={tableData || []}
               loading={loading}
               pagination={pagination}
               onPageChange={handlePageChange}
