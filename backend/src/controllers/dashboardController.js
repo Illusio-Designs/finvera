@@ -192,9 +192,21 @@ module.exports = {
 
       // Calculate receivables and payables from ledger balances
       // Get all ledgers and their account groups
-      const allLedgers = await tenantModels.Ledger.findAll({ where: { is_active: true } });
-      const groupMap = await loadGroupMap(masterModels, allLedgers);
-      const moveMap = await movementByLedger(tenantModels, {});
+      let allLedgers = [];
+      let groupMap = new Map();
+      let moveMap = new Map();
+      
+      try {
+        allLedgers = await tenantModels.Ledger.findAll({ where: { is_active: true } });
+        groupMap = await loadGroupMap(masterModels, allLedgers);
+        moveMap = await movementByLedger(tenantModels, {});
+      } catch (err) {
+        logger.error('Error loading ledgers for dashboard:', err);
+        // Continue with empty data if ledger loading fails
+        allLedgers = [];
+        groupMap = new Map();
+        moveMap = new Map();
+      }
 
       let receivables = 0;
       let payables = 0;
