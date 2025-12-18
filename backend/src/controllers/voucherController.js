@@ -1,4 +1,5 @@
 const { Op } = require('sequelize');
+const logger = require('../utils/logger');
 
 function toNum(v, fallback = 0) {
   const n = parseFloat(v);
@@ -368,7 +369,26 @@ module.exports = {
 
       let createdItems = [];
       if (items && items.length > 0) {
-        const voucherItems = items.map((it) => ({ voucher_id: voucher.id, ...it }));
+        const voucherItems = items.map((it) => ({
+          voucher_id: voucher.id,
+          inventory_item_id: it.inventory_item_id || null,
+          warehouse_id: it.warehouse_id || null,
+          item_code: it.item_code || null,
+          item_description: it.item_description || it.description || 'Item',
+          hsn_sac_code: it.hsn_sac_code || null,
+          uqc: it.uqc || null,
+          quantity: toNum(it.quantity, 1),
+          rate: toNum(it.rate, 0),
+          discount_percent: toNum(it.discount_percent, 0),
+          discount_amount: toNum(it.discount_amount, 0),
+          taxable_amount: toNum(it.taxable_amount, 0),
+          gst_rate: toNum(it.gst_rate, 0),
+          cgst_amount: toNum(it.cgst_amount, 0),
+          sgst_amount: toNum(it.sgst_amount, 0),
+          igst_amount: toNum(it.igst_amount, 0),
+          cess_amount: toNum(it.cess_amount, 0),
+          total_amount: toNum(it.total_amount, 0),
+        }));
         createdItems = await req.tenantModels.VoucherItem.bulkCreate(voucherItems, { transaction: t });
       }
 
@@ -461,16 +481,27 @@ module.exports = {
   async getById(req, res, next) {
     try {
       const { id } = req.params;
+      
       const voucher = await req.tenantModels.Voucher.findByPk(id, {
         include: [
-          { model: req.tenantModels.VoucherItem },
-          { model: req.tenantModels.VoucherLedgerEntry, include: [{ model: req.tenantModels.Ledger }] },
-          { model: req.tenantModels.Ledger, as: 'partyLedger' },
+          { model: req.tenantModels.VoucherItem, required: false },
+          { 
+            model: req.tenantModels.VoucherLedgerEntry, 
+            required: false,
+            include: [{ 
+              model: req.tenantModels.Ledger,
+              required: false,
+            }] 
+          },
+          { model: req.tenantModels.Ledger, as: 'partyLedger', required: false },
         ],
       });
+      
       if (!voucher) return res.status(404).json({ message: 'Voucher not found' });
+      
       res.json({ voucher });
     } catch (err) {
+      logger.error('Error in voucher getById:', err);
       next(err);
     }
   },
@@ -495,10 +526,27 @@ module.exports = {
       if (items) {
         await req.tenantModels.VoucherItem.destroy({ where: { voucher_id: id }, transaction: t });
         if (items.length > 0) {
-          await req.tenantModels.VoucherItem.bulkCreate(
-            items.map((it) => ({ voucher_id: voucher.id, ...it })),
-            { transaction: t }
-          );
+          const voucherItems = items.map((it) => ({
+            voucher_id: voucher.id,
+            inventory_item_id: it.inventory_item_id || null,
+            warehouse_id: it.warehouse_id || null,
+            item_code: it.item_code || null,
+            item_description: it.item_description || it.description || 'Item',
+            hsn_sac_code: it.hsn_sac_code || null,
+            uqc: it.uqc || null,
+            quantity: toNum(it.quantity, 1),
+            rate: toNum(it.rate, 0),
+            discount_percent: toNum(it.discount_percent, 0),
+            discount_amount: toNum(it.discount_amount, 0),
+            taxable_amount: toNum(it.taxable_amount, 0),
+            gst_rate: toNum(it.gst_rate, 0),
+            cgst_amount: toNum(it.cgst_amount, 0),
+            sgst_amount: toNum(it.sgst_amount, 0),
+            igst_amount: toNum(it.igst_amount, 0),
+            cess_amount: toNum(it.cess_amount, 0),
+            total_amount: toNum(it.total_amount, 0),
+          }));
+          await req.tenantModels.VoucherItem.bulkCreate(voucherItems, { transaction: t });
         }
       }
 

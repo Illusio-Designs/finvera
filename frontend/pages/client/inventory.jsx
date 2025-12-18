@@ -529,7 +529,7 @@ export default function InventoryPage() {
                   {warehouseOpeningStocks.length === 0 && (
                     <div className="text-center py-8 text-gray-500">
                       <p>
-                        No warehouse opening stock entries. Click "Add Warehouse" to add one.
+                        No warehouse opening stock entries. Click &quot;Add Warehouse&quot; to add one.
                       </p>
                     </div>
                   )}

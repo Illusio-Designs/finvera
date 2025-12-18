@@ -91,7 +91,7 @@ export default function SearchableHSNSelect({
       setSelectedHSN(null);
       setSearchTerm('');
     }
-  }, [value]);
+  }, [value, selectedHSN, searchTerm]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

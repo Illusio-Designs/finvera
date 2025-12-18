@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'next/router';
 import { getProfileImageUrl } from '../../lib/imageUtils';
@@ -117,7 +118,7 @@ export default function Header({ onMenuClick, title, actions }) {
     if (mounted && user) {
       fetchCompanies();
     }
-  }, [user?.id, user?.user_id, mounted]); // Only depend on user ID, not the whole user object
+  }, [user, companies.length, mounted]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -173,10 +174,13 @@ export default function Header({ onMenuClick, title, actions }) {
         {/* Left: Logo and Menu button */}
         <div className="flex items-center gap-3">
           {/* Logo */}
-          <img 
+          <Image 
             src="/logo.png" 
             alt="Finverra" 
+            width={200}
+            height={176}
             className="h-[11rem] w-auto object-contain"
+            priority
           />
           {/* Menu button (mobile only) */}
           {onMenuClick && (
@@ -304,16 +308,18 @@ export default function Header({ onMenuClick, title, actions }) {
               >
                 {user?.profile_image ? (
                   <div className="relative h-8 w-8">
-                    <img
+                    <Image
                       src={getProfileImageUrl(user.profile_image) || ''}
                       alt={user?.name || user?.email || 'User'}
-                      className="h-8 w-8 rounded-full object-cover border-2 border-primary-200"
+                      fill
+                      className="rounded-full object-cover border-2 border-primary-200"
                       onError={(e) => {
                         // Hide image and show fallback
                         e.target.style.display = 'none';
                         const fallback = e.target.nextElementSibling;
                         if (fallback) fallback.classList.remove('hidden');
                       }}
+                      unoptimized
                     />
                     <div className="hidden h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-sm font-medium absolute top-0 left-0">
                       {(user?.name?.charAt(0) || user?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()}

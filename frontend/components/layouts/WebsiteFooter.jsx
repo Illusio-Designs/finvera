@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function WebsiteFooter() {
   return (
@@ -8,10 +9,12 @@ export default function WebsiteFooter() {
           {/* Company Info */}
           <div className="col-span-1 md:col-span-2">
             <div className="mb-4">
-              <img 
+              <Image 
                 src="/logo.png" 
                 alt="Finvera" 
-                className="h-10 w-auto brightness-0 invert"
+                width={120}
+                height={40}
+                className="h-10 w-auto object-contain brightness-0 invert"
               />
             </div>
             <p className="text-primary-200 mb-4 max-w-md">

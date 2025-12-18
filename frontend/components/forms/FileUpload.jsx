@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Image from 'next/image';
 import Button from '../ui/Button';
 
 export default function FileUpload({
@@ -108,8 +109,14 @@ export default function FileUpload({
         )}
       </div>
       {preview && (
-        <div className="mt-4">
-          <img src={preview} alt="Preview" className="max-w-xs max-h-48 rounded-md" />
+        <div className="mt-4 relative w-full max-w-xs h-48">
+          <Image 
+            src={preview} 
+            alt="Preview" 
+            fill
+            className="object-contain rounded-md" 
+            unoptimized
+          />
         </div>
       )}
       {error && touched && (
