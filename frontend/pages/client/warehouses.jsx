@@ -5,6 +5,7 @@ import PageLayout from '../../components/layouts/PageLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import FormInput from '../../components/forms/FormInput';
+import FormTextarea from '../../components/forms/FormTextarea';
 import DataTable from '../../components/tables/DataTable';
 import { accountingAPI } from '../../lib/api';
 import { useTable } from '../../hooks/useTable';
@@ -274,14 +275,13 @@ export default function WarehousesPage() {
                     placeholder="Enter warehouse code (optional)"
                   />
 
-                  <FormInput
+                  <FormTextarea
                     name="address"
                     label="Address"
                     value={formData.address}
                     onChange={(name, value) => handleChange(name, value)}
                     error={errors.address}
                     placeholder="Enter address"
-                    multiline
                   />
 
                   <FormInput

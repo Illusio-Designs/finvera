@@ -295,14 +295,20 @@ module.exports = {
   async getStockByWarehouse(req, res, next) {
     try {
       const { id } = req.params; // inventory_item_id
+      const { warehouse_id } = req.query;
 
       const item = await req.tenantModels.InventoryItem.findByPk(id);
       if (!item) {
         return res.status(404).json({ error: 'Inventory item not found' });
       }
 
+      const where = { inventory_item_id: id };
+      if (warehouse_id) {
+        where.warehouse_id = warehouse_id;
+      }
+
       const warehouseStocks = await req.tenantModels.WarehouseStock.findAll({
-        where: { inventory_item_id: id },
+        where,
         include: [
           {
             model: req.tenantModels.Warehouse,
@@ -320,7 +326,12 @@ module.exports = {
         stock_value: (parseFloat(ws.quantity) || 0) * (parseFloat(ws.avg_cost) || 0),
       }));
 
-      res.json({ data });
+      // If warehouse_id is specified and we found a match, return single object; otherwise return array
+      if (warehouse_id && data.length === 1) {
+        res.json({ data: data[0] });
+      } else {
+        res.json({ data });
+      }
     } catch (error) {
       logger.error('Error getting stock by warehouse:', error);
       next(error);

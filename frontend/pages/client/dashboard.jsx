@@ -11,7 +11,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   FiFileText, FiFolder, FiTrendingUp, FiDollarSign,
-  FiBarChart2, FiArrowRight, FiFile, FiCreditCard, FiShoppingCart, FiTrendingDown
+  FiBarChart2, FiArrowRight, FiFile, FiCreditCard, FiShoppingCart, FiTrendingDown, FiShield
 } from 'react-icons/fi';
 
 const formatCurrency = (amount) => {
@@ -47,6 +47,7 @@ export default function ClientDashboard() {
       total_outstanding: 0,
       receivables: 0,
       payables: 0,
+      gst_credit: 0,
       current_month_sales: 0,
       current_month_purchase: 0,
       active_ledgers: 0,
@@ -89,6 +90,7 @@ export default function ClientDashboard() {
             total_outstanding: 0,
             receivables: 0,
             payables: 0,
+            gst_credit: 0,
             current_month_sales: 0,
             current_month_purchase: 0,
             active_ledgers: 0,
@@ -166,6 +168,14 @@ export default function ClientDashboard() {
       icon: FiTrendingDown,
       color: 'bg-red-500',
       href: '/client/accounting/outstanding'
+    },
+    {
+      title: 'GST Credit',
+      value: formatCurrency(stats.gst_credit || 0),
+      subtitle: 'Available ITC',
+      icon: FiShield,
+      color: 'bg-green-500',
+      href: '/client/gst/returns/gstr3b'
     },
     {
       title: 'Payments',

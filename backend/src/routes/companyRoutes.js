@@ -16,6 +16,8 @@ router.use(requireTenant);
 router.get('/', requireRole(ROLES.TENANT_ADMIN, ROLES.USER, ROLES.ACCOUNTANT), companyController.list);
 router.get('/status', requireRole(ROLES.TENANT_ADMIN, ROLES.USER, ROLES.ACCOUNTANT), companyController.status);
 router.post('/', requireRole(ROLES.TENANT_ADMIN, ROLES.USER), companyController.create);
+router.get('/:id', requireRole(ROLES.TENANT_ADMIN, ROLES.USER, ROLES.ACCOUNTANT), companyController.getById);
+router.put('/:id', requireRole(ROLES.TENANT_ADMIN, ROLES.USER), companyController.update);
 
 module.exports = router;
 

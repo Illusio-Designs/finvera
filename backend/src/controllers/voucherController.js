@@ -29,7 +29,19 @@ async function getOrCreateSystemLedger({ tenantModels, masterModels }, { ledgerC
   });
 }
 
-function voucherPrefix(voucherType) {
+function voucherPrefix(voucherType, company = null) {
+  // Check company configuration first
+  if (company?.compliance?.invoice_numbering) {
+    const config = company.compliance.invoice_numbering;
+    if (voucherType === 'Sales' && config.sales?.prefix) {
+      return config.sales.prefix;
+    }
+    if (voucherType === 'Purchase' && config.purchase?.prefix) {
+      return config.purchase.prefix;
+    }
+  }
+  
+  // Fallback to defaults
   const map = {
     Sales: 'INV',
     Purchase: 'PUR',
@@ -41,21 +53,60 @@ function voucherPrefix(voucherType) {
   return map[voucherType] || 'VCH';
 }
 
-async function generateVoucherNumber(tenantModels, voucherType) {
-  const prefix = voucherPrefix(voucherType);
-  const like = `${prefix}-%`;
+function getVoucherSuffix(voucherType, company = null) {
+  if (company?.compliance?.invoice_numbering) {
+    const config = company.compliance.invoice_numbering;
+    if (voucherType === 'Sales' && config.sales?.suffix) {
+      return config.sales.suffix;
+    }
+    if (voucherType === 'Purchase' && config.purchase?.suffix) {
+      return config.purchase.suffix;
+    }
+  }
+  return '';
+}
+
+function getVoucherPadding(voucherType, company = null) {
+  if (company?.compliance?.invoice_numbering) {
+    const config = company.compliance.invoice_numbering;
+    if (voucherType === 'Sales' && config.sales?.padding) {
+      return parseInt(config.sales.padding, 10) || 6;
+    }
+    if (voucherType === 'Purchase' && config.purchase?.padding) {
+      return parseInt(config.purchase.padding, 10) || 6;
+    }
+  }
+  return 6;
+}
+
+async function generateVoucherNumber(tenantModels, voucherType, company = null) {
+  const prefix = voucherPrefix(voucherType, company);
+  const suffix = getVoucherSuffix(voucherType, company);
+  const padding = getVoucherPadding(voucherType, company);
+  
+  // Build search pattern - handle both with and without suffix
+  const likePattern = suffix ? `${prefix}-%${suffix}` : `${prefix}-%`;
   const last = await tenantModels.Voucher.findOne({
-    where: { voucher_type: voucherType, voucher_number: { [Op.like]: like } },
+    where: {
+      voucher_type: voucherType,
+      voucher_number: { [Op.like]: likePattern },
+    },
     order: [['createdAt', 'DESC']],
   });
 
   let next = 1;
   if (last?.voucher_number) {
-    const m = String(last.voucher_number).match(/-(\d+)$/);
+    // Extract number between prefix and suffix
+    const pattern = suffix 
+      ? new RegExp(`${prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-(\\d+)${suffix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)
+      : new RegExp(`${prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-(\\d+)$`);
+    const m = String(last.voucher_number).match(pattern);
     const lastNum = m ? parseInt(m[1], 10) : NaN;
     if (Number.isFinite(lastNum)) next = lastNum + 1;
   }
-  return `${prefix}-${String(next).padStart(6, '0')}`;
+  
+  const numberPart = String(next).padStart(padding, '0');
+  return suffix ? `${prefix}-${numberPart}${suffix}` : `${prefix}-${numberPart}`;
 }
 
 async function applyPurchaseInventory({ tenantModels }, voucher, voucherItems, t) {
@@ -67,23 +118,57 @@ async function applyPurchaseInventory({ tenantModels }, voucher, voucherItems, t
     const keyRaw = (it.item_code || it.item_description || '').trim();
     if (!keyRaw) continue;
     const itemKey = (it.item_code || it.item_description).trim().toLowerCase();
+    const warehouseId = it.warehouse_id || null;
 
-    const [inv] = await tenantModels.InventoryItem.findOrCreate({
-      where: { item_key: itemKey },
-      defaults: {
-        item_key: itemKey,
-        item_code: it.item_code || null,
-        item_name: it.item_description || keyRaw,
-        hsn_sac_code: it.hsn_sac_code || null,
-        uqc: it.uqc || null,
-        gst_rate: it.gst_rate || null,
-        quantity_on_hand: 0,
-        avg_cost: 0,
-        is_active: true,
-      },
-      transaction: t,
-    });
+    // Try to find inventory item by ID first (if provided), then by item_key
+    let inv = null;
+    if (it.inventory_item_id) {
+      inv = await tenantModels.InventoryItem.findByPk(it.inventory_item_id, { transaction: t });
+    }
+    if (!inv) {
+      const [foundInv] = await tenantModels.InventoryItem.findOrCreate({
+        where: { item_key: itemKey },
+        defaults: {
+          item_key: itemKey,
+          item_code: it.item_code || null,
+          item_name: it.item_description || keyRaw,
+          hsn_sac_code: it.hsn_sac_code || null,
+          uqc: it.uqc || null,
+          gst_rate: it.gst_rate || null,
+          quantity_on_hand: 0,
+          avg_cost: 0,
+          is_active: true,
+        },
+        transaction: t,
+      });
+      inv = foundInv;
+    }
 
+    // Handle warehouse-specific stock if warehouse is specified
+    if (warehouseId && inv.id) {
+      const [warehouseStock] = await tenantModels.WarehouseStock.findOrCreate({
+        where: {
+          inventory_item_id: inv.id,
+          warehouse_id: warehouseId,
+        },
+        defaults: {
+          inventory_item_id: inv.id,
+          warehouse_id: warehouseId,
+          quantity: 0,
+          avg_cost: 0,
+        },
+        transaction: t,
+      });
+
+      const prevQty = toNum(warehouseStock.quantity, 0);
+      const prevAvg = toNum(warehouseStock.avg_cost, 0);
+      const newQty = prevQty + qty;
+      const newAvg = newQty > 0 ? ((prevQty * prevAvg) + (qty * costRate)) / newQty : 0;
+
+      await warehouseStock.update({ quantity: newQty, avg_cost: newAvg }, { transaction: t });
+    }
+
+    // Update aggregate inventory
     const prevQty = toNum(inv.quantity_on_hand, 0);
     const prevAvg = toNum(inv.avg_cost, 0);
     const newQty = prevQty + qty;
@@ -93,6 +178,7 @@ async function applyPurchaseInventory({ tenantModels }, voucher, voucherItems, t
     await tenantModels.StockMovement.create(
       {
         inventory_item_id: inv.id,
+        warehouse_id: warehouseId,
         voucher_id: voucher.id,
         movement_type: 'IN',
         quantity: qty,
@@ -113,17 +199,58 @@ async function applySalesInventoryAndGetCogs({ tenantModels }, voucher, voucherI
     const keyRaw = (it.item_code || it.item_description || '').trim();
     if (!keyRaw) continue;
     const itemKey = (it.item_code || it.item_description).trim().toLowerCase();
+    const warehouseId = it.warehouse_id || null;
 
-    const inv = await tenantModels.InventoryItem.findOne({ where: { item_key: itemKey }, transaction: t });
-    let invId = inv?.id;
-    const prevQty = toNum(inv?.quantity_on_hand, 0);
-    const avg = toNum(inv?.avg_cost, 0);
-    const newQty = prevQty - qty;
+    // Try to find inventory item by ID first (if provided), then by item_key
+    let inv = null;
+    let invId = it.inventory_item_id || null;
+    if (invId) {
+      inv = await tenantModels.InventoryItem.findByPk(invId, { transaction: t });
+    }
+    if (!inv) {
+      inv = await tenantModels.InventoryItem.findOne({ where: { item_key: itemKey }, transaction: t });
+      invId = inv?.id;
+    }
+    let avg = toNum(inv?.avg_cost, 0);
 
-    const cogs = qty * avg;
-    totalCogs += cogs;
+    // Handle warehouse-specific stock if warehouse is specified
+    if (warehouseId && invId) {
+      const warehouseStock = await tenantModels.WarehouseStock.findOne({
+        where: {
+          inventory_item_id: invId,
+          warehouse_id: warehouseId,
+        },
+        transaction: t,
+      });
 
+      if (warehouseStock) {
+        const prevQty = toNum(warehouseStock.quantity, 0);
+        const newQty = prevQty - qty;
+
+        if (newQty < 0) {
+          throw new Error(`Insufficient stock in warehouse. Available: ${prevQty}, Requested: ${qty}`);
+        }
+
+        avg = toNum(warehouseStock.avg_cost, 0);
+        await warehouseStock.update({ quantity: newQty }, { transaction: t });
+      } else {
+        // Warehouse stock doesn't exist - create with negative quantity
+        await tenantModels.WarehouseStock.create(
+          {
+            inventory_item_id: invId,
+            warehouse_id: warehouseId,
+            quantity: -qty,
+            avg_cost: avg,
+          },
+          { transaction: t }
+        );
+      }
+    }
+
+    // Update aggregate inventory
     if (inv) {
+      const prevQty = toNum(inv.quantity_on_hand, 0);
+      const newQty = prevQty - qty;
       await inv.update({ quantity_on_hand: newQty }, { transaction: t });
     } else {
       // Create negative stock record for visibility
@@ -135,7 +262,7 @@ async function applySalesInventoryAndGetCogs({ tenantModels }, voucher, voucherI
           hsn_sac_code: it.hsn_sac_code || null,
           uqc: it.uqc || null,
           gst_rate: it.gst_rate || null,
-          quantity_on_hand: newQty,
+          quantity_on_hand: -qty,
           avg_cost: 0,
           is_active: true,
         },
@@ -144,9 +271,13 @@ async function applySalesInventoryAndGetCogs({ tenantModels }, voucher, voucherI
       invId = created.id;
     }
 
+    const cogs = qty * avg;
+    totalCogs += cogs;
+
     await tenantModels.StockMovement.create(
       {
         inventory_item_id: invId,
+        warehouse_id: warehouseId,
         voucher_id: voucher.id,
         movement_type: 'OUT',
         quantity: qty,
@@ -182,7 +313,8 @@ module.exports = {
       });
 
       res.json({
-        vouchers: vouchers.rows,
+        data: vouchers.rows,
+        vouchers: vouchers.rows, // Keep for backward compatibility
         pagination: {
           total: vouchers.count,
           page: parseInt(page, 10),
@@ -214,7 +346,7 @@ module.exports = {
       } = req.body || {};
 
       const resolvedType = voucher_type || 'VCH';
-      const resolvedNumber = voucher_number || (await generateVoucherNumber(req.tenantModels, resolvedType));
+      const resolvedNumber = voucher_number || (await generateVoucherNumber(req.tenantModels, resolvedType, req.company));
       const resolvedStatus = status || 'posted';
 
       const voucher = await req.tenantModels.Voucher.create(

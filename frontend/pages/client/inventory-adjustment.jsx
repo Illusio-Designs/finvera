@@ -6,6 +6,7 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import FormInput from '../../components/forms/FormInput';
 import FormSelect from '../../components/forms/FormSelect';
+import FormTextarea from '../../components/forms/FormTextarea';
 import DataTable from '../../components/tables/DataTable';
 import { accountingAPI } from '../../lib/api';
 import { useTable } from '../../hooks/useTable';
@@ -258,14 +259,13 @@ export default function StockAdjustmentPage() {
                     helperText="Use positive number to increase stock, negative to decrease"
                   />
 
-                  <FormInput
+                  <FormTextarea
                     name="reason"
                     label="Reason/Narration"
                     value={formData.reason}
                     onChange={(name, value) => handleChange(name, value)}
                     error={errors.reason}
                     placeholder="Enter reason for adjustment"
-                    multiline
                   />
                 </div>
 

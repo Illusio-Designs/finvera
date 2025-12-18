@@ -177,5 +177,127 @@ module.exports = {
       return next(err);
     }
   },
+
+  async getById(req, res, next) {
+    try {
+      const Company = masterModels.Company;
+      const company = await Company.findOne({
+        where: { id: req.params.id, tenant_id: req.tenant_id, is_active: true },
+      });
+      if (!company) {
+        return res.status(404).json({ success: false, message: 'Company not found' });
+      }
+      return res.json({ success: true, data: company });
+    } catch (err) {
+      return next(err);
+    }
+  },
+
+  async update(req, res, next) {
+    try {
+      const Company = masterModels.Company;
+      const company = await Company.findOne({
+        where: { id: req.params.id, tenant_id: req.tenant_id, is_active: true },
+      });
+      if (!company) {
+        return res.status(404).json({ success: false, message: 'Company not found' });
+      }
+
+      const {
+        company_name,
+        company_type,
+        registration_number,
+        incorporation_date,
+        pan,
+        tan,
+        gstin,
+        registered_address,
+        state,
+        pincode,
+        contact_number,
+        email,
+        principals,
+        financial_year_start,
+        financial_year_end,
+        currency,
+        books_beginning_date,
+        bank_details,
+        compliance,
+      } = req.body || {};
+
+      // Only update fields that are provided
+      const updateData = {};
+      if (company_name !== undefined) updateData.company_name = company_name;
+      if (company_type !== undefined) updateData.company_type = company_type;
+      if (registration_number !== undefined) updateData.registration_number = registration_number || null;
+      if (incorporation_date !== undefined) updateData.incorporation_date = incorporation_date || null;
+      if (pan !== undefined) updateData.pan = pan || null;
+      if (tan !== undefined) updateData.tan = tan || null;
+      if (gstin !== undefined) updateData.gstin = gstin || null;
+      if (registered_address !== undefined) updateData.registered_address = registered_address || null;
+      if (state !== undefined) updateData.state = state || null;
+      if (pincode !== undefined) updateData.pincode = pincode || null;
+      if (contact_number !== undefined) updateData.contact_number = contact_number || null;
+      if (email !== undefined) updateData.email = email || null;
+      if (principals !== undefined) updateData.principals = principals || null;
+      if (financial_year_start !== undefined) updateData.financial_year_start = financial_year_start || null;
+      if (financial_year_end !== undefined) updateData.financial_year_end = financial_year_end || null;
+      if (currency !== undefined) updateData.currency = currency || 'INR';
+      if (books_beginning_date !== undefined) updateData.books_beginning_date = books_beginning_date || null;
+      if (bank_details !== undefined) updateData.bank_details = bank_details || null;
+      if (compliance !== undefined) {
+        // Merge with existing compliance data to preserve values not being updated
+        const existingCompliance = company.compliance || {};
+        const mergedCompliance = { ...existingCompliance };
+        
+        // Merge e_invoice
+        if (compliance.e_invoice) {
+          mergedCompliance.e_invoice = {
+            ...existingCompliance.e_invoice,
+            ...compliance.e_invoice,
+            // Only update password/secret if provided in the update (property exists)
+            password: compliance.e_invoice.hasOwnProperty('password') 
+              ? (compliance.e_invoice.password || null)
+              : (existingCompliance.e_invoice?.password || null),
+            client_secret: compliance.e_invoice.hasOwnProperty('client_secret')
+              ? (compliance.e_invoice.client_secret || null)
+              : (existingCompliance.e_invoice?.client_secret || null),
+          };
+        }
+        
+        // Merge e_way_bill
+        if (compliance.e_way_bill) {
+          mergedCompliance.e_way_bill = {
+            ...existingCompliance.e_way_bill,
+            ...compliance.e_way_bill,
+            // Only update password/secret if provided in the update (property exists)
+            password: compliance.e_way_bill.hasOwnProperty('password')
+              ? (compliance.e_way_bill.password || null)
+              : (existingCompliance.e_way_bill?.password || null),
+            client_secret: compliance.e_way_bill.hasOwnProperty('client_secret')
+              ? (compliance.e_way_bill.client_secret || null)
+              : (existingCompliance.e_way_bill?.client_secret || null),
+          };
+        }
+        
+        // Merge invoice_numbering
+        if (compliance.invoice_numbering) {
+          mergedCompliance.invoice_numbering = {
+            ...existingCompliance.invoice_numbering,
+            ...compliance.invoice_numbering,
+          };
+        }
+        
+        updateData.compliance = mergedCompliance;
+      }
+
+      await company.update(updateData);
+      await company.reload();
+
+      return res.json({ success: true, data: company });
+    } catch (err) {
+      return next(err);
+    }
+  },
 };
 
