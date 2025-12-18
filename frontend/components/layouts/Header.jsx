@@ -214,7 +214,7 @@ export default function Header({ onMenuClick, title, actions }) {
                     <button
                       onClick={() => {
                         setShowCompanyDropdown(false);
-                        router.push('/client/company/new');
+                        router.push('/client/companies');
                       }}
                       className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition"
                     >
@@ -249,7 +249,7 @@ export default function Header({ onMenuClick, title, actions }) {
                     <button
                       onClick={() => {
                         setShowCompanyDropdown(false);
-                        router.push('/client/company/new');
+                        router.push('/client/companies');
                       }}
                       className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary-600 hover:bg-primary-50 transition"
                     >

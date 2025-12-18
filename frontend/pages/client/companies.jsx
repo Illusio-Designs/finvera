@@ -8,10 +8,12 @@ import Button from '../../components/ui/Button';
 import FormInput from '../../components/forms/FormInput';
 import FormSelect from '../../components/forms/FormSelect';
 import FormTextarea from '../../components/forms/FormTextarea';
-import toast, { Toaster } from 'react-hot-toast';
+import DataTable from '../../components/tables/DataTable';
+import toast from 'react-hot-toast';
 import { companyAPI } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { extractPANFromGSTIN } from '../../lib/formatters';
+import { FiPlus, FiX, FiSave, FiPackage } from 'react-icons/fi';
 
 const COMPANY_TYPES = [
   { value: 'sole_proprietorship', label: 'Sole Proprietorship' },
@@ -23,10 +25,13 @@ const COMPANY_TYPES = [
   { value: 'section_8', label: 'Section 8 Company (Non-profit)' },
 ];
 
-export default function CreateCompanyPage() {
+export default function CompaniesPage() {
   const router = useRouter();
   const { switchCompany } = useAuth();
+  const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [companies, setCompanies] = useState([]);
+  const [status, setStatus] = useState(null);
   const [formErrors, setFormErrors] = useState({});
 
   const [formData, setFormData] = useState({
@@ -37,64 +42,110 @@ export default function CreateCompanyPage() {
     pan: '',
     tan: '',
     gstin: '',
-
     registered_address: '',
     state: '',
     pincode: '',
     contact_number: '',
     email: '',
-
-    // Principal (single entry UI, stored as array)
     principal_name: '',
     principal_din: '',
     principal_pan: '',
     principal_phone: '',
     principal_address: '',
-
     financial_year_start: '',
     financial_year_end: '',
     currency: 'INR',
     books_beginning_date: '',
-
     bank_name: '',
     bank_branch: '',
     bank_account_number: '',
     bank_ifsc: '',
-
     tds_applicable: false,
     gst_registered: false,
     professional_tax_registered: false,
   });
 
+  // Fetch companies and status
   useEffect(() => {
-    // If plan/company limit reached, skip this page
-    (async () => {
+    const fetchData = async () => {
       try {
-        const res = await companyAPI.status();
-        const status = res?.data?.data || {};
-        const companyCount = status.company_count || 0;
-        const maxCompanies = status.max_companies || 1;
-        if (companyCount >= maxCompanies) router.replace('/client/dashboard');
-      } catch (e) {
-        // ignore
+        const [companiesRes, statusRes] = await Promise.all([
+          companyAPI.list().catch(() => ({ data: { data: [] } })),
+          companyAPI.status().catch(() => ({ data: { data: {} } })),
+        ]);
+        setCompanies(companiesRes?.data?.data || companiesRes?.data || []);
+        setStatus(statusRes?.data?.data || {});
+      } catch (error) {
+        console.error('Error fetching companies:', error);
       }
-    })();
-  }, [router]);
+    };
+    fetchData();
+  }, []);
+
+  // Check if company limit reached and auto-show form for new users
+  useEffect(() => {
+    if (status) {
+      const companyCount = status.company_count || 0;
+      const maxCompanies = status.max_companies || 1;
+      if (companyCount >= maxCompanies && companies.length > 0) {
+        // If limit reached and companies exist, hide form
+        setShowForm(false);
+      } else if (companyCount === 0) {
+        // If no companies exist, automatically show the form
+        setShowForm(true);
+      }
+    }
+  }, [status, companies]);
+
+  const resetForm = () => {
+    setFormData({
+      company_name: '',
+      company_type: 'private_limited',
+      registration_number: '',
+      incorporation_date: '',
+      pan: '',
+      tan: '',
+      gstin: '',
+      registered_address: '',
+      state: '',
+      pincode: '',
+      contact_number: '',
+      email: '',
+      principal_name: '',
+      principal_din: '',
+      principal_pan: '',
+      principal_phone: '',
+      principal_address: '',
+      financial_year_start: '',
+      financial_year_end: '',
+      currency: 'INR',
+      books_beginning_date: '',
+      bank_name: '',
+      bank_branch: '',
+      bank_account_number: '',
+      bank_ifsc: '',
+      tds_applicable: false,
+      gst_registered: false,
+      professional_tax_registered: false,
+    });
+    setFormErrors({});
+    setShowForm(false);
+  };
 
   const handleChange = (name, value) => {
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
-      
+
       // Auto-set TDS applicable when TAN is entered
       if (name === 'tan') {
         updated.tds_applicable = !!value.trim();
       }
-      
+
       // Auto-set GST registered when GST is entered
       if (name === 'gstin') {
         updated.gst_registered = !!value.trim();
       }
-      
+
       return updated;
     });
     if (formErrors[name]) {
@@ -155,14 +206,14 @@ export default function CreateCompanyPage() {
     if (!formData.company_name.trim()) errors.company_name = 'Company name is required';
     if (!formData.company_type) errors.company_type = 'Company type is required';
     if (!formData.currency.trim()) errors.currency = 'Currency is required';
-    return errors;
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const errors = validate();
-    if (Object.keys(errors).length) {
-      setFormErrors(errors);
+    if (!validate()) {
+      toast.error('Please fix the errors in the form');
       return;
     }
 
@@ -171,9 +222,8 @@ export default function CreateCompanyPage() {
       const response = await companyAPI.create(payload);
       const createdCompany = response?.data?.data || response?.data;
       const companyId = createdCompany?.id;
-      
+
       if (companyId && switchCompany) {
-        // Switch to the newly created company
         try {
           await switchCompany(companyId);
           toast.success('Company created successfully');
@@ -199,29 +249,90 @@ export default function CreateCompanyPage() {
     }
   };
 
+  const handleSwitchCompany = async (companyId) => {
+    try {
+      if (switchCompany) {
+        await switchCompany(companyId);
+        toast.success('Company switched successfully');
+        setTimeout(() => {
+          router.replace('/client/dashboard');
+        }, 300);
+      }
+    } catch (error) {
+      toast.error('Failed to switch company');
+    }
+  };
+
+  const canCreateMore = status ? (status.company_count || 0) < (status.max_companies || 1) : true;
+
+  const columns = [
+    { key: 'company_name', label: 'Company Name', sortable: true },
+    { key: 'company_type', label: 'Type', render: (value) => {
+      const type = COMPANY_TYPES.find(t => t.value === value);
+      return type ? type.label : value;
+    }},
+    { key: 'gstin', label: 'GSTIN' },
+    { key: 'pan', label: 'PAN' },
+    { key: 'state', label: 'State' },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (value, row) => (
+        <Button
+          onClick={() => handleSwitchCompany(row.id)}
+          variant="outline"
+          className="text-sm"
+        >
+          Switch to this Company
+        </Button>
+      ),
+    },
+  ];
+
+  const tableData = Array.isArray(companies) ? companies : [];
+
   return (
     <ProtectedRoute portalType="client">
-      <ClientLayout title="Create Company">
-        <Toaster />
+      <ClientLayout title="Companies">
         <PageLayout
-          title="Create Company"
+          title="Companies"
           breadcrumbs={[
             { label: 'Client', href: '/client/dashboard' },
-            { label: 'Company' },
+            { label: 'Companies' },
           ]}
+          actions={
+            !showForm && canCreateMore ? (
+              <Button
+                onClick={() => setShowForm(true)}
+                className="flex items-center gap-2"
+              >
+                <FiPlus className="h-4 w-4" />
+                <span>Add Company</span>
+              </Button>
+            ) : showForm ? (
+              <Button
+                onClick={resetForm}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <FiX className="h-4 w-4" />
+                <span>Cancel</span>
+              </Button>
+            ) : null
+          }
         >
-          <div className="max-w-4xl mx-auto space-y-6">
+          {showForm ? (
             <Card>
-              <h1 className="text-xl font-semibold text-gray-900 mb-1">Create your company</h1>
-              <p className="text-sm text-gray-600">
-                Add your company details to start using accounting features. Database setup will run after creation.
-              </p>
-            </Card>
+              <div className="mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">New Company</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Add your company details to start using accounting features. Database setup will run after creation.
+                </p>
+              </div>
 
-            <Card>
               <form onSubmit={handleSubmit} className="space-y-8">
                 <div className="space-y-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Basic Information</h2>
+                  <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormInput
                       name="company_name"
@@ -263,29 +374,22 @@ export default function CreateCompanyPage() {
                       label="GSTIN"
                       value={formData.gstin}
                       onChange={(name, value) => {
-                        // Convert to uppercase automatically
                         const upperValue = value.toUpperCase().replace(/\s/g, '');
-                        setFormData(prev => {
+                        setFormData((prev) => {
                           const updated = { ...prev, [name]: upperValue };
-                          
-                          // Auto-fill PAN from GSTIN when GSTIN is 15 characters
+
                           if (upperValue.length === 15) {
                             const extractedPAN = extractPANFromGSTIN(upperValue);
                             if (extractedPAN && !prev.pan) {
-                              // Only auto-fill if PAN is empty
                               updated.pan = extractedPAN;
                             }
                           }
-                          
-                          // Auto-set GST registered when GST is entered, clear when removed
+
                           updated.gst_registered = !!upperValue.trim();
-                          
                           return updated;
                         });
-                        
-                        // Clear error if exists
                         if (formErrors[name]) {
-                          setFormErrors(prev => {
+                          setFormErrors((prev) => {
                             const next = { ...prev };
                             delete next[name];
                             return next;
@@ -321,7 +425,7 @@ export default function CreateCompanyPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Registered Office</h2>
+                  <h3 className="text-lg font-semibold text-gray-900">Registered Office</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
                       <FormTextarea
@@ -361,7 +465,9 @@ export default function CreateCompanyPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Director / Partner / Proprietor</h2>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Director / Partner / Proprietor
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormInput
                       name="principal_name"
@@ -404,7 +510,7 @@ export default function CreateCompanyPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Financial & Accounting</h2>
+                  <h3 className="text-lg font-semibold text-gray-900">Financial & Accounting</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormInput
                       name="financial_year_start"
@@ -439,7 +545,7 @@ export default function CreateCompanyPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Bank Details (optional)</h2>
+                  <h3 className="text-lg font-semibold text-gray-900">Bank Details (optional)</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormInput
                       name="bank_name"
@@ -470,13 +576,15 @@ export default function CreateCompanyPage() {
 
                 {formData.gstin && (
                   <div className="space-y-4">
-                    <h2 className="text-lg font-semibold text-gray-900">Compliance</h2>
+                    <h3 className="text-lg font-semibold text-gray-900">Compliance</h3>
                     <div className="grid grid-cols-1 gap-4">
                       <label className="flex items-center gap-2 text-sm text-gray-700">
                         <input
                           type="checkbox"
                           checked={formData.professional_tax_registered}
-                          onChange={(e) => handleChange('professional_tax_registered', e.target.checked)}
+                          onChange={(e) =>
+                            handleChange('professional_tax_registered', e.target.checked)
+                          }
                           className="h-4 w-4"
                         />
                         Professional tax registered
@@ -486,13 +594,53 @@ export default function CreateCompanyPage() {
                 )}
 
                 <div className="flex gap-3 pt-4 border-t border-gray-200">
-                  <Button type="submit" loading={loading} disabled={loading}>
-                    Create Company
+                  <Button type="submit" loading={loading} disabled={loading} className="flex items-center gap-2">
+                    <FiSave className="h-4 w-4" />
+                    <span>Create Company</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={resetForm}
+                    disabled={loading}
+                    className="flex items-center gap-2"
+                  >
+                    <FiX className="h-4 w-4" />
+                    <span>Cancel</span>
                   </Button>
                 </div>
               </form>
             </Card>
-          </div>
+          ) : (
+            <Card>
+              {companies.length > 0 ? (
+                <DataTable
+                  columns={columns}
+                  data={tableData}
+                  loading={false}
+                  searchable={true}
+                  searchPlaceholder="Search companies..."
+                />
+              ) : (
+                <div className="text-center py-12">
+                  <FiPackage className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Companies</h3>
+                  <p className="text-gray-600 mb-4">
+                    Get started by creating your first company.
+                  </p>
+                  {canCreateMore && (
+                    <Button
+                      onClick={() => setShowForm(true)}
+                      className="flex items-center gap-2 mx-auto"
+                    >
+                      <FiPlus className="h-4 w-4" />
+                      <span>Add Company</span>
+                    </Button>
+                  )}
+                </div>
+              )}
+            </Card>
+          )}
         </PageLayout>
       </ClientLayout>
     </ProtectedRoute>

@@ -400,3 +400,4 @@ export const getLedgerFieldsForGroup = (groupName, groupNature) => {
   // Default to common fields
   return commonFields;
 };
+

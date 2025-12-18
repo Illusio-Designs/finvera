@@ -266,7 +266,8 @@ export default function LedgersList() {
       setShowForm(false);
       setEditingId(null);
       resetForm();
-      refetch();
+      // Refresh the page to get updated data
+      window.location.reload();
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Failed to save ledger';
       toast.error(errorMessage);
