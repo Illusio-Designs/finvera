@@ -324,6 +324,16 @@ export const accountingAPI = {
     update: (id, data) => api.put(`/accounting/warehouses/${id}`, data),
     delete: (id) => api.delete(`/accounting/warehouses/${id}`),
   },
+  // Stock Adjustments
+  stockAdjustments: {
+    list: (params) => api.get("/accounting/stock-adjustments", { params }),
+    create: (data) => api.post("/accounting/stock-adjustments", data),
+  },
+  // Stock Transfers
+  stockTransfers: {
+    list: (params) => api.get("/accounting/stock-transfers", { params }),
+    create: (data) => api.post("/accounting/stock-transfers", data),
+  },
 };
 
 // Reports API
