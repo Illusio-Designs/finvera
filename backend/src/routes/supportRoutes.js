@@ -6,7 +6,21 @@ const { authorize } = require('../middleware/role');
 
 // Public routes (clients can create tickets)
 router.post('/tickets', supportController.createTicket);
-router.post('/tickets/:id/messages', supportController.addMessage); // Client can reply
+
+// Client routes (authenticated clients can manage their own tickets)
+router.get(
+  '/my-tickets',
+  authenticate,
+  supportController.listMyTickets
+);
+
+router.get(
+  '/my-tickets/:id',
+  authenticate,
+  supportController.getMyTicket
+);
+
+router.post('/tickets/:id/messages', supportController.addMessage); // Client can reply (public or authenticated)
 
 // Admin/Support Agent routes
 router.get(

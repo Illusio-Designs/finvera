@@ -225,7 +225,18 @@ module.exports = {
 
         if (isSundryDebtor || isSundryCreditor) {
           const move = moveMap.get(ledger.id) || { debit: 0, credit: 0 };
-          const closingSigned = openingSigned(ledger) + (move.debit - move.credit);
+          // Use the same balance calculation logic as getBalance and getLedgerStatement
+          const isDebitLedger = ledger.balance_type === 'debit' || ledger.opening_balance_type === 'Dr';
+          const openingBalanceUnsigned = parseFloat(ledger.opening_balance || 0);
+          
+          let closingSigned;
+          if (isDebitLedger) {
+            // For debit-ledger: Opening + Debits - Credits
+            closingSigned = openingBalanceUnsigned + move.debit - move.credit;
+          } else {
+            // For credit-ledger: Opening + Credits - Debits, then negate for signed representation
+            closingSigned = -(openingBalanceUnsigned + move.credit - move.debit);
+          }
 
           if (isSundryDebtor && closingSigned > 0) {
             // Debit balance = receivables (amount to receive)
@@ -240,37 +251,136 @@ module.exports = {
       receivables = parseFloat(receivables.toFixed(2));
       payables = parseFloat(payables.toFixed(2));
 
-      // Calculate GST Credit (Input Tax Credit - ITC)
-      // GST Input ledgers: CGST_INPUT, SGST_INPUT, IGST_INPUT
-      // These are asset accounts with debit balances representing available ITC
-      let gstCredit = 0;
-      const gstInputLedgerCodes = ['CGST_INPUT', 'SGST_INPUT', 'IGST_INPUT'];
-      
+      // Calculate Cash on Hand (sum of all Cash ledgers)
+      let cashOnHand = 0;
       for (const ledger of allLedgers) {
-        const ledgerCode = (ledger.ledger_code || '').toUpperCase();
-        const ledgerName = (ledger.ledger_name || '').toLowerCase();
+        const group = groupMap.get(ledger.account_group_id);
+        if (!group) continue;
         
-        // Check by ledger code or by ledger name pattern
-        const isGstInputLedger = 
-          gstInputLedgerCodes.includes(ledgerCode) ||
-          (ledgerName.includes('gst input') && (
-            ledgerName.includes('cgst') || 
-            ledgerName.includes('sgst') || 
-            ledgerName.includes('igst')
-          ));
+        const groupCode = (group.group_code || '').toUpperCase();
         
-        if (isGstInputLedger) {
+        // Check if this is a Cash ledger (CASH group)
+        if (groupCode === 'CASH') {
           const move = moveMap.get(ledger.id) || { debit: 0, credit: 0 };
-          const closingSigned = openingSigned(ledger) + (move.debit - move.credit);
+          const isDebitLedger = ledger.balance_type === 'debit' || ledger.opening_balance_type === 'Dr';
+          const openingBalanceUnsigned = parseFloat(ledger.opening_balance || 0);
           
-          // GST Input ledgers are asset accounts, so debit balance = available credit
+          let closingSigned;
+          if (isDebitLedger) {
+            // For debit-ledger: Opening + Debits - Credits
+            closingSigned = openingBalanceUnsigned + move.debit - move.credit;
+          } else {
+            // For credit-ledger: Opening + Credits - Debits, then negate for signed representation
+            closingSigned = -(openingBalanceUnsigned + move.credit - move.debit);
+          }
+          
+          // Cash is an asset, so positive balance = cash available
           if (closingSigned > 0) {
-            gstCredit += closingSigned;
+            cashOnHand += closingSigned;
           }
         }
       }
+      cashOnHand = parseFloat(cashOnHand.toFixed(2));
 
-      gstCredit = parseFloat(gstCredit.toFixed(2));
+      // Calculate GST Credit (Net Payable/Credit)
+      // Formula: Output GST - Input GST + RCM Input
+      // Output GST: CGST_OUTPUT, SGST_OUTPUT, IGST_OUTPUT (DT group, credit balances = liability)
+      // Input GST: CGST_INPUT, SGST_INPUT, IGST_INPUT (CA group, debit balances = asset/credit available)
+      // RCM Input: CGST_RCM_INPUT, SGST_RCM_INPUT, IGST_RCM_INPUT (CA group, debit balances = asset/credit available)
+      
+      let gstOutput = 0;  // Output GST (liability, credit balances)
+      let gstInput = 0;   // Input GST (asset, debit balances)
+      let rcmInput = 0;  // RCM Input (asset, debit balances)
+      
+      const gstOutputLedgerCodes = ['CGST_OUTPUT', 'SGST_OUTPUT', 'IGST_OUTPUT'];
+      const gstInputLedgerCodes = ['CGST_INPUT', 'SGST_INPUT', 'IGST_INPUT'];
+      const rcmInputLedgerCodes = ['CGST_RCM_INPUT', 'SGST_RCM_INPUT', 'IGST_RCM_INPUT'];
+      
+      for (const ledger of allLedgers) {
+        const group = groupMap.get(ledger.account_group_id);
+        if (!group) continue;
+        
+        const ledgerCode = (ledger.ledger_code || '').toUpperCase();
+        const ledgerName = (ledger.ledger_name || '').toLowerCase();
+        const groupCode = (group.group_code || '').toUpperCase();
+        
+        const move = moveMap.get(ledger.id) || { debit: 0, credit: 0 };
+        const isDebitLedger = ledger.balance_type === 'debit' || ledger.opening_balance_type === 'Dr';
+        const openingBalanceUnsigned = parseFloat(ledger.opening_balance || 0);
+        
+        let closingSigned;
+        if (isDebitLedger) {
+          // For debit-ledger: Opening + Debits - Credits
+          closingSigned = openingBalanceUnsigned + move.debit - move.credit;
+        } else {
+          // For credit-ledger: Opening + Credits - Debits, then negate for signed representation
+          closingSigned = -(openingBalanceUnsigned + move.credit - move.debit);
+        }
+        
+        // Check for Output GST (DT group, credit balances = liability)
+        const isGstOutputLedger = 
+          gstOutputLedgerCodes.includes(ledgerCode) ||
+          (ledgerName.includes('gst output') && !ledgerName.includes('rcm') && (
+            ledgerName.includes('cgst') || 
+            ledgerName.includes('sgst') || 
+            ledgerName.includes('igst')
+          )) ||
+          (groupCode === 'DT' && ledgerName.includes('gst') && 
+           ledgerName.includes('output') && !ledgerName.includes('rcm'));
+        
+        if (isGstOutputLedger) {
+          // Output GST: Credit balance (negative in signed representation) = liability
+          // We need the absolute value of the credit balance
+          if (closingSigned < 0) {
+            gstOutput += Math.abs(closingSigned);
+          }
+        }
+        
+        // Check for Input GST (CA group, debit balances = asset/credit available)
+        const isGstInputLedger = 
+          gstInputLedgerCodes.includes(ledgerCode) ||
+          (ledgerName.includes('gst input') && !ledgerName.includes('rcm') && (
+            ledgerName.includes('cgst') || 
+            ledgerName.includes('sgst') || 
+            ledgerName.includes('igst')
+          )) ||
+          (groupCode === 'CA' && ledgerName.includes('gst') && 
+           (ledgerName.includes('input') || ledgerName.includes('itc')) && !ledgerName.includes('rcm'));
+        
+        if (isGstInputLedger) {
+          // Input GST: Debit balance (positive in signed representation) = available credit
+          if (closingSigned > 0) {
+            gstInput += closingSigned;
+          }
+        }
+        
+        // Check for RCM Input (CA group, debit balances = asset/credit available)
+        const isRcmInputLedger = 
+          rcmInputLedgerCodes.includes(ledgerCode) ||
+          (ledgerName.includes('rcm input') || (ledgerName.includes('gst rcm') && ledgerName.includes('input'))) && (
+            ledgerName.includes('cgst') || 
+            ledgerName.includes('sgst') || 
+            ledgerName.includes('igst')
+          ) ||
+          (groupCode === 'CA' && ledgerName.includes('rcm') && 
+           (ledgerName.includes('input') || ledgerName.includes('itc')));
+        
+        if (isRcmInputLedger) {
+          // RCM Input: Debit balance (positive in signed representation) = available credit
+          if (closingSigned > 0) {
+            rcmInput += closingSigned;
+          }
+        }
+      }
+      
+      // Calculate net GST: Output - Input + RCM Input
+      // Formula: Output GST - Input GST + RCM Input
+      // Result interpretation:
+      // - Positive value = GST Payable (you owe more than you can claim)
+      // - Negative value = GST Credit Available (you can claim more than you owe)
+      const netGst = gstOutput - gstInput + rcmInput;
+      const gstPayable = parseFloat((netGst > 0 ? netGst : 0).toFixed(2));
+      const gstCredit = parseFloat((netGst < 0 ? Math.abs(netGst) : 0).toFixed(2));
 
       // Format voucher type breakdown
       const voucherTypes = {};
@@ -313,7 +423,8 @@ module.exports = {
           total_outstanding: parseFloat(totalOutstanding || 0),
           receivables: receivables,
           payables: payables,
-          gst_credit: gstCredit,
+          cash_on_hand: cashOnHand,
+          gst_payable: gstPayable,
           current_month_sales: parseFloat(currentMonthSales || 0),
           current_month_purchase: parseFloat(currentMonthPurchase || 0),
           active_ledgers: activeLedgersCount,

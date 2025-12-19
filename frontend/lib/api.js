@@ -475,12 +475,24 @@ export const fileAPI = {
   },
 };
 
+// Client Support API
+export const clientSupportAPI = {
+  tickets: {
+    create: (data) => api.post("/support/tickets", data),
+    list: (params) => api.get("/support/my-tickets", { params }),
+    get: (id) => api.get(`/support/my-tickets/${id}`),
+    addMessage: (id, data) => api.post(`/support/tickets/${id}/messages`, data),
+    submitReview: (ticketId, data) => api.post(`/support/tickets/${ticketId}/review`, data),
+  },
+};
+
 // Legacy Client API (for backward compatibility)
 export const clientAPI = {
   dashboard: () => tenantAPI.getProfile(),
   vouchers: accountingAPI.vouchers,
   ledgers: accountingAPI.ledgers,
   reports: reportsAPI,
+  support: clientSupportAPI.tickets,
   // Note: Some methods may need to be updated to match new accountingAPI structure
 };
 

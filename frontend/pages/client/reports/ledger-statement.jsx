@@ -53,7 +53,13 @@ export default function LedgerStatementReport() {
 
   // Fetch statement for selected ledger in modal
   const { data: statementData, loading: statementLoading, execute: fetchStatement } = useApi(
-    () => reportsAPI.ledgerStatement({ ledger_id: selectedLedgerId, ...statementDateRange }),
+    (ledgerId) => {
+      const id = ledgerId || selectedLedgerId;
+      if (!id) {
+        return Promise.reject(new Error('Ledger ID is required'));
+      }
+      return reportsAPI.ledgerStatement({ ledger_id: id, ...statementDateRange });
+    },
     false
   );
 
@@ -110,7 +116,8 @@ export default function LedgerStatementReport() {
     setShowDetail(true);
     try {
       await fetchLedger(ledger.id);
-      await fetchStatement();
+      // Pass ledger.id directly to fetchStatement to avoid race condition with state update
+      await fetchStatement(ledger.id);
     } catch (error) {
       if (error.response?.status === 404) {
         toast.error('Ledger not found');
@@ -128,9 +135,11 @@ export default function LedgerStatementReport() {
   };
 
   const handleGenerateStatement = () => {
-    if (selectedLedgerId) {
-      fetchStatement();
+    if (!selectedLedgerId) {
+      toast.error('Please select a ledger first');
+      return;
     }
+    fetchStatement(selectedLedgerId);
   };
 
   const handleCloseDetail = () => {
@@ -622,11 +631,11 @@ export default function LedgerStatementReport() {
                 <div className="mb-4 text-sm text-gray-600">
                   Period: {formatDate(reportData.period?.from_date)} to {formatDate(reportData.period?.to_date)}
                 </div>
-                <DataTable
-                  columns={columns}
+              <DataTable
+                columns={columns}
                   data={reportData.statement || reportData.transactions || []}
-                  loading={loading}
-                />
+                loading={loading}
+              />
               </Card>
 
               {reportData.summary && (

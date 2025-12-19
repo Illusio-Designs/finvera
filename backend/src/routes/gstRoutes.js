@@ -24,5 +24,10 @@ router.get('/returns', gstController.listReturns);
 router.post('/returns/gstr1', gstController.generateGSTR1);
 router.post('/returns/gstr3b', gstController.generateGSTR3B);
 
+// Third-party API endpoints
+router.post('/validate', gstController.validateGSTIN);
+router.get('/details/:gstin', gstController.getGSTINDetails);
+router.get('/rate', gstController.getGSTRate);
+
 module.exports = router;
 

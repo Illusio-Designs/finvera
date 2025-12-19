@@ -7,7 +7,7 @@ import {
   FiHome, FiFolder, FiFileText, FiTrendingUp, FiTrendingDown,
   FiDollarSign, FiCreditCard, FiRefreshCw, FiFile, FiBarChart2,
   FiShield, FiPercent, FiFileMinus, FiFilePlus, FiMail, FiSettings, FiUser, FiGift,
-  FiPackage, FiLayers, FiMove, FiEdit
+  FiPackage, FiLayers, FiMove, FiEdit, FiHeadphones
 } from 'react-icons/fi';
 
 const getClientMenuItems = () => [
@@ -89,6 +89,14 @@ const getClientMenuItems = () => [
       { label: 'E-Invoice', href: '/client/einvoice', icon: FiMail },
       { label: 'E-Way Bill', href: '/client/ewaybill', icon: FiMail },
     ],
+  },
+  {
+    divider: true,
+  },
+  {
+    label: 'Support',
+    href: '/client/support',
+    icon: FiHeadphones,
   },
   {
     divider: true,

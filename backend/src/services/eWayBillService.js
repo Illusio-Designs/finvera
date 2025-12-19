@@ -1,4 +1,6 @@
 const crypto = require('crypto');
+const { createApiClientFromCompany } = require('./thirdPartyApiClient');
+const logger = require('../utils/logger');
 
 function nowIso() {
   return new Date().toISOString();
@@ -12,8 +14,8 @@ function fakeEWayBillNo() {
 
 class EWayBillService {
   /**
-   * Minimal E-Way Bill generator stub stored in company DB.
-   * In production you would call NIC EWB APIs and store the response.
+   * Generate E-Way Bill
+   * Uses third-party API if configured, otherwise falls back to stub
    */
   async generate(ctx, voucherId, details = {}) {
     const { tenantModels, company } = ctx;
@@ -58,9 +60,75 @@ class EWayBillService {
       })),
     };
 
-    const ewayBillNo = fakeEWayBillNo();
-    const generatedAt = new Date();
-    const validUpto = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000); // stub: +2 days
+    // Check if third-party API is configured
+    const compliance = company?.compliance || {};
+    const useThirdParty = compliance.e_way_bill?.applicable && 
+                          compliance.e_way_bill?.username && 
+                          compliance.e_way_bill?.password;
+
+    let ewayBillNo = fakeEWayBillNo();
+    let generatedAt = new Date();
+    let validUpto = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000); // stub: +2 days
+
+    if (useThirdParty) {
+      try {
+        const apiClient = createApiClientFromCompany(company);
+        
+        // Prepare e-way bill data for third-party API
+        const ewayBillData = {
+          userGstin: company.gstin,
+          supplyType: 'O', // Outward
+          subSupplyType: '1', // Supply
+          docType: 'INV',
+          docNo: voucher.voucher_number,
+          docDate: voucher.voucher_date,
+          fromGstin: company.gstin,
+          fromTrdName: company.company_name,
+          fromAddr1: company.registered_address || '',
+          fromPlace: company.state || '',
+          fromPincode: details.from_pincode || company?.pincode || '',
+          fromStateCode: company.state_code || '',
+          toGstin: voucher.partyLedger?.gstin || '',
+          toTrdName: voucher.partyLedger?.ledger_name || voucher.partyLedger?.name || '',
+          toAddr1: voucher.partyLedger?.address || '',
+          toPlace: voucher.partyLedger?.city || '',
+          toPincode: details.to_pincode || voucher.partyLedger?.pincode || '',
+          toStateCode: voucher.partyLedger?.state_code || '',
+          itemList: (voucher.voucher_items || []).map((it, index) => ({
+            itemNo: index + 1,
+            productName: it.item_description || '',
+            productDesc: it.item_description || '',
+            hsnCode: it.hsn_sac_code || '',
+            qtyUnit: it.uqc || 'NOS',
+            qty: parseFloat(it.quantity || 0),
+            taxableAmount: parseFloat(it.taxable_amount || 0),
+            cgstRate: parseFloat(it.gst_rate || 0) / 2,
+            sgstRate: parseFloat(it.gst_rate || 0) / 2,
+            igstRate: parseFloat(it.gst_rate || 0),
+            cessRate: parseFloat(it.cess_rate || 0),
+            cessNonAdvol: 0,
+          })),
+          transMode: details.transport_mode === 'AIR' ? '1' : details.transport_mode === 'RAIL' ? '2' : details.transport_mode === 'SHIP' ? '3' : '1', // 1=Road, 2=Air, 3=Rail, 4=Ship
+          transDistance: details.distance_km ? parseFloat(details.distance_km) : null,
+          transporterName: details.transporter_name || null,
+          transporterId: details.transporter_id || null,
+          vehicleNo: details.vehicle_no || null,
+          vehicleType: 'R', // Regular
+        };
+
+        const apiResponse = await apiClient.generateEWayBill(ewayBillData);
+        
+        ewayBillNo = apiResponse.ewayBillNo || apiResponse.EwbNo || apiResponse.eway_bill_no || fakeEWayBillNo();
+        generatedAt = apiResponse.ewayBillDate ? new Date(apiResponse.ewayBillDate) : new Date();
+        validUpto = apiResponse.validUpto ? new Date(apiResponse.validUpto) : new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+        
+        // Store API response in payload
+        payload.api_response = apiResponse;
+      } catch (error) {
+        logger.error('Third-party e-way bill API error:', error);
+        // Fall through to stub generation if API fails
+      }
+    }
 
     if (existing) {
       await existing.update({
@@ -114,9 +182,28 @@ class EWayBillService {
   }
 
   async cancel(ctx, voucherId, reason) {
-    const { tenantModels } = ctx;
+    const { tenantModels, company } = ctx;
     const ewb = await tenantModels.EWayBill.findOne({ where: { voucher_id: voucherId } });
     if (!ewb) throw new Error('E-way bill not found');
+    
+    if (!ewb.eway_bill_no) throw new Error('E-way bill number not found');
+
+    // Check if third-party API is configured
+    const compliance = company?.compliance || {};
+    const useThirdParty = compliance.e_way_bill?.applicable && 
+                          compliance.e_way_bill?.username && 
+                          compliance.e_way_bill?.password;
+
+    if (useThirdParty && ewb.eway_bill_no) {
+      try {
+        const apiClient = createApiClientFromCompany(company);
+        await apiClient.cancelEWayBill(ewb.eway_bill_no, reason || 'Cancelled by user');
+      } catch (error) {
+        logger.error('Third-party e-way bill cancellation API error:', error);
+        // Continue with local cancellation even if API fails
+      }
+    }
+
     await ewb.update({ status: 'cancelled', error_message: reason || null });
     return {
       id: ewb.id,

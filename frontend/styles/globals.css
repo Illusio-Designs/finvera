@@ -80,3 +80,11 @@ a {
   display: none;  /* Chrome, Safari and Opera */
 }
 
+/* Custom override for sm:my-8 */
+@media (min-width: 640px) {
+  .sm\:my-8 {
+    margin-top: 5rem;
+    margin-bottom: 5rem;
+  }
+}
+

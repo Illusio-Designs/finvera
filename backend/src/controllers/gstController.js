@@ -146,11 +146,19 @@ module.exports = {
       let totalTaxableValue = 0;
       let totalTax = 0;
 
+      // Group B2B invoices by customer GSTIN
+      const b2bMap = new Map();
+      
       salesVouchers.forEach((voucher) => {
         const partyState = voucher.partyLedger?.state || '';
         const isInterstate = partyState !== voucher.place_of_supply;
+        const customerGstin = voucher.partyLedger?.gstin;
 
-        (voucher.voucher_items || []).forEach((item) => {
+        // Collect all items for this invoice
+        const invoiceItems = [];
+        let invoiceTotalTaxable = 0;
+        
+        (voucher.voucher_items || []).forEach((item, itemIndex) => {
           const taxableValue = toNum(item.taxable_amount, 0);
           const cgst = toNum(item.cgst_amount, 0);
           const sgst = toNum(item.sgst_amount, 0);
@@ -159,57 +167,21 @@ module.exports = {
 
           totalTaxableValue += taxableValue;
           totalTax += tax;
+          invoiceTotalTaxable += taxableValue;
 
-          if (voucher.partyLedger?.gstin) {
-            gstr1Data.b2b.push({
-              ctin: voucher.partyLedger.gstin,
-              inv: [
-                {
-                  inum: voucher.voucher_number,
-                  idt: String(voucher.voucher_date),
-                  val: toNum(voucher.total_amount, 0),
-                  pos: voucher.place_of_supply,
-                  rchrg: voucher.is_reverse_charge ? 'Y' : 'N',
-                  inv_typ: 'R',
-                  itms: [
-                    {
-                      num: 1,
-                      hsn_sc: item.hsn_sac_code,
-                      qty: toNum(item.quantity, 0),
-                      rt: toNum(item.gst_rate, 0),
-                      txval: taxableValue,
-                      iamt: igst,
-                      camt: cgst,
-                      samt: sgst,
-                      csamt: toNum(item.cess_amount, 0),
-                    },
-                  ],
-                },
-              ],
-            });
-          } else if (isInterstate && taxableValue >= 250000) {
-            gstr1Data.b2cl.push({
-              pos: voucher.place_of_supply,
-              typ: 'OE',
-              etin: '',
-              rt: toNum(item.gst_rate, 0),
-              ad_amt: taxableValue,
-              iamt: igst,
-              csamt: toNum(item.cess_amount, 0),
-            });
-          } else {
-            gstr1Data.b2cs.push({
-              typ: 'OE',
-              pos: voucher.place_of_supply,
-              rt: toNum(item.gst_rate, 0),
-              ad_amt: taxableValue,
-              iamt: igst,
-              camt: cgst,
-              samt: sgst,
-              csamt: toNum(item.cess_amount, 0),
-            });
-          }
+          invoiceItems.push({
+            num: itemIndex + 1,
+            hsn_sc: item.hsn_sac_code || 'NA',
+            qty: toNum(item.quantity, 0),
+            rt: toNum(item.gst_rate, 0),
+            txval: taxableValue,
+            iamt: igst,
+            camt: cgst,
+            samt: sgst,
+            csamt: toNum(item.cess_amount, 0),
+          });
 
+          // HSN summary (aggregated across all invoices)
           const code = item.hsn_sac_code || 'NA';
           if (!gstr1Data.hsn[code]) {
             gstr1Data.hsn[code] = {
@@ -223,13 +195,64 @@ module.exports = {
               csamt: 0,
             };
           }
-
           gstr1Data.hsn[code].qty += toNum(item.quantity, 0);
           gstr1Data.hsn[code].txval += taxableValue;
           gstr1Data.hsn[code].iamt += igst;
           gstr1Data.hsn[code].camt += cgst;
           gstr1Data.hsn[code].samt += sgst;
           gstr1Data.hsn[code].csamt += toNum(item.cess_amount, 0);
+        });
+
+        // Process invoice based on customer type
+        if (customerGstin) {
+          // B2B: Group by customer GSTIN
+          if (!b2bMap.has(customerGstin)) {
+            b2bMap.set(customerGstin, []);
+          }
+          b2bMap.get(customerGstin).push({
+            inum: voucher.voucher_number,
+            idt: String(voucher.voucher_date),
+            val: toNum(voucher.total_amount, 0),
+            pos: voucher.place_of_supply,
+            rchrg: voucher.is_reverse_charge ? 'Y' : 'N',
+            inv_typ: 'R',
+            itms: invoiceItems,
+          });
+        } else if (isInterstate && invoiceTotalTaxable >= 250000) {
+          // B2CL: Large interstate invoices (>= 2.5L) without GSTIN
+          invoiceItems.forEach((item) => {
+            gstr1Data.b2cl.push({
+              pos: voucher.place_of_supply,
+              typ: 'OE',
+              etin: '',
+              rt: item.rt,
+              ad_amt: item.txval,
+              iamt: item.iamt,
+              csamt: item.csamt,
+            });
+          });
+        } else {
+          // B2CS: Small invoices or unregistered customers
+          invoiceItems.forEach((item) => {
+            gstr1Data.b2cs.push({
+              typ: 'OE',
+              pos: voucher.place_of_supply,
+              rt: item.rt,
+              ad_amt: item.txval,
+              iamt: item.iamt,
+              camt: item.camt,
+              samt: item.samt,
+              csamt: item.csamt,
+            });
+          });
+        }
+      });
+
+      // Convert B2B map to array format
+      b2bMap.forEach((invoices, ctin) => {
+        gstr1Data.b2b.push({
+          ctin,
+          inv: invoices,
         });
       });
 
@@ -360,6 +383,63 @@ module.exports = {
         data: gstr3bData,
         summary: gstrReturn.return_data?.summary,
       });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async validateGSTIN(req, res, next) {
+    try {
+      const { gstin } = req.body;
+      if (!gstin) return res.status(400).json({ message: 'GSTIN is required' });
+
+      const gstApiService = require('../services/gstApiService');
+      const ctx = {
+        company: req.company,
+        tenantModels: req.tenantModels,
+        masterModels: req.masterModels,
+      };
+
+      const result = await gstApiService.validateGSTIN(ctx, gstin);
+      res.json({ success: true, ...result });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async getGSTINDetails(req, res, next) {
+    try {
+      const { gstin } = req.params;
+      if (!gstin) return res.status(400).json({ message: 'GSTIN is required' });
+
+      const gstApiService = require('../services/gstApiService');
+      const ctx = {
+        company: req.company,
+        tenantModels: req.tenantModels,
+        masterModels: req.masterModels,
+      };
+
+      const result = await gstApiService.getGSTINDetails(ctx, gstin);
+      res.json({ success: true, ...result });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async getGSTRate(req, res, next) {
+    try {
+      const { hsn_code, state } = req.query;
+      if (!hsn_code) return res.status(400).json({ message: 'HSN code is required' });
+
+      const gstApiService = require('../services/gstApiService');
+      const ctx = {
+        company: req.company,
+        tenantModels: req.tenantModels,
+        masterModels: req.masterModels,
+      };
+
+      const result = await gstApiService.getGSTRate(ctx, hsn_code, state || null);
+      res.json({ success: true, ...result });
     } catch (err) {
       next(err);
     }

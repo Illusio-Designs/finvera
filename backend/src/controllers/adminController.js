@@ -479,15 +479,30 @@ module.exports = {
 
           const discountPercentage = currentConfig ? parseFloat(currentConfig.discount_percentage) : 10.00;
 
-          await ReferralCode.create({
-            code: generateReferralCode('customer'),
-            owner_type: 'customer',
-            owner_id: tenant.id,
-            discount_type: 'percentage',
-            discount_value: discountPercentage,
-            is_active: true,
-          });
-          logger.info(`Referral code auto-generated for tenant ${tenant.id}`);
+          // Generate unique code with retry mechanism
+          let code;
+          let attempts = 0;
+          const maxAttempts = 10;
+          while (attempts < maxAttempts) {
+            code = generateReferralCode('customer');
+            const existing = await ReferralCode.findOne({ where: { code } });
+            if (!existing) break;
+            attempts++;
+          }
+
+          if (attempts < maxAttempts) {
+            await ReferralCode.create({
+              code,
+              owner_type: 'customer',
+              owner_id: tenant.id,
+              discount_type: 'percentage',
+              discount_value: discountPercentage,
+              is_active: true,
+            });
+            logger.info(`Referral code auto-generated for tenant ${tenant.id}: ${code}`);
+          } else {
+            logger.warn(`Failed to generate unique referral code for tenant ${tenant.id} after ${maxAttempts} attempts`);
+          }
         }
       } catch (error) {
         logger.warn('Failed to auto-generate referral code for tenant:', error.message);

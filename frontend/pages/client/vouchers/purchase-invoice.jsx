@@ -10,6 +10,7 @@ import FormSelect from '../../../components/forms/FormSelect';
 import FormDatePicker from '../../../components/forms/FormDatePicker';
 import FormTextarea from '../../../components/forms/FormTextarea';
 import SearchableHSNSelect from '../../../components/forms/SearchableHSNSelect';
+import Checkbox from '../../../components/ui/Checkbox';
 import { accountingAPI } from '../../../lib/api';
 import { useApi } from '../../../hooks/useApi';
 import toast from 'react-hot-toast';
@@ -55,6 +56,7 @@ export default function PurchaseInvoicePage() {
     place_of_supply: '',
     narration: '',
     status: 'posted',
+    is_reverse_charge: false,
   });
 
   const [items, setItems] = useState([
@@ -440,6 +442,7 @@ export default function PurchaseInvoicePage() {
         voucher_date: formData.voucher_date,
         party_ledger_id: formData.party_ledger_id,
         place_of_supply: formData.place_of_supply || supplierState,
+        is_reverse_charge: formData.is_reverse_charge || false,
         narration: formData.narration || null,
         items: items.map((item) => ({
           item_code: item.item_code,
@@ -549,6 +552,21 @@ export default function PurchaseInvoicePage() {
                   placeholder="Select state"
                   required
                 />
+              </div>
+
+              <div className="mt-4">
+                <Checkbox
+                  name="is_reverse_charge"
+                  label="Reverse Charge Mechanism (RCM)"
+                  checked={formData.is_reverse_charge || false}
+                  onChange={(e) => {
+                    const checked = e.target?.checked ?? false;
+                    handleFormChange('is_reverse_charge', checked);
+                  }}
+                />
+                <p className="text-xs text-gray-500 mt-1 ml-6">
+                  Enable if GST is payable under Reverse Charge Mechanism. When enabled, RCM Output (liability) and RCM Input (ITC) ledgers will be created.
+                </p>
               </div>
 
               <div className="mt-4">

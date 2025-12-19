@@ -233,27 +233,79 @@ class VoucherService {
       { ledger_id: inventoryLedger.id, debit_amount: subtotal, credit_amount: 0, narration: 'Inventory purchase' },
     ];
 
-    // GST Input ledgers (asset/ITC)
-    if (totalCGST > 0) {
-      const cgst = await getOrCreateSystemLedger(
-        { tenantModels, masterModels },
-        { ledgerCode: 'CGST_INPUT', ledgerName: 'GST Input - CGST', groupCode: 'CA' }
-      );
-      ledgerEntries.push({ ledger_id: cgst.id, debit_amount: totalCGST, credit_amount: 0, narration: 'CGST Input' });
-    }
-    if (totalSGST > 0) {
-      const sgst = await getOrCreateSystemLedger(
-        { tenantModels, masterModels },
-        { ledgerCode: 'SGST_INPUT', ledgerName: 'GST Input - SGST', groupCode: 'CA' }
-      );
-      ledgerEntries.push({ ledger_id: sgst.id, debit_amount: totalSGST, credit_amount: 0, narration: 'SGST Input' });
-    }
-    if (totalIGST > 0) {
-      const igst = await getOrCreateSystemLedger(
-        { tenantModels, masterModels },
-        { ledgerCode: 'IGST_INPUT', ledgerName: 'GST Input - IGST', groupCode: 'CA' }
-      );
-      ledgerEntries.push({ ledger_id: igst.id, debit_amount: totalIGST, credit_amount: 0, narration: 'IGST Input' });
+    // Handle GST based on reverse charge mechanism
+    if (is_reverse_charge) {
+      // Reverse Charge Mechanism (RCM):
+      // - RCM Output: Liability (DT group, credit) - tax you owe
+      // - RCM Input: Asset (CA group, debit) - input credit you can claim
+      if (totalCGST > 0) {
+        // RCM Output (liability)
+        const cgstRcmOutput = await getOrCreateSystemLedger(
+          { tenantModels, masterModels },
+          { ledgerCode: 'CGST_RCM_OUTPUT', ledgerName: 'GST RCM Output - CGST', groupCode: 'DT' }
+        );
+        ledgerEntries.push({ ledger_id: cgstRcmOutput.id, debit_amount: 0, credit_amount: totalCGST, narration: 'CGST RCM Output' });
+        
+        // RCM Input (asset/ITC)
+        const cgstRcmInput = await getOrCreateSystemLedger(
+          { tenantModels, masterModels },
+          { ledgerCode: 'CGST_RCM_INPUT', ledgerName: 'GST RCM Input - CGST', groupCode: 'CA' }
+        );
+        ledgerEntries.push({ ledger_id: cgstRcmInput.id, debit_amount: totalCGST, credit_amount: 0, narration: 'CGST RCM Input' });
+      }
+      if (totalSGST > 0) {
+        // RCM Output (liability)
+        const sgstRcmOutput = await getOrCreateSystemLedger(
+          { tenantModels, masterModels },
+          { ledgerCode: 'SGST_RCM_OUTPUT', ledgerName: 'GST RCM Output - SGST', groupCode: 'DT' }
+        );
+        ledgerEntries.push({ ledger_id: sgstRcmOutput.id, debit_amount: 0, credit_amount: totalSGST, narration: 'SGST RCM Output' });
+        
+        // RCM Input (asset/ITC)
+        const sgstRcmInput = await getOrCreateSystemLedger(
+          { tenantModels, masterModels },
+          { ledgerCode: 'SGST_RCM_INPUT', ledgerName: 'GST RCM Input - SGST', groupCode: 'CA' }
+        );
+        ledgerEntries.push({ ledger_id: sgstRcmInput.id, debit_amount: totalSGST, credit_amount: 0, narration: 'SGST RCM Input' });
+      }
+      if (totalIGST > 0) {
+        // RCM Output (liability)
+        const igstRcmOutput = await getOrCreateSystemLedger(
+          { tenantModels, masterModels },
+          { ledgerCode: 'IGST_RCM_OUTPUT', ledgerName: 'GST RCM Output - IGST', groupCode: 'DT' }
+        );
+        ledgerEntries.push({ ledger_id: igstRcmOutput.id, debit_amount: 0, credit_amount: totalIGST, narration: 'IGST RCM Output' });
+        
+        // RCM Input (asset/ITC)
+        const igstRcmInput = await getOrCreateSystemLedger(
+          { tenantModels, masterModels },
+          { ledgerCode: 'IGST_RCM_INPUT', ledgerName: 'GST RCM Input - IGST', groupCode: 'CA' }
+        );
+        ledgerEntries.push({ ledger_id: igstRcmInput.id, debit_amount: totalIGST, credit_amount: 0, narration: 'IGST RCM Input' });
+      }
+    } else {
+      // Normal GST Input ledgers (asset/ITC) - only when NOT reverse charge
+      if (totalCGST > 0) {
+        const cgst = await getOrCreateSystemLedger(
+          { tenantModels, masterModels },
+          { ledgerCode: 'CGST_INPUT', ledgerName: 'GST Input - CGST', groupCode: 'CA' }
+        );
+        ledgerEntries.push({ ledger_id: cgst.id, debit_amount: totalCGST, credit_amount: 0, narration: 'CGST Input' });
+      }
+      if (totalSGST > 0) {
+        const sgst = await getOrCreateSystemLedger(
+          { tenantModels, masterModels },
+          { ledgerCode: 'SGST_INPUT', ledgerName: 'GST Input - SGST', groupCode: 'CA' }
+        );
+        ledgerEntries.push({ ledger_id: sgst.id, debit_amount: totalSGST, credit_amount: 0, narration: 'SGST Input' });
+      }
+      if (totalIGST > 0) {
+        const igst = await getOrCreateSystemLedger(
+          { tenantModels, masterModels },
+          { ledgerCode: 'IGST_INPUT', ledgerName: 'GST Input - IGST', groupCode: 'CA' }
+        );
+        ledgerEntries.push({ ledger_id: igst.id, debit_amount: totalIGST, credit_amount: 0, narration: 'IGST Input' });
+      }
     }
 
     // Credit party (Creditor)
