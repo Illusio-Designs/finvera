@@ -1,4 +1,5 @@
-const { ReferralCode, ReferralReward, Tenant, Salesman, Distributor } = require('../models');
+const { ReferralCode, ReferralReward, Salesman, Distributor } = require('../models');
+const { TenantMaster } = require('../models/masterModels');
 const { Op } = require('sequelize');
 const crypto = require('crypto');
 
@@ -36,8 +37,20 @@ module.exports = {
         valid_until,
       } = req.body;
 
-      // Generate unique code
-      const code = generateReferralCode(owner_type);
+      // Generate unique code with retry mechanism
+      let code;
+      let attempts = 0;
+      const maxAttempts = 10;
+      while (attempts < maxAttempts) {
+        code = generateReferralCode(owner_type);
+        const existing = await ReferralCode.findOne({ where: { code } });
+        if (!existing) break;
+        attempts++;
+      }
+
+      if (attempts >= maxAttempts) {
+        return res.status(500).json({ message: 'Failed to generate unique referral code' });
+      }
 
       const referralCode = await ReferralCode.create({
         code,
@@ -94,8 +107,8 @@ module.exports = {
 
   async getMyCode(req, res, next) {
     try {
-      const userId = req.user.id;
-      const userRole = req.user.role;
+      const userId = req.user?.id || req.user_id;
+      const userRole = req.user?.role || req.role;
 
       let ownerId;
       let ownerType;
@@ -113,7 +126,8 @@ module.exports = {
           ownerType = 'distributor';
         }
       } else if (userRole === 'tenant_admin') {
-        ownerId = req.user.tenant_id;
+        // Use req.tenant_id (set by auth middleware) with fallback to req.user.tenant_id
+        ownerId = req.tenant_id || req.user?.tenant_id;
         ownerType = 'customer';
       }
 
@@ -126,13 +140,45 @@ module.exports = {
       });
 
       if (!referralCode) {
+        // Get current discount percentage from config
+        const ReferralDiscountConfig = require('../models').ReferralDiscountConfig;
+        const { Op } = require('sequelize');
+        const currentConfig = await ReferralDiscountConfig.findOne({
+          where: {
+            is_active: true,
+            effective_from: { [Op.lte]: new Date() },
+            [Op.or]: [
+              { effective_until: null },
+              { effective_until: { [Op.gte]: new Date() } },
+            ],
+          },
+          order: [['effective_from', 'DESC']],
+        });
+
+        const discountPercentage = currentConfig ? parseFloat(currentConfig.discount_percentage) : 10.00;
+
+        // Generate unique code with retry mechanism
+        let code;
+        let attempts = 0;
+        const maxAttempts = 10;
+        while (attempts < maxAttempts) {
+          code = generateReferralCode(ownerType);
+          const existing = await ReferralCode.findOne({ where: { code } });
+          if (!existing) break;
+          attempts++;
+        }
+
+        if (attempts >= maxAttempts) {
+          return res.status(500).json({ message: 'Failed to generate unique referral code' });
+        }
+
         // Create one if doesn't exist
         referralCode = await ReferralCode.create({
-          code: generateReferralCode(ownerType),
+          code,
           owner_type: ownerType,
           owner_id: ownerId,
           discount_type: 'percentage',
-          discount_value: 20,
+          discount_value: discountPercentage,
           free_trial_days: 30,
           is_active: true,
         });
@@ -156,7 +202,7 @@ module.exports = {
       const rewards = await ReferralReward.findAll({
         where,
         include: [
-          { model: Tenant, attributes: ['id', 'company_name'], foreignKey: 'referee_tenant_id' },
+          { model: TenantMaster, attributes: ['id', 'company_name'], foreignKey: 'referee_tenant_id', as: 'referee_tenant' },
           { model: ReferralCode, attributes: ['id', 'code'] },
         ],
         order: [['createdAt', 'DESC']],
@@ -270,7 +316,7 @@ module.exports = {
       const { id } = req.params;
       const reward = await ReferralReward.findByPk(id, {
         include: [
-          { model: Tenant, attributes: ['id', 'company_name'] },
+          { model: TenantMaster, attributes: ['id', 'company_name'], as: 'referee_tenant' },
           { model: ReferralCode, attributes: ['id', 'code'] },
         ],
       });

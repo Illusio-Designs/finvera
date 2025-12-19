@@ -238,12 +238,74 @@ module.exports = {
       const from = from_date || new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0, 10);
       const to = to_date || new Date().toISOString().slice(0, 10);
 
+      // Determine if this is a debit or credit ledger for balance calculation (same logic as getBalance)
+      const isDebitLedger = ledger.balance_type === 'debit' || ledger.opening_balance_type === 'Dr';
+      const openingBalanceUnsigned = parseFloat(ledger.opening_balance || 0);
+      
+      // Calculate opening balance as of 'from' date (transactions before the period)
       const beforeMoveMap = await movementByLedger(req.tenantModels, { beforeDate: from });
       const beforeMove = beforeMoveMap.get(ledger.id) || { debit: 0, credit: 0 };
-      const openingBalSigned = openingSigned(ledger) + (beforeMove.debit - beforeMove.credit);
+      const beforeDebit = beforeMove.debit || 0;
+      const beforeCredit = beforeMove.credit || 0;
+      
+      // Calculate opening balance using ledger-type-aware logic
+      let openingBalSigned;
+      if (isDebitLedger) {
+        // For debit-ledger: Opening + Debits - Credits (all transactions before 'from' date)
+        openingBalSigned = openingBalanceUnsigned + beforeDebit - beforeCredit;
+      } else {
+        // For credit-ledger: Opening + Credits - Debits, then negate for signed representation
+        openingBalSigned = -(openingBalanceUnsigned + beforeCredit - beforeDebit);
+      }
 
       // Find all voucher ledger entries for this ledger within the date range
       // DATEONLY fields work directly with date strings in YYYY-MM-DD format
+      // First, let's check what voucher dates actually exist for this ledger
+      const debugEntries = await req.tenantModels.VoucherLedgerEntry.findAll({
+        where: { ledger_id },
+        include: [
+          {
+            model: req.tenantModels.Voucher,
+            where: { status: 'posted' },
+            required: true,
+            attributes: ['id', 'voucher_date', 'voucher_number', 'voucher_type', 'narration'],
+          },
+        ],
+        limit: 10,
+        order: [[req.tenantModels.Voucher, 'voucher_date', 'DESC']],
+      });
+      
+      logger.info(`Debug: Found ${debugEntries.length} posted entries for ledger ${ledger_id} (${ledger.ledger_name}) with dates:`, 
+        debugEntries.map(e => ({
+          voucher_number: e.voucher?.voucher_number,
+          voucher_date: e.voucher?.voucher_date,
+          voucher_type: e.voucher?.voucher_type,
+          date_type: typeof e.voucher?.voucher_date,
+        }))
+      );
+      logger.info(`Query date range: from=${from} (type: ${typeof from}), to=${to} (type: ${typeof to})`);
+
+      // Also try a raw query to see if there's a Sequelize issue
+      try {
+        const rawQueryResult = await req.tenantDb.query(
+          `SELECT vle.id, vle.ledger_id, vle.debit, vle.credit, v.voucher_date, v.voucher_number, v.voucher_type, v.status
+           FROM voucher_ledger_entries vle
+           INNER JOIN vouchers v ON vle.voucher_id = v.id
+           WHERE vle.ledger_id = :ledger_id 
+             AND v.status = 'posted'
+             AND v.voucher_date BETWEEN :from_date AND :to_date
+           ORDER BY v.voucher_date ASC, v.voucher_number ASC
+           LIMIT 20`,
+          {
+            replacements: { ledger_id, from_date: from, to_date: to },
+            type: Sequelize.QueryTypes.SELECT,
+          }
+        );
+        logger.info(`Raw SQL query found ${rawQueryResult.length} entries:`, JSON.stringify(rawQueryResult, null, 2));
+      } catch (rawQueryError) {
+        logger.warn('Raw SQL query failed:', rawQueryError.message);
+      }
+
       const entries = await req.tenantModels.VoucherLedgerEntry.findAll({
         where: { ledger_id },
         include: [
@@ -345,13 +407,18 @@ module.exports = {
         const debit = toNum(e.debit_amount, 0);
         const credit = toNum(e.credit_amount, 0);
         
-        // Update running balance: Debit increases balance (for asset/expense), Credit decreases (for liability/income)
-        // For ledger statement: Debit = positive for asset accounts, Credit = negative
-        // Running balance = Opening + Debits - Credits
-        running += debit - credit;
-        
         periodTotalDebit += debit;
         periodTotalCredit += credit;
+        
+        // Update running balance incrementally:
+        // For debit-ledger: debit increases balance, credit decreases it
+        // For credit-ledger: credit increases balance, debit decreases it
+        // We use signed values where Cr balances are negative
+        if (isDebitLedger) {
+          running += debit - credit; // Standard: debits increase, credits decrease
+        } else {
+          running += credit - debit; // Reversed for credit-ledger: credits increase, debits decrease
+        }
         
         statement.push({
           date: e.voucher.voucher_date,
@@ -364,8 +431,20 @@ module.exports = {
         });
       }
 
-      // Add closing balance as final row
-      const closingBalSigned = running;
+      // Calculate closing balance as of the 'to' date using movementByLedger
+      // This ensures it matches getBalance and shows correct balance even if query doesn't find entries
+      const asOnMoveMap = await movementByLedger(req.tenantModels, { asOnDate: to });
+      const asOnMove = asOnMoveMap.get(ledger.id) || { debit: 0, credit: 0 };
+      
+      let closingBalSigned;
+      if (isDebitLedger) {
+        // For debit-ledger: Opening + Debits - Credits (all transactions up to 'to' date)
+        closingBalSigned = openingBalanceUnsigned + asOnMove.debit - asOnMove.credit;
+      } else {
+        // For credit-ledger: Opening + Credits - Debits, then negate for signed representation
+        closingBalSigned = -(openingBalanceUnsigned + asOnMove.credit - asOnMove.debit);
+      }
+
       statement.push({
         date: to,
         voucher_number: 'Closing Balance',

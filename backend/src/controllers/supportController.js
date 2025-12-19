@@ -396,4 +396,113 @@ module.exports = {
       next(error);
     }
   },
+
+  // List client's own tickets (authenticated client)
+  async listMyTickets(req, res, next) {
+    try {
+      const {
+        page = 1,
+        limit = 20,
+        status,
+        priority,
+        category,
+        search,
+      } = req.query;
+
+      const tenant_id = req.user?.tenant_id;
+      if (!tenant_id) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+
+      const offset = (page - 1) * limit;
+      const where = { tenant_id };
+
+      if (status) where.status = status;
+      if (priority) where.priority = priority;
+      if (category) where.category = category;
+
+      if (search) {
+        where[Op.or] = [
+          { ticket_number: { [Op.like]: `%${search}%` } },
+          { subject: { [Op.like]: `%${search}%` } },
+        ];
+      }
+
+      const { count, rows } = await SupportTicket.findAndCountAll({
+        where,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        order: [['createdAt', 'DESC']],
+        include: [
+          {
+            model: User,
+            as: 'assignedAgent',
+            attributes: ['id', 'name', 'email'],
+          },
+        ],
+      });
+
+      res.json({
+        success: true,
+        data: rows,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: count,
+          totalPages: Math.ceil(count / limit),
+        },
+      });
+    } catch (error) {
+      logger.error('List my tickets error:', error);
+      next(error);
+    }
+  },
+
+  // Get client's own ticket with messages (authenticated client)
+  async getMyTicket(req, res, next) {
+    try {
+      const { id } = req.params;
+      const tenant_id = req.user?.tenant_id;
+
+      if (!tenant_id) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+
+      const ticket = await SupportTicket.findOne({
+        where: { id, tenant_id },
+        include: [
+          {
+            model: User,
+            as: 'assignedAgent',
+            attributes: ['id', 'name', 'email', 'role'],
+          },
+          {
+            model: TicketMessage,
+            as: 'messages',
+            order: [['createdAt', 'ASC']],
+            include: [
+              {
+                model: User,
+                as: 'sender',
+                attributes: ['id', 'name', 'email'],
+              },
+            ],
+          },
+          {
+            model: SupportAgentReview,
+            as: 'review',
+          },
+        ],
+      });
+
+      if (!ticket) {
+        return res.status(404).json({ success: false, error: 'Ticket not found' });
+      }
+
+      res.json({ success: true, data: ticket });
+    } catch (error) {
+      logger.error('Get my ticket error:', error);
+      next(error);
+    }
+  },
 };

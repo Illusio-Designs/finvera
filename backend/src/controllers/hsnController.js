@@ -1,5 +1,6 @@
 const { Op } = require('sequelize');
 const masterModels = require('../models/masterModels');
+const hsnApiService = require('../services/hsnApiService');
 
 module.exports = {
   async search(req, res, next) {
@@ -11,32 +12,14 @@ module.exports = {
         return res.json({ success: true, data: [] });
       }
 
-      const where = { is_active: true };
-      if (type) where.item_type = String(type).toUpperCase();
+      const ctx = {
+        company: req.company,
+        tenantModels: req.tenantModels,
+        masterModels: req.masterModels,
+      };
 
-      where[Op.or] = [
-        { code: { [Op.like]: `%${query}%` } },
-        { technical_description: { [Op.like]: `%${query}%` } },
-        { trade_description: { [Op.like]: `%${query}%` } },
-      ];
-
-      const rows = await masterModels.HSNSAC.findAll({
-        where,
-        limit: Math.min(parseInt(limit, 10) || 20, 100),
-        order: [['code', 'ASC']],
-        attributes: [
-          'code',
-          'item_type',
-          'technical_description',
-          'trade_description',
-          'gst_rate',
-          'cess_rate',
-          'uqc_code',
-          'effective_from',
-        ],
-      });
-
-      return res.json({ success: true, data: rows });
+      const results = await hsnApiService.search(ctx, query, { type, limit });
+      return res.json({ success: true, data: results });
     } catch (err) {
       return next(err);
     }
@@ -45,11 +28,35 @@ module.exports = {
   async getByCode(req, res, next) {
     try {
       const { code } = req.params;
-      const row = await masterModels.HSNSAC.findByPk(code);
-      if (!row || !row.is_active) {
-        return res.status(404).json({ success: false, message: 'HSN/SAC code not found' });
+      
+      const ctx = {
+        company: req.company,
+        tenantModels: req.tenantModels,
+        masterModels: req.masterModels,
+      };
+
+      const result = await hsnApiService.getByCode(ctx, code);
+      return res.json({ success: true, data: result });
+    } catch (err) {
+      if (err.message === 'HSN/SAC code not found') {
+        return res.status(404).json({ success: false, message: err.message });
       }
-      return res.json({ success: true, data: row });
+      return next(err);
+    }
+  },
+
+  async validate(req, res, next) {
+    try {
+      const { code } = req.params;
+      
+      const ctx = {
+        company: req.company,
+        tenantModels: req.tenantModels,
+        masterModels: req.masterModels,
+      };
+
+      const result = await hsnApiService.validate(ctx, code);
+      return res.json({ success: true, ...result });
     } catch (err) {
       return next(err);
     }

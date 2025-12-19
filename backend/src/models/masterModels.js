@@ -462,7 +462,106 @@ async function syncMasterModels() {
   await models.TDSSection.sync({ alter: false });
   await models.HSNSAC.sync({ alter: true });
   await models.AccountingYear.sync({ alter: false });
+  
+  // Create subscription_plans table in master DB if it doesn't exist (needed for Subscription FK)
+  const logger = require('../utils/logger');
+  try {
+    const [tables] = await masterSequelize.query("SHOW TABLES LIKE 'subscription_plans'");
+    if (tables.length === 0) {
+      await masterSequelize.query(`
+        CREATE TABLE IF NOT EXISTS subscription_plans (
+          id CHAR(36) BINARY PRIMARY KEY,
+          plan_code VARCHAR(50) NOT NULL UNIQUE,
+          plan_name VARCHAR(255) NOT NULL,
+          description TEXT,
+          billing_cycle VARCHAR(50),
+          base_price DECIMAL(15,2) NOT NULL,
+          discounted_price DECIMAL(15,2),
+          currency VARCHAR(3) DEFAULT 'INR',
+          trial_days INT DEFAULT 0,
+          max_users INT,
+          max_invoices_per_month INT,
+          max_companies INT DEFAULT 1,
+          storage_limit_gb INT,
+          features JSON,
+          salesman_commission_rate DECIMAL(5,2),
+          distributor_commission_rate DECIMAL(5,2),
+          renewal_commission_rate DECIMAL(5,2),
+          is_active BOOLEAN DEFAULT TRUE,
+          is_visible BOOLEAN DEFAULT TRUE,
+          is_featured BOOLEAN DEFAULT FALSE,
+          display_order INT,
+          valid_from DATETIME,
+          valid_until DATETIME,
+          createdAt DATETIME NOT NULL,
+          updatedAt DATETIME NOT NULL
+        ) ENGINE=InnoDB;
+      `);
+      logger.info('✓ Created subscription_plans table in master database');
+    }
+  } catch (error) {
+    logger.warn('Could not create subscription_plans table:', error.message);
+    // Continue - table might already exist or FK will be optional
+  }
+  
+  // Sync Subscription and Payment
+  try {
+    await models.Subscription.sync({ alter: true });
+  } catch (syncError) {
+    if (syncError.message.includes('subscription_plans') || syncError.original?.code === 'ER_FK_CANNOT_OPEN_PARENT') {
+      logger.warn('⚠️  subscription_plans table not found, syncing Subscription without FK constraint');
+      // Try to create table manually without FK constraint
+      try {
+        await masterSequelize.query(`
+          CREATE TABLE IF NOT EXISTS subscriptions (
+            id CHAR(36) BINARY PRIMARY KEY,
+            tenant_id CHAR(36) BINARY NOT NULL,
+            subscription_plan_id CHAR(36) BINARY,
+            razorpay_subscription_id VARCHAR(255) NOT NULL UNIQUE,
+            razorpay_plan_id VARCHAR(255),
+            status ENUM('created', 'authenticated', 'active', 'pending', 'halted', 'cancelled', 'completed', 'expired') DEFAULT 'created',
+            plan_code VARCHAR(50) NOT NULL,
+            billing_cycle VARCHAR(20) NOT NULL,
+            amount DECIMAL(15,2) NOT NULL,
+            currency VARCHAR(3) DEFAULT 'INR',
+            start_date DATETIME NOT NULL,
+            end_date DATETIME,
+            current_period_start DATETIME,
+            current_period_end DATETIME,
+            cancelled_at DATETIME,
+            notes TEXT,
+            metadata JSON,
+            createdAt DATETIME NOT NULL,
+            updatedAt DATETIME NOT NULL,
+            FOREIGN KEY (tenant_id) REFERENCES tenant_master(id) ON DELETE NO ACTION ON UPDATE CASCADE
+          ) ENGINE=InnoDB;
+        `);
+        logger.info('✓ Created subscriptions table without subscription_plans FK');
+      } catch (createError) {
+        logger.warn('Could not create subscriptions table:', createError.message);
+      }
+    } else {
+      throw syncError;
+    }
+  }
+  
+  try {
+    await models.Payment.sync({ alter: true });
+  } catch (syncError) {
+    logger.warn('⚠️  Payment sync error:', syncError.message);
+    // Continue with other models
+  }
 }
+
+// Subscription and Payment Models (linked to TenantMaster)
+models.Subscription = require('./Subscription');
+models.Payment = require('./Payment');
+
+// Define associations for Subscription and Payment
+models.Subscription.belongsTo(models.TenantMaster, { foreignKey: 'tenant_id', as: 'tenant' });
+models.Subscription.hasMany(models.Payment, { foreignKey: 'subscription_id', as: 'payments' });
+models.Payment.belongsTo(models.TenantMaster, { foreignKey: 'tenant_id', as: 'tenant' });
+models.Payment.belongsTo(models.Subscription, { foreignKey: 'subscription_id', as: 'subscription' });
 
 models.syncMasterModels = syncMasterModels;
 

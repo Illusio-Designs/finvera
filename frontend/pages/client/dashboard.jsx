@@ -6,12 +6,12 @@ import PageLayout from '../../components/layouts/PageLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { accountingAPI, companyAPI } from '../../lib/api';
+import { accountingAPI, companyAPI, clientSupportAPI } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   FiFileText, FiFolder, FiTrendingUp, FiDollarSign,
-  FiBarChart2, FiArrowRight, FiFile, FiCreditCard, FiShoppingCart, FiTrendingDown, FiShield
+  FiBarChart2, FiArrowRight, FiFile, FiCreditCard, FiShoppingCart, FiTrendingDown, FiShield, FiAlertCircle, FiHeadphones, FiPlus
 } from 'react-icons/fi';
 
 const formatCurrency = (amount) => {
@@ -47,7 +47,8 @@ export default function ClientDashboard() {
       total_outstanding: 0,
       receivables: 0,
       payables: 0,
-      gst_credit: 0,
+      cash_on_hand: 0,
+      gst_payable: 0,
       current_month_sales: 0,
       current_month_purchase: 0,
       active_ledgers: 0,
@@ -56,12 +57,15 @@ export default function ClientDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [companyName, setCompanyName] = useState('Client');
+  const [recentTickets, setRecentTickets] = useState([]);
+  const [ticketsLoading, setTicketsLoading] = useState(false);
   const router = useRouter();
   const { user } = useAuth();
 
   useEffect(() => {
     fetchDashboardData();
     fetchCompanyName();
+    fetchRecentTickets();
   }, [user?.company_id]);
 
   const fetchDashboardData = async () => {
@@ -102,7 +106,8 @@ export default function ClientDashboard() {
           total_outstanding: 0,
           receivables: 0,
           payables: 0,
-          gst_credit: 0,
+          cash_on_hand: 0,
+          gst_payable: 0,
           current_month_sales: 0,
           current_month_purchase: 0,
           active_ledgers: 0,
@@ -134,33 +139,26 @@ export default function ClientDashboard() {
     }
   };
 
+  const fetchRecentTickets = async () => {
+    try {
+      setTicketsLoading(true);
+      const response = await clientSupportAPI.tickets.list({
+        page: 1,
+        limit: 5,
+      });
+      const data = response.data?.data || response.data || [];
+      setRecentTickets(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching recent tickets:', error);
+      setRecentTickets([]);
+    } finally {
+      setTicketsLoading(false);
+    }
+  };
+
   const { stats } = dashboardData;
 
   const statCards = [
-    {
-      title: 'Total Vouchers',
-      value: stats.total_vouchers || 0,
-      subtitle: `${stats.total_sales_invoices || 0} Sales, ${stats.total_purchase_invoices || 0} Purchase`,
-      icon: FiFileText,
-      color: 'bg-blue-500',
-      href: '/client/vouchers/vouchers'
-    },
-    {
-      title: 'Ledgers',
-      value: stats.total_ledgers || 0,
-      subtitle: `${stats.active_ledgers || 0} active`,
-      icon: FiFolder,
-      color: 'bg-purple-500',
-      href: '/client/ledgers'
-    },
-    {
-      title: 'Outstanding',
-      value: formatCurrency(stats.total_outstanding || 0),
-      subtitle: `${stats.pending_bills || 0} pending bills`,
-      icon: FiDollarSign,
-      color: 'bg-yellow-500',
-      href: '/client/accounting/outstanding'
-    },
     {
       title: 'Receivables',
       value: formatCurrency(stats.receivables || 0),
@@ -178,28 +176,20 @@ export default function ClientDashboard() {
       href: '/client/accounting/outstanding'
     },
     {
-      title: 'GST Credit',
-      value: formatCurrency(stats.gst_credit || 0),
-      subtitle: 'Available ITC',
-      icon: FiShield,
-      color: 'bg-green-500',
+      title: 'Cash on Hand',
+      value: formatCurrency(stats.cash_on_hand || 0),
+      subtitle: 'Available cash',
+      icon: FiDollarSign,
+      color: 'bg-blue-500',
+      href: '/client/ledgers'
+    },
+    {
+      title: 'Duties & Taxes',
+      value: formatCurrency(stats.gst_payable || 0),
+      subtitle: 'GST Payable',
+      icon: FiAlertCircle,
+      color: 'bg-orange-500',
       href: '/client/gst/returns/gstr3b'
-    },
-    {
-      title: 'Payments',
-      value: stats.total_payments || 0,
-      subtitle: 'Total payment vouchers',
-      icon: FiCreditCard,
-      color: 'bg-indigo-500',
-      href: '/client/accounting/payments'
-    },
-    {
-      title: 'Receipts',
-      value: stats.total_receipts || 0,
-      subtitle: 'Total receipt vouchers',
-      icon: FiShoppingCart,
-      color: 'bg-teal-500',
-      href: '/client/accounting/receipts'
     }
   ];
 
@@ -208,6 +198,7 @@ export default function ClientDashboard() {
     { label: 'Manage Ledgers', icon: FiFolder, href: '/client/ledgers', variant: 'secondary' },
     { label: 'View Reports', icon: FiBarChart2, href: '/client/reports', variant: 'outline' },
     { label: 'GST Filing', icon: FiTrendingUp, href: '/client/gst/returns/gstr1', variant: 'outline' },
+    { label: 'Support Tickets', icon: FiHeadphones, href: '/client/support', variant: 'outline' },
   ];
 
   return (
@@ -259,7 +250,7 @@ export default function ClientDashboard() {
 
                 {/* Quick Actions */}
                 <Card title="Quick Actions">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                     {quickActions.map((action, index) => {
                       const Icon = action.icon;
                       return (
@@ -275,6 +266,91 @@ export default function ClientDashboard() {
                       );
                     })}
                   </div>
+                </Card>
+
+                {/* Support Tickets Widget */}
+                <Card 
+                  title="Support Tickets"
+                  actions={
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => router.push('/client/support')}
+                      >
+                        <FiPlus className="h-4 w-4 mr-1" />
+                        New Ticket
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => router.push('/client/support')}
+                      >
+                        View All
+                      </Button>
+                    </div>
+                  }
+                >
+                  {ticketsLoading ? (
+                    <div className="flex justify-center items-center py-8">
+                      <LoadingSpinner size="md" />
+                    </div>
+                  ) : recentTickets.length > 0 ? (
+                    <div className="space-y-3">
+                      {recentTickets.map((ticket) => (
+                        <div
+                          key={ticket.id}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                          onClick={() => router.push('/client/support')}
+                        >
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className="p-2 rounded bg-blue-100 text-blue-700">
+                              <FiHeadphones className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-gray-900">{ticket.ticket_number}</p>
+                                <span className={`text-xs px-2 py-0.5 rounded ${
+                                  ticket.status === 'resolved' ? 'bg-green-100 text-green-700' :
+                                  ticket.status === 'closed' ? 'bg-gray-100 text-gray-700' :
+                                  ticket.status === 'in_progress' ? 'bg-yellow-100 text-yellow-700' :
+                                  ticket.status === 'assigned' ? 'bg-blue-100 text-blue-700' :
+                                  'bg-orange-100 text-orange-700'
+                                }`}>
+                                  {ticket.status?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600 truncate">{ticket.subject}</p>
+                              <p className="text-xs text-gray-500">{formatDate(ticket.createdAt)}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className={`text-xs px-2 py-1 rounded ${
+                              ticket.priority === 'urgent' ? 'bg-red-100 text-red-700' :
+                              ticket.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                              ticket.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-gray-100 text-gray-700'
+                            }`}>
+                              {ticket.priority?.charAt(0).toUpperCase() + ticket.priority?.slice(1)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <FiHeadphones className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500 text-sm mb-3">No support tickets yet</p>
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => router.push('/client/support')}
+                      >
+                        <FiPlus className="h-4 w-4 mr-1" />
+                        Create Your First Ticket
+                      </Button>
+                    </div>
+                  )}
                 </Card>
 
                 {/* Recent Activity */}

@@ -13,7 +13,7 @@ import FormDatePicker from '../../components/forms/FormDatePicker';
 import FormTextarea from '../../components/forms/FormTextarea';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { useTable } from '../../hooks/useTable';
-import { accountingAPI, reportsAPI } from '../../lib/api';
+import { accountingAPI, reportsAPI, companyAPI } from '../../lib/api';
 import Badge from '../../components/ui/Badge';
 import { formatCurrency, formatDate, extractPANFromGSTIN } from '../../lib/formatters';
 import { getStartOfMonth, getEndOfMonth } from '../../lib/dateUtils';
@@ -21,8 +21,10 @@ import { getLedgerFieldsForGroup } from '../../lib/ledgerFieldConfig';
 import toast from 'react-hot-toast';
 import { FiPlus, FiEdit, FiTrash2, FiSave, FiX, FiEye, FiFileText, FiArrowLeft, FiMinus, FiPrinter } from 'react-icons/fi';
 import { useApi } from '../../hooks/useApi';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function LedgersList() {
+  const { user } = useAuth();
   const router = useRouter();
   const { id, view } = router.query; // Support ?id=xxx&view=detail or ?id=xxx&view=statement
   const printRef = useRef(null);
@@ -689,6 +691,17 @@ export default function LedgersList() {
   const ledger = ledgerData?.data || ledgerData;
   const balance = balanceData?.data || balanceData || {};
   const statement = statementData?.data || statementData || {};
+  
+  // Fetch company information for statement header
+  const { data: companyData } = useApi(
+    () => {
+      if (!user?.company_id) return Promise.resolve({ data: null });
+      return companyAPI.get(user.company_id);
+    },
+    true,
+    [user?.company_id]
+  );
+  const company = companyData?.data || companyData || {};
 
   const statementColumns = [
     {
@@ -717,7 +730,11 @@ export default function LedgersList() {
     {
       key: 'balance',
       label: 'Balance',
-      render: (value) => formatCurrency(value || 0),
+      render: (value, row) => {
+        // Show balance with proper sign handling (negative for Cr, positive for Dr)
+        const balanceValue = parseFloat(value) || 0;
+        return formatCurrency(Math.abs(balanceValue));
+      },
     },
   ];
 
@@ -1436,57 +1453,158 @@ export default function LedgersList() {
                   </div>
                 </Card>
 
+                {statement.summary && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                      <div className="text-gray-500 text-sm font-medium">Opening Balance</div>
+                      <div className="text-2xl font-bold text-gray-900 mt-2">
+                        {formatCurrency(statement.summary.opening_balance || 0)}
+                      </div>
+                      <div className="mt-2">
+                        <Badge variant={statement.summary.opening_balance_type === 'Dr' ? 'danger' : 'success'}>
+                          {statement.summary.opening_balance_type || 'Dr'}
+                        </Badge>
+                      </div>
+                  </Card>
+                    <Card>
+                      <div className="text-gray-500 text-sm font-medium">Closing Balance</div>
+                      <div className="text-2xl font-bold text-gray-900 mt-2">
+                        {formatCurrency(statement.summary.closing_balance || 0)}
+                      </div>
+                      <div className="mt-2">
+                        <Badge variant={statement.summary.closing_balance_type === 'Dr' ? 'danger' : 'success'}>
+                          {statement.summary.closing_balance_type || 'Dr'}
+                        </Badge>
+                      </div>
+                    </Card>
+                  </div>
+                )}
+
                 {statement.statement && statement.statement.length > 0 && (
                   <Card>
-                    <DataTable
-                      columns={statementColumns}
-                      data={statement.statement || []}
-                      loading={statementLoading}
-                    />
+                    {/* Company Header */}
+                    <div className="mb-6 pb-4 border-b">
+                      <div className="text-center">
+                        <h3 className="text-xl font-bold text-gray-900">
+                          {company.company_name || 'Company Name'}
+                        </h3>
+                        {company.registered_address && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            {company.registered_address}
+                            {company.state && `, ${company.state}`}
+                            {company.pincode && ` - ${company.pincode}`}
+                          </p>
+                        )}
+                        <p className="text-sm font-semibold text-gray-700 mt-2">
+                          Ledger Statement - {ledger.ledger_name || 'Ledger'}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Period: {formatDate(statementDateRange.from_date, 'DD-MM-YYYY')} to {formatDate(statementDateRange.to_date, 'DD-MM-YYYY')}
+                        </p>
+                      </div>
+                      </div>
+
+                    {/* Opening/Closing Summary */}
+                    {statement.summary && (
+                      <div className="grid grid-cols-2 gap-4 mb-6 pb-4 border-b">
+                      <div>
+                          <div className="text-sm text-gray-500">Opening Date</div>
+                          <div className="text-sm font-semibold text-gray-900 mt-1">
+                            {formatDate(statementDateRange.from_date, 'DD-MM-YYYY')}
+                      </div>
+                          <div className="text-lg font-bold text-gray-900 mt-2">
+                            {formatCurrency(statement.summary.opening_balance || 0)}
+                            <span className="ml-2 text-sm font-normal text-gray-500">
+                              ({statement.summary.opening_balance_type || 'Dr'})
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm text-gray-500">Closing Date</div>
+                          <div className="text-sm font-semibold text-gray-900 mt-1">
+                            {formatDate(statementDateRange.to_date, 'DD-MM-YYYY')}
+                          </div>
+                          <div className="text-lg font-bold text-gray-900 mt-2">
+                            {formatCurrency(statement.summary.closing_balance || 0)}
+                            <span className="ml-2 text-sm font-normal text-gray-500">
+                              ({statement.summary.closing_balance_type || 'Dr'})
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Transaction Table */}
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                              Date
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                              Voucher No.
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                              Particulars
+                            </th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                              Debit
+                            </th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                              Credit
+                            </th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                              Balance
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {statement.statement.map((row, index) => (
+                            <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 border-b">
+                                {formatDate(row.date, 'DD-MM-YYYY')}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 border-b">
+                                {row.voucher_number || '-'}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-900 border-b">
+                                {row.narration || '-'}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right border-b">
+                                {row.debit > 0 ? formatCurrency(row.debit) : '-'}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right border-b">
+                                {row.credit > 0 ? formatCurrency(row.credit) : '-'}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900 text-right border-b">
+                                {formatCurrency(Math.abs(row.balance || 0))}
+                              </td>
+                            </tr>
+                          ))}
+                          {/* Totals Row */}
+                          {statement.summary && (
+                            <tr className="bg-yellow-50 font-semibold">
+                              <td colSpan="3" className="px-4 py-3 text-sm text-gray-900 border-t-2 border-gray-400">
+                                Total:
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right border-t-2 border-gray-400">
+                                {statement.summary.total_debit > 0 ? formatCurrency(statement.summary.total_debit) : '-'}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right border-t-2 border-gray-400">
+                                {statement.summary.total_credit > 0 ? formatCurrency(statement.summary.total_credit) : '-'}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right border-t-2 border-gray-400">
+                                {formatCurrency(statement.summary.closing_balance || 0)}
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </Card>
                 )}
 
-                {statement.summary && (
-                  <Card title="Summary">
-                    <dl className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div>
-                        <dt className="text-sm font-medium text-gray-500">Opening Balance</dt>
-                        <dd className="mt-1 text-lg font-semibold text-gray-900">
-                          {formatCurrency(statement.summary.opening_balance || 0)}
-                          <span className="ml-2 text-sm text-gray-500">
-                            ({statement.summary.opening_balance_type || 'Dr'})
-                          </span>
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm font-medium text-gray-500">Total Debit</dt>
-                        <dd className="mt-1 text-lg font-semibold text-gray-900">
-                          {formatCurrency(statement.summary.total_debit || 0)}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm font-medium text-gray-500">Total Credit</dt>
-                        <dd className="mt-1 text-lg font-semibold text-gray-900">
-                          {formatCurrency(statement.summary.total_credit || 0)}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm font-medium text-gray-500">Closing Balance</dt>
-                        <dd className="mt-1 text-lg font-semibold text-gray-900">
-                          {formatCurrency(statement.summary.closing_balance || 0)}
-                          <span className="ml-2 text-sm text-gray-500">
-                            ({statement.summary.closing_balance_type || 'Dr'})
-                          </span>
-                        </dd>
-                      </div>
-                    </dl>
-                    {statement.summary.transaction_count !== undefined && (
-                      <div className="mt-4 text-sm text-gray-500">
-                        Total Transactions: {statement.summary.transaction_count}
-                      </div>
-                    )}
-                  </Card>
-                )}
 
                 <div className="flex justify-end gap-3 pt-4 border-t">
                   <Button variant="outline" onClick={handleCloseStatement}>
@@ -1507,21 +1625,21 @@ export default function LedgersList() {
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900">All Ledgers</h2>
             </div>
-            <Card className="shadow-sm border border-gray-200">
-              <DataTable
-                columns={columns}
-                data={tableData?.data || tableData || []}
-                loading={loading}
-                pagination={pagination}
-                onPageChange={handlePageChange}
-                onSort={handleSort}
-                sortField={sort.field}
-                sortOrder={sort.order}
-                onRowClick={(row) => handleView(row)}
+          <Card className="shadow-sm border border-gray-200">
+            <DataTable
+              columns={columns}
+              data={tableData?.data || tableData || []}
+              loading={loading}
+              pagination={pagination}
+              onPageChange={handlePageChange}
+              onSort={handleSort}
+              sortField={sort.field}
+              sortOrder={sort.order}
+              onRowClick={(row) => handleView(row)}
                 searchable={true}
                 searchPlaceholder="Search ledgers..."
-              />
-            </Card>
+            />
+          </Card>
           </div>
         </PageLayout>
       </ClientLayout>

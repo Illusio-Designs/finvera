@@ -179,7 +179,7 @@ export default function SettingsPage() {
 
   if (fetching) {
     return (
-      <ProtectedRoute>
+      <ProtectedRoute portalType="client">
         <ClientLayout>
           <PageLayout title="Settings">
             <Card>
@@ -192,7 +192,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute portalType="client">
       <ClientLayout>
         <PageLayout
           title="Company Settings"
@@ -327,19 +327,17 @@ export default function SettingsPage() {
               </div>
             </Card>
 
-            {/* Invoice Number Configuration */}
+            {/* Sales Invoice Number Configuration */}
             <Card>
               <div className="space-y-6">
                 <div className="border-b pb-3">
-                  <h3 className="text-lg font-semibold text-gray-900">Invoice Number Configuration</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Sales Invoice Number Management</h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    Configure prefix, suffix, and padding for invoice numbers
+                    Configure how sales invoice numbers are generated. Set your preferred prefix and suffix format.
                   </p>
                 </div>
 
-                {/* Sales Invoice Configuration */}
                 <div className="space-y-4">
-                  <h4 className="text-md font-medium text-gray-800">Sales Invoice</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormInput
                       name="sales_invoice_prefix"
@@ -349,7 +347,8 @@ export default function SettingsPage() {
                       onChange={handleChange}
                       placeholder="INV"
                       error={errors.sales_invoice_prefix}
-                      helperText="e.g., INV, SI, SAL"
+                      helperText="e.g., INV, SI, SAL, SI-2024"
+                      required
                     />
                     <FormInput
                       name="sales_invoice_suffix"
@@ -359,31 +358,66 @@ export default function SettingsPage() {
                       onChange={handleChange}
                       placeholder="Leave empty for no suffix"
                       error={errors.sales_invoice_suffix}
-                      helperText="e.g., -FY24, /2024"
+                      helperText="e.g., -FY24, /2024, -FY"
                     />
                     <FormInput
                       name="sales_invoice_padding"
-                      label="Number Padding"
+                      label="Number Padding (Digits)"
                       type="number"
                       value={formData.sales_invoice_padding}
                       onChange={handleChange}
                       placeholder="6"
                       error={errors.sales_invoice_padding}
-                      helperText="Number of digits (e.g., 6 = 000001)"
+                      helperText="Number of digits (e.g., 6 = 000001, 4 = 0001)"
                       min={1}
                       max={10}
+                      required
                     />
                   </div>
-                  <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                    <strong>Example format:</strong>{' '}
-                    {formData.sales_invoice_prefix || 'INV'}-{String(1).padStart(parseInt(formData.sales_invoice_padding) || 6, '0')}
-                    {formData.sales_invoice_suffix ? formData.sales_invoice_suffix : ''}
+                  
+                  {/* Live Preview */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm font-semibold text-blue-900">Live Preview:</span>
+                      <span className="text-lg font-mono font-bold text-blue-700">
+                        {formData.sales_invoice_prefix || 'INV'}-{String(1).padStart(parseInt(formData.sales_invoice_padding) || 6, '0')}
+                        {formData.sales_invoice_suffix ? formData.sales_invoice_suffix : ''}
+                      </span>
+                    </div>
+                    <p className="text-xs text-blue-700">
+                      Your sales invoices will be numbered sequentially using this format. 
+                      Example: First invoice = {formData.sales_invoice_prefix || 'INV'}-{String(1).padStart(parseInt(formData.sales_invoice_padding) || 6, '0')}
+                      {formData.sales_invoice_suffix ? formData.sales_invoice_suffix : ''}, 
+                      Second = {formData.sales_invoice_prefix || 'INV'}-{String(2).padStart(parseInt(formData.sales_invoice_padding) || 6, '0')}
+                      {formData.sales_invoice_suffix ? formData.sales_invoice_suffix : ''}
+                    </p>
+                  </div>
+
+                  {/* Information Box */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h5 className="text-sm font-semibold text-gray-900 mb-2">How it works:</h5>
+                    <ul className="text-xs text-gray-600 space-y-1 list-disc list-inside">
+                      <li>Prefix appears at the start of every invoice number</li>
+                      <li>Suffix (if set) appears at the end of every invoice number</li>
+                      <li>Numbers are auto-incremented and padded with zeros</li>
+                      <li>Changes apply to new invoices only (existing invoices remain unchanged)</li>
+                    </ul>
                   </div>
                 </div>
+              </div>
+            </Card>
 
-                {/* Purchase Invoice Configuration */}
-                <div className="space-y-4 border-t pt-4">
-                  <h4 className="text-md font-medium text-gray-800">Purchase Invoice</h4>
+            {/* Purchase Invoice Number Configuration */}
+            <Card>
+              <div className="space-y-6">
+                <div className="border-b pb-3">
+                  <h3 className="text-lg font-semibold text-gray-900">Purchase Invoice Number Configuration</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Configure prefix, suffix, and padding for purchase invoice numbers
+                  </p>
+                </div>
+
+                <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormInput
                       name="purchase_invoice_prefix"

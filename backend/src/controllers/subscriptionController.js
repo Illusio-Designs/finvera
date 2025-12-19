@@ -1,0 +1,326 @@
+const razorpayService = require('../services/razorpayService');
+const logger = require('../utils/logger');
+const { Op } = require('sequelize');
+
+module.exports = {
+  /**
+   * Create a subscription order for a tenant
+   */
+  async createSubscription(req, res, next) {
+    try {
+      const tenant_id = req.tenant_id || req.user?.tenant_id;
+      const { plan_id, billing_cycle } = req.body;
+
+      if (!plan_id || !billing_cycle) {
+        return res.status(400).json({ message: 'plan_id and billing_cycle are required' });
+      }
+
+      const masterModels = req.masterModels || require('../models/masterModels');
+      const tenant = await masterModels.TenantMaster.findByPk(tenant_id);
+      if (!tenant) {
+        return res.status(404).json({ message: 'Tenant not found' });
+      }
+
+      // Get subscription plan details
+      const db = require('../models');
+      const plan = await db.SubscriptionPlan.findByPk(plan_id);
+      if (!plan) {
+        return res.status(404).json({ message: 'Subscription plan not found' });
+      }
+
+      let amount = parseFloat(plan.base_price || 0);
+      if (billing_cycle === 'yearly' && plan.discounted_price) {
+        // Use discounted price for yearly
+        amount = parseFloat(plan.discounted_price * 12); // Assuming monthly price
+      } else if (billing_cycle === 'yearly') {
+        // If no discounted price, calculate yearly as 12x monthly
+        amount = parseFloat(plan.base_price * 12);
+      }
+
+      // Create or get Razorpay customer
+      let razorpayCustomerId = tenant.razorpay_customer_id;
+      if (!razorpayCustomerId) {
+        const customer = await razorpayService.createCustomer({
+          name: tenant.company_name,
+          email: tenant.email,
+          contact: tenant.phone,
+          notes: {
+            tenant_id: tenant_id,
+          },
+        });
+        razorpayCustomerId = customer.id;
+
+        // Update tenant with customer ID
+        await tenant.update({ razorpay_customer_id: razorpayCustomerId });
+      }
+
+      // Create Razorpay plan if needed (for recurring subscriptions)
+      // For now, we'll create an order for one-time payment or subscription
+      let razorpayPlanId = null;
+      if (billing_cycle !== 'one_time') {
+        // Create a Razorpay plan for recurring subscriptions
+        const razorpayPlan = await razorpayService.createPlan({
+          name: `${plan.plan_name} - ${billing_cycle}`,
+          amount: amount,
+          currency: plan.currency || 'INR',
+          description: plan.description,
+          billing_cycle: billing_cycle,
+          notes: {
+            plan_id: plan_id,
+            tenant_id: tenant_id,
+          },
+        });
+        razorpayPlanId = razorpayPlan.id;
+
+        // Create Razorpay subscription
+        const razorpaySubscription = await razorpayService.createSubscription({
+          plan_id: razorpayPlanId,
+          customer_notify: true,
+          total_count: billing_cycle === 'yearly' ? 12 : 1, // For monthly, charge immediately
+          notes: {
+            tenant_id: tenant_id,
+            plan_code: plan.plan_code,
+          },
+        });
+
+        // Calculate dates
+        const startDate = new Date();
+        let endDate = null;
+        let currentPeriodEnd = null;
+        if (billing_cycle === 'monthly') {
+          endDate = new Date(startDate);
+          endDate.setMonth(endDate.getMonth() + 1);
+          currentPeriodEnd = endDate;
+        } else if (billing_cycle === 'yearly') {
+          endDate = new Date(startDate);
+          endDate.setFullYear(endDate.getFullYear() + 1);
+          currentPeriodEnd = new Date(startDate);
+          currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1);
+        }
+
+        // Save subscription to database
+        const subscription = await masterModels.Subscription.create({
+          tenant_id: tenant_id,
+          subscription_plan_id: plan_id,
+          razorpay_subscription_id: razorpaySubscription.id,
+          razorpay_plan_id: razorpayPlanId,
+          status: razorpaySubscription.status,
+          plan_code: plan.plan_code,
+          billing_cycle: billing_cycle,
+          amount: amount,
+          currency: plan.currency || 'INR',
+          start_date: startDate,
+          end_date: endDate,
+          current_period_start: startDate,
+          current_period_end: currentPeriodEnd,
+          metadata: razorpaySubscription,
+        });
+
+        // Update tenant
+        await tenant.update({
+          razorpay_subscription_id: razorpaySubscription.id,
+          subscription_plan: plan.plan_code,
+          subscription_start: startDate,
+          subscription_end: endDate,
+        });
+
+        return res.json({
+          success: true,
+          subscription: {
+            id: subscription.id,
+            razorpay_subscription_id: razorpaySubscription.id,
+            status: razorpaySubscription.status,
+            amount: amount,
+            currency: plan.currency || 'INR',
+            auth_link: razorpaySubscription.short_url, // Link for customer to complete payment
+          },
+        });
+      } else {
+        // One-time payment - create order
+        const order = await razorpayService.createOrder({
+          amount: amount,
+          currency: plan.currency || 'INR',
+          receipt: `sub_${tenant_id}_${Date.now()}`,
+          notes: {
+            tenant_id: tenant_id,
+            plan_id: plan_id,
+            plan_code: plan.plan_code,
+          },
+        });
+
+        return res.json({
+          success: true,
+          order: {
+            id: order.id,
+            amount: order.amount / 100, // Convert from paise
+            currency: order.currency,
+            key: process.env.RAZORPAY_KEY_ID, // For frontend Razorpay Checkout
+          },
+        });
+      }
+    } catch (err) {
+      logger.error('Create subscription error:', err);
+      next(err);
+    }
+  },
+
+  /**
+   * Get current subscription for tenant
+   */
+  async getCurrentSubscription(req, res, next) {
+    try {
+      const tenant_id = req.tenant_id || req.user?.tenant_id;
+      const masterModels = req.masterModels || require('../models/masterModels');
+
+      const subscription = await masterModels.Subscription.findOne({
+        where: {
+          tenant_id: tenant_id,
+          status: { [Op.in]: ['active', 'authenticated', 'pending'] },
+        },
+        order: [['createdAt', 'DESC']],
+        include: [
+          { model: masterModels.TenantMaster, as: 'tenant', attributes: ['company_name', 'email'] },
+        ],
+      });
+
+      if (!subscription) {
+        return res.json({ success: true, subscription: null });
+      }
+
+      return res.json({ success: true, subscription });
+    } catch (err) {
+      logger.error('Get subscription error:', err);
+      next(err);
+    }
+  },
+
+  /**
+   * Cancel subscription
+   */
+  async cancelSubscription(req, res, next) {
+    try {
+      const tenant_id = req.tenant_id || req.user?.tenant_id;
+      const { cancel_at_end } = req.body;
+      const masterModels = req.masterModels || require('../models/masterModels');
+
+      const subscription = await masterModels.Subscription.findOne({
+        where: {
+          tenant_id: tenant_id,
+          status: { [Op.in]: ['active', 'authenticated', 'pending'] },
+        },
+      });
+
+      if (!subscription) {
+        return res.status(404).json({ message: 'Active subscription not found' });
+      }
+
+      // Cancel in Razorpay
+      const razorpaySubscription = await razorpayService.cancelSubscription(
+        subscription.razorpay_subscription_id,
+        cancel_at_end === true
+      );
+
+      // Update in database
+      await subscription.update({
+        status: razorpaySubscription.status,
+        cancelled_at: new Date(),
+      });
+
+      const tenant = await masterModels.TenantMaster.findByPk(tenant_id);
+      if (tenant) {
+        await tenant.update({
+          razorpay_subscription_id: null,
+          subscription_end: cancel_at_end ? subscription.current_period_end : new Date(),
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: 'Subscription cancelled successfully',
+        subscription: subscription,
+      });
+    } catch (err) {
+      logger.error('Cancel subscription error:', err);
+      next(err);
+    }
+  },
+
+  /**
+   * Verify payment and update subscription
+   */
+  async verifyPayment(req, res, next) {
+    try {
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+        return res.status(400).json({ message: 'Missing payment verification data' });
+      }
+
+      // Verify signature
+      const isValid = razorpayService.verifyPaymentSignature(
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature
+      );
+
+      if (!isValid) {
+        return res.status(400).json({ message: 'Invalid payment signature' });
+      }
+
+      // Get payment details from Razorpay
+      const payment = await razorpayService.getPayment(razorpay_payment_id);
+
+      if (payment.status !== 'captured' && payment.status !== 'authorized') {
+        return res.status(400).json({ message: `Payment not successful. Status: ${payment.status}` });
+      }
+
+      // Find subscription by order notes
+      const masterModels = req.masterModels || require('../models/masterModels');
+      const tenantId = payment.notes?.tenant_id;
+
+      if (tenantId) {
+        // Update tenant subscription if payment successful
+        const tenant = await masterModels.TenantMaster.findByPk(tenantId);
+        if (tenant) {
+          // If this was a one-time payment, activate subscription
+          // Or update existing subscription based on payment
+          // Implementation depends on your business logic
+        }
+      }
+
+      return res.json({
+        success: true,
+        message: 'Payment verified successfully',
+        payment: {
+          id: payment.id,
+          status: payment.status,
+          amount: payment.amount / 100,
+        },
+      });
+    } catch (err) {
+      logger.error('Verify payment error:', err);
+      next(err);
+    }
+  },
+
+  /**
+   * Get payment history for tenant
+   */
+  async getPaymentHistory(req, res, next) {
+    try {
+      const tenant_id = req.tenant_id || req.user?.tenant_id;
+      const masterModels = req.masterModels || require('../models/masterModels');
+
+      const payments = await masterModels.Payment.findAll({
+        where: { tenant_id: tenant_id },
+        order: [['createdAt', 'DESC']],
+        limit: 50,
+      });
+
+      return res.json({ success: true, payments });
+    } catch (err) {
+      logger.error('Get payment history error:', err);
+      next(err);
+    }
+  },
+};

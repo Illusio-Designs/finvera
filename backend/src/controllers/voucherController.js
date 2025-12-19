@@ -128,20 +128,20 @@ async function applyPurchaseInventory({ tenantModels }, voucher, voucherItems, t
     }
     if (!inv) {
       const [foundInv] = await tenantModels.InventoryItem.findOrCreate({
-        where: { item_key: itemKey },
-        defaults: {
-          item_key: itemKey,
-          item_code: it.item_code || null,
-          item_name: it.item_description || keyRaw,
-          hsn_sac_code: it.hsn_sac_code || null,
-          uqc: it.uqc || null,
-          gst_rate: it.gst_rate || null,
-          quantity_on_hand: 0,
-          avg_cost: 0,
-          is_active: true,
-        },
-        transaction: t,
-      });
+      where: { item_key: itemKey },
+      defaults: {
+        item_key: itemKey,
+        item_code: it.item_code || null,
+        item_name: it.item_description || keyRaw,
+        hsn_sac_code: it.hsn_sac_code || null,
+        uqc: it.uqc || null,
+        gst_rate: it.gst_rate || null,
+        quantity_on_hand: 0,
+        avg_cost: 0,
+        is_active: true,
+      },
+      transaction: t,
+    });
       inv = foundInv;
     }
 
@@ -226,7 +226,7 @@ async function applySalesInventoryAndGetCogs({ tenantModels }, voucher, voucherI
 
       if (warehouseStock) {
         const prevQty = toNum(warehouseStock.quantity, 0);
-        const newQty = prevQty - qty;
+    const newQty = prevQty - qty;
 
         if (newQty < 0) {
           throw new Error(`Insufficient stock in warehouse. Available: ${prevQty}, Requested: ${qty}`);
@@ -490,7 +490,7 @@ module.exports = {
       let voucher;
       try {
         voucher = await req.tenantModels.Voucher.findByPk(id, {
-          include: [
+        include: [
             { model: req.tenantModels.VoucherItem, required: false },
             { 
               model: req.tenantModels.VoucherLedgerEntry, 
@@ -501,8 +501,8 @@ module.exports = {
               }] 
             },
             { model: req.tenantModels.Ledger, as: 'partyLedger', required: false },
-          ],
-        });
+        ],
+      });
       } catch (includeError) {
         // If include fails (e.g., missing columns), try without includes first
         logger.warn('Error with includes, retrying without:', includeError.message);
