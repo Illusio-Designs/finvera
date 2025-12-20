@@ -1,4 +1,5 @@
 require('dotenv').config();
+const http = require('http');
 const app = require('./src/app');
 const sequelize = require('./src/config/database');
 const { initDatabase } = require('./src/config/database');
@@ -7,6 +8,7 @@ const { initMasterDatabase } = require('./src/config/masterDatabase');
 const redisClient = require('./src/config/redis');
 const logger = require('./src/utils/logger');
 const { syncDatabase } = require('./src/utils/dbSync');
+const { initSocketServer } = require('./src/websocket/socketServer');
 
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -27,10 +29,17 @@ async function startServer() {
 
     logger.info('✅ All databases initialized successfully');
     
+    // Create HTTP server
+    const server = http.createServer(app);
+    
+    // Initialize Socket.IO server
+    initSocketServer(server);
+    
     // Start server
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       logger.info(`🚀 Server running on port ${PORT} in ${NODE_ENV} mode`);
       logger.info(`📍 API: http://localhost:${PORT}/api`);
+      logger.info(`🔌 WebSocket: ws://localhost:${PORT}`);
       logger.info(`📊 Databases:`);
       logger.info(`   - Main DB: ${process.env.DB_NAME || 'finvera_db'} (Admin, Salesman, Distributor, etc.)`);
       logger.info(`   - Master DB: ${process.env.MASTER_DB_NAME || 'finvera_master'} (Tenant metadata only)`);

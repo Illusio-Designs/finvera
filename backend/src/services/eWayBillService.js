@@ -60,11 +60,10 @@ class EWayBillService {
       })),
     };
 
-    // Check if third-party API is configured
+    // Check if third-party API is configured (Sandbox uses API key)
     const compliance = company?.compliance || {};
     const useThirdParty = compliance.e_way_bill?.applicable && 
-                          compliance.e_way_bill?.username && 
-                          compliance.e_way_bill?.password;
+                          compliance.e_way_bill?.api_key;
 
     let ewayBillNo = fakeEWayBillNo();
     let generatedAt = new Date();
@@ -188,11 +187,10 @@ class EWayBillService {
     
     if (!ewb.eway_bill_no) throw new Error('E-way bill number not found');
 
-    // Check if third-party API is configured
+    // Check if third-party API is configured (Sandbox uses API key)
     const compliance = company?.compliance || {};
     const useThirdParty = compliance.e_way_bill?.applicable && 
-                          compliance.e_way_bill?.username && 
-                          compliance.e_way_bill?.password;
+                          compliance.e_way_bill?.api_key;
 
     if (useThirdParty && ewb.eway_bill_no) {
       try {

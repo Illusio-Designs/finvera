@@ -31,11 +31,10 @@ class EInvoiceService {
     const existing = await tenantModels.EInvoice.findOne({ where: { voucher_id: voucherId, status: 'generated' } });
     if (existing) return existing;
 
-    // Check if third-party API is configured
+    // Check if third-party API is configured (Sandbox uses API key)
     const compliance = company?.compliance || {};
     const useThirdParty = compliance.e_invoice?.applicable && 
-                          compliance.e_invoice?.username && 
-                          compliance.e_invoice?.password;
+                          compliance.e_invoice?.api_key;
 
     if (useThirdParty) {
       try {
@@ -142,11 +141,10 @@ class EInvoiceService {
 
     if (!eInvoice.irn) throw new Error('IRN not found for this e-invoice');
 
-    // Check if third-party API is configured
+    // Check if third-party API is configured (Sandbox uses API key)
     const compliance = company?.compliance || {};
     const useThirdParty = compliance.e_invoice?.applicable && 
-                          compliance.e_invoice?.username && 
-                          compliance.e_invoice?.password;
+                          compliance.e_invoice?.api_key;
 
     if (useThirdParty && eInvoice.irn) {
       try {

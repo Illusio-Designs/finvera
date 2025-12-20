@@ -1,8 +1,20 @@
 import '../styles/globals.css';
 import { AuthProvider } from '../contexts/AuthContext';
+import { WebSocketProvider } from '../contexts/WebSocketContext';
 import Head from 'next/head';
+import { useEffect } from 'react';
+import { initDesktopNotifications } from '../lib/desktopNotificationService';
+import { preloadSounds } from '../lib/soundService';
 
 export default function App({ Component, pageProps }) {
+  useEffect(() => {
+    // Initialize desktop notifications
+    initDesktopNotifications();
+    
+    // Preload notification sounds
+    preloadSounds();
+  }, []);
+
   return (
     <>
       <Head>
@@ -11,7 +23,9 @@ export default function App({ Component, pageProps }) {
         <link rel="apple-touch-icon" href="/Fav%20Icon/Fav_Dark_JPG@4x-100.jpg" />
       </Head>
       <AuthProvider>
-        <Component {...pageProps} />
+        <WebSocketProvider>
+          <Component {...pageProps} />
+        </WebSocketProvider>
       </AuthProvider>
     </>
   );

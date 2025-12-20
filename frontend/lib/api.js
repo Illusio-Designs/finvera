@@ -340,6 +340,33 @@ export const accountingAPI = {
     list: (params) => api.get("/accounting/stock-transfers", { params }),
     create: (data) => api.post("/accounting/stock-transfers", data),
   },
+  // Tally Import
+  tallyImport: {
+    getTemplate: () => api.get("/accounting/tally-import/template"),
+    import: (formData, onUploadProgress) => {
+      // Create a new axios instance for file uploads to avoid Content-Type override
+      const token = Cookies.get("token");
+      const companyId = Cookies.get("companyId");
+      
+      const uploadApi = axios.create({
+        baseURL: API_URL,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...(token && { Authorization: `Bearer ${token}` }),
+          ...(companyId && { 'X-Company-Id': companyId }),
+        },
+      });
+      
+      return uploadApi.post("/accounting/tally-import", formData, {
+        onUploadProgress: (progressEvent) => {
+          if (onUploadProgress && progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            onUploadProgress(percentCompleted);
+          }
+        },
+      });
+    },
+  },
 };
 
 // Reports API
@@ -450,6 +477,8 @@ export const notificationAPI = {
   markAsRead: (id) => api.put(`/notifications/${id}/read`),
   markAllAsRead: () => api.put("/notifications/read-all"),
   delete: (id) => api.delete(`/notifications/${id}`),
+  getPreferences: () => api.get("/notifications/preferences"),
+  updatePreferences: (data) => api.put("/notifications/preferences", data),
 };
 
 export const pricingAPI = {
