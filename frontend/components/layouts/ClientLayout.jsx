@@ -8,7 +8,7 @@ import {
   FiHome, FiFolder, FiFileText, FiTrendingUp, FiTrendingDown,
   FiDollarSign, FiCreditCard, FiRefreshCw, FiFile, FiBarChart2,
   FiShield, FiPercent, FiFileMinus, FiFilePlus, FiMail, FiSettings, FiUser, FiGift,
-  FiPackage, FiLayers, FiMove, FiEdit, FiHeadphones, FiUpload
+  FiPackage, FiLayers, FiMove, FiEdit, FiHeadphones, FiUpload, FiStar
 } from 'react-icons/fi';
 
 const getClientMenuItems = () => [
@@ -114,6 +114,14 @@ const getClientMenuItems = () => [
     label: 'Referral',
     href: '/client/referral',
     icon: FiGift,
+  },
+  {
+    divider: true,
+  },
+  {
+    label: 'Submit Review',
+    href: '/client/review',
+    icon: FiStar,
   },
   {
     divider: true,

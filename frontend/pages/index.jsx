@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
-import { pricingAPI } from '../lib/api';
+import { pricingAPI, reviewAPI } from '../lib/api';
 import { 
   FiBarChart2, FiFileText, FiDollarSign, FiTrendingUp, 
   FiBriefcase, FiTarget, FiCheck, FiZap, FiSmartphone, 
   FiAward, FiMail, FiPhone, FiMapPin, FiArrowRight,
-  FiShield, FiUsers
+  FiShield, FiUsers, FiStar
 } from 'react-icons/fi';
 
 export default function LandingPage() {
@@ -44,7 +44,23 @@ export default function LandingPage() {
     };
 
     fetchPlans();
+    fetchReviews();
   }, []);
+
+  const fetchReviews = async () => {
+    try {
+      setReviewsLoading(true);
+      const response = await reviewAPI.getPublic({ limit: 6, featured_only: 'false' });
+      if (response.data && response.data.data) {
+        setReviews(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      // Keep empty array on error, will show fallback
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
   
   const getClientRegisterUrl = () => {
     const domain = process.env.MAIN_DOMAIN?.includes('localhost') 
@@ -99,8 +115,8 @@ export default function LandingPage() {
   return (
     <>
       <Head>
-        <title>Finvera - Your Trustable Accounting Partner | Complete Accounting SaaS Solution</title>
-        <meta name="description" content="Complete accounting solution for businesses with GST filing, e-invoicing, and comprehensive financial management" />
+        <title>Finvera - Your Trustable Accounting Partner | Complete Accounting Software</title>
+        <meta name="description" content="Complete accounting software for businesses with GST filing, e-invoicing, and comprehensive financial management" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
@@ -122,7 +138,7 @@ export default function LandingPage() {
                 </span>
               </h1>
               <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
-                Multi-tenant accounting SaaS with GST filing, e-invoicing, and comprehensive financial management. 
+                Complete accounting software with GST filing, e-invoicing, and comprehensive financial management. 
                 <span className="block mt-2 font-medium text-primary-700">Your Trustable Accounting Partner.</span>
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -200,11 +216,11 @@ export default function LandingPage() {
 
               <div className="group bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl shadow-lg hover:shadow-2xl transition-all border border-primary-100 hover:border-primary-300 transform hover:-translate-y-2">
                 <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <FiBriefcase className="text-white text-2xl" />
+                  <FiUsers className="text-white text-2xl" />
                 </div>
-                <h3 className="text-2xl font-bold mb-4 text-gray-900">Multi-Tenant</h3>
+                <h3 className="text-2xl font-bold mb-4 text-gray-900">User Management</h3>
                 <p className="text-gray-600 leading-relaxed text-lg">
-                  Separate data for each client with secure isolation. Perfect for accounting firms and service providers.
+                  Manage multiple users with role-based access control. Secure and organized user management for your team.
                 </p>
               </div>
 
@@ -377,32 +393,87 @@ export default function LandingPage() {
                 Trusted by businesses across industries
               </p>
             </div>
-            <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
-              <div className="bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl border border-primary-100 shadow-lg">
-                <div className="text-primary-600 text-5xl mb-6 font-serif">&quot;</div>
-                <p className="text-gray-700 mb-6 italic text-lg leading-relaxed">
-                  Finvera has transformed how we manage our accounting. The GST filing feature alone saves us hours every month.
-                </p>
-                <div className="font-bold text-gray-900 text-lg">Rajesh Kumar</div>
-                <div className="text-sm text-gray-600">CEO, Tech Solutions Pvt Ltd</div>
+            {reviewsLoading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                <p className="mt-4 text-gray-600">Loading reviews...</p>
               </div>
-              <div className="bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl border border-primary-100 shadow-lg">
-                <div className="text-primary-600 text-5xl mb-6 font-serif">&quot;</div>
-                <p className="text-gray-700 mb-6 italic text-lg leading-relaxed">
-                  The e-invoicing feature is a game-changer. We can generate compliant invoices in seconds.
-                </p>
-                <div className="font-bold text-gray-900 text-lg">Priya Sharma</div>
-                <div className="text-sm text-gray-600">Finance Manager, Retail Corp</div>
+            ) : reviews.length > 0 ? (
+              <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+                {reviews.map((review) => (
+                  <div
+                    key={review.id}
+                    className={`bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl border border-primary-100 shadow-lg ${
+                      review.is_featured ? 'ring-2 ring-primary-300' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex">
+                        {[...Array(5)].map((_, i) => (
+                          <FiStar
+                            key={i}
+                            className={`h-5 w-5 ${
+                              i < review.rating
+                                ? 'text-yellow-400 fill-current'
+                                : 'text-gray-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      {review.is_featured && (
+                        <span className="text-xs font-semibold text-primary-600 bg-primary-100 px-2 py-1 rounded">
+                          Featured
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-primary-600 text-5xl mb-6 font-serif">&quot;</div>
+                    {review.title && (
+                      <h4 className="text-lg font-semibold text-gray-900 mb-3">
+                        {review.title}
+                      </h4>
+                    )}
+                    <p className="text-gray-700 mb-6 italic text-lg leading-relaxed">
+                      {review.comment || 'Thank you for using Finvera!'}
+                    </p>
+                    <div className="font-bold text-gray-900 text-lg">
+                      {review.reviewer_name}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {review.reviewer_designation && `${review.reviewer_designation}, `}
+                      {review.reviewer_company || review.tenant?.company_name || ''}
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl border border-primary-100 shadow-lg">
-                <div className="text-primary-600 text-5xl mb-6 font-serif">&quot;</div>
-                <p className="text-gray-700 mb-6 italic text-lg leading-relaxed">
-                  Excellent support and easy to use. Our accounting firm uses Finvera for all our clients.
-                </p>
-                <div className="font-bold text-gray-900 text-lg">Amit Patel</div>
-                <div className="text-sm text-gray-600">Partner, ABC Accounting Services</div>
+            ) : (
+              <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+                {/* Fallback testimonials if no reviews available */}
+                <div className="bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl border border-primary-100 shadow-lg">
+                  <div className="text-primary-600 text-5xl mb-6 font-serif">&quot;</div>
+                  <p className="text-gray-700 mb-6 italic text-lg leading-relaxed">
+                    Finvera has transformed how we manage our accounting. The GST filing feature alone saves us hours every month.
+                  </p>
+                  <div className="font-bold text-gray-900 text-lg">Rajesh Kumar</div>
+                  <div className="text-sm text-gray-600">CEO, Tech Solutions Pvt Ltd</div>
+                </div>
+                <div className="bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl border border-primary-100 shadow-lg">
+                  <div className="text-primary-600 text-5xl mb-6 font-serif">&quot;</div>
+                  <p className="text-gray-700 mb-6 italic text-lg leading-relaxed">
+                    The e-invoicing feature is a game-changer. We can generate compliant invoices in seconds.
+                  </p>
+                  <div className="font-bold text-gray-900 text-lg">Priya Sharma</div>
+                  <div className="text-sm text-gray-600">Finance Manager, Retail Corp</div>
+                </div>
+                <div className="bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl border border-primary-100 shadow-lg">
+                  <div className="text-primary-600 text-5xl mb-6 font-serif">&quot;</div>
+                  <p className="text-gray-700 mb-6 italic text-lg leading-relaxed">
+                    Excellent support and easy to use. Our accounting firm uses Finvera for all our clients.
+                  </p>
+                  <div className="font-bold text-gray-900 text-lg">Amit Patel</div>
+                  <div className="text-sm text-gray-600">Partner, ABC Accounting Services</div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </section>
 

@@ -113,8 +113,30 @@ module.exports = {
       updatedAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
     });
 
-    await queryInterface.addIndex('users', ['tenant_id']);
-    await queryInterface.addIndex('referral_rewards', ['referrer_id']);
+    // Helper function to safely add index
+    const addIndexIfPossible = async (tableName, fields, options = {}) => {
+      try {
+        await queryInterface.addIndex(tableName, fields, options);
+      } catch (error) {
+        // Handle "Too many keys" error gracefully
+        if (error.message.includes('Too many keys') || 
+            error.message.includes('ER_TOO_MANY_KEYS') ||
+            error.original?.code === 'ER_TOO_MANY_KEYS') {
+          console.warn(`⚠️  Skipping index creation on ${tableName}: Too many keys (MySQL limit: 64)`);
+          return;
+        }
+        // Ignore duplicate key errors
+        if (error.message.includes('Duplicate key name') || 
+            error.message.includes('already exists')) {
+          return;
+        }
+        // Re-throw other errors
+        throw error;
+      }
+    };
+
+    await addIndexIfPossible('users', ['tenant_id']);
+    await addIndexIfPossible('referral_rewards', ['referrer_id']);
   },
 
   async down(queryInterface) {

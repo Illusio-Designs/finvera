@@ -7,10 +7,18 @@ module.exports = {
       try {
         await queryInterface.addIndex(tableName, fields, options);
       } catch (error) {
-        // Ignore error if index already exists
-        if (!error.message.includes('Duplicate key name') && !error.message.includes('already exists')) {
-          throw error;
+        // Handle "Too many keys" error gracefully
+        if (error.message.includes('Too many keys') || 
+            error.message.includes('ER_TOO_MANY_KEYS') ||
+            error.original?.code === 'ER_TOO_MANY_KEYS') {
+          console.warn(`⚠️  Skipping index creation on ${tableName}: Too many keys (MySQL limit: 64)`);
+          return;
         }
+        // Ignore error if index already exists
+        if (error.message.includes('Duplicate key name') || error.message.includes('already exists')) {
+          return;
+        }
+        throw error;
       }
     };
 

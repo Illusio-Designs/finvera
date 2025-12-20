@@ -12,6 +12,9 @@ const models = {};
 // Tenant Master Model (already exists)
 models.TenantMaster = require('./TenantMaster');
 
+// Tenant Review Model (stored in master DB)
+models.TenantReview = require('./TenantReview');
+
 // Company Model (stored in master DB; created by tenant users)
 models.Company = masterSequelize.define('Company', {
   id: {
@@ -551,6 +554,14 @@ async function syncMasterModels() {
     logger.warn('⚠️  Payment sync error:', syncError.message);
     // Continue with other models
   }
+  
+  // Sync TenantReview
+  try {
+    await models.TenantReview.sync({ alter: true });
+  } catch (syncError) {
+    logger.warn('⚠️  TenantReview sync error:', syncError.message);
+    // Continue with other models
+  }
 }
 
 // Subscription and Payment Models (linked to TenantMaster)
@@ -562,6 +573,9 @@ models.Subscription.belongsTo(models.TenantMaster, { foreignKey: 'tenant_id', as
 models.Subscription.hasMany(models.Payment, { foreignKey: 'subscription_id', as: 'payments' });
 models.Payment.belongsTo(models.TenantMaster, { foreignKey: 'tenant_id', as: 'tenant' });
 models.Payment.belongsTo(models.Subscription, { foreignKey: 'subscription_id', as: 'subscription' });
+
+// Define associations for TenantReview
+models.TenantReview.belongsTo(models.TenantMaster, { foreignKey: 'tenant_id', as: 'tenant' });
 
 models.syncMasterModels = syncMasterModels;
 

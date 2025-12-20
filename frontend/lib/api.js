@@ -515,6 +515,20 @@ export const clientSupportAPI = {
   },
 };
 
+// Review API
+export const reviewAPI = {
+  // Public - get approved reviews for website
+  getPublic: (params) => api.get("/reviews/public", { params }),
+  // Tenant - submit/update their own review
+  submit: (data) => api.post("/reviews", data),
+  getMy: () => api.get("/reviews/my"),
+  update: (id, data) => api.put(`/reviews/my/${id}`, data),
+  // Admin - manage all reviews
+  list: (params) => api.get("/reviews", { params }),
+  approve: (id, data) => api.put(`/reviews/${id}/approve`, data),
+  delete: (id) => api.delete(`/reviews/${id}`),
+};
+
 // Legacy Client API (for backward compatibility)
 export const clientAPI = {
   dashboard: () => tenantAPI.getProfile(),

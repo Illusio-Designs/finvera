@@ -5,8 +5,36 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    // Create tenant_master table
-    await queryInterface.createTable('tenant_master', {
+    // Helper function to safely add index
+    const addIndexIfNotExists = async (tableName, fields, options = {}) => {
+      try {
+        await queryInterface.addIndex(tableName, fields, options);
+      } catch (error) {
+        // Handle duplicate key errors
+        if (error.message.includes('Duplicate key name') || 
+            error.message.includes('already exists') ||
+            error.original?.code === 'ER_DUP_KEYNAME') {
+          console.warn(`⚠️  Index already exists on ${tableName}, skipping...`);
+          return;
+        }
+        // Handle "Too many keys" error
+        if (error.message.includes('Too many keys') || 
+            error.message.includes('ER_TOO_MANY_KEYS') ||
+            error.original?.code === 'ER_TOO_MANY_KEYS') {
+          console.warn(`⚠️  Skipping index creation on ${tableName}: Too many keys (MySQL limit: 64)`);
+          return;
+        }
+        throw error;
+      }
+    };
+
+    // Check if table already exists
+    const [tables] = await queryInterface.sequelize.query("SHOW TABLES LIKE 'tenant_master'");
+    const tableExists = tables.length > 0;
+
+    if (!tableExists) {
+      // Create tenant_master table
+      await queryInterface.createTable('tenant_master', {
       id: {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
@@ -123,15 +151,19 @@ module.exports = {
         type: Sequelize.DATE,
         allowNull: false,
       },
-    });
+      });
+      console.log('✓ Created tenant_master table');
+    } else {
+      console.log('✓ tenant_master table already exists, skipping creation');
+    }
 
-    // Create indexes
-    await queryInterface.addIndex('tenant_master', ['subdomain']);
-    await queryInterface.addIndex('tenant_master', ['db_name']);
-    await queryInterface.addIndex('tenant_master', ['gstin']);
-    await queryInterface.addIndex('tenant_master', ['email']);
-    await queryInterface.addIndex('tenant_master', ['is_active']);
-    await queryInterface.addIndex('tenant_master', ['subscription_end']);
+    // Create indexes (safe - will skip if already exist)
+    await addIndexIfNotExists('tenant_master', ['subdomain'], { name: 'idx_tenant_master_subdomain' });
+    await addIndexIfNotExists('tenant_master', ['db_name'], { name: 'idx_tenant_master_db_name' });
+    await addIndexIfNotExists('tenant_master', ['gstin'], { name: 'idx_tenant_master_gstin' });
+    await addIndexIfNotExists('tenant_master', ['email'], { name: 'idx_tenant_master_email' });
+    await addIndexIfNotExists('tenant_master', ['is_active'], { name: 'idx_tenant_master_is_active' });
+    await addIndexIfNotExists('tenant_master', ['subscription_end'], { name: 'idx_tenant_master_subscription_end' });
   },
 
   down: async (queryInterface, Sequelize) => {

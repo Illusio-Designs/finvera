@@ -75,15 +75,15 @@ export default function FeaturesPage() {
       ]
     },
     {
-      icon: FiBriefcase,
-      title: 'Multi-Tenant',
-      description: 'Separate data for each client with secure isolation. Perfect for accounting firms and service providers.',
+      icon: FiUsers,
+      title: 'User Management',
+      description: 'Manage multiple users with role-based access control. Secure and organized user management for your team.',
       details: [
-        'Isolated client databases',
         'Role-based access control',
-        'Client management dashboard',
-        'Bulk operations support',
-        'White-label options'
+        'User permission management',
+        'Team collaboration tools',
+        'Activity tracking and audit logs',
+        'Secure user authentication'
       ]
     },
     {
