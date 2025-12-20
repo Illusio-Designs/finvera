@@ -7,7 +7,7 @@ export default function Chatbot() {
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: "Hello! 👋 Welcome to Finvera. I'm here to help you with any questions about our accounting software. How can I assist you today?",
+      text: "Hello! 👋 Welcome to Finvera. I&apos;m here to help you with any questions about our accounting software. How can I assist you today?",
       sender: 'bot',
       timestamp: new Date(),
     },
@@ -83,11 +83,11 @@ export default function Chatbot() {
     }
 
     if (message.includes('support') || message.includes('help') || message.includes('contact')) {
-      return "Our support team is available to help you! You can reach us at:\n• Email: support@finvera.com\n• Phone: +91 84900 9684\n• Address: 212, 2nd floor, Runway Heights, Ayodhya Chowk, Rajkot - 360001\n\nWe're here Monday-Friday, 9AM-6PM IST.";
+      return "Our support team is available to help you! You can reach us at:\n• Email: support@finvera.com\n• Phone: +91 84900 9684\n• Address: 212, 2nd floor, Runway Heights, Ayodhya Chowk, Rajkot - 360001\n\nWe&apos;re here Monday-Friday, 9AM-6PM IST.";
     }
 
     if (message.includes('hello') || message.includes('hi') || message.includes('hey')) {
-      return "Hello! I'm here to help you learn more about Finvera. What would you like to know?";
+      return "Hello! I&apos;m here to help you learn more about Finvera. What would you like to know?";
     }
 
     if (message.includes('accounting') || message.includes('software')) {
@@ -153,7 +153,7 @@ export default function Chatbot() {
               <div>
                 <h3 className="font-semibold text-lg">Finvera Support</h3>
                 {!isMinimized && (
-                  <p className="text-xs text-primary-100">We're here to help!</p>
+                  <p className="text-xs text-primary-100">We&apos;re here to help!</p>
                 )}
               </div>
             </div>
