@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
+import { pricingAPI } from '../lib/api';
 import { 
   FiBarChart2, FiFileText, FiDollarSign, FiTrendingUp, 
   FiBriefcase, FiTarget, FiCheck, FiZap, FiSmartphone, 
@@ -11,6 +12,8 @@ import {
 
 export default function LandingPage() {
   const [protocol, setProtocol] = useState('http:');
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
     // Set protocol only on client side
@@ -18,12 +21,55 @@ export default function LandingPage() {
       setProtocol(window.location.protocol);
     }
   }, []);
+
+  useEffect(() => {
+    // Fetch pricing plans from API
+    const fetchPlans = async () => {
+      try {
+        setLoading(true);
+        const response = await pricingAPI.list({ 
+          is_active: 'true', 
+          is_visible: 'true',
+          limit: 10 
+        });
+        if (response.data && response.data.data) {
+          setPlans(response.data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching plans:', error);
+        // Keep empty array on error, will show fallback
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPlans();
+  }, []);
   
   const getClientRegisterUrl = () => {
     const domain = process.env.MAIN_DOMAIN?.includes('localhost') 
       ? 'client.localhost:3001' 
       : `client.${process.env.MAIN_DOMAIN}`;
     return `${protocol}//${domain}/register`;
+  };
+
+  const formatPrice = (price, currency = 'INR') => {
+    if (!price && price !== 0) return 'Custom';
+    const formatter = new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
+    return formatter.format(price);
+  };
+
+  const getPlanIcon = (planName) => {
+    const name = planName?.toLowerCase() || '';
+    if (name.includes('starter') || name.includes('basic')) return FiZap;
+    if (name.includes('professional') || name.includes('pro') || name.includes('business')) return FiBriefcase;
+    if (name.includes('enterprise') || name.includes('premium')) return FiAward;
+    return FiBriefcase;
   };
 
   useEffect(() => {
@@ -371,111 +417,162 @@ export default function LandingPage() {
                 Choose the plan that fits your business needs
               </p>
             </div>
-            <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-              <div className="bg-white p-10 rounded-2xl shadow-xl border-2 border-gray-200 hover:border-primary-300 transition">
-                <h3 className="text-3xl font-bold text-gray-900 mb-3">Starter</h3>
-                <div className="mb-8">
-                  <span className="text-5xl font-extrabold text-gray-900">₹999</span>
-                  <span className="text-gray-600 text-lg">/month</span>
-                </div>
-                <ul className="space-y-4 mb-10">
-                  <li className="flex items-center text-gray-700 text-lg">
-                    <FiCheck className="text-primary-600 mr-3 text-xl" />
-                    Basic Accounting
-                  </li>
-                  <li className="flex items-center text-gray-700 text-lg">
-                    <FiCheck className="text-primary-600 mr-3 text-xl" />
-                    GST Filing (GSTR-1, GSTR-3B)
-                  </li>
-                  <li className="flex items-center text-gray-700 text-lg">
-                    <FiCheck className="text-primary-600 mr-3 text-xl" />
-                    E-Invoicing
-                  </li>
-                  <li className="flex items-center text-gray-700 text-lg">
-                    <FiCheck className="text-primary-600 mr-3 text-xl" />
-                    Basic Reports
-                  </li>
-                </ul>
-                <a
-                  href={getClientRegisterUrl()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block w-full bg-primary-600 text-white text-center py-4 rounded-xl hover:bg-primary-700 transition font-semibold text-lg shadow-lg"
-                >
-                  Get Started
-                </a>
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                <p className="mt-4 text-gray-600">Loading pricing plans...</p>
               </div>
+            ) : plans.length > 0 ? (
+              <div className={`grid ${plans.length === 1 ? 'md:grid-cols-1' : plans.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-8 max-w-6xl mx-auto`}>
+                {plans.map((plan, index) => {
+                  const Icon = getPlanIcon(plan.plan_name);
+                  const isPopular = plan.is_featured;
+                  const originalPrice = plan.base_price;
+                  const discountedPrice = plan.discounted_price;
+                  const price = discountedPrice || originalPrice;
+                  const features = plan.features && typeof plan.features === 'object' 
+                    ? (Array.isArray(plan.features) ? plan.features : Object.values(plan.features))
+                    : [];
+                  const billingPeriod = plan.billing_cycle === 'yearly' ? '/year' : plan.billing_cycle === 'monthly' ? '/month' : '';
+                  const hasCustomPrice = !price && price !== 0;
+                  const hasDiscount = discountedPrice && discountedPrice < originalPrice;
+                  
+                  return (
+                    <div
+                      key={plan.id || index}
+                      className={`relative ${
+                        isPopular
+                          ? 'bg-primary-600 p-8 rounded-2xl shadow-2xl border-2 border-primary-700 transform scale-105'
+                          : 'bg-white p-8 rounded-2xl shadow-xl border-2 border-gray-200 hover:border-primary-300'
+                      } transition hover:shadow-2xl`}
+                    >
+                      {isPopular && (
+                        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+                          <span className="bg-primary-700 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg">
+                            MOST POPULAR
+                          </span>
+                        </div>
+                      )}
+                      
+                      {/* Plan Header */}
+                      <div className="text-center mb-6">
+                        <div className={`w-16 h-16 ${isPopular ? 'bg-white' : 'bg-primary-600'} rounded-xl flex items-center justify-center mx-auto mb-4`}>
+                          <Icon className={`${isPopular ? 'text-primary-600' : 'text-white'} text-2xl`} />
+                        </div>
+                        <h3 className={`text-2xl font-bold mb-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
+                          {plan.plan_name}
+                        </h3>
+                        {plan.description && (
+                          <p className={`text-sm mb-4 ${isPopular ? 'text-primary-100' : 'text-gray-600'}`}>
+                            {plan.description}
+                          </p>
+                        )}
+                      </div>
 
-              <div className="bg-primary-600 p-10 rounded-2xl shadow-2xl border-2 border-primary-700 transform scale-105 relative">
-                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <span className="bg-primary-700 text-white text-sm font-bold px-4 py-2 rounded-full">
-                    MOST POPULAR
-                  </span>
-                </div>
-                <h3 className="text-3xl font-bold text-white mb-3">Professional</h3>
-                <div className="mb-8">
-                  <span className="text-5xl font-extrabold text-white">₹2,499</span>
-                  <span className="text-primary-200 text-lg">/month</span>
-                </div>
-                <ul className="space-y-4 mb-10">
-                  <li className="flex items-center text-white text-lg">
-                    <FiCheck className="text-primary-200 mr-3 text-xl" />
-                    Everything in Starter
-                  </li>
-                  <li className="flex items-center text-white text-lg">
-                    <FiCheck className="text-primary-200 mr-3 text-xl" />
-                    Advanced Reports
-                  </li>
-                  <li className="flex items-center text-white text-lg">
-                    <FiCheck className="text-primary-200 mr-3 text-xl" />
-                    Multi-user Access
-                  </li>
-                  <li className="flex items-center text-white text-lg">
-                    <FiCheck className="text-primary-200 mr-3 text-xl" />
-                    Priority Support
-                  </li>
-                </ul>
-                <a
-                  href={getClientRegisterUrl()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block w-full bg-white text-primary-600 text-center py-4 rounded-xl hover:bg-gray-100 transition font-semibold text-lg shadow-lg"
-                >
-                  Get Started
-                </a>
-              </div>
+                      {/* Pricing */}
+                      <div className="mb-6 text-center">
+                        {hasDiscount && (
+                          <div className="mb-2">
+                            <span className={`text-lg line-through ${isPopular ? 'text-primary-200' : 'text-gray-400'}`}>
+                              {formatPrice(originalPrice, plan.currency)}
+                            </span>
+                            <span className={`ml-2 text-sm font-semibold ${isPopular ? 'text-white' : 'text-green-600'} bg-green-100 px-2 py-1 rounded`}>
+                              Save {formatPrice(originalPrice - discountedPrice, plan.currency)}
+                            </span>
+                          </div>
+                        )}
+                        <div>
+                          <span className={`text-4xl font-extrabold ${isPopular ? 'text-white' : 'text-gray-900'}`}>
+                            {formatPrice(price, plan.currency)}
+                          </span>
+                          {billingPeriod && (
+                            <span className={`text-base ml-2 ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>
+                              {billingPeriod}
+                            </span>
+                          )}
+                        </div>
+                        {plan.trial_days > 0 && (
+                          <p className={`text-sm mt-2 ${isPopular ? 'text-primary-100' : 'text-gray-500'}`}>
+                            {plan.trial_days} days free trial
+                          </p>
+                        )}
+                      </div>
 
-              <div className="bg-white p-10 rounded-2xl shadow-xl border-2 border-gray-200 hover:border-primary-300 transition">
-                <h3 className="text-3xl font-bold text-gray-900 mb-3">Enterprise</h3>
-                <div className="mb-8">
-                  <span className="text-5xl font-extrabold text-gray-900">Custom</span>
-                </div>
-                <ul className="space-y-4 mb-10">
-                  <li className="flex items-center text-gray-700 text-lg">
-                    <FiCheck className="text-primary-600 mr-3 text-xl" />
-                    Everything in Professional
-                  </li>
-                  <li className="flex items-center text-gray-700 text-lg">
-                    <FiCheck className="text-primary-600 mr-3 text-xl" />
-                    Custom Integrations
-                  </li>
-                  <li className="flex items-center text-gray-700 text-lg">
-                    <FiCheck className="text-primary-600 mr-3 text-xl" />
-                    Dedicated Support
-                  </li>
-                  <li className="flex items-center text-gray-700 text-lg">
-                    <FiCheck className="text-primary-600 mr-3 text-xl" />
-                    White-label Options
-                  </li>
-                </ul>
-                <a
-                  href="#contact"
-                  className="block w-full bg-gray-900 text-white text-center py-4 rounded-xl hover:bg-gray-800 transition font-semibold text-lg shadow-lg"
-                >
-                  Contact Sales
-                </a>
+                      {/* Plan Limits */}
+                      <div className={`mb-6 p-4 rounded-lg ${isPopular ? 'bg-primary-700' : 'bg-gray-50'}`}>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <span className={`font-semibold ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Users:</span>
+                            <span className={`ml-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
+                              {plan.max_users === -1 ? 'Unlimited' : plan.max_users}
+                            </span>
+                          </div>
+                          <div>
+                            <span className={`font-semibold ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Invoices:</span>
+                            <span className={`ml-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
+                              {plan.max_invoices_per_month === -1 ? 'Unlimited' : plan.max_invoices_per_month}/mo
+                            </span>
+                          </div>
+                          {plan.max_companies && (
+                            <div>
+                              <span className={`font-semibold ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Companies:</span>
+                              <span className={`ml-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
+                                {plan.max_companies === -1 ? 'Unlimited' : plan.max_companies}
+                              </span>
+                            </div>
+                          )}
+                          {plan.storage_limit_gb && (
+                            <div>
+                              <span className={`font-semibold ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Storage:</span>
+                              <span className={`ml-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
+                                {plan.storage_limit_gb === -1 ? 'Unlimited' : `${plan.storage_limit_gb} GB`}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Features */}
+                      {features.length > 0 && (
+                        <div className="mb-6">
+                          <h4 className={`text-xs font-semibold uppercase tracking-wide mb-3 ${isPopular ? 'text-primary-200' : 'text-gray-500'}`}>
+                            Features Included
+                          </h4>
+                          <ul className="space-y-2 max-h-64 overflow-y-auto">
+                            {features.map((feature, featureIndex) => (
+                              <li key={featureIndex} className={`flex items-start text-sm ${isPopular ? 'text-white' : 'text-gray-700'}`}>
+                                <FiCheck className={`mr-2 mt-0.5 flex-shrink-0 ${isPopular ? 'text-primary-200' : 'text-green-600'}`} />
+                                <span>{typeof feature === 'string' ? feature : feature.name || feature}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* CTA Button */}
+                      <a
+                        href={!hasCustomPrice ? getClientRegisterUrl() : '#contact'}
+                        target={!hasCustomPrice ? '_blank' : undefined}
+                        rel={!hasCustomPrice ? 'noopener noreferrer' : undefined}
+                        className={`block w-full text-center py-3 rounded-xl hover:opacity-90 transition font-semibold text-base shadow-lg ${
+                          isPopular
+                            ? 'bg-white text-primary-600 hover:bg-gray-100'
+                            : !hasCustomPrice
+                            ? 'bg-primary-600 text-white hover:bg-primary-700'
+                            : 'bg-gray-900 text-white hover:bg-gray-800'
+                        }`}
+                      >
+                        {!hasCustomPrice ? 'Get Started' : 'Contact Sales'}
+                      </a>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-600 text-lg">No pricing plans available at the moment. Please check back later.</p>
+              </div>
+            )}
           </div>
         </section>
 

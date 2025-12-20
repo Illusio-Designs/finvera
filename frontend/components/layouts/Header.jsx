@@ -175,14 +175,16 @@ export default function Header({ onMenuClick, title, actions }) {
         {/* Left: Logo and Menu button */}
         <div className="flex items-center gap-3">
           {/* Logo */}
-          <Image 
-            src="/logo.png" 
-            alt="Finverra" 
-            width={200}
-            height={176}
-            className="h-[11rem] w-auto object-contain"
-            priority
-          />
+          <div className="bg-white rounded-md px-3 py-2 flex items-center justify-center">
+            <Image 
+              src="/Finallogo.png" 
+              alt="Finverra" 
+              width={3464}
+              height={889}
+              className="h-10 w-auto object-contain max-w-[180px]"
+              priority
+            />
+          </div>
           {/* Menu button (mobile only) */}
           {onMenuClick && (
             <button

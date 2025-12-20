@@ -1,3 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Asap+Condensed:wght@400;500;600;700&display=swap');
+
+/* Agency Font from Fontistry */
+@font-face {
+  font-family: 'Agency';
+  src: url('/fonts/agency.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Agency Font Bold (if available) */
+@font-face {
+  font-family: 'Agency';
+  src: url('/fonts/agency-bold.otf') format('opentype');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -44,6 +65,7 @@ body {
       rgb(var(--background-end-rgb))
     )
     rgb(var(--background-start-rgb));
+  font-family: 'Inter', sans-serif;
 }
 
 a {
@@ -86,5 +108,16 @@ a {
     margin-top: 5rem;
     margin-bottom: 5rem;
   }
+}
+
+/* Base typography - Agency (Fontistry) for headings, Inter for body */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Agency', 'Asap Condensed', 'Arial Black', sans-serif !important;
+  font-weight: normal !important;
+  letter-spacing: 0.02em;
+}
+
+body, p, span, div, a, button, input, textarea, select {
+  font-family: 'Inter', sans-serif;
 }
 
