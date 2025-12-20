@@ -7,6 +7,12 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        'agency': ['Agency', 'Asap Condensed', 'Arial Black', 'sans-serif'],
+        'primary': ['Agency', 'Asap Condensed', 'Arial Black', 'sans-serif'],
+        'secondary': ['Inter', 'sans-serif'],
+        'sans': ['Inter', 'sans-serif'],
+      },
       colors: {
         // Finvera Brand Colors
         primary: {

@@ -10,10 +10,10 @@ export default function WebsiteFooter() {
           <div className="col-span-1 md:col-span-2">
             <div className="mb-4">
               <Image 
-                src="/logo.png" 
+                src="/Finallogo.png" 
                 alt="Finvera" 
-                width={120}
-                height={40}
+                width={3464}
+                height={889}
                 className="h-10 w-auto object-contain brightness-0 invert"
               />
             </div>

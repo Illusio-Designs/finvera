@@ -3,15 +3,42 @@ import Head from 'next/head';
 import Link from 'next/link';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
+import { pricingAPI } from '../lib/api';
 import { FiCheck, FiX, FiZap, FiBriefcase, FiAward } from 'react-icons/fi';
 
 export default function PricingPage() {
   const [protocol, setProtocol] = useState('http:');
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setProtocol(window.location.protocol);
     }
+  }, []);
+
+  useEffect(() => {
+    // Fetch pricing plans from API
+    const fetchPlans = async () => {
+      try {
+        setLoading(true);
+        const response = await pricingAPI.list({ 
+          is_active: 'true', 
+          is_visible: 'true',
+          limit: 10 
+        });
+        if (response.data && response.data.data) {
+          setPlans(response.data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching plans:', error);
+        // Keep empty array on error, will show fallback
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPlans();
   }, []);
   
   const getUrl = (link) => {
@@ -21,81 +48,32 @@ export default function PricingPage() {
       : link.replace('localhost:3001', process.env.MAIN_DOMAIN);
     return `${protocol}//${domain}`;
   };
-  const plans = [
-    {
-      name: 'Starter',
-      icon: FiZap,
-      price: '₹999',
-      period: '/month',
-      description: 'Perfect for small businesses getting started',
-      features: [
-        'Up to 100 invoices/month',
-        'GST filing (GSTR-1 & GSTR-3B)',
-        'Basic accounting',
-        'Financial reports',
-        'Email support',
-        '1 user account'
-      ],
-      notIncluded: [
-        'E-invoicing',
-        'Multi-tenant',
-        'API access',
-        'Priority support'
-      ],
-      popular: false,
-      cta: 'Get Started',
-      ctaLink: 'client.localhost:3001'
-    },
-    {
-      name: 'Professional',
-      icon: FiBriefcase,
-      price: '₹2,999',
-      period: '/month',
-      description: 'Ideal for growing businesses',
-      features: [
-        'Unlimited invoices',
-        'GST filing (GSTR-1 & GSTR-3B)',
-        'E-invoicing with IRN',
-        'Complete accounting',
-        'Advanced financial reports',
-        'Multi-tenant support',
-        'Up to 5 user accounts',
-        'Email & phone support',
-        'Data export'
-      ],
-      notIncluded: [
-        'API access',
-        'White-label',
-        'Priority support'
-      ],
-      popular: true,
-      cta: 'Start Free Trial',
-      ctaLink: 'client.localhost:3001'
-    },
-    {
-      name: 'Enterprise',
-      icon: FiAward,
-      price: 'Custom',
-      period: '',
-      description: 'For large organizations and accounting firms',
-      features: [
-        'Everything in Professional',
-        'Unlimited users',
-        'API access',
-        'White-label options',
-        'Custom integrations',
-        'Dedicated account manager',
-        'Priority support',
-        'Custom training',
-        'SLA guarantee',
-        'On-premise deployment option'
-      ],
-      notIncluded: [],
-      popular: false,
-      cta: 'Contact Sales',
-      ctaLink: '/contact'
-    }
-  ];
+
+  const getClientRegisterUrl = () => {
+    const domain = process.env.MAIN_DOMAIN?.includes('localhost') 
+      ? 'client.localhost:3001' 
+      : `client.${process.env.MAIN_DOMAIN}`;
+    return `${protocol}//${domain}/register`;
+  };
+
+  const formatPrice = (price, currency = 'INR') => {
+    if (!price && price !== 0) return 'Custom';
+    const formatter = new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
+    return formatter.format(price);
+  };
+
+  const getPlanIcon = (planName) => {
+    const name = planName?.toLowerCase() || '';
+    if (name.includes('starter') || name.includes('basic')) return FiZap;
+    if (name.includes('professional') || name.includes('pro') || name.includes('business')) return FiBriefcase;
+    if (name.includes('enterprise') || name.includes('premium')) return FiAward;
+    return FiBriefcase;
+  };
 
   return (
     <>
@@ -125,84 +103,165 @@ export default function PricingPage() {
         {/* Pricing Cards */}
         <section className="py-24 bg-white">
           <div className="container mx-auto px-6">
-            <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
-              {plans.map((plan, index) => {
-                const Icon = plan.icon;
-                return (
-                  <div
-                    key={index}
-                    className={`relative bg-gradient-to-br from-white to-primary-50 p-10 rounded-2xl shadow-xl border-2 transition-all transform hover:-translate-y-2 ${
-                      plan.popular
-                        ? 'border-primary-600 scale-105'
-                        : 'border-gray-200 hover:border-primary-300'
-                    }`}
-                  >
-                    {plan.popular && (
-                      <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                        <span className="bg-primary-600 text-white px-6 py-2 rounded-full text-sm font-semibold">
-                          Most Popular
-                        </span>
-                      </div>
-                    )}
-                    <div className="text-center mb-8">
-                      <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                        <Icon className="text-white text-2xl" />
-                      </div>
-                      <h3 className="text-3xl font-extrabold text-gray-900 mb-2">{plan.name}</h3>
-                      <p className="text-gray-600 mb-6">{plan.description}</p>
-                      <div className="mb-6">
-                        <span className="text-5xl font-extrabold text-gray-900">{plan.price}</span>
-                        {plan.period && (
-                          <span className="text-xl text-gray-600 ml-2">{plan.period}</span>
-                        )}
-                      </div>
-                    </div>
-                    <a
-                      href={getUrl(plan.ctaLink)}
-                      target={plan.ctaLink.startsWith('/') ? undefined : '_blank'}
-                      rel={plan.ctaLink.startsWith('/') ? undefined : 'noopener noreferrer'}
-                      className={`block w-full text-center py-4 rounded-lg font-semibold text-lg transition mb-8 ${
-                        plan.popular
-                          ? 'bg-primary-600 text-white hover:bg-primary-700'
-                          : 'bg-primary-100 text-primary-600 hover:bg-primary-200'
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                <p className="mt-4 text-gray-600">Loading pricing plans...</p>
+              </div>
+            ) : plans.length > 0 ? (
+              <div className={`grid ${plans.length === 1 ? 'md:grid-cols-1' : plans.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-8 max-w-7xl mx-auto`}>
+                {plans.map((plan, index) => {
+                  const Icon = getPlanIcon(plan.plan_name);
+                  const isPopular = plan.is_featured;
+                  const originalPrice = plan.base_price;
+                  const discountedPrice = plan.discounted_price;
+                  const price = discountedPrice || originalPrice;
+                  const features = plan.features && typeof plan.features === 'object' 
+                    ? (Array.isArray(plan.features) ? plan.features : Object.values(plan.features))
+                    : [];
+                  const billingPeriod = plan.billing_cycle === 'yearly' ? '/year' : plan.billing_cycle === 'monthly' ? '/month' : '';
+                  const hasCustomPrice = !price && price !== 0;
+                  const hasDiscount = discountedPrice && discountedPrice < originalPrice;
+                  
+                  return (
+                    <div
+                      key={plan.id || index}
+                      className={`relative bg-gradient-to-br from-white to-primary-50 p-8 rounded-2xl shadow-xl border-2 transition-all transform hover:-translate-y-2 hover:shadow-2xl ${
+                        isPopular
+                          ? 'border-primary-600 scale-105 bg-gradient-to-br from-primary-600 to-primary-700'
+                          : 'border-gray-200 hover:border-primary-300'
                       }`}
                     >
-                      {plan.cta}
-                    </a>
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wide">
-                          Included
-                        </h4>
-                        <ul className="space-y-3">
-                          {plan.features.map((feature, featureIndex) => (
-                            <li key={featureIndex} className="flex items-start">
-                              <FiCheck className="text-green-600 mr-3 mt-1 flex-shrink-0" />
-                              <span className="text-gray-700">{feature}</span>
-                            </li>
-                          ))}
-                        </ul>
+                      {isPopular && (
+                        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+                          <span className="bg-primary-700 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg">
+                            Most Popular
+                          </span>
+                        </div>
+                      )}
+                      
+                      {/* Plan Header */}
+                      <div className="text-center mb-6">
+                        <div className={`w-16 h-16 ${isPopular ? 'bg-white' : 'bg-primary-600'} rounded-xl flex items-center justify-center mx-auto mb-4`}>
+                          <Icon className={`${isPopular ? 'text-primary-600' : 'text-white'} text-2xl`} />
+                        </div>
+                        <h3 className={`text-3xl font-extrabold mb-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
+                          {plan.plan_name}
+                        </h3>
+                        {plan.description && (
+                          <p className={`text-sm mb-4 ${isPopular ? 'text-primary-100' : 'text-gray-600'}`}>
+                            {plan.description}
+                          </p>
+                        )}
                       </div>
-                      {plan.notIncluded.length > 0 && (
-                        <div className="pt-4 border-t border-gray-200">
-                          <h4 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wide">
-                            Not Included
+
+                      {/* Pricing */}
+                      <div className="mb-6 text-center">
+                        {hasDiscount && (
+                          <div className="mb-2">
+                            <span className={`text-lg line-through ${isPopular ? 'text-primary-200' : 'text-gray-400'}`}>
+                              {formatPrice(originalPrice, plan.currency)}
+                            </span>
+                            <span className={`ml-2 text-xs font-semibold ${isPopular ? 'text-white' : 'text-green-600'} bg-green-100 px-2 py-1 rounded`}>
+                              Save {formatPrice(originalPrice - discountedPrice, plan.currency)}
+                            </span>
+                          </div>
+                        )}
+                        <div>
+                          <span className={`text-5xl font-extrabold ${isPopular ? 'text-white' : 'text-gray-900'}`}>
+                            {formatPrice(price, plan.currency)}
+                          </span>
+                          {billingPeriod && (
+                            <span className={`text-xl ml-2 ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>
+                              {billingPeriod}
+                            </span>
+                          )}
+                        </div>
+                        {plan.trial_days > 0 && (
+                          <p className={`text-sm mt-2 ${isPopular ? 'text-primary-100' : 'text-gray-500'}`}>
+                            <span className="inline-block bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold">
+                              {plan.trial_days} days free trial
+                            </span>
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Plan Limits */}
+                      <div className={`mb-6 p-4 rounded-lg ${isPopular ? 'bg-primary-800' : 'bg-gray-50'}`}>
+                        <h4 className={`text-xs font-semibold uppercase tracking-wide mb-3 ${isPopular ? 'text-primary-200' : 'text-gray-500'}`}>
+                          Plan Limits
+                        </h4>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <span className={`font-semibold ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Users:</span>
+                            <span className={`ml-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
+                              {plan.max_users === -1 ? 'Unlimited' : plan.max_users}
+                            </span>
+                          </div>
+                          <div>
+                            <span className={`font-semibold ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Invoices:</span>
+                            <span className={`ml-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
+                              {plan.max_invoices_per_month === -1 ? 'Unlimited' : plan.max_invoices_per_month}/mo
+                            </span>
+                          </div>
+                          {plan.max_companies && (
+                            <div>
+                              <span className={`font-semibold ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Companies:</span>
+                              <span className={`ml-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
+                                {plan.max_companies === -1 ? 'Unlimited' : plan.max_companies}
+                              </span>
+                            </div>
+                          )}
+                          {plan.storage_limit_gb && (
+                            <div>
+                              <span className={`font-semibold ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Storage:</span>
+                              <span className={`ml-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
+                                {plan.storage_limit_gb === -1 ? 'Unlimited' : `${plan.storage_limit_gb} GB`}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Features */}
+                      {features.length > 0 && (
+                        <div className="mb-6">
+                          <h4 className={`text-sm font-semibold uppercase tracking-wide mb-3 ${isPopular ? 'text-primary-200' : 'text-gray-900'}`}>
+                            Features Included
                           </h4>
-                          <ul className="space-y-3">
-                            {plan.notIncluded.map((feature, featureIndex) => (
-                              <li key={featureIndex} className="flex items-start">
-                                <FiX className="text-gray-400 mr-3 mt-1 flex-shrink-0" />
-                                <span className="text-gray-500 line-through">{feature}</span>
+                          <ul className="space-y-2 max-h-80 overflow-y-auto pr-2">
+                            {features.map((feature, featureIndex) => (
+                              <li key={featureIndex} className={`flex items-start text-sm ${isPopular ? 'text-white' : 'text-gray-700'}`}>
+                                <FiCheck className={`mr-2 mt-0.5 flex-shrink-0 ${isPopular ? 'text-primary-200' : 'text-green-600'}`} />
+                                <span>{typeof feature === 'string' ? feature : feature.name || feature}</span>
                               </li>
                             ))}
                           </ul>
                         </div>
                       )}
+
+                      {/* CTA Button */}
+                      <a
+                        href={!hasCustomPrice ? getClientRegisterUrl() : '/contact'}
+                        target={!hasCustomPrice ? '_blank' : undefined}
+                        rel={!hasCustomPrice ? 'noopener noreferrer' : undefined}
+                        className={`block w-full text-center py-4 rounded-lg font-semibold text-lg transition ${
+                          isPopular
+                            ? 'bg-white text-primary-600 hover:bg-gray-100'
+                            : 'bg-primary-600 text-white hover:bg-primary-700'
+                        } shadow-lg`}
+                      >
+                        {!hasCustomPrice ? 'Get Started' : 'Contact Sales'}
+                      </a>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-600 text-lg">No pricing plans available at the moment. Please check back later.</p>
+              </div>
+            )}
           </div>
         </section>
 

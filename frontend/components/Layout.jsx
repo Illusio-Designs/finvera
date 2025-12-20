@@ -19,11 +19,13 @@ export default function Layout({ children, title = 'Finvera - Accounting SaaS' }
             <div className="flex justify-between h-16">
               <div className="flex items-center">
                 <Link href="/" className="flex items-center">
-                  <img 
-                    src="/logo.png" 
-                    alt="Finvera" 
-                    className="h-10 w-auto"
-                  />
+                  <div className="bg-white rounded-md px-3 py-2 flex items-center justify-center">
+                    <img 
+                      src="/Finallogo.png" 
+                      alt="Finvera" 
+                      className="h-10 w-auto object-contain max-w-[180px]"
+                    />
+                  </div>
                 </Link>
               </div>
               <div className="flex items-center space-x-4">

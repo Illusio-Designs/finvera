@@ -18,6 +18,7 @@ export default function App({ Component, pageProps }) {
   return (
     <>
       <Head>
+        <link rel="preload" href="/fonts/agency.otf" as="font" type="font/otf" crossOrigin="anonymous" />
         <link rel="icon" type="image/jpeg" href="/Fav%20Icon/Fav_Dark_JPG@4x-100.jpg" />
         <link rel="shortcut icon" type="image/jpeg" href="/Fav%20Icon/Fav_Dark_JPG@4x-100.jpg" />
         <link rel="apple-touch-icon" href="/Fav%20Icon/Fav_Dark_JPG@4x-100.jpg" />
