@@ -32,6 +32,7 @@ const adminModels = [
   'SupportAgentReview', // Support agent reviews
   'ReferralDiscountConfig', // Referral discount configurations
   'Notification', // Notifications
+  'NotificationPreference', // Notification preferences
 ];
 
 // Load only admin/system models

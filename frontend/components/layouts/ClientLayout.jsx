@@ -3,11 +3,12 @@ import Head from 'next/head';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { useAuth } from '../../contexts/AuthContext';
+import { ToastViewport } from '../ui/Toast';
 import {
   FiHome, FiFolder, FiFileText, FiTrendingUp, FiTrendingDown,
   FiDollarSign, FiCreditCard, FiRefreshCw, FiFile, FiBarChart2,
   FiShield, FiPercent, FiFileMinus, FiFilePlus, FiMail, FiSettings, FiUser, FiGift,
-  FiPackage, FiLayers, FiMove, FiEdit, FiHeadphones
+  FiPackage, FiLayers, FiMove, FiEdit, FiHeadphones, FiUpload
 } from 'react-icons/fi';
 
 const getClientMenuItems = () => [
@@ -23,6 +24,14 @@ const getClientMenuItems = () => [
     label: 'Ledgers',
     href: '/client/ledgers',
     icon: FiFileText,
+  },
+  {
+    divider: true,
+  },
+  {
+    label: 'Import from Tally',
+    href: '/client/tally-import',
+    icon: FiUpload,
   },
   {
     divider: true,
@@ -169,6 +178,8 @@ export default function ClientLayout({ children, title = 'Client Portal - Finver
             {children}
           </div>
         </main>
+        {/* Toast notifications viewport */}
+        <ToastViewport />
       </div>
     </>
   );

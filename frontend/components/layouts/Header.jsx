@@ -11,6 +11,7 @@ import {
   FiMenu, FiBell, FiSearch, FiUser, FiSettings,
   FiLogOut, FiChevronDown, FiX, FiBriefcase, FiPlus
 } from 'react-icons/fi';
+import NotificationDropdown from '../notifications/NotificationDropdown';
 
 export default function Header({ onMenuClick, title, actions }) {
   const { user, logout, switchCompany } = useAuth();
@@ -294,10 +295,7 @@ export default function Header({ onMenuClick, title, actions }) {
           {actions && <div className="flex items-center gap-2">{actions}</div>}
 
           {/* Notifications */}
-          <button className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition relative">
-            <FiBell className="h-5 w-5" />
-            <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full border-2 border-white"></span>
-          </button>
+          {user && <NotificationDropdown />}
 
           {/* User menu */}
           {user && (

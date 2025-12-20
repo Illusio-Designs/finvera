@@ -1,6 +1,8 @@
-const { Notification, User } = require('../models');
+const { Notification, User, NotificationPreference } = require('../models');
 const constants = require('../config/constants');
 const logger = require('../utils/logger');
+const { sendNotificationEmail } = require('./emailService');
+const { sendNotificationToUser } = require('../websocket/socketServer');
 
 /**
  * Create a notification
@@ -22,8 +24,10 @@ async function createNotification({
   priority = 'medium',
   actionUrl = null,
   metadata = {},
+  skipPreferences = false, // For system-critical notifications
 }) {
   try {
+    // Create notification record
     const notification = await Notification.create({
       user_id: userId,
       type,
@@ -36,6 +40,60 @@ async function createNotification({
     });
 
     logger.info(`Notification created: ${type} for user ${userId}`);
+
+    // Get user preferences (if not skipping)
+    let preferences = null;
+    if (!skipPreferences) {
+      try {
+        preferences = await NotificationPreference.findOne({
+          where: { user_id: userId },
+        });
+      } catch (error) {
+        logger.warn('Could not fetch notification preferences, using defaults');
+      }
+    }
+
+    // Check if in-app notifications are enabled
+    const inAppEnabled = skipPreferences || !preferences || preferences.in_app_enabled !== false;
+    const typePrefs = preferences?.type_preferences || {};
+    const typeInApp = typePrefs[type]?.in_app !== false;
+
+    // Send via WebSocket if enabled
+    if (inAppEnabled && typeInApp) {
+      try {
+        sendNotificationToUser(userId, {
+          id: notification.id,
+          type: notification.type,
+          title: notification.title,
+          message: notification.message,
+          priority: notification.priority,
+          action_url: notification.action_url,
+          metadata: notification.metadata,
+          created_at: notification.createdAt,
+        });
+      } catch (error) {
+        logger.error('Error sending notification via WebSocket:', error);
+      }
+    }
+
+    // Send email if enabled
+    const emailEnabled = skipPreferences || !preferences || preferences.email_enabled !== false;
+    const typeEmail = typePrefs[type]?.email !== false;
+
+    if (emailEnabled && typeEmail) {
+      try {
+        const user = await User.findByPk(userId);
+        if (user && user.email) {
+          const emailSent = await sendNotificationEmail(notification, user);
+          if (emailSent) {
+            await notification.update({ sent_email: true });
+          }
+        }
+      } catch (error) {
+        logger.error('Error sending notification email:', error);
+      }
+    }
+
     return notification;
   } catch (error) {
     logger.error('Error creating notification:', error);
