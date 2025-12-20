@@ -2,14 +2,14 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useAuth } from '../contexts/AuthContext';
 
-export default function Layout({ children, title = 'Finvera - Accounting SaaS' }) {
+export default function Layout({ children, title = 'Finvera - Accounting Software' }) {
   const { user, logout, isAuthenticated } = useAuth();
 
   return (
     <>
       <Head>
         <title>{title}</title>
-        <meta name="description" content="Multi-tenant accounting SaaS platform" />
+        <meta name="description" content="Complete accounting software platform with GST filing and financial management" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>

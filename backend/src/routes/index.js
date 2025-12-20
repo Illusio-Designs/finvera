@@ -24,6 +24,7 @@ const notificationRoutes = require('./notificationRoutes');
 const companyRoutes = require('./companyRoutes');
 const hsnRoutes = require('./hsnRoutes');
 const subscriptionRoutes = require('./subscriptionRoutes');
+const reviewRoutes = require('./reviewRoutes');
 
 const router = Router();
 
@@ -52,6 +53,7 @@ router.use('/', seoRoutes);
 router.use('/support', supportRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/subscriptions', subscriptionRoutes);
+router.use('/reviews', reviewRoutes);
 
 router.get('/health', (req, res) => res.json({ status: 'ok' }));
 
