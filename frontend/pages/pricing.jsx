@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
+import Chatbot from '../components/chatbot/Chatbot';
 import { pricingAPI } from '../lib/api';
 import { FiCheck, FiX, FiZap, FiBriefcase, FiAward } from 'react-icons/fi';
 
@@ -334,6 +335,9 @@ export default function PricingPage() {
         </section>
 
         <WebsiteFooter />
+        
+        {/* Chatbot */}
+        <Chatbot />
       </div>
     </>
   );

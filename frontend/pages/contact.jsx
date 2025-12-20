@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
+import Chatbot from '../components/chatbot/Chatbot';
 import { FiMail, FiPhone, FiMapPin, FiSend } from 'react-icons/fi';
 
 export default function ContactPage() {
@@ -55,7 +56,7 @@ export default function ContactPage() {
                       </div>
                       <div>
                         <div className="font-bold text-gray-900 text-lg mb-1">Phone</div>
-                        <div className="text-gray-600 text-lg">+91 123 456 7890</div>
+                        <div className="text-gray-600 text-lg">+91 84900 9684</div>
                         <div className="text-gray-600 text-lg">Mon-Fri 9AM-6PM IST</div>
                       </div>
                     </div>
@@ -65,8 +66,8 @@ export default function ContactPage() {
                       </div>
                       <div>
                         <div className="font-bold text-gray-900 text-lg mb-1">Address</div>
-                        <div className="text-gray-600 text-lg">123 Business Street</div>
-                        <div className="text-gray-600 text-lg">City, State 123456</div>
+                        <div className="text-gray-600 text-lg">212, 2nd floor, Runway Heights</div>
+                        <div className="text-gray-600 text-lg">Ayodhya Chowk, Rajkot - 360001</div>
                         <div className="text-gray-600 text-lg">India</div>
                       </div>
                     </div>
@@ -122,6 +123,9 @@ export default function ContactPage() {
         </section>
 
         <WebsiteFooter />
+        
+        {/* Chatbot */}
+        <Chatbot />
       </div>
     </>
   );

@@ -77,6 +77,9 @@ const TenantReview = masterSequelize.define(
   {
     tableName: 'tenant_reviews',
     timestamps: true,
+    underscored: true, // Use snake_case for timestamps (created_at, updated_at)
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
     indexes: [
       { fields: ['tenant_id'], name: 'idx_tenant_reviews_tenant_id' },
       { fields: ['is_approved', 'is_featured', 'created_at'], name: 'idx_tenant_reviews_approved_featured_created' },
