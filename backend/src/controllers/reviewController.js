@@ -1,6 +1,6 @@
 const masterModels = require('../models/masterModels');
 const { TenantReview, TenantMaster } = masterModels;
-const { Op } = require('sequelize');
+const { Op, Sequelize } = require('sequelize');
 const logger = require('../utils/logger');
 
 module.exports = {
@@ -166,7 +166,7 @@ module.exports = {
         ],
         order: [
           ['is_featured', 'DESC'],
-          ['created_at', 'DESC'],
+          [Sequelize.literal('created_at'), 'DESC'],
         ],
         limit: parseInt(limit),
       });
@@ -244,7 +244,7 @@ module.exports = {
             attributes: ['id', 'company_name', 'subdomain', 'email'],
           },
         ],
-        order: [['created_at', 'DESC']],
+        order: [[Sequelize.literal('created_at'), 'DESC']],
         limit: parseInt(limit),
         offset: parseInt(offset),
       });

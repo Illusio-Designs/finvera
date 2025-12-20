@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
+import Chatbot from '../components/chatbot/Chatbot';
 import { pricingAPI, reviewAPI } from '../lib/api';
 import { 
   FiBarChart2, FiFileText, FiDollarSign, FiTrendingUp, 
@@ -14,6 +15,8 @@ export default function LandingPage() {
   const [protocol, setProtocol] = useState('http:');
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
   
   useEffect(() => {
     // Set protocol only on client side
@@ -712,7 +715,7 @@ export default function LandingPage() {
                       </div>
                       <div>
                         <div className="font-bold text-gray-900 text-lg mb-1">Phone</div>
-                        <div className="text-gray-600 text-lg">+91 123 456 7890</div>
+                        <div className="text-gray-600 text-lg">+91 84900 9684</div>
                       </div>
                     </div>
                     <div className="flex items-start space-x-4">
@@ -721,7 +724,7 @@ export default function LandingPage() {
                       </div>
                       <div>
                         <div className="font-bold text-gray-900 text-lg mb-1">Address</div>
-                        <div className="text-gray-600 text-lg">123 Business Street, City, State 123456</div>
+                        <div className="text-gray-600 text-lg">212, 2nd floor, Runway Heights, Ayodhya Chowk, Rajkot - 360001</div>
                       </div>
                     </div>
                   </div>
@@ -758,6 +761,9 @@ export default function LandingPage() {
         </section>
 
         <WebsiteFooter />
+        
+        {/* Chatbot */}
+        <Chatbot />
       </div>
     </>
   );
