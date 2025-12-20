@@ -282,6 +282,34 @@ curl http://localhost:3000/api/health
 
 ISC
 
+### Buy License
+
+For commercial use or extended licensing options, please contact us to purchase a license.
+
+**Contact Information:**
+- Email: info@illusiodesigns.agency
+- Website: https://illusiodesigns.agency
+- Phone: 7600046416
+
+### Legal Notice
+
+**⚠️ WARNING: Unauthorized Use Prohibited**
+
+This software is protected by copyright and licensing laws. Any use of this software without a valid license is strictly prohibited and constitutes a violation of intellectual property rights.
+
+**Legal Consequences:**
+- Unauthorized use, distribution, or modification of this software without a proper license will result in legal action
+- Violators will be prosecuted to the full extent of the law
+- This includes but is not limited to: civil lawsuits, monetary damages, and criminal prosecution where applicable
+
+**To avoid legal action, please:**
+1. Purchase an appropriate license before using this software
+2. Contact us at info@illusiodesigns.agency for licensing inquiries
+3. Ensure all team members and users are properly licensed
+
+By using this software, you acknowledge that you have read, understood, and agree to comply with all licensing terms and conditions.
+
 ---
+
 
 **Status**: ✅ Production Ready - All features implemented and tested!
