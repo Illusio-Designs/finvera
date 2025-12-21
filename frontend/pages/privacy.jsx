@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
+import Chatbot from '../components/chatbot/Chatbot';
 
 export default function PrivacyPage() {
   return (
@@ -100,6 +101,9 @@ export default function PrivacyPage() {
         </section>
 
         <WebsiteFooter />
+        
+        {/* Chatbot */}
+        <Chatbot />
       </div>
     </>
   );

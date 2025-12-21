@@ -51,10 +51,14 @@ export default function PricingPage() {
   };
 
   const getClientRegisterUrl = () => {
-    const domain = process.env.MAIN_DOMAIN?.includes('localhost') 
-      ? 'client.localhost:3001' 
-      : `client.${process.env.MAIN_DOMAIN}`;
-    return `${protocol}//${domain}/register`;
+    // Use environment variable or default to finvera.solutions
+    const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
+    
+    if (mainDomain.includes('localhost')) {
+      return `${protocol}//client.localhost:3001/register`;
+    }
+    
+    return `${protocol}//client.${mainDomain}/register`;
   };
 
   const formatPrice = (price, currency = 'INR') => {

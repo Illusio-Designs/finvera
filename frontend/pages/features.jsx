@@ -20,10 +20,14 @@ export default function FeaturesPage() {
   }, []);
   
   const getClientUrl = () => {
-    const domain = process.env.MAIN_DOMAIN?.includes('localhost') 
-      ? 'client.localhost:3001' 
-      : `client.${process.env.MAIN_DOMAIN}`;
-    return `${protocol}//${domain}`;
+    // Use environment variable or default to finvera.solutions
+    const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
+    
+    if (mainDomain.includes('localhost')) {
+      return `${protocol}//client.localhost:3001`;
+    }
+    
+    return `${protocol}//client.${mainDomain}`;
   };
   const mainFeatures = [
     {

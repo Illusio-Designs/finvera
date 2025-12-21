@@ -13,18 +13,15 @@ export default function WebsiteHeader() {
     }
   }, []);
   
-  const getAdminUrl = () => {
-    const domain = process.env.MAIN_DOMAIN?.includes('localhost') 
-      ? 'admin.localhost:3001' 
-      : `admin.${process.env.MAIN_DOMAIN}`;
-    return `${protocol}//${domain}`;
-  };
-  
-  const getClientUrl = () => {
-    const domain = process.env.MAIN_DOMAIN?.includes('localhost') 
-      ? 'client.localhost:3001' 
-      : `client.${process.env.MAIN_DOMAIN}`;
-    return `${protocol}//${domain}`;
+  const getClientRegisterUrl = () => {
+    // Use environment variable or default to finvera.solutions
+    const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
+    
+    if (mainDomain.includes('localhost')) {
+      return `${protocol}//client.localhost:3001/register`;
+    }
+    
+    return `${protocol}//client.${mainDomain}/register`;
   };
 
   return (
@@ -67,15 +64,7 @@ export default function WebsiteHeader() {
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
             <a
-              href={getAdminUrl()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-600 hover:text-primary-600 transition font-medium"
-            >
-              Admin Login
-            </a>
-            <a
-              href={getClientUrl()}
+              href={getClientRegisterUrl()}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition font-medium"
@@ -119,15 +108,7 @@ export default function WebsiteHeader() {
             </Link>
             <div className="pt-4 border-t border-gray-200 space-y-3">
               <a
-                href={getAdminUrl()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block text-gray-600 hover:text-primary-600 transition font-medium"
-              >
-                Admin Login
-              </a>
-              <a
-                href={getClientUrl()}
+                href={getClientRegisterUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition font-medium text-center"

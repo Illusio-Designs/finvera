@@ -2,6 +2,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
+import Chatbot from '../components/chatbot/Chatbot';
 import { FiSearch, FiBook, FiMessageCircle, FiVideo, FiFileText, FiHelpCircle } from 'react-icons/fi';
 import { useState } from 'react';
 
@@ -31,7 +32,7 @@ export default function HelpPage() {
     },
     {
       question: 'Can I cancel my subscription anytime?',
-      answer: 'Yes, you can cancel your subscription at any time. You\'ll continue to have access until the end of your billing period.'
+      answer: 'Yes, you can cancel your subscription at any time. You&apos;ll continue to have access until the end of your billing period.'
     }
   ];
 
@@ -108,6 +109,9 @@ export default function HelpPage() {
         </section>
 
         <WebsiteFooter />
+        
+        {/* Chatbot */}
+        <Chatbot />
       </div>
     </>
   );
