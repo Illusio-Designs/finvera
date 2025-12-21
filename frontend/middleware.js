@@ -35,11 +35,13 @@ export function middleware(request) {
   
   // Client subdomain
   else if (subdomain === 'client') {
-    // If not already on client path, redirect
+    // If not already on client path, rewrite
     if (!url.pathname.startsWith('/client')) {
-      // Redirect /login to /client/login, / to /client/dashboard
+      // Handle specific routes
       if (url.pathname === '/login') {
         url.pathname = '/client/login';
+      } else if (url.pathname === '/register') {
+        url.pathname = '/client/register';
       } else if (url.pathname === '/' || url.pathname === '') {
         url.pathname = '/client/dashboard';
       } else {
@@ -64,10 +66,10 @@ export function middleware(request) {
 /**
  * Extract subdomain from hostname
  * Examples:
- * - admin.finvera.com -> admin
- * - client.finvera.com -> client
- * - www.finvera.com -> www
- * - finvera.com -> null
+ * - admin.finvera.solutions -> admin
+ * - client.finvera.solutions -> client
+ * - www.finvera.solutions -> www
+ * - finvera.solutions -> null
  * - localhost:3000 -> null
  * - admin.localhost:3000 -> admin (for local dev)
  */
@@ -83,7 +85,7 @@ function getSubdomain(hostname) {
     return parts[0];
   }
   
-  // For production (e.g., admin.finvera.com)
+  // For production (e.g., admin.finvera.solutions, client.finvera.solutions)
   if (parts.length >= 3) {
     const subdomain = parts[0];
     // Ignore www as subdomain
@@ -93,7 +95,7 @@ function getSubdomain(hostname) {
     return subdomain;
   }
   
-  // No subdomain (e.g., finvera.com or localhost)
+  // No subdomain (e.g., finvera.solutions or localhost)
   return null;
 }
 

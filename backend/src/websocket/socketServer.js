@@ -11,6 +11,9 @@ let io = null;
  * @returns {Server} Socket.IO server instance
  */
 function initSocketServer(server) {
+  // Get main domain from environment or default to finvera.solutions
+  const mainDomain = process.env.MAIN_DOMAIN || process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
+  
   const corsOptions = {
     origin: function (origin, callback) {
       // Allow requests with no origin (like mobile apps or curl requests)
@@ -20,19 +23,34 @@ function initSocketServer(server) {
       const allowedOrigins = [
         process.env.FRONTEND_URL,
         process.env.CORS_ORIGIN,
+        // Localhost origins
         'http://localhost:3000',
         'http://localhost:3001',
         'http://admin.localhost:3000',
         'http://admin.localhost:3001',
         'http://client.localhost:3000',
         'http://client.localhost:3001',
+        // Production origins - main domain
+        `https://${mainDomain}`,
+        `http://${mainDomain}`,
+        `https://www.${mainDomain}`,
+        `http://www.${mainDomain}`,
+        // Production origins - admin subdomain
+        `https://admin.${mainDomain}`,
+        `http://admin.${mainDomain}`,
+        // Production origins - client subdomain
+        `https://client.${mainDomain}`,
+        `http://client.${mainDomain}`,
       ].filter(Boolean);
       
       // Allow all localhost subdomains in development
       const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/.test(origin) ||
                           /^https?:\/\/.*\.localhost(:\d+)?$/.test(origin);
       
-      if (allowedOrigins.includes(origin) || isLocalhost || process.env.NODE_ENV !== 'production') {
+      // Check if origin matches production domain pattern (with or without subdomain)
+      const isProductionDomain = new RegExp(`^https?://(www\\.)?(admin|client)?\\.?${mainDomain.replace(/\./g, '\\.')}$`).test(origin);
+      
+      if (allowedOrigins.includes(origin) || isLocalhost || isProductionDomain || process.env.NODE_ENV !== 'production') {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));

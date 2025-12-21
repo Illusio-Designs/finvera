@@ -12,16 +12,25 @@ import {
 } from 'react-icons/fi';
 
 export default function LandingPage() {
-  const [protocol, setProtocol] = useState('http:');
+  const [clientRegisterUrl, setClientRegisterUrl] = useState('');
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   
   useEffect(() => {
-    // Set protocol only on client side
+    // Set client register URL only on client side
     if (typeof window !== 'undefined') {
-      setProtocol(window.location.protocol);
+      const hostname = window.location.hostname;
+      const isLocalhost = hostname.includes('localhost') || hostname.includes('127.0.0.1');
+      
+      if (isLocalhost) {
+        setClientRegisterUrl('http://client.localhost:3001/register');
+      } else {
+        // In production, always use https and detect domain from current hostname
+        const mainDomain = hostname.replace(/^(www|admin|client)\./, '');
+        setClientRegisterUrl(`https://client.${mainDomain}/register`);
+      }
     }
   }, []);
 
@@ -66,14 +75,7 @@ export default function LandingPage() {
   };
   
   const getClientRegisterUrl = () => {
-    // Use environment variable or default to finvera.solutions
-    const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
-    
-    if (mainDomain.includes('localhost')) {
-      return `${protocol}//client.localhost:3001/register`;
-    }
-    
-    return `${protocol}//client.${mainDomain}/register`;
+    return clientRegisterUrl || 'https://client.finvera.solutions/register';
   };
 
   const formatPrice = (price, currency = 'INR') => {

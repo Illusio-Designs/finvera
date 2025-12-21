@@ -57,8 +57,8 @@ module.exports = {
     // Check if subscriptions table already exists
     const [subscriptionsTable] = await queryInterface.sequelize.query("SHOW TABLES LIKE 'subscriptions'");
     if (subscriptionsTable.length === 0) {
-      // Create subscriptions table for tracking Razorpay subscriptions
-      await queryInterface.createTable('subscriptions', {
+    // Create subscriptions table for tracking Razorpay subscriptions
+    await queryInterface.createTable('subscriptions', {
       id: {
         type: Sequelize.UUID,
         primaryKey: true,
@@ -149,7 +149,7 @@ module.exports = {
         type: Sequelize.DATE,
         defaultValue: Sequelize.NOW,
       },
-      });
+    });
       console.log('✓ Created subscriptions table');
     } else {
       console.log('✓ subscriptions table already exists, skipping creation');
@@ -158,8 +158,8 @@ module.exports = {
     // Check if payments table already exists
     const [paymentsTable] = await queryInterface.sequelize.query("SHOW TABLES LIKE 'payments'");
     if (paymentsTable.length === 0) {
-      // Create payments table for tracking Razorpay payments
-      await queryInterface.createTable('payments', {
+    // Create payments table for tracking Razorpay payments
+    await queryInterface.createTable('payments', {
       id: {
         type: Sequelize.UUID,
         primaryKey: true,
@@ -238,7 +238,7 @@ module.exports = {
         type: Sequelize.DATE,
         defaultValue: Sequelize.NOW,
       },
-      });
+    });
       console.log('✓ Created payments table');
     } else {
       console.log('✓ payments table already exists, skipping creation');
