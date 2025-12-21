@@ -11,23 +11,25 @@ import {
 } from 'react-icons/fi';
 
 export default function FeaturesPage() {
-  const [protocol, setProtocol] = useState('http:');
+  const [clientUrl, setClientUrl] = useState('');
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setProtocol(window.location.protocol);
+      const hostname = window.location.hostname;
+      const isLocalhost = hostname.includes('localhost') || hostname.includes('127.0.0.1');
+      
+      if (isLocalhost) {
+        setClientUrl('http://client.localhost:3001');
+      } else {
+        // In production, always use https and detect domain from current hostname
+        const mainDomain = hostname.replace(/^(www|admin|client)\./, '');
+        setClientUrl(`https://client.${mainDomain}`);
+      }
     }
   }, []);
   
   const getClientUrl = () => {
-    // Use environment variable or default to finvera.solutions
-    const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
-    
-    if (mainDomain.includes('localhost')) {
-      return `${protocol}//client.localhost:3001`;
-    }
-    
-    return `${protocol}//client.${mainDomain}`;
+    return clientUrl || 'https://client.finvera.solutions';
   };
   const mainFeatures = [
     {

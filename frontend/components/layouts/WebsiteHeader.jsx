@@ -4,24 +4,26 @@ import Image from 'next/image';
 
 export default function WebsiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [protocol, setProtocol] = useState('http:');
+  const [clientUrl, setClientUrl] = useState('');
   
   useEffect(() => {
-    // Set protocol only on client side
+    // Set URL only on client side
     if (typeof window !== 'undefined') {
-      setProtocol(window.location.protocol);
+      const hostname = window.location.hostname;
+      const isLocalhost = hostname.includes('localhost') || hostname.includes('127.0.0.1');
+      
+      if (isLocalhost) {
+        setClientUrl('http://client.localhost:3001/register');
+      } else {
+        // In production, always use https and detect domain from current hostname
+        const mainDomain = hostname.replace(/^(www|admin|client)\./, '');
+        setClientUrl(`https://client.${mainDomain}/register`);
+      }
     }
   }, []);
   
   const getClientRegisterUrl = () => {
-    // Use environment variable or default to finvera.solutions
-    const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
-    
-    if (mainDomain.includes('localhost')) {
-      return `${protocol}//client.localhost:3001/register`;
-    }
-    
-    return `${protocol}//client.${mainDomain}/register`;
+    return clientUrl || 'https://client.finvera.solutions/register';
   };
 
   return (

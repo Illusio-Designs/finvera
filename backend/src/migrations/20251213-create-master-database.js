@@ -33,8 +33,8 @@ module.exports = {
     const tableExists = tables.length > 0;
 
     if (!tableExists) {
-      // Create tenant_master table
-      await queryInterface.createTable('tenant_master', {
+    // Create tenant_master table
+    await queryInterface.createTable('tenant_master', {
       id: {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
@@ -151,7 +151,7 @@ module.exports = {
         type: Sequelize.DATE,
         allowNull: false,
       },
-      });
+    });
       console.log('✓ Created tenant_master table');
     } else {
       console.log('✓ tenant_master table already exists, skipping creation');

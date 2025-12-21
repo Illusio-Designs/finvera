@@ -17,26 +17,42 @@ const corsOptions = {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
+    // Get main domain from environment or default to finvera.solutions
+    const mainDomain = process.env.MAIN_DOMAIN || process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
+    
     // List of allowed origins
     const allowedOrigins = [
       process.env.FRONTEND_URL,
       process.env.CORS_ORIGIN,
+      // Localhost origins
       'http://localhost:3000',
       'http://localhost:3001',
       'http://admin.localhost:3000',
       'http://admin.localhost:3001',
       'http://client.localhost:3000',
       'http://client.localhost:3001',
-      'http://localhost:3000',
-      'http://localhost:3001',
+      // Production origins - main domain
+      `https://${mainDomain}`,
+      `http://${mainDomain}`,
+      `https://www.${mainDomain}`,
+      `http://www.${mainDomain}`,
+      // Production origins - admin subdomain
+      `https://admin.${mainDomain}`,
+      `http://admin.${mainDomain}`,
+      // Production origins - client subdomain
+      `https://client.${mainDomain}`,
+      `http://client.${mainDomain}`,
     ].filter(Boolean); // Remove undefined values
     
     // Allow all localhost subdomains in development
     const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/.test(origin) ||
                         /^https?:\/\/.*\.localhost(:\d+)?$/.test(origin);
     
-    // Allow if in allowed list or is localhost/subdomain
-    if (allowedOrigins.includes(origin) || isLocalhost || process.env.NODE_ENV !== 'production') {
+    // Check if origin matches production domain pattern (with or without subdomain)
+    const isProductionDomain = new RegExp(`^https?://(www\\.)?(admin|client)?\\.?${mainDomain.replace(/\./g, '\\.')}$`).test(origin);
+    
+    // Allow if in allowed list, is localhost/subdomain, matches production domain, or is development
+    if (allowedOrigins.includes(origin) || isLocalhost || isProductionDomain || process.env.NODE_ENV !== 'production') {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
