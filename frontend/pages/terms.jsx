@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
+import Chatbot from '../components/chatbot/Chatbot';
 
 export default function TermsPage() {
   return (
@@ -108,6 +109,9 @@ export default function TermsPage() {
         </section>
 
         <WebsiteFooter />
+        
+        {/* Chatbot */}
+        <Chatbot />
       </div>
     </>
   );
