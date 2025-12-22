@@ -14,7 +14,7 @@ import { useTable } from '../../hooks/useTable';
 import { eWayBillAPI } from '../../lib/api';
 import Badge from '../../components/ui/Badge';
 import toast from 'react-hot-toast';
-import { FiPlus, FiSave, FiX, FiEye, FiArrowLeft } from 'react-icons/fi';
+import { FiPlus, FiSave, FiX, FiEye, FiArrowLeft, FiRefreshCw } from 'react-icons/fi';
 import { useApi } from '../../hooks/useApi';
 
 export default function EWayBillList() {
@@ -406,10 +406,39 @@ export default function EWayBillList() {
                 </div>
 
                 {ewb.status === 'generated' && (
-                  <div className="pt-4 border-t">
+                  <div className="pt-4 border-t space-y-3">
+                    <div className="flex gap-2 flex-wrap">
+                      <Button variant="outline" onClick={async () => {
+                        try {
+                          const response = await eWayBillAPI.getStatus(ewb.eway_bill_no);
+                          const status = response.data?.data || response.data;
+                          toast.success('Status: ' + (status.status || 'N/A'));
+                          fetchEWB();
+                        } catch (error) {
+                          toast.error(error.response?.data?.message || 'Failed to get status');
+                        }
+                      }}>
+                        <FiRefreshCw className="h-4 w-4 mr-2" />
+                        Check Status
+                      </Button>
+                      <Button variant="outline" onClick={async () => {
+                        if (!confirm('Extend E-Way Bill validity?')) return;
+                        try {
+                          await eWayBillAPI.extend(ewb.eway_bill_no, {
+                            extended_upto: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                          });
+                          toast.success('E-Way Bill extended successfully');
+                          fetchEWB();
+                        } catch (error) {
+                          toast.error(error.response?.data?.message || 'Failed to extend E-Way Bill');
+                        }
+                      }}>
+                        Extend Validity
+                      </Button>
                     <Button variant="danger" onClick={handleCancel}>
                       Cancel E-Way Bill
                     </Button>
+                    </div>
                   </div>
                 )}
 

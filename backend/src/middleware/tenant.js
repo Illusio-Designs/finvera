@@ -166,6 +166,21 @@ const setTenantContext = (req, res, next) => {
  */
 const requireTenant = (req, res, next) => {
   if (!req.tenant_id) {
+    // Check if user is a platform admin (super_admin) without tenant
+    const userRole = req.role;
+    const userId = req.user_id || req.user?.id || req.user?.user_id || req.user?.sub;
+    
+    if (userRole === 'super_admin' || userRole === 'admin') {
+      // Platform admins might not have tenant_id - allow but log
+      logger.warn(`Platform admin (${userId}, role: ${userRole}) accessing tenant-required route without tenant_id`);
+      // Still require tenant for accounting routes - they need to select a tenant/company
+      return res.status(400).json({
+        success: false,
+        message: 'Tenant ID is required. Please select a company or tenant.',
+        require_tenant_selection: true,
+      });
+    }
+    
     return res.status(400).json({
       success: false,
       message: 'Tenant ID is required',

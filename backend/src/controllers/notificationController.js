@@ -10,7 +10,14 @@ module.exports = {
   async getNotifications(req, res, next) {
     try {
       const { is_read, type, limit = 50, offset = 0 } = req.query;
-      const userId = req.user.id;
+      const userId = req.user_id || req.user?.id || req.user?.user_id || req.user?.sub;
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not authenticated',
+        });
+      }
 
       const where = { user_id: userId };
       if (is_read !== undefined) {
@@ -46,7 +53,15 @@ module.exports = {
    */
   async getUnreadCount(req, res, next) {
     try {
-      const userId = req.user.id;
+      const userId = req.user_id || req.user?.id || req.user?.user_id || req.user?.sub;
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not authenticated',
+        });
+      }
+      
       const count = await notificationService.getUnreadCount(userId);
       res.json({ count });
     } catch (error) {
@@ -61,7 +76,14 @@ module.exports = {
   async markAsRead(req, res, next) {
     try {
       const { id } = req.params;
-      const userId = req.user.id;
+      const userId = req.user_id || req.user?.id || req.user?.user_id || req.user?.sub;
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not authenticated',
+        });
+      }
 
       const notification = await notificationService.markAsRead(id, userId);
       res.json({ data: notification });
@@ -79,7 +101,15 @@ module.exports = {
    */
   async markAllAsRead(req, res, next) {
     try {
-      const userId = req.user.id;
+      const userId = req.user_id || req.user?.id || req.user?.user_id || req.user?.sub;
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not authenticated',
+        });
+      }
+      
       await notificationService.markAllAsRead(userId);
       res.json({ message: 'All notifications marked as read' });
     } catch (error) {
@@ -94,7 +124,14 @@ module.exports = {
   async deleteNotification(req, res, next) {
     try {
       const { id } = req.params;
-      const userId = req.user.id;
+      const userId = req.user_id || req.user?.id || req.user?.user_id || req.user?.sub;
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not authenticated',
+        });
+      }
 
       const notification = await Notification.findOne({
         where: { id, user_id: userId },

@@ -13,7 +13,9 @@ export function middleware(request) {
   if (url.pathname.startsWith('/_next') || 
       url.pathname.startsWith('/api') ||
       url.pathname.startsWith('/static') ||
-      url.pathname.startsWith('/favicon')) {
+      url.pathname.startsWith('/favicon') ||
+      url.pathname.startsWith('/fonts') ||
+      url.pathname.match(/\.(otf|ttf|woff|woff2|eot)$/i)) {
     return NextResponse.next();
   }
 
@@ -107,8 +109,8 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - api routes (handled separately)
-     * - static assets (images, etc.)
+     * - static assets (images, fonts, etc.)
      */
-    '/((?!_next/static|_next/image|favicon.ico|api|.*\\.ico|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.svg|.*\\.webp|.*\\.gif).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api|fonts|.*\\.ico|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.svg|.*\\.webp|.*\\.gif|.*\\.otf|.*\\.ttf|.*\\.woff|.*\\.woff2|.*\\.eot).*)',
   ],
 };

@@ -1,9 +1,25 @@
 import Head from 'next/head';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Layout({ children, title = 'Finvera - Accounting Software' }) {
   const { user, logout, isAuthenticated } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await logout();
+    
+    // Redirect to login page
+    if (typeof window !== 'undefined') {
+      const currentPath = window.location.pathname;
+      if (currentPath.startsWith('/admin')) {
+        window.location.href = '/admin/login';
+      } else {
+        window.location.href = '/client/login';
+      }
+    }
+  };
 
   return (
     <>
@@ -33,7 +49,7 @@ export default function Layout({ children, title = 'Finvera - Accounting Softwar
                   <>
                     <span className="text-gray-700">Welcome, {user.full_name || user.email}</span>
                     <button
-                      onClick={logout}
+                      onClick={handleLogout}
                       className="px-4 py-2 text-sm text-white bg-primary-600 rounded-md hover:bg-primary-700"
                     >
                       Logout

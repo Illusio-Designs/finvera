@@ -50,7 +50,7 @@ export default function PricingPage() {
 
     fetchPlans();
   }, []);
-  
+
   const getClientRegisterUrl = () => {
     return clientRegisterUrl || 'https://client.finvera.solutions/register';
   };

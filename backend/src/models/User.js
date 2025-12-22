@@ -22,7 +22,13 @@ module.exports = (sequelize, DataTypes) => {
       },
       password: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true, // Allow null for OAuth users
+      },
+      google_id: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        unique: true,
+        comment: 'Google OAuth user ID',
       },
       name: {
         type: DataTypes.STRING,

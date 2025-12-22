@@ -4,6 +4,10 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // For Electron production builds, use standalone output
+  ...(process.env.ELECTRON_BUILD === 'true' && {
+    output: 'standalone',
+  }),
   env: {
     API_URL: process.env.API_URL || 'http://localhost:3000/api',
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api',

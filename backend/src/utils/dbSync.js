@@ -10,10 +10,13 @@ const path = require('path');
  */
 async function syncDatabase() {
   try {
-    logger.info('🔄 Initializing database...');
+    logger.info('🔄 Initializing main database...');
 
     // First, authenticate the connection
     await sequelize.authenticate();
+
+    // Run migrations for main database (admin/main DB tables)
+    await runMainMigrations();
 
     // Sync models with alter: true (will alter existing tables to match models)
     // This is safer than force: true which drops tables
@@ -35,10 +38,50 @@ async function syncDatabase() {
     // Run seeders
     await runSeeders();
 
-    logger.info('✅ Database ready');
+    logger.info('✅ Main database ready');
   } catch (error) {
     logger.error('❌ Database initialization failed:', error);
     throw error;
+  }
+}
+
+/**
+ * Run consolidated migration for main database (admin/main DB)
+ */
+async function runMainMigrations() {
+  try {
+    const migrationsPath = path.join(__dirname, '../migrations');
+    if (!fs.existsSync(migrationsPath)) {
+      return;
+    }
+
+    // Use consolidated admin-master migration (for main DB part)
+    const migrationFile = path.join(migrationsPath, '001-admin-master-migration.js');
+    
+    if (!fs.existsSync(migrationFile)) {
+      logger.warn('⚠️  Consolidated admin-master migration file not found');
+      return;
+    }
+
+    const queryInterface = sequelize.getQueryInterface();
+    const { Sequelize } = require('sequelize');
+    const migration = require(migrationFile);
+    
+    if (migration.up && typeof migration.up === 'function') {
+      try {
+        await migration.up(queryInterface, Sequelize);
+        logger.info(`  ✓ Consolidated main database migration completed`);
+      } catch (error) {
+        // Ignore errors if column/index already exists
+        if (error.message && error.message.includes('already exists')) {
+          logger.debug(`  ℹ️  Main database migration already applied`);
+        } else {
+          logger.warn(`  ⚠️  Main database migration failed: ${error.message}`);
+        }
+      }
+    }
+  } catch (error) {
+    logger.warn('Error running main database migrations:', error.message);
   }
 }
 
@@ -56,11 +99,11 @@ async function runSeeders() {
     // Create a table to track which seeders have been run
     await ensureSeederTable();
 
-    const seederName = '001-consolidated-seeder';
+    const seederName = '001-admin-master-seeder';
     const seederFile = path.join(seedersPath, `${seederName}.js`);
 
     if (!fs.existsSync(seederFile)) {
-      logger.warn('⚠️  Consolidated seeder file not found');
+      logger.warn('⚠️  Consolidated admin-master seeder file not found');
       return;
     }
       
@@ -134,4 +177,4 @@ async function ensureSeederTable() {
   }
 }
 
-module.exports = { syncDatabase, runSeeders };
+module.exports = { syncDatabase, runSeeders, runMainMigrations };

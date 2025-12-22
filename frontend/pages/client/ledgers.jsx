@@ -1637,7 +1637,7 @@ export default function LedgersList() {
               sortOrder={sort.order}
               onRowClick={(row) => handleView(row)}
                 searchable={true}
-                searchPlaceholder="Search ledgers..."
+                searchable={false}
             />
           </Card>
           </div>

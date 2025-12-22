@@ -92,6 +92,18 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
+// Initialize Passport for OAuth
+const passport = require('./config/passport');
+const session = require('express-session');
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-session-secret-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: process.env.NODE_ENV === 'production' }
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));

@@ -146,6 +146,39 @@ async function handlePaymentCaptured(event) {
             subscription_end: subscription.end_date,
             razorpay_subscription_id: subscription.razorpay_subscription_id,
           });
+
+            // Create referral reward if tenant used a referral code
+            if (tenant.referral_code && subscription.plan_code) {
+              try {
+                const referralDiscountService = require('../services/referralDiscountService');
+                const basePrice = parseFloat(subscription.amount || 0);
+                await referralDiscountService.createReferralReward(
+                  tenant.id,
+                  subscription.plan_code,
+                  basePrice
+                );
+              } catch (rewardError) {
+                logger.error('Failed to create referral reward in payment.captured:', rewardError);
+                // Don't fail payment processing if reward creation fails
+              }
+            }
+          }
+        }
+      } else {
+        // One-time payment - also create referral reward if applicable
+        const tenant = await masterModels.TenantMaster.findByPk(paymentRecord.tenant_id);
+        if (tenant && tenant.referral_code && payment.notes?.plan_code) {
+          try {
+            const referralDiscountService = require('../services/referralDiscountService');
+            const basePrice = parseFloat(paymentRecord.amount || 0);
+            await referralDiscountService.createReferralReward(
+              tenant.id,
+              payment.notes.plan_code,
+              basePrice
+            );
+          } catch (rewardError) {
+            logger.error('Failed to create referral reward for one-time payment:', rewardError);
+            // Don't fail payment processing if reward creation fails
         }
       }
     }
@@ -222,6 +255,22 @@ async function handleSubscriptionActivated(event) {
           subscription_start: subscriptionRecord.start_date,
           subscription_end: subscriptionRecord.end_date,
         });
+
+        // Create referral reward if tenant used a referral code
+        if (tenant.referral_code && subscriptionRecord.plan_code) {
+          try {
+            const referralDiscountService = require('../services/referralDiscountService');
+            const basePrice = parseFloat(subscriptionRecord.amount || 0);
+            await referralDiscountService.createReferralReward(
+              tenant.id,
+              subscriptionRecord.plan_code,
+              basePrice
+            );
+          } catch (rewardError) {
+            logger.error('Failed to create referral reward in subscription.activated:', rewardError);
+            // Don't fail subscription activation if reward creation fails
+          }
+        }
       }
     }
 

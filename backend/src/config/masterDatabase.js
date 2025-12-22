@@ -67,8 +67,11 @@ async function initMasterDatabase() {
     logger.info('  ✓ tds_sections (shared TDS sections)');
     logger.info('  ✓ accounting_years (shared accounting periods)');
 
-    // Seed default data if tables are empty
+    // Seed default data using consolidated seeder
     await seedMasterData();
+    
+    // Also run the consolidated admin-master seeder for master DB parts
+    await runMasterSeeder();
 
   } catch (err) {
     logger.error('Failed to initialize master database:', err);
@@ -89,11 +92,11 @@ async function runMasterMigrations() {
       return;
     }
 
-    // Use consolidated master migration
-    const migrationFile = path.join(migrationsPath, '001-consolidated-master-migration.js');
+    // Use consolidated admin-master migration
+    const migrationFile = path.join(migrationsPath, '001-admin-master-migration.js');
     
     if (!fs.existsSync(migrationFile)) {
-      logger.warn('⚠️  Consolidated master migration file not found');
+      logger.warn('⚠️  Consolidated admin-master migration file not found');
       return;
     }
 
@@ -121,6 +124,7 @@ async function runMasterMigrations() {
 
 /**
  * Seed default master data if not exists
+ * Uses masterSeeds.js helper functions (called by consolidated seeder)
  */
 async function seedMasterData() {
   const masterModels = require('../models/masterModels');
@@ -164,6 +168,50 @@ async function seedMasterData() {
     logger.info('Master data seeding complete');
   } catch (error) {
     logger.warn('Error seeding master data:', error.message);
+  }
+}
+
+/**
+ * Run consolidated admin-master seeder for master database
+ */
+async function runMasterSeeder() {
+  const fs = require('fs');
+  const path = require('path');
+  
+  try {
+    const seedersPath = path.join(__dirname, '../seeders');
+    if (!fs.existsSync(seedersPath)) {
+      return;
+    }
+
+    // Use consolidated admin-master seeder (for master DB parts)
+    const seederFile = path.join(seedersPath, '001-admin-master-seeder.js');
+    
+    if (!fs.existsSync(seederFile)) {
+      logger.warn('⚠️  Consolidated admin-master seeder file not found');
+      return;
+    }
+
+    const queryInterface = masterSequelize.getQueryInterface();
+    const { Sequelize } = require('sequelize');
+    const seeder = require(seederFile);
+    
+    if (seeder.up && typeof seeder.up === 'function') {
+      try {
+        await seeder.up(queryInterface, Sequelize);
+        logger.info(`  ✓ Consolidated master seeder completed`);
+      } catch (error) {
+        // Ignore errors if data already exists
+        if (error.message && (error.message.includes('already exists') || 
+                              error.message.includes('already seeded'))) {
+          logger.debug(`  ℹ️  Master seeder already applied`);
+        } else {
+          logger.warn(`  ⚠️  Master seeder failed: ${error.message}`);
+        }
+      }
+    }
+  } catch (error) {
+    logger.warn('Error running master seeder:', error.message);
   }
 }
 

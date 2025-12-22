@@ -64,13 +64,12 @@ module.exports = (sequelize) => {
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    // Keep DB column name as `name` for backward compatibility,
-    // but expose as ledger_name to match controllers/UI.
+    // Database column is 'ledger_name' (migration uses ledger_name)
     ledger_name: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
-      field: 'name',
+      // No field mapping needed - Sequelize will use 'ledger_name' by default
     },
     ledger_code: {
       type: DataTypes.STRING(50),
@@ -142,6 +141,11 @@ module.exports = (sequelize) => {
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
+    tenant_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      comment: 'Tenant ID (required by migration)',
+    },
     gstin: {
       type: DataTypes.STRING(15),
       allowNull: false,
@@ -150,6 +154,11 @@ module.exports = (sequelize) => {
     legal_name: DataTypes.STRING,
     trade_name: DataTypes.STRING,
     state: DataTypes.STRING(100),
+    state_code: {
+      type: DataTypes.STRING(2),
+      allowNull: false,
+      comment: '2-digit state code (first 2 digits of GSTIN)',
+    },
     address: DataTypes.TEXT,
     registration_date: DataTypes.DATE,
     gstin_status: {
