@@ -26,7 +26,8 @@ const Subscription = masterSequelize.define('Subscription', {
   razorpay_subscription_id: {
     type: DataTypes.STRING(255),
     allowNull: false,
-    unique: true,
+    // Removed unique: true to avoid MySQL 64-index limit
+    // Uniqueness should be enforced at application level
   },
   razorpay_plan_id: {
     type: DataTypes.STRING(255),

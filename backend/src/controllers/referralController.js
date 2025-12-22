@@ -155,7 +155,8 @@ module.exports = {
           order: [['effective_from', 'DESC']],
         });
 
-        const discountPercentage = currentConfig ? parseFloat(currentConfig.discount_percentage) : 10.00;
+        // Use 10% as the standard discount percentage for all referral codes
+        const discountPercentage = 10.00;
 
         // Generate unique code with retry mechanism
         let code;

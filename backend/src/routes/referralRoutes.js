@@ -58,8 +58,8 @@ router.post('/rewards/:id/approve',
 );
 
 // Referral Discount Configuration routes
+// Allow all authenticated users to view current discount config (used on client referral page)
 router.get('/discount-config/current', 
-  requireRole(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.DISTRIBUTOR, ROLES.SALESMAN),
   referralDiscountController.getCurrentConfig
 );
 router.get('/discount-config', 

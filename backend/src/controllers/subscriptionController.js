@@ -9,7 +9,7 @@ module.exports = {
   async createSubscription(req, res, next) {
     try {
       const tenant_id = req.tenant_id || req.user?.tenant_id;
-      const { plan_id, billing_cycle } = req.body;
+      const { plan_id, billing_cycle, referral_code } = req.body;
 
       if (!plan_id || !billing_cycle) {
         return res.status(400).json({ message: 'plan_id and billing_cycle are required' });
@@ -28,13 +28,39 @@ module.exports = {
         return res.status(404).json({ message: 'Subscription plan not found' });
       }
 
-      let amount = parseFloat(plan.base_price || 0);
+      let basePrice = parseFloat(plan.base_price || 0);
+      let amount = basePrice;
+      
+      // Calculate base amount based on billing cycle
       if (billing_cycle === 'yearly' && plan.discounted_price) {
         // Use discounted price for yearly
-        amount = parseFloat(plan.discounted_price * 12); // Assuming monthly price
+        basePrice = parseFloat(plan.discounted_price * 12); // Assuming monthly price
+        amount = basePrice;
       } else if (billing_cycle === 'yearly') {
         // If no discounted price, calculate yearly as 12x monthly
-        amount = parseFloat(plan.base_price * 12);
+        basePrice = parseFloat(plan.base_price * 12);
+        amount = basePrice;
+      }
+
+      // Apply referral code discount if provided
+      let discountApplied = false;
+      if (referral_code) {
+        try {
+          const referralDiscountService = require('../services/referralDiscountService');
+          const discountResult = await referralDiscountService.applyReferralDiscount(
+            referral_code,
+            basePrice
+          );
+          
+          if (discountResult.discountAmount > 0) {
+            amount = discountResult.discountedPrice;
+            discountApplied = true;
+            logger.info(`Referral discount applied to subscription: ${discountResult.discountPercentage}% (${discountResult.discountAmount})`);
+          }
+        } catch (error) {
+          logger.warn('Failed to apply referral discount to subscription:', error.message);
+          // Continue with subscription creation even if discount fails
+        }
       }
 
       // Create or get Razorpay customer
@@ -83,6 +109,15 @@ module.exports = {
           },
         });
 
+        // Check if subscription with this razorpay_subscription_id already exists (application-level uniqueness)
+        const existingSubscription = await masterModels.Subscription.findOne({
+          where: { razorpay_subscription_id: razorpaySubscription.id },
+        });
+        if (existingSubscription) {
+          logger.warn(`Subscription with razorpay_subscription_id ${razorpaySubscription.id} already exists`);
+          return res.status(409).json({ message: 'Subscription already exists for this Razorpay subscription' });
+        }
+
         // Calculate dates
         const startDate = new Date();
         let endDate = null;
@@ -116,13 +151,17 @@ module.exports = {
           metadata: razorpaySubscription,
         });
 
-        // Update tenant
-        await tenant.update({
+        // Update tenant (also store referral_code if provided for reward creation on payment)
+        const tenantUpdateData = {
           razorpay_subscription_id: razorpaySubscription.id,
           subscription_plan: plan.plan_code,
           subscription_start: startDate,
           subscription_end: endDate,
-        });
+        };
+        if (referral_code) {
+          tenantUpdateData.referral_code = referral_code;
+        }
+        await tenant.update(tenantUpdateData);
 
         return res.json({
           success: true,
@@ -137,6 +176,11 @@ module.exports = {
         });
       } else {
         // One-time payment - create order
+        // Store referral_code in tenant if provided for reward creation on payment success
+        if (referral_code) {
+          await tenant.update({ referral_code: referral_code });
+        }
+        
         const order = await razorpayService.createOrder({
           amount: amount,
           currency: plan.currency || 'INR',
@@ -145,6 +189,7 @@ module.exports = {
             tenant_id: tenant_id,
             plan_id: plan_id,
             plan_code: plan.plan_code,
+            referral_code: referral_code || undefined, // Store in notes too
           },
         });
 

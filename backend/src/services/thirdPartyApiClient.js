@@ -20,6 +20,8 @@ class ThirdPartyApiClient {
       hsn: config.hsn || {},
       gst: config.gst || {},
       tds: config.tds || {},
+      income_tax: config.income_tax || {},
+      finbox: config.finbox || {},
     };
   }
 
@@ -80,13 +82,17 @@ class ThirdPartyApiClient {
 
     // Sandbox uses Authorization header with API key
     const isSandbox = base_url?.includes('sandbox.co.in') || base_url?.includes('api.sandbox.co.in');
+    // FinBox uses x-api-key header
+    const isFinBox = base_url?.includes('finbox.in') || service === 'finbox';
     
     const config = {
       method,
       url: `${base_url}${endpoint}`,
       headers: {
         'Content-Type': 'application/json',
-        ...(isSandbox && api_key
+        ...(isFinBox && api_key
+          ? { 'x-api-key': api_key }
+          : isSandbox && api_key
           ? { Authorization: `Bearer ${api_key}` }
           : api_key || (typeof token === 'string' && token.length > 50)
             ? { 'X-API-Key': api_key || token, Authorization: `Bearer ${token}` }
@@ -246,6 +252,175 @@ class ThirdPartyApiClient {
     const endpoint = '/api/v1/tds/calculate';
     return this.makeRequest('tds', endpoint, 'POST', paymentData, provider);
   }
+
+  /**
+   * Income Tax (ITR) API Methods
+   * Provider: Sandbox only
+   */
+  async calculateIncomeTax(taxData, provider = 'sandbox') {
+    const endpoint = '/api/v1/income-tax/calculate';
+    return this.makeRequest('income_tax', endpoint, 'POST', taxData, provider);
+  }
+
+  async prepareITR(itrData, formType = 'ITR-1', provider = 'sandbox') {
+    const endpoint = `/api/v1/income-tax/itr/${formType}/prepare`;
+    return this.makeRequest('income_tax', endpoint, 'POST', itrData, provider);
+  }
+
+  async fileITR(itrData, formType = 'ITR-1', provider = 'sandbox') {
+    const endpoint = `/api/v1/income-tax/itr/${formType}/file`;
+    return this.makeRequest('income_tax', endpoint, 'POST', itrData, provider);
+  }
+
+  async getITRStatus(returnId, formType = 'ITR-1', provider = 'sandbox') {
+    const endpoint = `/api/v1/income-tax/itr/${formType}/${returnId}/status`;
+    return this.makeRequest('income_tax', endpoint, 'GET', null, provider);
+  }
+
+  async getForm26AS(pan, financialYear, provider = 'sandbox') {
+    const endpoint = `/api/v1/income-tax/form26as/${pan}`;
+    return this.makeRequest('income_tax', endpoint, 'POST', { financial_year: financialYear }, provider);
+  }
+
+  async parseForm16(form16Data, provider = 'sandbox') {
+    const endpoint = '/api/v1/income-tax/form16/parse';
+    return this.makeRequest('income_tax', endpoint, 'POST', form16Data, provider);
+  }
+
+  /**
+   * FinBox API Methods
+   * Provider: FinBox (https://insights.finbox.in, https://api.finbox.in)
+   * - Credit scoring and loan eligibility
+   * - Bank statement analysis
+   * - Device intelligence
+   */
+  
+  /**
+   * DeviceConnect: Get device insights for credit assessment
+   * Uses insights.finbox.in as base URL (different from main API)
+   */
+  async getDeviceInsights(customerId, version, salt, provider = 'finbox') {
+    const serviceConfig = this.providers.finbox?.[provider];
+    if (!serviceConfig) {
+      throw new Error('No configuration found for finbox service');
+    }
+
+    // DeviceConnect uses insights.finbox.in, not api.finbox.in
+    const insightsBaseUrl = serviceConfig.insights_base_url || 
+                           serviceConfig.base_url?.replace('api.finbox.in', 'insights.finbox.in') ||
+                           'https://insights.finbox.in';
+    
+    const endpoint = '/v2/risk/predictors';
+    const payload = {
+      customer_id: customerId,
+      version: version,
+      salt: salt,
+    };
+
+    const { api_key } = serviceConfig;
+    const config = {
+      method: 'POST',
+      url: `${insightsBaseUrl}${endpoint}`,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(api_key ? { 'x-api-key': api_key } : {}),
+      },
+      data: payload,
+      timeout: 30000,
+    };
+
+    try {
+      const response = await axios(config);
+      return response.data;
+    } catch (error) {
+      logger.error(`DeviceConnect API request failed:`, {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      throw new Error(
+        error.response?.data?.message || 
+        error.response?.data?.error || 
+        `DeviceConnect API request failed: ${error.message}`
+      );
+    }
+  }
+
+  /**
+   * BankConnect: Initiate bank statement collection
+   */
+  async initiateBankConnect(customerId, bankData, provider = 'finbox') {
+    const endpoint = '/v1/bank-connect/initiate';
+    const payload = {
+      customer_id: customerId,
+      ...bankData,
+    };
+    return this.makeRequest('finbox', endpoint, 'POST', payload, provider);
+  }
+
+  /**
+   * BankConnect: Get bank statement status
+   */
+  async getBankConnectStatus(customerId, provider = 'finbox') {
+    const endpoint = `/v1/bank-connect/${customerId}/status`;
+    return this.makeRequest('finbox', endpoint, 'GET', null, provider);
+  }
+
+  /**
+   * BankConnect: Get analyzed bank statement data
+   */
+  async getBankStatementAnalysis(customerId, provider = 'finbox') {
+    const endpoint = `/v1/bank-connect/${customerId}/analysis`;
+    return this.makeRequest('finbox', endpoint, 'GET', null, provider);
+  }
+
+  /**
+   * Sourcing API: Create user in FinBox system
+   */
+  async createFinBoxUser(customerId, userData, provider = 'finbox') {
+    const endpoint = '/v1/user';
+    const payload = {
+      customer_id: customerId,
+      ...userData,
+    };
+    return this.makeRequest('finbox', endpoint, 'POST', payload, provider);
+  }
+
+  /**
+   * Sourcing API: Get loan eligibility
+   */
+  async getLoanEligibility(customerId, loanData = {}, provider = 'finbox') {
+    const endpoint = `/v1/user/${customerId}/eligibility`;
+    return this.makeRequest('finbox', endpoint, 'POST', loanData, provider);
+  }
+
+  /**
+   * Sourcing API: Generate session token for SDK
+   */
+  async generateSessionToken(customerId, sessionData = {}, provider = 'finbox') {
+    const endpoint = `/v1/user/${customerId}/session`;
+    return this.makeRequest('finbox', endpoint, 'POST', sessionData, provider);
+  }
+
+  /**
+   * Credit Score: Get credit score from bureau
+   */
+  async getCreditScore(customerId, pan, provider = 'finbox') {
+    const endpoint = '/v1/credit-score';
+    const payload = {
+      customer_id: customerId,
+      pan: pan,
+    };
+    return this.makeRequest('finbox', endpoint, 'POST', payload, provider);
+  }
+
+  /**
+   * Credit Score: Get FinBox Inclusion Score (FIS)
+   */
+  async getFinBoxInclusionScore(customerId, provider = 'finbox') {
+    const endpoint = `/v1/credit-score/${customerId}/fis`;
+    return this.makeRequest('finbox', endpoint, 'GET', null, provider);
+  }
 }
 
 /**
@@ -254,7 +429,7 @@ class ThirdPartyApiClient {
  * Provider: Sandbox only (https://api.sandbox.co.in)
  * - All services use Sandbox as the only provider
  * - Single API key for all tax compliance services
- * - E-Invoice, E-Way Bill, HSN, GST, TDS APIs
+ * - E-Invoice, E-Way Bill, HSN, GST, TDS, Income Tax (ITR) APIs
  */
 function createApiClientFromCompany(company) {
   const compliance = company?.compliance || {};
@@ -296,6 +471,22 @@ function createApiClientFromCompany(company) {
       [provider]: compliance.tds_api?.applicable && compliance.tds_api?.api_key ? {
         base_url: compliance.tds_api.base_url || process.env.TDS_API_URL || sandboxBaseUrl,
         api_key: compliance.tds_api.api_key,
+        provider: provider,
+      } : null,
+    },
+    income_tax: {
+      [provider]: compliance.income_tax_api?.applicable && compliance.income_tax_api?.api_key ? {
+        base_url: compliance.income_tax_api.base_url || process.env.INCOME_TAX_API_URL || sandboxBaseUrl,
+        api_key: compliance.income_tax_api.api_key,
+        provider: provider,
+      } : null,
+    },
+    finbox: {
+      [provider]: compliance.finbox_api?.applicable && compliance.finbox_api?.api_key ? {
+        base_url: compliance.finbox_api.base_url || process.env.FINBOX_API_URL || 'https://api.finbox.in',
+        insights_base_url: compliance.finbox_api.insights_base_url || process.env.FINBOX_INSIGHTS_API_URL || 'https://insights.finbox.in',
+        api_key: compliance.finbox_api.api_key,
+        server_hash: compliance.finbox_api.server_hash || null,
         provider: provider,
       } : null,
     },

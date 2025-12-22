@@ -81,7 +81,14 @@ module.exports = {
   // Create blog
   async createBlog(req, res, next) {
     try {
-      const author_id = req.user.id;
+      const author_id = req.user_id || req.user?.id || req.user?.user_id || req.user?.sub;
+      
+      if (!author_id) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not authenticated',
+        });
+      }
 
       const blog = await Blog.create({
         ...req.body,

@@ -1,27 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Asap+Condensed:wght@400;500;600;700&display=swap');
-
-/* Agency Font from Fontistry */
+/* Agency Font from public folder - Load first */
 @font-face {
   font-family: 'Agency';
   src: url('/fonts/agency.otf') format('opentype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
-}
-
-/* Agency Font Bold (if available) */
-@font-face {
-  font-family: 'Agency';
-  src: url('/fonts/agency-bold.otf') format('opentype');
-  font-weight: bold;
-  font-style: normal;
-  font-display: swap;
+  font-feature-settings: normal;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Apply Agency font globally using Tailwind's base layer - Must be after @tailwind base */
+@layer base {
+  html {
+    font-family: 'Agency', 'Arial Black', 'Arial', sans-serif !important;
+  }
+  
+  body {
+    font-family: 'Agency', 'Arial Black', 'Arial', sans-serif !important;
+  }
+  
+  * {
+    font-family: 'Agency', 'Arial Black', 'Arial', sans-serif !important;
+  }
+}
 
 :root {
   /* Finvera Brand Colors */
@@ -49,12 +54,18 @@
   box-sizing: border-box;
   padding: 0;
   margin: 0;
+  font-family: 'Agency', 'Arial Black', 'Arial', sans-serif !important;
+}
+
+html {
+  font-family: 'Agency', 'Arial Black', 'Arial', sans-serif !important;
 }
 
 html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
+  font-family: 'Agency', 'Arial Black', 'Arial', sans-serif !important;
 }
 
 body {
@@ -65,7 +76,10 @@ body {
       rgb(var(--background-end-rgb))
     )
     rgb(var(--background-start-rgb));
-  font-family: 'Inter', sans-serif;
+  font-family: 'Agency', 'Arial Black', 'Arial', sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 a {
@@ -110,14 +124,33 @@ a {
   }
 }
 
-/* Base typography - Agency (Fontistry) for headings, Inter for body */
+/* Agency Font for ALL text elements - explicit selectors for maximum coverage */
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Agency', 'Asap Condensed', 'Arial Black', sans-serif !important;
+  font-family: 'Agency', 'Arial Black', 'Arial', sans-serif !important;
   font-weight: normal !important;
   letter-spacing: 0.02em;
 }
 
-body, p, span, div, a, button, input, textarea, select {
-  font-family: 'Inter', sans-serif;
+p, span, div, a, button, input, textarea, select, label, li, td, th, option, 
+article, section, header, footer, nav, aside, main, address, blockquote, 
+cite, code, em, strong, small, sub, sup, u, mark, time, code, pre, 
+kbd, samp, var, b, i, q, s, del, ins {
+  font-family: 'Agency', 'Arial Black', 'Arial', sans-serif !important;
 }
 
+/* Force font on all form elements and interactive elements */
+input, textarea, select, button, option, label {
+  font-family: 'Agency', 'Arial Black', 'Arial', sans-serif !important;
+}
+
+/* Force font on all Tailwind utility classes and text utilities */
+.font-sans, .font-mono, .font-serif, .font-agency, .font-primary, .font-secondary,
+.text-xs, .text-sm, .text-base, .text-lg, .text-xl, .text-2xl, .text-3xl, .text-4xl, .text-5xl, .text-6xl,
+.font-thin, .font-extralight, .font-light, .font-normal, .font-medium, .font-semibold, .font-bold, .font-extrabold, .font-black {
+  font-family: 'Agency', 'Arial Black', 'Arial', sans-serif !important;
+}
+
+/* Override any component-level font settings */
+[class*="font-"], [class*="text-"] {
+  font-family: 'Agency', 'Arial Black', 'Arial', sans-serif !important;
+}

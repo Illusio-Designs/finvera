@@ -10,6 +10,11 @@ module.exports = {
   async register(req, res, next) {
     try {
       const { email, password, company_name } = req.body;
+      
+      if (!password) {
+        return res.status(400).json({ message: 'Password is required for registration' });
+      }
+      
       const existing = await User.findOne({ where: { email } });
       if (existing) {
         return res.status(409).json({ message: 'User already exists' });
@@ -128,6 +133,14 @@ module.exports = {
       console.log(`User found: ${user.id}, role: ${user.role}, tenant_id: ${user.tenant_id}`);
       console.log(`User has password field: ${!!user.password}, has password_hash: ${!!user.password_hash}`);
       
+      // Check if user is a Google OAuth user (has google_id but no password)
+      if (user.google_id && !user.password) {
+        return res.status(401).json({ 
+          message: 'This account uses Google Sign-In. Please use Google to login.',
+          use_google_login: true 
+        });
+      }
+      
       // Use password field (not password_hash) as per User model
       const passwordToCompare = user.password || user.password_hash || '';
       
@@ -140,6 +153,8 @@ module.exports = {
       
       if (!valid) {
         console.log(`Password comparison failed for user: ${user.id}`);
+        console.log(`Password hash stored (first 20 chars): ${passwordToCompare.substring(0, 20)}...`);
+        console.log(`Password being compared: ${password ? '[provided]' : '[missing]'}`);
         return res.status(401).json({ message: 'Invalid credentials' });
       }
 
@@ -227,6 +242,121 @@ module.exports = {
       });
     } catch (err) {
       console.error('Login error:', err);
+      return next(err);
+    }
+  },
+
+  async googleCallback(req, res, next) {
+    try {
+      const user = req.user; // User from passport strategy
+      
+      if (!user) {
+        return res.status(401).json({ message: 'Google authentication failed' });
+      }
+
+      // Handle company selection for tenant users (similar to regular login)
+      let selectedCompany = null;
+      if (user.tenant_id && ['tenant_admin', 'user', 'accountant'].includes(user.role)) {
+        const companies = await masterModels.Company.findAll({
+          where: { tenant_id: user.tenant_id, is_active: true },
+        });
+
+        if (companies.length === 0) {
+          return res.status(400).json({
+            message: 'No company found for this tenant. Please create a company first.',
+          });
+        }
+
+        // If only one company, auto-select it
+        if (companies.length === 1) {
+          selectedCompany = companies[0];
+        } else {
+          // Multiple companies - check if company_id provided in query
+          const { company_id } = req.query;
+          if (company_id) {
+            selectedCompany = companies.find((c) => c.id === company_id);
+            if (!selectedCompany) {
+              return res.status(400).json({ message: 'Invalid company selected' });
+            }
+          } else {
+            // Return companies list for user to select
+            return res.status(200).json({
+              message: 'Multiple companies found. Please select one.',
+              companies: companies.map((c) => ({
+                id: c.id,
+                company_name: c.company_name,
+              })),
+              user: {
+                id: user.id,
+                email: user.email,
+                tenant_id: user.tenant_id,
+                role: user.role,
+              },
+            });
+          }
+        }
+
+        if (!selectedCompany.db_provisioned) {
+          return res.status(503).json({
+            message: 'Company database is being provisioned',
+            company_id: selectedCompany.id,
+          });
+        }
+      }
+
+      // Generate JWT tokens
+      const tokens = await signTokens({
+        id: user.id,
+        tenant_id: user.tenant_id || null,
+        company_id: selectedCompany?.id || null,
+        role: user.role,
+      });
+
+      // Determine frontend URL based on user type
+      const mainDomain = process.env.MAIN_DOMAIN || process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
+      const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+      let frontendUrl = process.env.FRONTEND_URL;
+      
+      if (!frontendUrl) {
+        // Determine frontend URL based on role
+        if (['super_admin', 'admin'].includes(user.role)) {
+          frontendUrl = process.env.NODE_ENV === 'production' 
+            ? `${protocol}://admin.${mainDomain}`
+            : 'http://admin.localhost:3001';
+        } else if (user.tenant_id) {
+          frontendUrl = process.env.NODE_ENV === 'production'
+            ? `${protocol}://client.${mainDomain}`
+            : 'http://client.localhost:3001';
+        } else {
+          frontendUrl = process.env.NODE_ENV === 'production'
+            ? `${protocol}://${mainDomain}`
+            : 'http://localhost:3001';
+        }
+      }
+
+      const redirectUrl = `${frontendUrl}/auth/callback?token=${tokens.accessToken}&refreshToken=${tokens.refreshToken}&jti=${tokens.jti}`;
+
+      // If request expects JSON (API call), return JSON
+      if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return res.json({
+          user: {
+            id: user.id,
+            email: user.email,
+            tenant_id: user.tenant_id || null,
+            company_id: selectedCompany?.id || null,
+            company_name: selectedCompany?.company_name || null,
+            role: user.role,
+            full_name: user.name || user.full_name || null,
+            profile_image: user.profile_image || null,
+          },
+          ...tokens,
+        });
+      }
+
+      // Otherwise redirect to frontend
+      return res.redirect(redirectUrl);
+    } catch (err) {
+      console.error('Google OAuth callback error:', err);
       return next(err);
     }
   },

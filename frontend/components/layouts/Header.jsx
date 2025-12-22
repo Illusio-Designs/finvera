@@ -1,15 +1,16 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'next/router';
 import { getProfileImageUrl } from '../../lib/imageUtils';
-import { companyAPI } from '../../lib/api';
+import { companyAPI, searchAPI } from '../../lib/api';
 import { canAccessClientPortal } from '../../lib/roleConfig';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import {
   FiMenu, FiBell, FiSearch, FiUser, FiSettings,
-  FiLogOut, FiChevronDown, FiX, FiBriefcase, FiPlus
+  FiLogOut, FiChevronDown, FiX, FiBriefcase, FiPlus,
+  FiFileText, FiPackage, FiLayers, FiCreditCard, FiUsers, FiHeadphones
 } from 'react-icons/fi';
 import NotificationDropdown from '../notifications/NotificationDropdown';
 
@@ -22,11 +23,18 @@ export default function Header({ onMenuClick, title, actions }) {
   const [companies, setCompanies] = useState([]);
   const [loadingCompanies, setLoadingCompanies] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
   const menuRef = useRef(null);
   const companyDropdownRef = useRef(null);
+  const searchRef = useRef(null);
+  const searchResultsRef = useRef(null);
   const fetchingCompaniesRef = useRef(false);
   const companiesFetchedRef = useRef(false);
   const lastUserIdRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
 
   useEffect(() => {
     setMounted(true);
@@ -129,15 +137,111 @@ export default function Header({ onMenuClick, title, actions }) {
       if (companyDropdownRef.current && !companyDropdownRef.current.contains(event.target)) {
         setShowCompanyDropdown(false);
       }
+      if (searchResultsRef.current && !searchResultsRef.current.contains(event.target) &&
+          searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSearchResults(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    logout();
+  // Universal search handler
+  const handleSearch = useCallback(async (query) => {
+    if (!query || query.length < 2) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    setSearchLoading(true);
+    try {
+      const response = await searchAPI.universal({ q: query, limit: 10 });
+      const results = response.data?.results || [];
+      setSearchResults(results);
+      setShowSearchResults(results.length > 0);
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults([]);
+      setShowSearchResults(false);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, []);
+
+  // Debounced search
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (searchQuery.length >= 2) {
+      searchTimeoutRef.current = setTimeout(() => {
+        handleSearch(searchQuery);
+      }, 300);
+    } else {
+      setSearchResults([]);
+      setShowSearchResults(false);
+    }
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery, handleSearch]);
+
+  const handleSearchResultClick = (result) => {
+    if (result.url) {
+      router.push(result.url);
+      setSearchQuery('');
+      setSearchResults([]);
+      setShowSearchResults(false);
+    }
+  };
+
+  const getSearchResultIcon = (type) => {
+    switch (type) {
+      case 'ledger':
+        return FiFileText;
+      case 'voucher':
+        return FiFileText;
+      case 'inventory':
+        return FiPackage;
+      case 'warehouse':
+        return FiLayers;
+      case 'company':
+        return FiBriefcase;
+      case 'tenant':
+        return FiBriefcase;
+      case 'distributor':
+        return FiUsers;
+      case 'salesman':
+        return FiUsers;
+      case 'user':
+        return FiUser;
+      case 'support_ticket':
+        return FiHeadphones;
+      default:
+        return FiSearch;
+    }
+  };
+
+  const handleLogout = async () => {
     setShowUserMenu(false);
+    await logout();
+    
+    // Redirect to appropriate login page based on current path
+    const currentPath = router.pathname;
+    if (currentPath.startsWith('/admin')) {
+      router.replace('/admin/login');
+    } else if (currentPath.startsWith('/client')) {
+      router.replace('/client/login');
+    } else {
+      // Default to client login for other paths
+      router.replace('/client/login');
+    }
   };
 
   const handleCompanySwitch = async (companyId) => {
@@ -273,13 +377,52 @@ export default function Header({ onMenuClick, title, actions }) {
         {/* Center: Search bar */}
         <div className="flex-1 flex justify-center px-4">
           {/* Desktop Search */}
-          <div className="hidden md:flex items-center relative w-full max-w-md">
+          <div className="hidden md:flex items-center relative w-full max-w-md" ref={searchRef}>
             <FiSearch className="absolute left-3 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search..."
+              placeholder="Search ledgers, vouchers, inventory..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => searchResults.length > 0 && setShowSearchResults(true)}
               className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition-all shadow-sm"
             />
+            {searchLoading && (
+              <div className="absolute right-3">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+              </div>
+            )}
+            
+            {/* Search Results Dropdown */}
+            {showSearchResults && searchResults.length > 0 && (
+              <div 
+                ref={searchResultsRef}
+                className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 z-[70] max-h-96 overflow-y-auto"
+              >
+                {searchResults.map((result, index) => {
+                  const Icon = getSearchResultIcon(result.type);
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => handleSearchResultClick(result)}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left border-b border-gray-100 last:border-b-0"
+                    >
+                      <Icon className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-900 truncate">{result.name || result.subject}</div>
+                        {result.code && (
+                          <div className="text-sm text-gray-500 truncate">Code: {result.code}</div>
+                        )}
+                        {result.subtype && (
+                          <div className="text-xs text-gray-400 capitalize">{result.subtype}</div>
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-400 capitalize bg-gray-100 px-2 py-1 rounded">{result.type.replace('_', ' ')}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Mobile Search Button */}
@@ -392,22 +535,57 @@ export default function Header({ onMenuClick, title, actions }) {
       
       {/* Mobile Search Bar */}
       {showMobileSearch && (
-        <div className="md:hidden border-t border-gray-200 px-4 py-3 bg-white">
+        <div className="md:hidden border-t border-gray-200 px-4 py-3 bg-white" ref={searchRef}>
           <div className="flex items-center relative">
             <FiSearch className="absolute left-3 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search..."
+              placeholder="Search ledgers, vouchers, inventory..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => searchResults.length > 0 && setShowSearchResults(true)}
               className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition-all shadow-sm"
               autoFocus
             />
             <button
-              onClick={() => setShowMobileSearch(false)}
+              onClick={() => {
+                setShowMobileSearch(false);
+                setSearchQuery('');
+                setSearchResults([]);
+                setShowSearchResults(false);
+              }}
               className="ml-2 p-2 text-gray-500 hover:text-gray-700"
             >
               <FiX className="h-5 w-5" />
             </button>
           </div>
+          
+          {/* Mobile Search Results */}
+          {showSearchResults && searchResults.length > 0 && (
+            <div 
+              ref={searchResultsRef}
+              className="mt-2 bg-white rounded-lg shadow-xl border border-gray-200 z-[70] max-h-64 overflow-y-auto"
+            >
+              {searchResults.map((result, index) => {
+                const Icon = getSearchResultIcon(result.type);
+                return (
+                  <button
+                    key={index}
+                    onClick={() => handleSearchResultClick(result)}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left border-b border-gray-100 last:border-b-0"
+                  >
+                    <Icon className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 truncate">{result.name || result.subject}</div>
+                      {result.code && (
+                        <div className="text-sm text-gray-500 truncate">Code: {result.code}</div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </header>

@@ -551,8 +551,7 @@ export default function InventoryItemsPage() {
                 onFilter={handleFilter}
                 sortField={sort.field}
                 sortOrder={sort.order}
-                searchable={true}
-                searchPlaceholder="Search by name, code, or HSN/SAC..."
+                searchable={false}
               />
             </Card>
           )}

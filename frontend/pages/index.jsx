@@ -455,33 +455,33 @@ export default function LandingPage() {
                 ))}
               </div>
             ) : (
-              <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+            <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
                 {/* Fallback testimonials if no reviews available */}
-                <div className="bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl border border-primary-100 shadow-lg">
-                  <div className="text-primary-600 text-5xl mb-6 font-serif">&quot;</div>
-                  <p className="text-gray-700 mb-6 italic text-lg leading-relaxed">
-                    Finvera has transformed how we manage our accounting. The GST filing feature alone saves us hours every month.
-                  </p>
-                  <div className="font-bold text-gray-900 text-lg">Rajesh Kumar</div>
-                  <div className="text-sm text-gray-600">CEO, Tech Solutions Pvt Ltd</div>
-                </div>
-                <div className="bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl border border-primary-100 shadow-lg">
-                  <div className="text-primary-600 text-5xl mb-6 font-serif">&quot;</div>
-                  <p className="text-gray-700 mb-6 italic text-lg leading-relaxed">
-                    The e-invoicing feature is a game-changer. We can generate compliant invoices in seconds.
-                  </p>
-                  <div className="font-bold text-gray-900 text-lg">Priya Sharma</div>
-                  <div className="text-sm text-gray-600">Finance Manager, Retail Corp</div>
-                </div>
-                <div className="bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl border border-primary-100 shadow-lg">
-                  <div className="text-primary-600 text-5xl mb-6 font-serif">&quot;</div>
-                  <p className="text-gray-700 mb-6 italic text-lg leading-relaxed">
-                    Excellent support and easy to use. Our accounting firm uses Finvera for all our clients.
-                  </p>
-                  <div className="font-bold text-gray-900 text-lg">Amit Patel</div>
-                  <div className="text-sm text-gray-600">Partner, ABC Accounting Services</div>
-                </div>
+              <div className="bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl border border-primary-100 shadow-lg">
+                <div className="text-primary-600 text-5xl mb-6 font-serif">&quot;</div>
+                <p className="text-gray-700 mb-6 italic text-lg leading-relaxed">
+                  Finvera has transformed how we manage our accounting. The GST filing feature alone saves us hours every month.
+                </p>
+                <div className="font-bold text-gray-900 text-lg">Rajesh Kumar</div>
+                <div className="text-sm text-gray-600">CEO, Tech Solutions Pvt Ltd</div>
               </div>
+              <div className="bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl border border-primary-100 shadow-lg">
+                <div className="text-primary-600 text-5xl mb-6 font-serif">&quot;</div>
+                <p className="text-gray-700 mb-6 italic text-lg leading-relaxed">
+                  The e-invoicing feature is a game-changer. We can generate compliant invoices in seconds.
+                </p>
+                <div className="font-bold text-gray-900 text-lg">Priya Sharma</div>
+                <div className="text-sm text-gray-600">Finance Manager, Retail Corp</div>
+              </div>
+              <div className="bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl border border-primary-100 shadow-lg">
+                <div className="text-primary-600 text-5xl mb-6 font-serif">&quot;</div>
+                <p className="text-gray-700 mb-6 italic text-lg leading-relaxed">
+                  Excellent support and easy to use. Our accounting firm uses Finvera for all our clients.
+                </p>
+                <div className="font-bold text-gray-900 text-lg">Amit Patel</div>
+                <div className="text-sm text-gray-600">Partner, ABC Accounting Services</div>
+              </div>
+            </div>
             )}
           </div>
         </section>

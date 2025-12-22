@@ -24,15 +24,10 @@ export default function SettingsPage() {
     e_invoice_applicable: false,
     e_invoice_username: '',
     e_invoice_password: '',
-    e_invoice_client_id: '',
-    e_invoice_client_secret: '',
-    e_invoice_threshold: '50000000',
     // E-Way Bill Configuration
     e_way_bill_applicable: false,
     e_way_bill_username: '',
     e_way_bill_password: '',
-    e_way_bill_client_id: '',
-    e_way_bill_client_secret: '',
     // Invoice Number Configuration
     sales_invoice_prefix: 'INV',
     sales_invoice_suffix: '',
@@ -67,15 +62,10 @@ export default function SettingsPage() {
             e_invoice_applicable: eInvoice.applicable || false,
             e_invoice_username: eInvoice.username || '',
             e_invoice_password: '', // Don't show existing password
-            e_invoice_client_id: eInvoice.client_id || '',
-            e_invoice_client_secret: '', // Don't show existing secret
-            e_invoice_threshold: eInvoice.threshold?.toString() || '50000000',
             // E-Way Bill Configuration
             e_way_bill_applicable: eWayBill.applicable || false,
             e_way_bill_username: eWayBill.username || '',
             e_way_bill_password: '', // Don't show existing password
-            e_way_bill_client_id: eWayBill.client_id || '',
-            e_way_bill_client_secret: '', // Don't show existing secret
             // Invoice Number Configuration
             sales_invoice_prefix: invoiceConfig.sales?.prefix || 'INV',
             sales_invoice_suffix: invoiceConfig.sales?.suffix || '',
@@ -117,31 +107,22 @@ export default function SettingsPage() {
     setErrors({});
 
     try {
-      // Build e_invoice config - only include password/secret if provided
+      // Build e_invoice config - only include password if provided
       const eInvoiceConfig = {
         applicable: formData.e_invoice_applicable,
         username: formData.e_invoice_username?.trim() || null,
-        client_id: formData.e_invoice_client_id?.trim() || null,
-        threshold: formData.e_invoice_threshold ? parseFloat(formData.e_invoice_threshold) : 50000000,
       };
       if (formData.e_invoice_password?.trim()) {
         eInvoiceConfig.password = formData.e_invoice_password.trim();
       }
-      if (formData.e_invoice_client_secret?.trim()) {
-        eInvoiceConfig.client_secret = formData.e_invoice_client_secret.trim();
-      }
 
-      // Build e_way_bill config - only include password/secret if provided
+      // Build e_way_bill config - only include password if provided
       const eWayBillConfig = {
         applicable: formData.e_way_bill_applicable,
         username: formData.e_way_bill_username?.trim() || null,
-        client_id: formData.e_way_bill_client_id?.trim() || null,
       };
       if (formData.e_way_bill_password?.trim()) {
         eWayBillConfig.password = formData.e_way_bill_password.trim();
-      }
-      if (formData.e_way_bill_client_secret?.trim()) {
-        eWayBillConfig.client_secret = formData.e_way_bill_client_secret.trim();
       }
 
       const compliance = {
@@ -225,6 +206,7 @@ export default function SettingsPage() {
                       onChange={handleChange}
                       placeholder="E-invoice portal username"
                       error={errors.e_invoice_username}
+                      required
                     />
                     <FormInput
                       name="e_invoice_password"
@@ -234,34 +216,6 @@ export default function SettingsPage() {
                       onChange={handleChange}
                       placeholder="Leave blank to keep existing password"
                       error={errors.e_invoice_password}
-                    />
-                    <FormInput
-                      name="e_invoice_client_id"
-                      label="Client ID"
-                      type="text"
-                      value={formData.e_invoice_client_id}
-                      onChange={handleChange}
-                      placeholder="GSP/Client ID"
-                      error={errors.e_invoice_client_id}
-                    />
-                    <FormInput
-                      name="e_invoice_client_secret"
-                      label="Client Secret"
-                      type="password"
-                      value={formData.e_invoice_client_secret}
-                      onChange={handleChange}
-                      placeholder="Leave blank to keep existing secret"
-                      error={errors.e_invoice_client_secret}
-                    />
-                    <FormInput
-                      name="e_invoice_threshold"
-                      label="E-Invoice Threshold (₹)"
-                      type="number"
-                      value={formData.e_invoice_threshold}
-                      onChange={handleChange}
-                      placeholder="50000000"
-                      helperText="Annual turnover threshold for e-invoice applicability (default: 5 Crore)"
-                      error={errors.e_invoice_threshold}
                     />
                   </div>
                 )}
@@ -294,6 +248,7 @@ export default function SettingsPage() {
                       onChange={handleChange}
                       placeholder="E-way bill portal username"
                       error={errors.e_way_bill_username}
+                      required
                     />
                     <FormInput
                       name="e_way_bill_password"
@@ -303,24 +258,6 @@ export default function SettingsPage() {
                       onChange={handleChange}
                       placeholder="Leave blank to keep existing password"
                       error={errors.e_way_bill_password}
-                    />
-                    <FormInput
-                      name="e_way_bill_client_id"
-                      label="Client ID"
-                      type="text"
-                      value={formData.e_way_bill_client_id}
-                      onChange={handleChange}
-                      placeholder="GSP/Client ID"
-                      error={errors.e_way_bill_client_id}
-                    />
-                    <FormInput
-                      name="e_way_bill_client_secret"
-                      label="Client Secret"
-                      type="password"
-                      value={formData.e_way_bill_client_secret}
-                      onChange={handleChange}
-                      placeholder="Leave blank to keep existing secret"
-                      error={errors.e_way_bill_client_secret}
                     />
                   </div>
                 )}

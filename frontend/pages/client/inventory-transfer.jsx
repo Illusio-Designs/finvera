@@ -313,7 +313,7 @@ export default function StockTransferPage() {
                 pagination={pagination}
                 onPageChange={handlePageChange}
                 searchable={true}
-                searchPlaceholder="Search transfers..."
+                searchable={false}
               />
             </Card>
           )}

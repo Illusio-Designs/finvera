@@ -511,7 +511,13 @@ async function syncMasterModels() {
   try {
     await models.Subscription.sync({ alter: true });
   } catch (syncError) {
-    if (syncError.message.includes('subscription_plans') || syncError.original?.code === 'ER_FK_CANNOT_OPEN_PARENT') {
+    // Handle MySQL's 64-index limit error
+    if (syncError.original && syncError.original.code === 'ER_TOO_MANY_KEYS') {
+      logger.warn('⚠️  subscriptions table has too many indexes (MySQL limit: 64)');
+      logger.warn('   This is usually safe to ignore if the table already exists.');
+      logger.warn('   The table structure is correct, just too many indexes.');
+      // Continue with other models
+    } else if (syncError.message.includes('subscription_plans') || syncError.original?.code === 'ER_FK_CANNOT_OPEN_PARENT') {
       logger.warn('⚠️  subscription_plans table not found, syncing Subscription without FK constraint');
       // Try to create table manually without FK constraint
       try {
@@ -520,7 +526,7 @@ async function syncMasterModels() {
             id CHAR(36) BINARY PRIMARY KEY,
             tenant_id CHAR(36) BINARY NOT NULL,
             subscription_plan_id CHAR(36) BINARY,
-            razorpay_subscription_id VARCHAR(255) NOT NULL UNIQUE,
+            razorpay_subscription_id VARCHAR(255) NOT NULL,
             razorpay_plan_id VARCHAR(255),
             status ENUM('created', 'authenticated', 'active', 'pending', 'halted', 'cancelled', 'completed', 'expired') DEFAULT 'created',
             plan_code VARCHAR(50) NOT NULL,

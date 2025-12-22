@@ -400,7 +400,7 @@ export default function LedgerStatementReport() {
                 sortField={sort.field}
                 sortOrder={sort.order}
                 searchable={true}
-                searchPlaceholder="Search ledgers..."
+                searchable={false}
               />
             </Card>
           </div>

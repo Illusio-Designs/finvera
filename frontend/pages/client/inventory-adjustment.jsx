@@ -300,7 +300,7 @@ export default function StockAdjustmentPage() {
                 pagination={pagination}
                 onPageChange={handlePageChange}
                 searchable={true}
-                searchPlaceholder="Search adjustments..."
+                searchable={false}
               />
             </Card>
           )}

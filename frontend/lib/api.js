@@ -403,6 +403,7 @@ export const tdsAPI = {
   list: (params) => api.get("/tds", { params }),
   calculate: (data) => api.post("/tds/calculate", data),
   generateReturn: (data) => api.post("/tds/return", data),
+  getReturnStatus: (returnId, formType = '24Q') => api.get(`/tds/return/${returnId}/status`, { params: { form_type: formType } }),
   generateCertificate: (id) => api.get(`/tds/certificate/${id}`),
 };
 
@@ -412,6 +413,7 @@ export const eInvoiceAPI = {
   generate: (data) => api.post("/einvoice/generate", data),
   get: (voucherId) => api.get(`/einvoice/voucher/${voucherId}`),
   cancel: (voucherId, data) => api.post(`/einvoice/cancel/${voucherId}`, data),
+  getIRNStatus: (irn) => api.get(`/einvoice/irn/${irn}/status`),
 };
 
 // E-Way Bill API
@@ -420,6 +422,9 @@ export const eWayBillAPI = {
   generate: (data) => api.post("/ewaybill/generate", data),
   get: (voucherId) => api.get(`/ewaybill/voucher/${voucherId}`),
   cancel: (voucherId, data) => api.post(`/ewaybill/cancel/${voucherId}`, data),
+  update: (ewayBillNo, data) => api.put(`/ewaybill/${ewayBillNo}`, data),
+  extend: (ewayBillNo, data) => api.post(`/ewaybill/${ewayBillNo}/extend`, data),
+  getStatus: (ewayBillNo) => api.get(`/ewaybill/${ewayBillNo}/status`),
 };
 
 // Additional APIs (not in backend docs, keeping for backward compatibility)
@@ -529,7 +534,46 @@ export const reviewAPI = {
   delete: (id) => api.delete(`/reviews/${id}`),
 };
 
+// Income Tax API
+export const incomeTaxAPI = {
+  calculateTax: (data) => api.post("/income-tax/calculate", data),
+  prepareITR: (data) => api.post("/income-tax/itr/prepare", data),
+  fileITR: (data) => api.post("/income-tax/itr/file", data),
+  getITRStatus: (returnId) => api.get(`/income-tax/itr/${returnId}/status`),
+  getForm26AS: (pan) => api.get(`/income-tax/form26as/${pan}`),
+  parseForm16: (data) => api.post("/income-tax/form16/parse", data),
+};
+
+// FinBox API
+export const finboxAPI = {
+  // Credit Score
+  getCreditScore: (data) => api.post("/finbox/credit-score", data),
+  getInclusionScore: (customerId) => api.get(`/finbox/inclusion-score/${customerId}`),
+  
+  // Loan Eligibility
+  checkEligibility: (data) => api.post("/finbox/eligibility", data),
+  
+  // User Management
+  createUser: (data) => api.post("/finbox/user", data),
+  
+  // Bank Statement
+  initiateBankStatement: (data) => api.post("/finbox/bank-statement/initiate", data),
+  getBankStatementStatus: (customerId) => api.get(`/finbox/bank-statement/${customerId}/status`),
+  getBankStatementAnalysis: (customerId) => api.get(`/finbox/bank-statement/${customerId}/analysis`),
+  
+  // Device Insights
+  getDeviceInsights: (data) => api.post("/finbox/device-insights", data),
+  
+  // Session Token
+  generateSessionToken: (data) => api.post("/finbox/session", data),
+};
+
 // Legacy Client API (for backward compatibility)
+// Search API
+export const searchAPI = {
+  universal: (params) => api.get("/search", { params }),
+};
+
 export const clientAPI = {
   dashboard: () => tenantAPI.getProfile(),
   vouchers: accountingAPI.vouchers,

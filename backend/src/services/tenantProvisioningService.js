@@ -197,13 +197,63 @@ class TenantProvisioningService {
    * @param {Sequelize} connection - Tenant database connection
    */
   async runTenantMigrations(connection) {
-    // Import all tenant models
-    const tenantModels = require('./tenantModels')(connection);
+    const path = require('path');
+    const fs = require('fs');
     
-    // Sync all models (in production, use proper migrations)
+    try {
+      // Use consolidated tenant migration
+      const migrationsPath = path.join(__dirname, '../migrations');
+      const migrationFile = path.join(migrationsPath, '001-tenant-migration.js');
+      
+      if (!fs.existsSync(migrationFile)) {
+        logger.warn('⚠️  Consolidated tenant migration file not found, falling back to sync');
+        const tenantModels = require('./tenantModels')(connection);
     await connection.sync({ force: false });
-    
-    logger.info('Tenant migrations completed');
+        return;
+      }
+
+      const queryInterface = connection.getQueryInterface();
+      const { Sequelize } = require('sequelize');
+      const migration = require(migrationFile);
+      
+      if (migration.up && typeof migration.up === 'function') {
+        try {
+          await migration.up(queryInterface, Sequelize);
+          logger.info('✅ Tenant migrations completed successfully');
+        } catch (error) {
+          // Log the full error for debugging
+          logger.error('❌ Tenant migration error:', {
+            message: error.message,
+            stack: error.stack,
+            sql: error.sql,
+          });
+          
+          // Ignore errors if column/index already exists
+          if (error.message && (error.message.includes('already exists') || 
+                                error.message.includes('Duplicate') ||
+                                error.message.includes('Duplicate column'))) {
+            logger.debug('Tenant migration already applied (duplicate column/index)');
+          } else {
+            logger.warn(`⚠️  Tenant migration failed: ${error.message}`);
+            logger.warn('Falling back to sync...');
+            // Fallback to sync if migration fails
+            try {
+              const tenantModels = require('./tenantModels')(connection);
+              await connection.sync({ force: false, alter: true });
+              logger.info('✅ Fallback sync completed');
+            } catch (syncError) {
+              logger.error('❌ Fallback sync also failed:', syncError.message);
+              throw syncError;
+            }
+          }
+        }
+      }
+    } catch (error) {
+      logger.warn('Error running tenant migrations, falling back to sync:', error.message);
+      // Fallback to sync
+      const tenantModels = require('./tenantModels')(connection);
+      await connection.sync({ force: false });
+    }
   }
 
   /**
@@ -219,17 +269,26 @@ class TenantProvisioningService {
     // NOTE: Account groups and voucher types are in Master DB (shared)
     // No need to seed them per tenant
 
-    // Run migration to ensure all columns exist
+    // Run tenant seeder (consolidated)
     try {
-      const migration = require('../migrations/20251218-add-ledger-fields');
+      const path = require('path');
+      const fs = require('fs');
+      const seedersPath = path.join(__dirname, '../seeders');
+      const seederFile = path.join(seedersPath, '001-tenant-seeder.js');
+      
+      if (fs.existsSync(seederFile)) {
+        const seeder = require(seederFile);
       const queryInterface = connection.getQueryInterface();
-      await migration.up(queryInterface, Sequelize);
-      logger.info('Ledger migration completed during seeding');
-    } catch (error) {
-      // If columns already exist, that's fine
-      if (!error.message || (!error.message.includes('Duplicate column') && !error.message.includes('already exists'))) {
-        logger.warn('Migration during seeding failed (non-critical):', error.message);
+        const { Sequelize } = require('sequelize');
+        
+        if (seeder.up && typeof seeder.up === 'function') {
+          await seeder.up(queryInterface, Sequelize);
+          logger.info('Tenant seeder completed');
+        }
       }
+    } catch (error) {
+      // If seeder fails, that's okay - continue with default data creation
+      logger.debug('Tenant seeder not available or failed (non-critical):', error.message);
     }
 
     // Get email and company name (works for both tenant and company objects)
@@ -260,11 +319,20 @@ class TenantProvisioningService {
     if (gstin) {
       const existingGSTIN = await models.GSTIN.findOne({ where: { gstin } });
       if (!existingGSTIN) {
+        // Get tenant_id from tenantOrCompany (could be tenant.id or company.tenant_id)
+        const tenantId = tenantOrCompany.id || tenantOrCompany.tenant_id;
+        
+        // Extract state code from GSTIN (first 2 digits)
+        // GSTIN format: [2-digit state code][10-digit PAN][1-digit entity number][1-digit Z][1-digit check digit]
+        const stateCode = gstin && gstin.length >= 2 ? gstin.substring(0, 2) : null;
+        
         await models.GSTIN.create({
+          tenant_id: tenantId,
           gstin: gstin,
           legal_name: companyName,
           trade_name: companyName,
           state: state,
+          state_code: stateCode || '00', // Default to '00' if can't extract from GSTIN
           address: address,
           gstin_status: 'active',
           is_primary: true,

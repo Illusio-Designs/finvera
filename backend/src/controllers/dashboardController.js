@@ -79,7 +79,20 @@ module.exports = {
       const currentYearStart = new Date(now.getFullYear(), 0, 1);
       const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-      // Fetch all stats in parallel
+      // Helper function to safely execute queries with error handling
+      const safeQuery = async (queryFn, defaultValue, errorMsg) => {
+        try {
+          return await queryFn();
+        } catch (err) {
+          logger.warn(`${errorMsg}:`, err.message);
+          if (err.original && err.original.code === 'ER_BAD_FIELD_ERROR') {
+            logger.warn(`  Missing column detected - migration may be needed`);
+          }
+          return defaultValue;
+        }
+      };
+
+      // Fetch all stats in parallel with error handling for each query
       const [
         totalVouchers,
         totalLedgers,
@@ -95,59 +108,59 @@ module.exports = {
         activeLedgers,
       ] = await Promise.all([
         // Total vouchers
-        tenantModels.Voucher.count(),
+        safeQuery(() => tenantModels.Voucher.count(), 0, 'Error counting vouchers'),
 
         // Total ledgers
-        tenantModels.Ledger.count({ where: { is_active: true } }),
+        safeQuery(() => tenantModels.Ledger.count({ where: { is_active: true } }), 0, 'Error counting ledgers'),
 
         // Sales invoices
-        tenantModels.Voucher.count({ where: { voucher_type: 'Sales', status: 'posted' } }),
+        safeQuery(() => tenantModels.Voucher.count({ where: { voucher_type: 'Sales', status: 'posted' } }), 0, 'Error counting sales invoices'),
 
         // Purchase invoices
-        tenantModels.Voucher.count({ where: { voucher_type: 'Purchase', status: 'posted' } }),
+        safeQuery(() => tenantModels.Voucher.count({ where: { voucher_type: 'Purchase', status: 'posted' } }), 0, 'Error counting purchase invoices'),
 
         // Payments
-        tenantModels.Voucher.count({ where: { voucher_type: 'Payment', status: 'posted' } }),
+        safeQuery(() => tenantModels.Voucher.count({ where: { voucher_type: 'Payment', status: 'posted' } }), 0, 'Error counting payments'),
 
         // Receipts
-        tenantModels.Voucher.count({ where: { voucher_type: 'Receipt', status: 'posted' } }),
+        safeQuery(() => tenantModels.Voucher.count({ where: { voucher_type: 'Receipt', status: 'posted' } }), 0, 'Error counting receipts'),
 
         // Pending bills (outstanding)
-        tenantModels.BillWiseDetail.count({
+        safeQuery(() => tenantModels.BillWiseDetail.count({
           where: {
             is_fully_paid: false,
             pending_amount: { [Op.gt]: 0 },
           },
-        }),
+        }), 0, 'Error counting pending bills'),
 
         // Total outstanding amount
-        tenantModels.BillWiseDetail.sum('pending_amount', {
+        safeQuery(() => tenantModels.BillWiseDetail.sum('pending_amount', {
           where: {
             is_fully_paid: false,
             pending_amount: { [Op.gt]: 0 },
           },
-        }),
+        }), 0, 'Error summing pending amount'),
 
         // Current month sales total
-        tenantModels.Voucher.sum('total_amount', {
+        safeQuery(() => tenantModels.Voucher.sum('total_amount', {
           where: {
             voucher_type: 'Sales',
             status: 'posted',
             voucher_date: { [Op.gte]: currentMonthStart },
           },
-        }),
+        }), 0, 'Error summing current month sales'),
 
         // Current month purchase total
-        tenantModels.Voucher.sum('total_amount', {
+        safeQuery(() => tenantModels.Voucher.sum('total_amount', {
           where: {
             voucher_type: 'Purchase',
             status: 'posted',
             voucher_date: { [Op.gte]: currentMonthStart },
           },
-        }),
+        }), 0, 'Error summing current month purchase'),
 
         // Recent vouchers (last 10)
-        tenantModels.Voucher.findAll({
+        safeQuery(() => tenantModels.Voucher.findAll({
           limit: 10,
           order: [['voucher_date', 'DESC'], ['createdAt', 'DESC']],
           include: [
@@ -168,16 +181,16 @@ module.exports = {
             'narration',
             'createdAt',
           ],
-        }),
+        }), [], 'Error fetching recent vouchers'),
 
         // Active ledgers count (with transactions in last 30 days)
-        tenantModels.VoucherLedgerEntry.count({
+        safeQuery(() => tenantModels.VoucherLedgerEntry.count({
           distinct: true,
           col: 'ledger_id',
           where: {
             createdAt: { [Op.gte]: last30Days },
           },
-        }),
+        }), 0, 'Error counting active ledgers'),
       ]);
 
       // Get voucher type breakdown

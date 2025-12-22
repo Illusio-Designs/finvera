@@ -784,7 +784,7 @@ export default function CompaniesPage() {
                   data={tableData}
                   loading={false}
                   searchable={true}
-                  searchPlaceholder="Search companies..."
+                  searchable={false}
                 />
               ) : (
                 <div className="text-center py-12">

@@ -342,6 +342,8 @@ module.exports = {
             if (plan) {
               const referralDiscountService = require('../services/referralDiscountService');
               const basePrice = parseFloat(plan.base_price || 0);
+              
+              // Apply discount (reward will be created after tenant is created)
               const discountResult = await referralDiscountService.applyReferralDiscount(
                 referral_code,
                 basePrice
@@ -447,6 +449,53 @@ module.exports = {
       // Database provisioning is moved to COMPANY creation (tenant-side).
       // Tenant creation should only create the tenant metadata + credentials.
 
+      // Create referral reward if referral code was used (after tenant is created so we have tenant.id)
+      if (referral_code && subscription_plan && finalPrice !== null) {
+        try {
+          const ReferralCode = require('../models').ReferralCode;
+          const ReferralReward = require('../models').ReferralReward;
+          
+          // Find the referral code that was used
+          const usedCode = await ReferralCode.findOne({
+            where: {
+              code: referral_code,
+              is_active: true,
+            },
+          });
+          
+          if (usedCode && usedCode.owner_type && usedCode.owner_id) {
+            const SubscriptionPlan = require('../models').SubscriptionPlan;
+            const plan = await SubscriptionPlan.findOne({
+              where: { plan_code: subscription_plan, is_active: true },
+            });
+            
+            if (plan) {
+              const basePrice = parseFloat(plan.base_price || 0);
+              const rewardPercentage = 10.00; // Code owner gets 10% reward
+              const rewardAmount = (basePrice * rewardPercentage) / 100;
+              
+              await ReferralReward.create({
+                referrer_type: usedCode.owner_type,
+                referrer_id: usedCode.owner_id,
+                referee_tenant_id: tenant.id, // The new tenant who used the code
+                referral_code_id: usedCode.id,
+                reward_type: 'percentage',
+                reward_amount: parseFloat(rewardAmount.toFixed(2)),
+                reward_status: 'pending',
+                subscription_plan: subscription_plan,
+                reward_date: new Date(),
+                notes: `Reward for referral code ${referral_code} usage. New tenant subscription.`,
+              });
+              
+              logger.info(`Created referral reward for code owner: ${rewardAmount} (10% of ${basePrice})`);
+            }
+          }
+        } catch (rewardError) {
+          logger.error('Failed to create referral reward:', rewardError);
+          // Don't fail tenant creation if reward creation fails
+        }
+      }
+
       // Auto-generate referral code for the new tenant
       try {
         const ReferralCode = require('../models').ReferralCode;
@@ -477,7 +526,8 @@ module.exports = {
             order: [['effective_from', 'DESC']],
           });
 
-          const discountPercentage = currentConfig ? parseFloat(currentConfig.discount_percentage) : 10.00;
+          // Use 10% as the standard discount percentage
+          const discountPercentage = 10.00;
 
           // Generate unique code with retry mechanism
           let code;
@@ -1092,7 +1142,8 @@ module.exports = {
       }
 
       // Don't allow deleting yourself
-      if (user.id === req.user.id) {
+      const currentUserId = req.user_id || req.user?.id || req.user?.user_id || req.user?.sub;
+      if (user.id === currentUserId) {
         return res.status(400).json({ message: 'Cannot delete your own account' });
       }
 

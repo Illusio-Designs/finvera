@@ -388,7 +388,7 @@ export default function WarehousesPage() {
                 sortField={sort.field}
                 sortOrder={sort.order}
                 searchable={true}
-                searchPlaceholder="Search by name, code, city, or state..."
+                searchable={false}
               />
             </Card>
           )}
