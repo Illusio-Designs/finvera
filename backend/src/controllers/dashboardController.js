@@ -31,13 +31,12 @@ async function movementByLedger(tenantModels, { fromDate, toDate, asOnDate, befo
     voucherWhere.voucher_date = { [Op.lte]: toDate };
   }
 
-  // When using includes, Sequelize.col() needs the model name prefix with database column name
-  // The model maps debit_amount -> debit column, so we use the database column name with model prefix
+  // Sequelize.col() uses the database column name, which matches the model property name (debit_amount, credit_amount)
   const rows = await tenantModels.VoucherLedgerEntry.findAll({
     attributes: [
       'ledger_id',
-      [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.debit')), 'total_debit'],
-      [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.credit')), 'total_credit'],
+      [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.debit_amount')), 'total_debit'],
+      [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.credit_amount')), 'total_credit'],
     ],
     include: [{ model: tenantModels.Voucher, attributes: [], where: voucherWhere, required: true }],
     group: ['ledger_id'],

@@ -522,7 +522,7 @@ module.exports = {
         return res.status(401).json({ message: 'User not authenticated' });
       }
 
-      const { name, email, phone } = req.body;
+      const { name, email, phone, password, current_password } = req.body;
 
       // Get user from appropriate database
       let user = null;
@@ -558,6 +558,22 @@ module.exports = {
       if (name !== undefined) updateData.name = name;
       if (email !== undefined) updateData.email = email;
       if (phone !== undefined) updateData.phone = phone;
+
+      // Handle password change if provided
+      if (password) {
+        // Verify current password if provided
+        if (current_password) {
+          const bcrypt = require('bcryptjs');
+          const isCurrentPasswordValid = await bcrypt.compare(current_password, user.password);
+          if (!isCurrentPasswordValid) {
+            return res.status(400).json({ message: 'Current password is incorrect' });
+          }
+        }
+
+        // Hash and update new password
+        const bcrypt = require('bcryptjs');
+        updateData.password = await bcrypt.hash(password, 10);
+      }
 
       await user.update(updateData);
 

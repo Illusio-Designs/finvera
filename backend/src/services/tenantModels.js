@@ -347,16 +347,16 @@ module.exports = (sequelize) => {
       type: DataTypes.UUID,
       allowNull: false,
     },
-    // Map to legacy DB columns `debit`/`credit` when they exist.
+    // Database columns are debit_amount and credit_amount (matching migration)
     debit_amount: {
       type: DataTypes.DECIMAL(15, 2),
       defaultValue: 0.00,
-      field: 'debit',
+      // No field mapping needed - column name matches property name
     },
     credit_amount: {
       type: DataTypes.DECIMAL(15, 2),
       defaultValue: 0.00,
-      field: 'credit',
+      // No field mapping needed - column name matches property name
     },
     narration: DataTypes.TEXT,
   }, {

@@ -27,6 +27,8 @@ export function useNotifications(options = {}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const displayedIdsRef = useRef(new Set());
+  const fetchingUnreadCountRef = useRef(false);
+  const fetchUnreadCountAbortRef = useRef(null);
 
   /**
    * Fetch notifications from API
@@ -43,27 +45,55 @@ export function useNotifications(options = {}) {
       const data = response.data?.data || response.data || [];
       setNotifications(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Error fetching notifications:', err);
-      setError(err.response?.data?.message || 'Failed to fetch notifications');
+      // Only log network errors, don't set error state to prevent UI spam
+      if (err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
+        console.warn('Network error fetching notifications (backend may be offline)');
+      } else {
+        console.error('Error fetching notifications:', err);
+        setError(err.response?.data?.message || 'Failed to fetch notifications');
+      }
     } finally {
       setLoading(false);
     }
   }, [limit]);
 
   /**
-   * Fetch unread count
+   * Fetch unread count with debouncing and error handling
    */
   const fetchUnreadCount = useCallback(async () => {
+    // Prevent concurrent calls
+    if (fetchingUnreadCountRef.current) {
+      return;
+    }
+
+    fetchingUnreadCountRef.current = true;
+
     try {
       const response = await notificationAPI.getUnreadCount();
       const count = response.data?.count || 0;
       setUnreadCount(count);
-      return count;
     } catch (err) {
-      console.error('Error fetching unread count:', err);
-      return 0;
+      // Silently handle network errors - backend might be offline or endpoint unavailable
+      // Suppress console errors for network issues to reduce noise
+      if (
+        err.code !== 'ERR_NETWORK' && 
+        err.message !== 'Network Error' && 
+        err.code !== 'ERR_CANCELED' &&
+        !err.response // Suppress errors without response (network issues)
+      ) {
+        // Only log actual API errors (4xx, 5xx with response)
+        if (err.response?.status >= 400) {
+          console.warn('Notification API error:', err.response?.status, err.response?.data?.message);
+        }
+      }
+      // Don't update state on error - keep existing count
+    } finally {
+      // Use setTimeout to prevent rapid re-calls
+      setTimeout(() => {
+        fetchingUnreadCountRef.current = false;
+      }, 1000); // Wait 1 second before allowing next call
     }
-  }, []);
+  }, []); // No dependencies - stable function
 
   /**
    * Handle new notification from WebSocket
@@ -184,13 +214,16 @@ export function useNotifications(options = {}) {
     };
   }, []);
 
-  // Initial fetch
+  // Initial fetch - only run once on mount
+  const hasFetchedRef = useRef(false);
   useEffect(() => {
-    if (autoFetch) {
+    if (autoFetch && !hasFetchedRef.current) {
+      hasFetchedRef.current = true;
       fetchNotifications();
       fetchUnreadCount();
     }
-  }, [autoFetch, fetchNotifications, fetchUnreadCount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFetch]); // Functions are stable useCallbacks, safe to omit from deps
 
   // Set up WebSocket listener
   useEffect(() => {
@@ -212,8 +245,15 @@ export function useNotifications(options = {}) {
       fetchUnreadCount();
     }, pollInterval);
 
-    return () => clearInterval(interval);
-  }, [autoFetch, pollInterval, fetchUnreadCount, isConnected]);
+    return () => {
+      clearInterval(interval);
+      // Abort any pending request on cleanup
+      if (fetchUnreadCountAbortRef.current) {
+        fetchUnreadCountAbortRef.current.abort();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFetch, pollInterval, isConnected]); // fetchUnreadCount is stable, safe to omit
 
   // Clean up displayed IDs periodically
   useEffect(() => {
@@ -227,6 +267,12 @@ export function useNotifications(options = {}) {
     return () => clearInterval(interval);
   }, []);
 
+  // Stable refresh function
+  const refresh = useCallback(() => {
+    fetchNotifications();
+    fetchUnreadCount();
+  }, [fetchNotifications, fetchUnreadCount]);
+
   return {
     notifications,
     unreadCount,
@@ -238,9 +284,6 @@ export function useNotifications(options = {}) {
     markAllAsRead,
     deleteNotification,
     getNotificationDisplay,
-    refresh: () => {
-      fetchNotifications();
-      fetchUnreadCount();
-    },
+    refresh,
   };
 }
