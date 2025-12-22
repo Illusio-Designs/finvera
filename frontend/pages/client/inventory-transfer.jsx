@@ -312,7 +312,6 @@ export default function StockTransferPage() {
                 loading={tableLoading}
                 pagination={pagination}
                 onPageChange={handlePageChange}
-                searchable={true}
                 searchable={false}
               />
             </Card>
