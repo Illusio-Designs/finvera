@@ -34,12 +34,17 @@ export default function NotificationDropdown() {
     }
   }, [isOpen]);
 
-  // Refresh when dropdown opens
+  // Refresh when dropdown opens - use a ref to prevent multiple calls
+  const hasRefreshedRef = useRef(false);
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !hasRefreshedRef.current) {
+      hasRefreshedRef.current = true;
       refresh();
+    } else if (!isOpen) {
+      hasRefreshedRef.current = false;
     }
-  }, [isOpen, refresh]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]); // refresh is stable, safe to omit
 
   const handleNotificationClick = async (notification) => {
     // Mark as read if unread

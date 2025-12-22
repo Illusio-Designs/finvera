@@ -140,9 +140,23 @@ const getClientMenuItems = () => [
 
 export default function ClientLayout({ children, title = 'Client Portal - Finvera' }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // Load sidebar collapsed state from localStorage, default to false
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('client-sidebar-collapsed');
+      return saved ? JSON.parse(saved) : false;
+    }
+    return false;
+  });
   const [isDesktop, setIsDesktop] = useState(false);
   const { user } = useAuth();
+
+  // Save sidebar collapsed state to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('client-sidebar-collapsed', JSON.stringify(sidebarCollapsed));
+    }
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     const checkDesktop = () => {

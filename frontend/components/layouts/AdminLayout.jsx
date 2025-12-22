@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   FiHome, FiUsers, FiBriefcase, FiTarget, FiDollarSign,
   FiCreditCard, FiGift, FiTag, FiUser, FiHeadphones, FiBarChart2,
-  FiFileText, FiSearch
+  FiFileText, FiSearch, FiSettings
 } from 'react-icons/fi';
 
 const getAdminMenuItems = (userRole) => {
@@ -154,14 +154,33 @@ const getAdminMenuItems = (userRole) => {
       href: '/admin/profile',
       icon: FiUser,
     },
+    {
+      label: 'Settings',
+      href: '/admin/settings',
+      icon: FiSettings,
+    },
   ];
 };
 
 export default function AdminLayout({ children, title = 'Admin Panel - Finvera' }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // Load sidebar collapsed state from localStorage, default to false
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('admin-sidebar-collapsed');
+      return saved ? JSON.parse(saved) : false;
+    }
+    return false;
+  });
   const [isDesktop, setIsDesktop] = useState(false);
   const { user } = useAuth();
+
+  // Save sidebar collapsed state to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('admin-sidebar-collapsed', JSON.stringify(sidebarCollapsed));
+    }
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     const checkDesktop = () => {
