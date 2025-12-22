@@ -399,7 +399,6 @@ export default function LedgerStatementReport() {
                 onSort={handleSort}
                 sortField={sort.field}
                 sortOrder={sort.order}
-                searchable={true}
                 searchable={false}
               />
             </Card>

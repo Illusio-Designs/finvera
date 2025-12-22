@@ -387,7 +387,6 @@ export default function WarehousesPage() {
                 onFilter={handleFilter}
                 sortField={sort.field}
                 sortOrder={sort.order}
-                searchable={true}
                 searchable={false}
               />
             </Card>

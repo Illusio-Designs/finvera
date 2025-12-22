@@ -299,7 +299,6 @@ export default function StockAdjustmentPage() {
                 loading={tableLoading}
                 pagination={pagination}
                 onPageChange={handlePageChange}
-                searchable={true}
                 searchable={false}
               />
             </Card>

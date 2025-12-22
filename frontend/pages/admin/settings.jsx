@@ -255,7 +255,7 @@ function EditProfileModal({ isOpen, onClose, user, onSuccess }) {
             />
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-900">
-                Your email address is used for login and notifications. Make sure it's valid and accessible.
+                Your email address is used for login and notifications. Make sure it&apos;s valid and accessible.
               </p>
             </div>
           </div>

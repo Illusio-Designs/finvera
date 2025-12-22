@@ -783,7 +783,6 @@ export default function CompaniesPage() {
                   columns={columns}
                   data={tableData}
                   loading={false}
-                  searchable={true}
                   searchable={false}
                 />
               ) : (
