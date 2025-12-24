@@ -13,7 +13,7 @@ export default function Button({
 }) {
   // Base classes with modern SaaS styling
   const baseClasses = `
-    font-semibold
+    font-normal
     rounded-lg
     transition-all
     duration-200
@@ -107,9 +107,9 @@ export default function Button({
   
   // Size variants with proper padding and font sizes
   const sizes = {
-    sm: 'px-3 py-1.5 text-xs font-medium',
-    md: 'px-5 py-2.5 text-sm font-semibold',
-    lg: 'px-6 py-3 text-base font-semibold',
+    sm: 'px-3 py-1.5 text-xs font-normal',
+    md: 'px-5 py-2.5 text-sm font-normal',
+    lg: 'px-6 py-3 text-base font-normal',
   };
   
   return (

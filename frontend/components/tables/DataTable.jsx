@@ -126,7 +126,7 @@ export default function DataTable({
                   <FiFilter className="h-4 w-4 mr-2" />
                   Filters
                   {hasActiveFilters && (
-                    <span className="ml-2 px-1.5 py-0.5 bg-primary-100 text-primary-700 text-xs font-semibold rounded-full">
+                    <span className="ml-2 px-1.5 py-0.5 bg-primary-100 text-primary-700 text-xs font-normal rounded-full">
                       {Object.values(localFilters).filter(v => v !== '' && v !== null && v !== undefined).length + (searchTerm ? 1 : 0)}
                     </span>
                   )}
@@ -179,7 +179,7 @@ export default function DataTable({
               <th
                 key={column.key}
                 className={`
-                    px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider
+                    px-6 py-4 text-left text-xs font-normal text-gray-700 uppercase tracking-wider
                     ${column.sortable ? 'cursor-pointer hover:bg-gray-100 transition-colors' : ''}
                 `}
                 onClick={() => column.sortable && handleSort(column.key)}
@@ -191,7 +191,7 @@ export default function DataTable({
               </th>
             ))}
               {actions && (
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-normal text-gray-700 uppercase tracking-wider">
                   Actions
                 </th>
               )}
@@ -220,7 +220,7 @@ export default function DataTable({
                 </td>
               ))}
               {actions && (
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-normal">
                       <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   {actions(row)}
                       </div>
@@ -237,11 +237,11 @@ export default function DataTable({
       {pagination && onPageChange && (
         <div className="bg-white px-6 py-4 flex flex-col sm:flex-row items-center justify-between border-t border-gray-200 gap-4">
           <div className="text-sm text-gray-700">
-            Showing <span className="font-semibold">{((pagination.page - 1) * pagination.limit) + 1}</span> to{' '}
-            <span className="font-semibold">
+            Showing <span className="font-normal">{((pagination.page - 1) * pagination.limit) + 1}</span> to{' '}
+            <span className="font-normal">
               {Math.min(pagination.page * pagination.limit, pagination.total)}
             </span>{' '}
-            of <span className="font-semibold">{pagination.total}</span> results
+            of <span className="font-normal">{pagination.total}</span> results
           </div>
           
           <div className="flex items-center gap-2">
@@ -273,7 +273,7 @@ export default function DataTable({
                     key={pageNum}
                     onClick={() => onPageChange(pageNum)}
                     className={`
-                      min-w-[2.5rem] px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200
+                      min-w-[2.5rem] px-3 py-2 text-sm font-normal rounded-lg transition-all duration-200
                       ${pagination.page === pageNum
                         ? 'bg-primary-600 text-white shadow-md shadow-primary-500/20'
                         : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400'

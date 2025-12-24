@@ -246,6 +246,42 @@ export default function ClientDashboard() {
     { label: 'Support Tickets', icon: FiHeadphones, href: '/client/support', variant: 'outline' },
   ];
 
+  // Loan banner component for header
+  const loanBanner = (
+    <div className="bg-primary-600 text-white rounded-lg px-4 py-2.5 flex items-center gap-4 max-w-md lg:max-w-lg xl:max-w-xl">
+      <div className="flex-1 min-w-0">
+        <h3 className="text-sm font-semibold mb-0.5 whitespace-nowrap">Get Business Loan</h3>
+        <p className="text-xs text-primary-100 mb-1.5 line-clamp-1">
+          Quick and hassle-free business loans up to ₹15 Crore. Check your eligibility in minutes.
+        </p>
+        <div className="flex items-center gap-2.5 text-xs">
+          <div className="flex items-center gap-1">
+            <FiShield className="h-3 w-3 flex-shrink-0" />
+            <span className="whitespace-nowrap">100% Secure</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <FiTrendingUp className="h-3 w-3 flex-shrink-0" />
+            <span className="whitespace-nowrap">Quick Approval</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <FiDollarSign className="h-3 w-3 flex-shrink-0" />
+            <span className="whitespace-nowrap">Best Rates</span>
+          </div>
+        </div>
+      </div>
+      <div className="flex-shrink-0">
+        <button
+          onClick={handleGetLoanClick}
+          className="bg-white text-primary-600 hover:bg-gray-50 px-3 py-1.5 rounded-md transition-all text-xs font-medium whitespace-nowrap flex items-center gap-1.5 shadow-sm"
+        >
+          <FiLayers className="h-3.5 w-3.5" />
+          <span>Get Loan Now</span>
+          <FiArrowRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <ProtectedRoute portalType="client">
       <ClientLayout title="Dashboard">
@@ -255,8 +291,9 @@ export default function ClientDashboard() {
           breadcrumbs={[
             { label: companyName, href: '/client/dashboard' },
           ]}
+          actions={loanBanner}
         >
-          <div className="space-y-6 w-full max-w-full">
+          <div className="space-y-3 w-full max-w-full">
             {loading ? (
               <div className="flex justify-center items-center h-64">
                 <LoadingSpinner size="lg" />
@@ -267,72 +304,40 @@ export default function ClientDashboard() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {statCards.map((card, index) => {
                     const Icon = card.icon;
+                    // Map colors to light backgrounds and text colors
+                    const colorMap = {
+                      'bg-emerald-500': { bg: 'bg-emerald-50', text: 'text-emerald-600' },
+                      'bg-red-500': { bg: 'bg-red-50', text: 'text-red-600' },
+                      'bg-blue-500': { bg: 'bg-blue-50', text: 'text-blue-600' },
+                      'bg-orange-500': { bg: 'bg-orange-50', text: 'text-orange-600' },
+                    };
+                    const iconColors = colorMap[card.color] || { bg: 'bg-gray-50', text: 'text-gray-600' };
                     return (
                       <Card
                         key={index}
-                        className="cursor-pointer group hover:shadow-lg transition-all duration-200"
+                        className="cursor-pointer group hover:shadow-md transition-all duration-200 border border-gray-200 hover:border-gray-300"
                         onClick={() => router.push(card.href)}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-600 mb-1">{card.title}</p>
-                            <p className="text-2xl font-bold text-gray-900">{card.value}</p>
+                            <p className="text-xs text-gray-600 mb-0.5">{card.title}</p>
+                            <p className="text-lg font-semibold text-gray-900">{card.value}</p>
                             {card.subtitle && (
-                              <p className="text-xs text-gray-500 mt-1">{card.subtitle}</p>
+                              <p className="text-xs text-gray-500 mt-0.5">{card.subtitle}</p>
                             )}
                           </div>
-                          <div className={`${card.color} p-3 rounded-lg text-white shadow-sm`}>
-                            <Icon className="h-5 w-5" />
+                          <div className={`${iconColors.bg} ${iconColors.text} p-2 rounded-lg`}>
+                            <Icon className="h-4 w-4" />
                           </div>
-                        </div>
-                        <div className="mt-3 flex items-center text-primary-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                          View details <FiArrowRight className="ml-1 h-4 w-4" />
                         </div>
                       </Card>
                     );
                   })}
                 </div>
 
-                {/* Get Loan - Highlighted Section */}
-                <Card className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white border-0 shadow-lg">
-                  <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-2">
-                    <div className="flex-1 text-center md:text-left">
-                      <h3 className="text-2xl font-bold mb-2">Get Business Loan</h3>
-                      <p className="text-indigo-100 text-sm md:text-base">
-                        Quick and hassle-free business loans up to ₹15 Crore. Check your eligibility in minutes.
-                      </p>
-                      <div className="flex items-center gap-4 mt-4 text-sm">
-                        <div className="flex items-center gap-2">
-                          <FiShield className="h-4 w-4" />
-                          <span>100% Secure</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <FiTrendingUp className="h-4 w-4" />
-                          <span>Quick Approval</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <FiDollarSign className="h-4 w-4" />
-                          <span>Best Rates</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <Button
-                        onClick={handleGetLoanClick}
-                        variant="primary"
-                        size="lg"
-                        className="bg-white text-indigo-600 hover:bg-gray-100 font-semibold px-8 py-3 shadow-lg hover:shadow-xl transition-all"
-                      >
-                        <FiLayers className="h-5 w-5 mr-2" />
-                        Get Loan Now
-                        <FiArrowRight className="h-5 w-5 ml-2" />
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-
                 {/* Quick Actions */}
-                <Card title="Quick Actions">
+                <Card className="border border-gray-200">
+                  <h2 className="text-sm text-gray-900 mb-3">Quick Actions</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                     {quickActions.map((action, index) => {
                       const Icon = action.icon;
@@ -352,9 +357,9 @@ export default function ClientDashboard() {
                 </Card>
 
                 {/* Support Tickets Widget */}
-                <Card 
-                  title="Support Tickets"
-                  actions={
+                <Card className="border border-gray-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-sm text-gray-900">Support Tickets</h2>
                     <div className="flex gap-2">
                       <Button
                         size="sm"
@@ -372,8 +377,7 @@ export default function ClientDashboard() {
                         View All
                       </Button>
                     </div>
-                  }
-                >
+                  </div>
                   {ticketsLoading ? (
                     <div className="flex justify-center items-center py-8">
                       <LoadingSpinner size="md" />
@@ -392,7 +396,7 @@ export default function ClientDashboard() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <p className="font-medium text-gray-900">{ticket.ticket_number}</p>
+                                <p className="text-gray-900">{ticket.ticket_number}</p>
                                 <span className={`text-xs px-2 py-0.5 rounded ${
                                   ticket.status === 'resolved' ? 'bg-green-100 text-green-700' :
                                   ticket.status === 'closed' ? 'bg-gray-100 text-gray-700' :
@@ -437,7 +441,8 @@ export default function ClientDashboard() {
                 </Card>
 
                 {/* Recent Activity */}
-                <Card title="Recent Activity">
+                <Card className="border border-gray-200">
+                  <h2 className="text-sm text-gray-900 mb-3">Recent Activity</h2>
                   {dashboardData.recent_activity && dashboardData.recent_activity.length > 0 ? (
                     <div className="space-y-3">
                       {dashboardData.recent_activity.map((activity, index) => (
@@ -462,7 +467,7 @@ export default function ClientDashboard() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <p className="font-medium text-gray-900">{activity.number}</p>
+                                <p className="text-gray-900">{activity.number}</p>
                                 <span className={`text-xs px-2 py-0.5 rounded ${
                                   activity.status === 'posted' ? 'bg-green-100 text-green-700' :
                                   activity.status === 'draft' ? 'bg-yellow-100 text-yellow-700' :

@@ -17,7 +17,7 @@ export default function Input({
       {label && (
         <label 
           htmlFor={name} 
-          className="block text-sm font-semibold text-gray-700 mb-2"
+          className="block text-sm font-normal text-gray-700 mb-2"
         >
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
