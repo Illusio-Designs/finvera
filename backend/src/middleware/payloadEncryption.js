@@ -5,6 +5,11 @@ const logger = require('../utils/logger');
  * Middleware to decrypt incoming requests
  */
 function decryptRequest(req, res, next) {
+  // Skip OPTIONS requests (preflight)
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
+  
   try {
     // Check if request is encrypted
     if (req.body && req.body.encrypted) {
@@ -37,6 +42,11 @@ function decryptRequest(req, res, next) {
  * Middleware to encrypt outgoing responses
  */
 function encryptResponse(req, res, next) {
+  // Skip OPTIONS requests (preflight)
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
+  
   // Store original json method
   const originalJson = res.json.bind(res);
 
