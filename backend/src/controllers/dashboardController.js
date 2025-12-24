@@ -31,12 +31,31 @@ async function movementByLedger(tenantModels, { fromDate, toDate, asOnDate, befo
     voucherWhere.voucher_date = { [Op.lte]: toDate };
   }
 
-  // Sequelize.col() uses the database column name, which matches the model property name (debit_amount, credit_amount)
+  // Check table structure to determine correct column names
+  let debitCol = 'debit_amount';
+  let creditCol = 'credit_amount';
+  
+  try {
+    const tableDesc = await tenantModels.VoucherLedgerEntry.sequelize.getQueryInterface().describeTable('voucher_ledger_entries');
+    
+    // Check if debit_amount exists, otherwise try debit
+    if (!tableDesc.debit_amount && tableDesc.debit) {
+      debitCol = 'debit';
+    }
+    
+    // Check if credit_amount exists, otherwise try credit
+    if (!tableDesc.credit_amount && tableDesc.credit) {
+      creditCol = 'credit';
+    }
+  } catch (err) {
+    logger.warn('Could not check voucher_ledger_entries table structure, using default column names:', err.message);
+  }
+
   const rows = await tenantModels.VoucherLedgerEntry.findAll({
     attributes: [
       'ledger_id',
-      [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.debit_amount')), 'total_debit'],
-      [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.credit_amount')), 'total_credit'],
+      [Sequelize.fn('SUM', Sequelize.col(`VoucherLedgerEntry.${debitCol}`)), 'total_debit'],
+      [Sequelize.fn('SUM', Sequelize.col(`VoucherLedgerEntry.${creditCol}`)), 'total_credit'],
     ],
     include: [{ model: tenantModels.Voucher, attributes: [], where: voucherWhere, required: true }],
     group: ['ledger_id'],

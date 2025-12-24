@@ -7,7 +7,7 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import Modal from '../../components/ui/Modal';
-import { accountingAPI, companyAPI, clientSupportAPI } from '../../lib/api';
+import { accountingAPI, companyAPI, clientSupportAPI, finboxAPI } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import toast, { Toaster } from 'react-hot-toast';
 import {
@@ -176,7 +176,7 @@ export default function ClientDashboard() {
     }));
   };
 
-  const handleConsentSubmit = () => {
+  const handleConsentSubmit = async () => {
     // Check if all required consents are given
     const allConsentsGiven = Object.values(consents).every(consent => consent === true);
     
@@ -185,18 +185,32 @@ export default function ClientDashboard() {
       return;
     }
 
-    // Store consent in localStorage
-    localStorage.setItem('finbox_consent', JSON.stringify({
-      ...consents,
-      timestamp: new Date().toISOString(),
-      userId: user?.id,
-      companyId: user?.company_id,
-    }));
+    try {
+      // Save consent to backend
+      await finboxAPI.saveConsent({
+        credit_score_consent: consents.creditScore,
+        bank_statement_consent: consents.bankStatement,
+        data_sharing_consent: consents.dataSharing,
+        terms_conditions_consent: consents.termsConditions,
+        privacy_policy_consent: consents.privacyPolicy,
+      });
 
-    // Close modal and redirect to loan page
-    setShowConsentModal(false);
-    router.push('/client/loan');
-    toast.success('Consent recorded. Redirecting to loan page...');
+      // Also store in localStorage for quick access
+      localStorage.setItem('finbox_consent', JSON.stringify({
+        ...consents,
+        timestamp: new Date().toISOString(),
+        userId: user?.id,
+        companyId: user?.company_id,
+      }));
+
+      // Close modal and redirect to loan page
+      setShowConsentModal(false);
+      router.push('/client/loan');
+      toast.success('Consent recorded. Redirecting to loan page...');
+    } catch (error) {
+      console.error('Error saving consent:', error);
+      toast.error(error.response?.data?.message || 'Failed to save consent. Please try again.');
+    }
   };
 
   const allConsentsGiven = Object.values(consents).every(consent => consent === true);
@@ -210,7 +224,7 @@ export default function ClientDashboard() {
       subtitle: 'Amount to receive',
       icon: FiTrendingUp,
       color: 'bg-emerald-500',
-      href: '/client/accounting/outstanding'
+      href: '/client/accounting/outstanding?type=receivables'
     },
     {
       title: 'Payables',
@@ -218,7 +232,7 @@ export default function ClientDashboard() {
       subtitle: 'Amount to pay',
       icon: FiTrendingDown,
       color: 'bg-red-500',
-      href: '/client/accounting/outstanding'
+      href: '/client/accounting/outstanding?type=payables'
     },
     {
       title: 'Cash on Hand',
@@ -254,20 +268,6 @@ export default function ClientDashboard() {
         <p className="text-xs text-primary-100 mb-1.5 line-clamp-1">
           Quick and hassle-free business loans up to ₹15 Crore. Check your eligibility in minutes.
         </p>
-        <div className="flex items-center gap-2.5 text-xs">
-          <div className="flex items-center gap-1">
-            <FiShield className="h-3 w-3 flex-shrink-0" />
-            <span className="whitespace-nowrap">100% Secure</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <FiTrendingUp className="h-3 w-3 flex-shrink-0" />
-            <span className="whitespace-nowrap">Quick Approval</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <FiDollarSign className="h-3 w-3 flex-shrink-0" />
-            <span className="whitespace-nowrap">Best Rates</span>
-          </div>
-        </div>
       </div>
       <div className="flex-shrink-0">
         <button
@@ -293,7 +293,7 @@ export default function ClientDashboard() {
           ]}
           actions={loanBanner}
         >
-          <div className="space-y-3 w-full max-w-full">
+          <div className="space-y-4 w-full max-w-full">
             {loading ? (
               <div className="flex justify-center items-center h-64">
                 <LoadingSpinner size="lg" />
@@ -337,7 +337,7 @@ export default function ClientDashboard() {
 
                 {/* Quick Actions */}
                 <Card className="border border-gray-200">
-                  <h2 className="text-sm text-gray-900 mb-3">Quick Actions</h2>
+                  <h2 className="text-base font-semibold text-gray-900 mb-4">Quick Actions</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                     {quickActions.map((action, index) => {
                       const Icon = action.icon;
@@ -358,8 +358,8 @@ export default function ClientDashboard() {
 
                 {/* Support Tickets Widget */}
                 <Card className="border border-gray-200">
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-sm text-gray-900">Support Tickets</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-base font-semibold text-gray-900">Support Tickets</h2>
                     <div className="flex gap-2">
                       <Button
                         size="sm"
@@ -442,7 +442,7 @@ export default function ClientDashboard() {
 
                 {/* Recent Activity */}
                 <Card className="border border-gray-200">
-                  <h2 className="text-sm text-gray-900 mb-3">Recent Activity</h2>
+                  <h2 className="text-base font-semibold text-gray-900 mb-4">Recent Activity</h2>
                   {dashboardData.recent_activity && dashboardData.recent_activity.length > 0 ? (
                     <div className="space-y-3">
                       {dashboardData.recent_activity.map((activity, index) => (

@@ -2,7 +2,7 @@ import Head from 'next/head';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
-import { FiBook, FiFileText, FiCode, FiDatabase, FiSettings, FiShield } from 'react-icons/fi';
+import { FiBook, FiFileText, FiCode, FiDatabase, FiSettings, FiShield, FiSearch, FiVideo, FiCheck } from 'react-icons/fi';
 
 export default function DocsPage() {
   const docSections = [
@@ -92,6 +92,57 @@ export default function DocsPage() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </section>
+
+        {/* Search Section */}
+        <section className="py-12 bg-white border-y border-gray-200">
+          <div className="container mx-auto px-6">
+            <div className="max-w-2xl mx-auto">
+              <div className="relative">
+                <FiSearch className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
+                <input
+                  type="text"
+                  placeholder="Search documentation..."
+                  className="w-full pl-14 pr-5 py-4 rounded-xl border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-lg"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Video Tutorials Section */}
+        <section className="py-20 bg-white">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+                Video Tutorials
+              </h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                Learn Finvera with step-by-step video guides
+              </p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+              {[
+                { title: 'Getting Started', desc: 'Learn the basics of Finvera', duration: '5 min' },
+                { title: 'Creating Your First Invoice', desc: 'Step-by-step invoice creation', duration: '8 min' },
+                { title: 'GST Filing Guide', desc: 'How to file GST returns', duration: '12 min' },
+                { title: 'E-Invoice Generation', desc: 'Generate e-invoices with IRN', duration: '10 min' },
+                { title: 'Inventory Management', desc: 'Manage your inventory efficiently', duration: '15 min' },
+                { title: 'Financial Reports', desc: 'Generate and understand reports', duration: '10 min' },
+              ].map((tutorial, index) => (
+                <div key={index} className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition border border-primary-100 cursor-pointer">
+                  <div className="aspect-video bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
+                    <FiVideo className="text-4xl text-gray-400" />
+                  </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-xl font-bold text-gray-900">{tutorial.title}</h3>
+                    <span className="text-sm text-gray-500">{tutorial.duration}</span>
+                  </div>
+                  <p className="text-gray-600">{tutorial.desc}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>

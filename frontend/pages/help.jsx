@@ -96,6 +96,18 @@ export default function HelpPage() {
             {/* FAQ Section */}
             <div id="faq" className="max-w-4xl mx-auto">
               <h2 className="text-4xl font-extrabold text-gray-900 mb-12 text-center">Frequently Asked Questions</h2>
+              <div className="mb-8">
+                <div className="flex flex-wrap gap-3 justify-center">
+                  {['Getting Started', 'Billing', 'GST & Compliance', 'Account Management', 'Technical Support'].map((category) => (
+                    <button
+                      key={category}
+                      className="px-4 py-2 bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition font-medium text-sm"
+                    >
+                      {category}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="space-y-4">
                 {faqs.map((faq, index) => (
                   <div key={index} className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-primary-300 transition">

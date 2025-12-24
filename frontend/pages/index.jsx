@@ -8,7 +8,8 @@ import {
   FiBarChart2, FiFileText, FiDollarSign, FiTrendingUp, 
   FiBriefcase, FiTarget, FiCheck, FiZap, FiSmartphone, 
   FiAward, FiMail, FiPhone, FiMapPin, FiArrowRight,
-  FiShield, FiUsers, FiStar
+  FiShield, FiUsers, FiStar, FiPackage, FiRefreshCw,
+  FiShare2, FiPrinter, FiDownload, FiLayers, FiSettings, FiUpload
 } from 'react-icons/fi';
 
 export default function LandingPage() {
@@ -137,27 +138,46 @@ export default function LandingPage() {
           <div className="absolute inset-0 opacity-5">
             <div className="absolute top-0 left-0 w-96 h-96 bg-primary-600 rounded-full blur-3xl"></div>
             <div className="absolute bottom-0 right-0 w-96 h-96 bg-primary-800 rounded-full blur-3xl"></div>
-              </div>
+          </div>
           <div className="container mx-auto px-6 relative z-10">
             <div className="max-w-5xl mx-auto text-center">
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-gray-900 mb-6 leading-tight">
-                Complete Accounting Solution
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-primary-800 mt-2">
-                  For Your Business
+              {/* Trust Badge */}
+              <div className="flex items-center justify-center gap-4 mb-6 flex-wrap">
+                <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-md">
+                  <FiShield className="text-green-600" />
+                  <span className="text-sm font-semibold text-gray-700">100% Safe & Secure</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-md">
+                  <FiUsers className="text-primary-600" />
+                  <span className="text-sm font-semibold text-gray-700">Trusted by 10,000+ Businesses</span>
+                </div>
+              </div>
+              
+              {/* Simple Accounting Tagline */}
+              <div className="mb-4">
+                <span className="inline-block bg-primary-100 text-primary-700 px-4 py-2 rounded-full text-sm font-semibold">
+                  Simple Accounting
                 </span>
+              </div>
+
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-gray-900 mb-6 leading-tight">
+                Create <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-primary-800">GST Invoices</span> for free in 10 seconds ⚡
               </h1>
-              <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
-                Complete accounting software with GST filing, e-invoicing, and comprehensive financial management. 
-                <span className="block mt-2 font-medium text-primary-700">Your Trustable Accounting Partner.</span>
+              <p className="text-xl md:text-2xl text-gray-600 mb-4 max-w-3xl mx-auto leading-relaxed">
+                Customize templates, share bills on WhatsApp, collect payments!
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <p className="text-lg text-gray-500 mb-8 max-w-2xl mx-auto">
+                Fast, Simple, Compliant • No training needed
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
                 <a
                   href={getClientRegisterUrl()}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group bg-primary-600 text-white px-10 py-4 rounded-xl text-lg font-semibold hover:bg-primary-700 transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1 flex items-center gap-2"
                 >
-                  Get Started Free
+                  Sign up for free
                   <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
                 </a>
                 <a
@@ -166,6 +186,27 @@ export default function LandingPage() {
                 >
                   Learn More
                 </a>
+              </div>
+
+              {/* Download App Section - Desktop App Available */}
+              <div className="mt-8">
+                <p className="text-sm text-gray-600 mb-3">Download Desktop App</p>
+                <div className="flex items-center justify-center gap-3">
+                  <a
+                    href="#"
+                    className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition text-sm font-medium"
+                  >
+                    <FiDownload className="text-lg" />
+                    Windows
+                  </a>
+                  <a
+                    href="#"
+                    className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition text-sm font-medium"
+                  >
+                    <FiDownload className="text-lg" />
+                    macOS
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -242,6 +283,286 @@ export default function LandingPage() {
                   Earn commissions through our distributor and salesman network. Grow your business with referrals.
                 </p>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Invoice Templates Showcase Section */}
+        <section className="py-24 bg-white">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-20">
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6">
+                Awesome Templates
+              </h2>
+              <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
+                Tailor made, professional, and hand crafted templates for your business to stand out.
+              </p>
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+              {['Modern', 'Classic', 'Service', 'Compact', 'Vintage', 'Evergreen', 'Legend', 'GenZ'].map((template) => (
+                <div key={template} className="group bg-gradient-to-br from-primary-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all border border-primary-100 hover:border-primary-300 transform hover:-translate-y-2 cursor-pointer">
+                  <div className="aspect-[3/4] bg-white rounded-lg shadow-md mb-4 flex items-center justify-center border-2 border-gray-100 group-hover:border-primary-300 transition">
+                    <FiFileText className="text-6xl text-primary-200 group-hover:text-primary-400 transition" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 text-center">{template}</h3>
+                </div>
+              ))}
+            </div>
+            <div className="text-center mt-12">
+              <a
+                href="/invoice-templates"
+                className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-semibold text-lg"
+              >
+                View All Templates
+                <FiArrowRight />
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* Use Cases Section */}
+        <section className="py-24 bg-gradient-to-br from-primary-50 via-white to-primary-100">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-20">
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6">
+                Perfect for Your Business
+              </h2>
+              <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
+                Quick invoicing for retailers, distributors, startups, freelancers, and service providers
+              </p>
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
+              {[
+                { name: 'Retailers', icon: FiPackage, desc: 'Point of sale billing and inventory management' },
+                { name: 'Distributors', icon: FiLayers, desc: 'Wholesale pricing and stock management' },
+                { name: 'Startups', icon: FiZap, desc: 'Simple accounting for growing businesses' },
+                { name: 'Freelancers', icon: FiBriefcase, desc: 'Professional invoicing made easy' },
+                { name: 'Service Providers', icon: FiSettings, desc: 'Service billing and client management' },
+              ].map((useCase) => {
+                const Icon = useCase.icon;
+                return (
+                  <div key={useCase.name} className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-100 hover:border-primary-300 text-center">
+                    <div className="w-16 h-16 bg-primary-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                      <Icon className="text-primary-600 text-2xl" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">{useCase.name}</h3>
+                    <p className="text-gray-600 text-sm">{useCase.desc}</p>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="text-center mt-12">
+              <a
+                href="/use-cases"
+                className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-semibold text-lg"
+              >
+                Explore All Use Cases
+                <FiArrowRight />
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* Key Features Highlight Section */}
+        <section className="py-24 bg-white">
+          <div className="container mx-auto px-6">
+            <div className="max-w-7xl mx-auto">
+              {/* Inventory Management */}
+              <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
+                <div>
+                  <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+                    Inventory so simple, it feels like magic
+                  </h2>
+                  <p className="text-xl text-gray-600 mb-6 leading-relaxed">
+                    Add items, track stock, and manage everything in seconds. No training needed. It&apos;s that easy.
+                  </p>
+                  <ul className="space-y-3">
+                    {['Stock In and Stock Out tracking', 'Live inventory status', 'Bulk import from Excel', 'Better sales statistics', 'Maximize profits'].map((feature) => (
+                      <li key={feature} className="flex items-start gap-3">
+                        <FiCheck className="text-primary-600 text-xl mt-1 flex-shrink-0" />
+                        <span className="text-gray-700 text-lg">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="bg-gradient-to-br from-primary-50 to-white p-12 rounded-2xl shadow-xl border border-primary-100">
+                  <FiPackage className="text-8xl text-primary-300 mx-auto" />
+                </div>
+              </div>
+
+              {/* Payment Tracking */}
+              <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
+                <div className="order-2 md:order-1 bg-gradient-to-br from-primary-50 to-white p-12 rounded-2xl shadow-xl border border-primary-100">
+                  <FiDollarSign className="text-8xl text-primary-300 mx-auto" />
+                </div>
+                <div className="order-1 md:order-2">
+                  <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+                    Record payments effortlessly
+                  </h2>
+                  <p className="text-xl text-gray-600 mb-6 leading-relaxed">
+                    Track every payment, every time — without lifting a finger. While others make it complicated, we make it simple.
+                  </p>
+                  <ul className="space-y-3">
+                    {['Automatic payment tracking', 'Payment reminders', 'Outstanding reports', 'Payment history', 'Multiple payment methods'].map((feature) => (
+                      <li key={feature} className="flex items-start gap-3">
+                        <FiCheck className="text-primary-600 text-xl mt-1 flex-shrink-0" />
+                        <span className="text-gray-700 text-lg">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              {/* WhatsApp/Email Sharing */}
+              <div className="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                  <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+                    Share anywhere. Get paid faster.
+                  </h2>
+                  <p className="text-xl text-gray-600 mb-6 leading-relaxed">
+                    Send invoices instantly via WhatsApp, email, or SMS. And with smart auto-reminders, you don&apos;t have to chase anyone.
+                  </p>
+                  <ul className="space-y-3">
+                    {['WhatsApp sharing', 'Email delivery', 'SMS notifications', 'Auto-reminders', 'Payment tracking'].map((feature) => (
+                      <li key={feature} className="flex items-start gap-3">
+                        <FiCheck className="text-primary-600 text-xl mt-1 flex-shrink-0" />
+                        <span className="text-gray-700 text-lg">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="bg-gradient-to-br from-primary-50 to-white p-12 rounded-2xl shadow-xl border border-primary-100">
+                  <FiShare2 className="text-8xl text-primary-300 mx-auto" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* E-way Bill Section */}
+        <section className="py-24 bg-gradient-to-br from-primary-50 via-white to-primary-100">
+          <div className="container mx-auto px-6">
+            <div className="max-w-6xl mx-auto text-center">
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6">
+                E-way Bills
+              </h2>
+              <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
+                Create in seconds, anywhere
+              </h3>
+              <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+                Generate e-way bills <strong>instantly from your phone</strong> — no delays, no errors. <strong>AI-filled and portal-ready</strong>, even when you&apos;re on the move.
+              </p>
+              <a
+                href={getClientRegisterUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-primary-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-primary-700 transition shadow-lg"
+              >
+                Try for Free
+                <FiArrowRight />
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* Mind-blowing Convenience Section */}
+        <section className="py-24 bg-white">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-20">
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6">
+                Mind-blowing convenience
+              </h2>
+              <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
+                Finvera is built to make your life easier. We&apos;re always doing things for you to experience ultimate convenience.
+              </p>
+            </div>
+            <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-6 max-w-7xl mx-auto">
+              {[
+                { name: 'E-way Bills', icon: FiFileText },
+                { name: 'E-invoices', icon: FiFileText },
+                { name: 'Custom Columns & Headers', icon: FiSettings },
+                { name: 'GSTR JSON', icon: FiDownload },
+                { name: 'Advanced GST Reports', icon: FiBarChart2 },
+                { name: 'Bulk Uploads', icon: FiUpload },
+                { name: 'Export Invoices', icon: FiDownload },
+                { name: 'Tally Sync', icon: FiRefreshCw },
+                { name: 'Manage Batches & Expiry', icon: FiPackage },
+                { name: 'Print Options', icon: FiPrinter },
+                { name: 'WhatsApp Sharing', icon: FiShare2 },
+                { name: 'Auto Reminders', icon: FiRefreshCw },
+              ].map((feature) => {
+                const Icon = feature.icon;
+                return (
+                  <div key={feature.name} className="bg-gradient-to-br from-primary-50 to-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all border border-primary-100 hover:border-primary-300 text-center">
+                    <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center mx-auto mb-3">
+                      <Icon className="text-white text-xl" />
+                    </div>
+                    <h4 className="text-sm font-bold text-gray-900">{feature.name}</h4>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Security Section */}
+        <section className="py-24 bg-gradient-to-br from-primary-50 via-white to-primary-100">
+          <div className="container mx-auto px-6">
+            <div className="max-w-6xl mx-auto text-center">
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6">
+                Invisible security. Unbreakable trust.
+              </h2>
+              <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+                Your data stays private. Always encrypted.
+              </p>
+              <div className="bg-white p-12 rounded-2xl shadow-xl border border-primary-100">
+                <div className="flex items-center justify-center gap-8 flex-wrap">
+                  <div className="text-center">
+                    <FiShield className="text-6xl text-primary-600 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Bank-Level Security</h3>
+                    <p className="text-gray-600">256-bit encryption</p>
+                  </div>
+                  <div className="text-center">
+                    <FiRefreshCw className="text-6xl text-primary-600 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Auto Backup</h3>
+                    <p className="text-gray-600">Daily automated backups</p>
+                  </div>
+                  <div className="text-center">
+                    <FiShield className="text-6xl text-primary-600 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Compliance</h3>
+                    <p className="text-gray-600">GDPR & Data Protection</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Partnerships Section */}
+        <section className="py-24 bg-white">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+                Partnered with
+              </h2>
+            </div>
+            <div className="grid md:grid-cols-4 lg:grid-cols-7 gap-8 max-w-7xl mx-auto items-center">
+              {['Tally', 'Sandbox API', 'FinBox', 'GST Portal', 'E-Invoice Portal', 'E-Way Bill Portal', 'Payment Gateways'].map((partner) => (
+                <div key={partner} className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl shadow-md hover:shadow-lg transition border border-gray-200 text-center">
+                  <div className="h-16 flex items-center justify-center mb-3">
+                    <span className="text-2xl font-bold text-gray-400">{partner}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="text-center mt-12">
+              <a
+                href="/integrations"
+                className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-semibold text-lg"
+              >
+                View All Integrations
+                <FiArrowRight />
+              </a>
             </div>
           </div>
         </section>

@@ -32,4 +32,8 @@ router.post('/device-insights', finboxController.getDeviceInsights);
 // Session Token Routes
 router.post('/session', finboxController.generateSessionToken);
 
+// Consent Routes
+router.post('/consent', finboxController.saveConsent);
+router.get('/consent', finboxController.getConsent);
+
 module.exports = router;

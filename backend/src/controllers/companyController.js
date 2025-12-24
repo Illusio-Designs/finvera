@@ -299,5 +299,213 @@ module.exports = {
       return next(err);
     }
   },
+
+  async uploadLogo(req, res, next) {
+    try {
+      const Company = masterModels.Company;
+      const company = await Company.findOne({
+        where: { id: req.params.id, tenant_id: req.tenant_id, is_active: true },
+      });
+      if (!company) {
+        return res.status(404).json({ success: false, message: 'Company not found' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'No file uploaded' });
+      }
+
+      // Generate URL for the uploaded file
+      const tenantId = req.tenant_id || 'default';
+      const fileUrl = `/uploads/${tenantId}/company/${req.file.filename}`;
+
+      // Update company with logo URL
+      await company.update({ logo_url: fileUrl });
+      await company.reload();
+
+      return res.json({
+        success: true,
+        data: {
+          logo_url: fileUrl,
+          filename: req.file.filename,
+        },
+      });
+    } catch (err) {
+      return next(err);
+    }
+  },
+
+  async uploadSignature(req, res, next) {
+    try {
+      const Company = masterModels.Company;
+      const company = await Company.findOne({
+        where: { id: req.params.id, tenant_id: req.tenant_id, is_active: true },
+      });
+      if (!company) {
+        return res.status(404).json({ success: false, message: 'Company not found' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'No file uploaded' });
+      }
+
+      // Generate URL for the uploaded file
+      const tenantId = req.tenant_id || 'default';
+      const fileUrl = `/uploads/${tenantId}/company/${req.file.filename}`;
+
+      // Update company with signature URL (store in compliance JSON or as separate field)
+      const compliance = company.compliance || {};
+      compliance.signature_url = fileUrl;
+      
+      await company.update({ compliance });
+      await company.reload();
+
+      return res.json({
+        success: true,
+        data: {
+          signature_url: fileUrl,
+          filename: req.file.filename,
+        },
+      });
+    } catch (err) {
+      return next(err);
+    }
+  },
+
+  async uploadDSCCertificate(req, res, next) {
+    try {
+      const Company = masterModels.Company;
+      const company = await Company.findOne({
+        where: { id: req.params.id, tenant_id: req.tenant_id, is_active: true },
+      });
+      if (!company) {
+        return res.status(404).json({ success: false, message: 'Company not found' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'No certificate file uploaded' });
+      }
+
+      const { certificate_password, certificate_type = 'file' } = req.body;
+
+      // Generate URL for the uploaded file
+      const tenantId = req.tenant_id || 'default';
+      const fileUrl = `/uploads/${tenantId}/company/dsc/${req.file.filename}`;
+
+      // Update company with DSC certificate info (store in compliance JSON)
+      const compliance = company.compliance || {};
+      if (!compliance.dsc) {
+        compliance.dsc = {};
+      }
+      
+      compliance.dsc = {
+        ...compliance.dsc,
+        certificate_type: certificate_type, // 'file', 'usb_token', 'cloud'
+        certificate_url: fileUrl,
+        certificate_filename: req.file.filename,
+        certificate_uploaded_at: new Date().toISOString(),
+        // Store password encrypted (in production, use proper encryption)
+        // For now, we'll store it but recommend using environment variables or secure storage
+        has_password: !!certificate_password,
+      };
+
+      // Encrypt password if provided (basic encryption - use proper encryption in production)
+      if (certificate_password) {
+        const crypto = require('crypto');
+        const algorithm = 'aes-256-cbc';
+        const key = crypto.scryptSync(process.env.ENCRYPTION_KEY || 'default-key-change-in-production', 'salt', 32);
+        const iv = crypto.randomBytes(16);
+        const cipher = crypto.createCipheriv(algorithm, key, iv);
+        let encrypted = cipher.update(certificate_password, 'utf8', 'hex');
+        encrypted += cipher.final('hex');
+        compliance.dsc.certificate_password_encrypted = iv.toString('hex') + ':' + encrypted;
+      }
+      
+      await company.update({ compliance });
+      await company.reload();
+
+      return res.json({
+        success: true,
+        data: {
+          certificate_url: fileUrl,
+          filename: req.file.filename,
+          certificate_type: certificate_type,
+        },
+      });
+    } catch (err) {
+      return next(err);
+    }
+  },
+
+  async updateDSCConfig(req, res, next) {
+    try {
+      const Company = masterModels.Company;
+      const company = await Company.findOne({
+        where: { id: req.params.id, tenant_id: req.tenant_id, is_active: true },
+      });
+      if (!company) {
+        return res.status(404).json({ success: false, message: 'Company not found' });
+      }
+
+      const { 
+        certificate_type, 
+        certificate_password, 
+        usb_token_provider,
+        cloud_provider,
+        cloud_api_key,
+        use_for_einvoice,
+        use_for_ewaybill 
+      } = req.body;
+
+      const compliance = company.compliance || {};
+      if (!compliance.dsc) {
+        compliance.dsc = {};
+      }
+
+      // Update DSC configuration
+      if (certificate_type !== undefined) {
+        compliance.dsc.certificate_type = certificate_type;
+      }
+      if (usb_token_provider !== undefined) {
+        compliance.dsc.usb_token_provider = usb_token_provider;
+      }
+      if (cloud_provider !== undefined) {
+        compliance.dsc.cloud_provider = cloud_provider;
+      }
+      if (cloud_api_key !== undefined) {
+        compliance.dsc.cloud_api_key = cloud_api_key;
+      }
+      if (use_for_einvoice !== undefined) {
+        compliance.dsc.use_for_einvoice = use_for_einvoice;
+      }
+      if (use_for_ewaybill !== undefined) {
+        compliance.dsc.use_for_ewaybill = use_for_ewaybill;
+      }
+
+      // Update password if provided
+      if (certificate_password) {
+        const crypto = require('crypto');
+        const algorithm = 'aes-256-cbc';
+        const key = crypto.scryptSync(process.env.ENCRYPTION_KEY || 'default-key-change-in-production', 'salt', 32);
+        const iv = crypto.randomBytes(16);
+        const cipher = crypto.createCipheriv(algorithm, key, iv);
+        let encrypted = cipher.update(certificate_password, 'utf8', 'hex');
+        encrypted += cipher.final('hex');
+        compliance.dsc.certificate_password_encrypted = iv.toString('hex') + ':' + encrypted;
+        compliance.dsc.has_password = true;
+      }
+      
+      await company.update({ compliance });
+      await company.reload();
+
+      return res.json({
+        success: true,
+        data: {
+          dsc: compliance.dsc,
+        },
+      });
+    } catch (err) {
+      return next(err);
+    }
+  },
 };
 
