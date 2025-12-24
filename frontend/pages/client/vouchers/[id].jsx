@@ -686,7 +686,7 @@ export default function VoucherDetail() {
                 </div>
               </div>
             </div>
-          </Card>
+          </div>
 
           {/* Ledger Entries (for non-invoice vouchers or detailed view) */}
           {ledgerEntries.length > 0 && (voucher.voucher_type !== 'Sales' && voucher.voucher_type !== 'Purchase') && (

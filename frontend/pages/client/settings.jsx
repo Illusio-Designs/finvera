@@ -2045,7 +2045,7 @@ function DSCConfigModal({ isOpen, onClose, company, onSuccess }) {
                 <strong>USB Token Instructions:</strong>
                 <ol className="list-decimal list-inside mt-2 space-y-1">
                   <li>Insert your DSC USB token/pendrive into your computer</li>
-                  <li>Install the DSC provider's software (eMudhra, eSign, etc.)</li>
+                  <li>Install the DSC provider&apos;s software (eMudhra, eSign, etc.)</li>
                   <li>Install the browser plugin for your DSC provider</li>
                   <li>When signing documents, the system will prompt you to select the certificate from the USB token</li>
                   <li>Enter your DSC PIN when prompted</li>

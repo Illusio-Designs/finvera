@@ -278,12 +278,12 @@ export default function UseCasesPage() {
                   Contact Sales
                   <FiArrowRight />
                 </Link>
-                <a
+                <Link
                   href="/pricing"
                   className="bg-transparent border-2 border-white text-white px-8 py-4 rounded-lg hover:bg-white hover:text-primary-600 transition font-semibold text-lg"
                 >
                   View Pricing
-                </a>
+                </Link>
               </div>
             </div>
           </div>
