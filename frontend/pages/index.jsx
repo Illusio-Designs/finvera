@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
@@ -309,13 +310,13 @@ export default function LandingPage() {
               ))}
             </div>
             <div className="text-center mt-12">
-              <a
+              <Link
                 href="/invoice-templates"
                 className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-semibold text-lg"
               >
                 View All Templates
                 <FiArrowRight />
-              </a>
+              </Link>
             </div>
           </div>
         </section>
@@ -352,13 +353,13 @@ export default function LandingPage() {
               })}
             </div>
             <div className="text-center mt-12">
-              <a
+              <Link
                 href="/use-cases"
                 className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-semibold text-lg"
               >
                 Explore All Use Cases
                 <FiArrowRight />
-              </a>
+              </Link>
             </div>
           </div>
         </section>
@@ -556,13 +557,13 @@ export default function LandingPage() {
               ))}
             </div>
             <div className="text-center mt-12">
-              <a
+              <Link
                 href="/integrations"
                 className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-semibold text-lg"
               >
                 View All Integrations
                 <FiArrowRight />
-              </a>
+              </Link>
             </div>
           </div>
         </section>
