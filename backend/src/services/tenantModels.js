@@ -768,5 +768,73 @@ module.exports = (sequelize) => {
   models.StockMovement.belongsTo(models.InventoryItem, { foreignKey: 'inventory_item_id' });
   models.StockMovement.belongsTo(models.Voucher, { foreignKey: 'voucher_id' });
 
+  // FinBox Consent Model
+  models.FinBoxConsent = sequelize.define('FinBoxConsent', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    user_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      comment: 'User ID who provided the consent',
+    },
+    company_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      comment: 'Company ID (from master database)',
+    },
+    credit_score_consent: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      comment: 'Consent for FinBox to access credit score from credit bureaus',
+    },
+    bank_statement_consent: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      comment: 'Consent to share bank statement data through Account Aggregator',
+    },
+    data_sharing_consent: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      comment: 'Consent to share financial data with FinBox and lending partners',
+    },
+    terms_conditions_consent: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      comment: 'Consent to Terms & Conditions',
+    },
+    privacy_policy_consent: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      comment: 'Consent to Privacy Policy',
+    },
+    consent_data: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      comment: 'Additional consent metadata (timestamp, IP, etc.)',
+    },
+    is_active: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      comment: 'Whether this consent record is currently active',
+    },
+  }, {
+    tableName: 'finbox_consents',
+    timestamps: true,
+    indexes: [
+      {
+        fields: ['user_id'],
+      },
+      {
+        fields: ['company_id'],
+      },
+    ],
+  });
+
+  // Associate FinBoxConsent with User
+  models.FinBoxConsent.belongsTo(models.User, { foreignKey: 'user_id' });
+
   return models;
 };

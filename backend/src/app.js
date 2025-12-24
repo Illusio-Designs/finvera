@@ -165,8 +165,8 @@ const absoluteUploadDir = path.isAbsolute(uploadDir)
   ? uploadDir 
   : path.join(__dirname, '..', uploadDir);
 
-// Serve static files with CORS headers
-app.use('/uploads', (req, res, next) => {
+// CORS middleware for static file serving
+const staticFileCors = (req, res, next) => {
   // Set CORS headers for static files
   const origin = req.headers.origin || '*';
   // Check if origin is allowed
@@ -188,7 +188,10 @@ app.use('/uploads', (req, res, next) => {
     return res.sendStatus(200);
   }
   next();
-}, express.static(absoluteUploadDir, {
+};
+
+// Static file serving configuration
+const staticFileConfig = {
   setHeaders: (res, filePath) => {
     // Set proper content type for images
     if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
@@ -203,7 +206,13 @@ app.use('/uploads', (req, res, next) => {
     // Explicitly set Cross-Origin-Resource-Policy to allow cross-origin access
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   },
-}));
+};
+
+// Serve static files at /uploads (legacy route)
+app.use('/uploads', staticFileCors, express.static(absoluteUploadDir, staticFileConfig));
+
+// Serve static files at /upload (for env variable compatibility)
+app.use('/upload', staticFileCors, express.static(absoluteUploadDir, staticFileConfig));
 
 // Routes
 app.use('/api', routes);

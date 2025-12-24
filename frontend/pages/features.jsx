@@ -7,7 +7,8 @@ import {
   FiBarChart2, FiFileText, FiDollarSign, FiTrendingUp, 
   FiBriefcase, FiTarget, FiShield, FiZap, FiSmartphone, 
   FiAward, FiCheck, FiUsers, FiDatabase, FiSettings,
-  FiCloud, FiRefreshCw, FiDownload
+  FiCloud, FiRefreshCw, FiDownload, FiPackage, FiShare2,
+  FiUpload, FiLayers, FiPrinter, FiMail
 } from 'react-icons/fi';
 
 export default function FeaturesPage() {
@@ -102,6 +103,136 @@ export default function FeaturesPage() {
         'Automated payouts',
         'Referral link generation',
         'Multi-level commission structure'
+      ]
+    },
+    {
+      icon: FiPackage,
+      title: 'Inventory Management',
+      description: 'Inventory so simple, it feels like magic. Add items, track stock, and manage everything in seconds.',
+      details: [
+        'Stock In and Stock Out tracking',
+        'Live inventory status',
+        'Bulk import from Excel',
+        'Multi-warehouse management',
+        'Batch and expiry tracking',
+        'Low stock alerts'
+      ]
+    },
+    {
+      icon: FiDollarSign,
+      title: 'Payment Tracking',
+      description: 'Record payments effortlessly. Track every payment, every time — without lifting a finger.',
+      details: [
+        'Automatic payment tracking',
+        'Payment reminders',
+        'Outstanding reports',
+        'Payment history',
+        'Multiple payment methods',
+        'Bank reconciliation'
+      ]
+    },
+    {
+      icon: FiShare2,
+      title: 'WhatsApp/Email Sharing',
+      description: 'Share anywhere. Get paid faster. Send invoices instantly via WhatsApp, email, or SMS.',
+      details: [
+        'WhatsApp sharing',
+        'Email delivery',
+        'SMS notifications',
+        'Auto-reminders',
+        'Payment tracking',
+        'Customer communication'
+      ]
+    },
+    {
+      icon: FiFileText,
+      title: 'E-way Bills',
+      description: 'Create in seconds, anywhere. Generate e-way bills instantly from your phone — AI-filled and portal-ready.',
+      details: [
+        'Instant e-way bill generation',
+        'AI-filled transport details',
+        'Portal-ready format',
+        'Bulk creation',
+        'Status tracking',
+        'Print and download'
+      ]
+    },
+    {
+      icon: FiUpload,
+      title: 'Bulk Operations',
+      description: 'Bulk uploads and bulk processing with Excel import. Save time with batch operations.',
+      details: [
+        'Bulk invoice upload',
+        'Excel import/export',
+        'Bulk item import',
+        'Bulk ledger import',
+        'CSV support',
+        'Data validation'
+      ]
+    },
+    {
+      icon: FiDatabase,
+      title: 'Tally Sync',
+      description: 'Import from Tally with seamless integration. Migrate your existing data effortlessly.',
+      details: [
+        'Import ledgers from Tally',
+        'Import stock items',
+        'Import vouchers',
+        'Import groups',
+        'Bulk import support',
+        'Data mapping tools'
+      ]
+    },
+    {
+      icon: FiSettings,
+      title: 'Custom Columns & Headers',
+      description: 'Invoice customization options. Make your invoices truly yours with extensive customization.',
+      details: [
+        'Custom invoice columns',
+        'Custom headers and footers',
+        'Logo and branding',
+        'Color scheme customization',
+        'Font selection',
+        'Template builder'
+      ]
+    },
+    {
+      icon: FiDownload,
+      title: 'GSTR JSON Export',
+      description: 'Advanced GST reporting. Export GSTR data in JSON format for easy filing.',
+      details: [
+        'GSTR-1 JSON export',
+        'GSTR-3B JSON export',
+        'GSTR-2A import',
+        'GSTR-9 export',
+        'JSON validation',
+        'Portal-ready format'
+      ]
+    },
+    {
+      icon: FiBarChart2,
+      title: 'Advanced GST Reports',
+      description: 'Comprehensive reporting features. Get detailed insights into your GST compliance.',
+      details: [
+        'GSTR-1 reports',
+        'GSTR-3B reports',
+        'GSTR-2A reconciliation',
+        'GSTR-9 annual return',
+        'Tax liability reports',
+        'Input tax credit reports'
+      ]
+    },
+    {
+      icon: FiPrinter,
+      title: 'Export Invoices',
+      description: 'Multiple format support. Export invoices in various formats for your needs.',
+      details: [
+        'PDF export',
+        'Excel export',
+        'CSV export',
+        'Print options (A4, A5, thermal)',
+        'Email as PDF',
+        'Bulk export'
       ]
     }
   ];
@@ -233,6 +364,46 @@ export default function FeaturesPage() {
                     </div>
                     <h4 className="text-xl font-bold text-gray-900 mb-2">{feature.title}</h4>
                     <p className="text-gray-600">{feature.description}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Mind-blowing Convenience Section */}
+        <section className="py-24 bg-white">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-20">
+              <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+                Mind-blowing convenience
+              </h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                Finvera is built to make your life easier. We&apos;re always doing things for you to experience ultimate convenience.
+              </p>
+            </div>
+            <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-6 max-w-7xl mx-auto">
+              {[
+                { name: 'E-way Bills', icon: FiFileText },
+                { name: 'E-invoices', icon: FiFileText },
+                { name: 'Custom Columns & Headers', icon: FiSettings },
+                { name: 'GSTR JSON', icon: FiDownload },
+                { name: 'Advanced GST Reports', icon: FiBarChart2 },
+                { name: 'Bulk Uploads', icon: FiUpload },
+                { name: 'Export Invoices', icon: FiDownload },
+                { name: 'Tally Sync', icon: FiDatabase },
+                { name: 'Manage Batches & Expiry', icon: FiPackage },
+                { name: 'Print Options', icon: FiPrinter },
+                { name: 'WhatsApp Sharing', icon: FiShare2 },
+                { name: 'Auto Reminders', icon: FiRefreshCw },
+              ].map((feature) => {
+                const Icon = feature.icon;
+                return (
+                  <div key={feature.name} className="bg-gradient-to-br from-primary-50 to-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all border border-primary-100 hover:border-primary-300 text-center">
+                    <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center mx-auto mb-3">
+                      <Icon className="text-white text-xl" />
+                    </div>
+                    <h4 className="text-sm font-bold text-gray-900">{feature.name}</h4>
                   </div>
                 );
               })}

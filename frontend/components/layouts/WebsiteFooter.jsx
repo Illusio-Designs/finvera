@@ -51,6 +51,24 @@ export default function WebsiteFooter() {
                 </Link>
               </li>
               <li>
+                <Link href="/invoice-templates" className="text-primary-200 hover:text-white transition flex items-center gap-2">
+                  <span className="w-1 h-1 bg-primary-200 rounded-full"></span>
+                  Invoice Templates
+                </Link>
+              </li>
+              <li>
+                <Link href="/use-cases" className="text-primary-200 hover:text-white transition flex items-center gap-2">
+                  <span className="w-1 h-1 bg-primary-200 rounded-full"></span>
+                  Use Cases
+                </Link>
+              </li>
+              <li>
+                <Link href="/integrations" className="text-primary-200 hover:text-white transition flex items-center gap-2">
+                  <span className="w-1 h-1 bg-primary-200 rounded-full"></span>
+                  Integrations
+                </Link>
+              </li>
+              <li>
                 <Link href="/#pricing" className="text-primary-200 hover:text-white transition flex items-center gap-2">
                   <span className="w-1 h-1 bg-primary-200 rounded-full"></span>
                   Pricing
@@ -60,12 +78,6 @@ export default function WebsiteFooter() {
                 <Link href="/about" className="text-primary-200 hover:text-white transition flex items-center gap-2">
                   <span className="w-1 h-1 bg-primary-200 rounded-full"></span>
                   About Us
-                </Link>
-              </li>
-              <li>
-                <Link href="/#contact" className="text-primary-200 hover:text-white transition flex items-center gap-2">
-                  <span className="w-1 h-1 bg-primary-200 rounded-full"></span>
-                  Contact
                 </Link>
               </li>
             </ul>
@@ -85,6 +97,12 @@ export default function WebsiteFooter() {
                 <Link href="/docs" className="text-primary-200 hover:text-white transition flex items-center gap-2">
                   <span className="w-1 h-1 bg-primary-200 rounded-full"></span>
                   Documentation
+                </Link>
+              </li>
+              <li>
+                <Link href="/#contact" className="text-primary-200 hover:text-white transition flex items-center gap-2">
+                  <span className="w-1 h-1 bg-primary-200 rounded-full"></span>
+                  Contact
                 </Link>
               </li>
               <li>

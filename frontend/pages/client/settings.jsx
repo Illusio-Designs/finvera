@@ -14,7 +14,9 @@ import FormDatePicker from '../../components/forms/FormDatePicker';
 import { companyAPI } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
-import { FiSettings, FiEdit2, FiFileText, FiTruck, FiHash, FiSave, FiX, FiArrowLeft, FiArrowRight } from 'react-icons/fi';
+import { FiSettings, FiEdit2, FiFileText, FiTruck, FiHash, FiSave, FiX, FiArrowLeft, FiArrowRight, FiFile, FiImage, FiPenTool } from 'react-icons/fi';
+import { TEMPLATES, TEMPLATE_TYPES, PRINT_SIZES, getDefaultTemplate } from '../../lib/invoiceTemplates';
+import Image from 'next/image';
 
 const COMPANY_TYPES = [
   { value: 'sole_proprietorship', label: 'Sole Proprietorship' },
@@ -38,6 +40,10 @@ export default function SettingsPage() {
   const [showEInvoice, setShowEInvoice] = useState(false);
   const [showEWayBill, setShowEWayBill] = useState(false);
   const [showInvoiceNumbering, setShowInvoiceNumbering] = useState(false);
+  const [showInvoiceTemplate, setShowInvoiceTemplate] = useState(false);
+  const [showLogoUpload, setShowLogoUpload] = useState(false);
+  const [showSignatureUpload, setShowSignatureUpload] = useState(false);
+  const [showDSCConfig, setShowDSCConfig] = useState(false);
 
   // Fetch current company details
   useEffect(() => {
@@ -171,6 +177,124 @@ export default function SettingsPage() {
               </div>
             </Card>
 
+            {/* Company Logo Card */}
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setShowLogoUpload(true)}>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-3 bg-orange-100 rounded-lg">
+                      <FiImage className="h-6 w-6 text-orange-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Company Logo</h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Upload company logo for invoices and documents
+                      </p>
+                    </div>
+                  </div>
+                  {company?.logo_url && (
+                    <div className="mt-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                        Logo Uploaded
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <Button variant="ghost" size="sm">
+                  <FiArrowRight className="h-5 w-5" />
+                </Button>
+              </div>
+            </Card>
+
+            {/* Digital Signature Card */}
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setShowSignatureUpload(true)}>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-3 bg-indigo-100 rounded-lg">
+                      <FiPenTool className="h-6 w-6 text-indigo-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Digital Signature</h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Upload DSC or signature for invoices
+                      </p>
+                    </div>
+                  </div>
+                  {company?.compliance?.signature_url && (
+                    <div className="mt-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                        Signature Uploaded
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <Button variant="ghost" size="sm">
+                  <FiArrowRight className="h-5 w-5" />
+                </Button>
+              </div>
+            </Card>
+
+            {/* DSC Certificate Card */}
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setShowDSCConfig(true)}>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-3 bg-teal-100 rounded-lg">
+                      <FiFileText className="h-6 w-6 text-teal-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">DSC Certificate</h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Configure DSC for e-invoice and e-way bill signing
+                      </p>
+                    </div>
+                  </div>
+                  {company?.compliance?.dsc?.certificate_type && (
+                    <div className="mt-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
+                        {company.compliance.dsc.certificate_type === 'file' ? 'Certificate File' :
+                         company.compliance.dsc.certificate_type === 'usb_token' ? 'USB Token' :
+                         company.compliance.dsc.certificate_type === 'cloud' ? 'Cloud Service' : 'Configured'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <Button variant="ghost" size="sm">
+                  <FiArrowRight className="h-5 w-5" />
+                </Button>
+              </div>
+            </Card>
+
+            {/* Invoice Template Card */}
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setShowInvoiceTemplate(true)}>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-3 bg-purple-100 rounded-lg">
+                      <FiFile className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Invoice Template</h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Select invoice template and print size preferences
+                      </p>
+                    </div>
+                  </div>
+                  {company?.compliance?.invoice_template?.template_name && (
+                    <div className="mt-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                        {TEMPLATES.find(t => t.id === company.compliance.invoice_template.template_name)?.name || 'Configured'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <Button variant="ghost" size="sm">
+                  <FiArrowRight className="h-5 w-5" />
+                </Button>
+              </div>
+            </Card>
+
             {/* Invoice Numbering Card */}
             <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setShowInvoiceNumbering(true)}>
               <div className="flex items-start justify-between">
@@ -243,6 +367,90 @@ export default function SettingsPage() {
             company={company}
             onSuccess={() => {
               setShowEWayBill(false);
+              // Refresh company data
+              const fetchCompany = async () => {
+                try {
+                  const response = await companyAPI.get(user.company_id);
+                  const companyData = response?.data?.data || response?.data;
+                  setCompany(companyData);
+                } catch (error) {
+                  console.error('Error fetching company:', error);
+                }
+              };
+              fetchCompany();
+            }}
+          />
+
+          {/* Logo Upload Modal */}
+          <LogoUploadModal
+            isOpen={showLogoUpload}
+            onClose={() => setShowLogoUpload(false)}
+            company={company}
+            onSuccess={() => {
+              setShowLogoUpload(false);
+              // Refresh company data
+              const fetchCompany = async () => {
+                try {
+                  const response = await companyAPI.get(user.company_id);
+                  const companyData = response?.data?.data || response?.data;
+                  setCompany(companyData);
+                } catch (error) {
+                  console.error('Error fetching company:', error);
+                }
+              };
+              fetchCompany();
+            }}
+          />
+
+          {/* Signature Upload Modal */}
+          <SignatureUploadModal
+            isOpen={showSignatureUpload}
+            onClose={() => setShowSignatureUpload(false)}
+            company={company}
+            onSuccess={() => {
+              setShowSignatureUpload(false);
+              // Refresh company data
+              const fetchCompany = async () => {
+                try {
+                  const response = await companyAPI.get(user.company_id);
+                  const companyData = response?.data?.data || response?.data;
+                  setCompany(companyData);
+                } catch (error) {
+                  console.error('Error fetching company:', error);
+                }
+              };
+              fetchCompany();
+            }}
+          />
+
+          {/* DSC Configuration Modal */}
+          <DSCConfigModal
+            isOpen={showDSCConfig}
+            onClose={() => setShowDSCConfig(false)}
+            company={company}
+            onSuccess={() => {
+              setShowDSCConfig(false);
+              // Refresh company data
+              const fetchCompany = async () => {
+                try {
+                  const response = await companyAPI.get(user.company_id);
+                  const companyData = response?.data?.data || response?.data;
+                  setCompany(companyData);
+                } catch (error) {
+                  console.error('Error fetching company:', error);
+                }
+              };
+              fetchCompany();
+            }}
+          />
+
+          {/* Invoice Template Modal */}
+          <InvoiceTemplateModal
+            isOpen={showInvoiceTemplate}
+            onClose={() => setShowInvoiceTemplate(false)}
+            company={company}
+            onSuccess={() => {
+              setShowInvoiceTemplate(false);
               // Refresh company data
               const fetchCompany = async () => {
                 try {
@@ -1143,6 +1351,778 @@ function InvoiceNumberingModal({ isOpen, onClose, company, onSuccess }) {
                 {loading ? 'Saving...' : 'Save'}
               </>
             )}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// Invoice Template Modal
+function InvoiceTemplateModal({ isOpen, onClose, company, onSuccess }) {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const defaultTemplate = getDefaultTemplate();
+  const [selectedTemplate, setSelectedTemplate] = useState(defaultTemplate?.id || null);
+  const [printSize, setPrintSize] = useState('A4');
+  const [showLogo, setShowLogo] = useState(true);
+  const [showQRCode, setShowQRCode] = useState(true);
+  const [showBankDetails, setShowBankDetails] = useState(true);
+
+  const compliance = company?.compliance || {};
+  const invoiceTemplate = compliance.invoice_template || {};
+  const templateName = invoiceTemplate?.template_name;
+  const templatePrintSize = invoiceTemplate?.print_size;
+  const templateShowLogo = invoiceTemplate?.show_logo;
+  const templateShowQRCode = invoiceTemplate?.show_qr_code;
+  const templateShowBankDetails = invoiceTemplate?.show_bank_details;
+
+  useEffect(() => {
+    if (company && isOpen) {
+      const defaultTemplate = getDefaultTemplate();
+      setSelectedTemplate(templateName || defaultTemplate.id);
+      setPrintSize(templatePrintSize || 'A4');
+      setShowLogo(templateShowLogo !== false);
+      setShowQRCode(templateShowQRCode !== false);
+      setShowBankDetails(templateShowBankDetails !== false);
+    }
+  }, [company, isOpen, templateName, templatePrintSize, templateShowLogo, templateShowQRCode, templateShowBankDetails]);
+
+  const handleSubmit = async () => {
+    if (!selectedTemplate) {
+      toast.error('Please select an invoice template');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const templateConfig = {
+        template_name: selectedTemplate,
+        print_size: printSize,
+        show_logo: showLogo,
+        show_qr_code: showQRCode,
+        show_bank_details: showBankDetails,
+      };
+
+      await companyAPI.update(user.company_id, {
+        compliance: {
+          ...compliance,
+          invoice_template: templateConfig,
+        },
+      });
+
+      toast.success('Invoice template settings updated successfully');
+      onSuccess();
+    } catch (error) {
+      console.error('Error updating invoice template settings:', error);
+      toast.error(error.response?.data?.message || 'Failed to update invoice template settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Invoice Template Settings" size="xl">
+      <div className="space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Select Invoice Template
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {TEMPLATES.map((template) => (
+              <div
+                key={template.id}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setSelectedTemplate(template.id);
+                }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setSelectedTemplate(template.id);
+                  }
+                }}
+                className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                  selectedTemplate === template.id
+                    ? 'border-primary-500 bg-primary-50 shadow-md'
+                    : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <div className="w-16 h-20 bg-gray-100 rounded border flex items-center justify-center overflow-hidden">
+                      {template.previewImage ? (
+                        <Image
+                          src={template.previewImage}
+                          alt={template.name}
+                          width={64}
+                          height={80}
+                          className="object-cover"
+                        />
+                      ) : (
+                        <FiFile className="h-8 w-8 text-gray-400" />
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-sm text-gray-900">{template.name}</div>
+                    <div className="text-xs text-gray-600 mt-1">{template.description}</div>
+                    <div className="mt-2">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                        {template.category}
+                      </span>
+                    </div>
+                  </div>
+                  {selectedTemplate === template.id && (
+                    <div className="flex-shrink-0">
+                      <div className="w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Print Size
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {Object.values(PRINT_SIZES).map((size) => (
+              <button
+                key={size}
+                type="button"
+                onClick={() => setPrintSize(size)}
+                className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                  printSize === size
+                    ? 'border-primary-500 bg-primary-50 text-primary-700'
+                    : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {size === 'A4' ? 'A4 (Standard)' :
+                 size === 'A5' ? 'A5 (Compact)' :
+                 size === 'thermal_2inch' ? 'Thermal 2"' :
+                 'Thermal 3"'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Display Options
+          </label>
+          <div className="space-y-3">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showLogo}
+                onChange={(e) => setShowLogo(e.target.checked)}
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-sm text-gray-700">Show Company Logo</span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showQRCode}
+                onChange={(e) => setShowQRCode(e.target.checked)}
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-sm text-gray-700">Show UPI QR Code</span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showBankDetails}
+                onChange={(e) => setShowBankDetails(e.target.checked)}
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-sm text-gray-700">Show Bank Details</span>
+            </label>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-4 border-t">
+          <Button variant="outline" onClick={onClose} disabled={loading}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={loading}>
+            <FiSave className="h-4 w-4 mr-2" />
+            {loading ? 'Saving...' : 'Save Settings'}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// Logo Upload Modal
+function LogoUploadModal({ isOpen, onClose, company, onSuccess }) {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [preview, setPreview] = useState(null);
+
+  useEffect(() => {
+    if (company?.logo_url) {
+      setPreview(company.logo_url);
+    } else {
+      setPreview(null);
+    }
+    setSelectedFile(null);
+  }, [company, isOpen]);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select an image file');
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('File size must be less than 2MB');
+        return;
+      }
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedFile) {
+      toast.error('Please select a logo file');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('logo', selectedFile);
+
+      await companyAPI.uploadLogo(user.company_id, formData);
+      toast.success('Logo uploaded successfully');
+      onSuccess();
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      toast.error(error.response?.data?.message || 'Failed to upload logo');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Upload Company Logo" size="md">
+      <div className="space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Select Logo Image
+          </label>
+          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gray-400 transition-colors">
+            <div className="space-y-1 text-center">
+              {preview ? (
+                <div className="space-y-3">
+                  <img
+                    src={preview}
+                    alt="Logo preview"
+                    className="mx-auto h-32 w-auto object-contain"
+                  />
+                  <div className="text-sm text-gray-600">
+                    {selectedFile?.name || 'Current logo'}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <FiImage className="mx-auto h-12 w-12 text-gray-400" />
+                  <div className="mt-4 flex text-sm text-gray-600">
+                    <label className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500">
+                      <span>Upload a file</span>
+                      <input
+                        type="file"
+                        className="sr-only"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                      />
+                    </label>
+                    <p className="pl-1">or drag and drop</p>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">PNG, JPG, GIF up to 2MB</p>
+                </div>
+              )}
+            </div>
+          </div>
+          {preview && (
+            <div className="mt-3">
+              <label className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 text-sm">
+                <span>Change logo</span>
+                <input
+                  type="file"
+                  className="sr-only"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                />
+              </label>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-3 pt-4 border-t">
+          <Button variant="outline" onClick={onClose} disabled={loading}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={loading || !selectedFile}>
+            <FiSave className="h-4 w-4 mr-2" />
+            {loading ? 'Uploading...' : 'Upload Logo'}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// Signature Upload Modal
+function SignatureUploadModal({ isOpen, onClose, company, onSuccess }) {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [preview, setPreview] = useState(null);
+
+  useEffect(() => {
+    if (company?.compliance?.signature_url) {
+      setPreview(company.compliance.signature_url);
+    } else {
+      setPreview(null);
+    }
+    setSelectedFile(null);
+  }, [company, isOpen]);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+      if (!validTypes.includes(file.type)) {
+        toast.error('Please select an image (JPG, PNG, GIF, WEBP) or PDF file');
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('File size must be less than 2MB');
+        return;
+      }
+      setSelectedFile(file);
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setPreview(null);
+      }
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedFile) {
+      toast.error('Please select a signature file');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('signature', selectedFile);
+
+      await companyAPI.uploadSignature(user.company_id, formData);
+      toast.success('Signature uploaded successfully');
+      onSuccess();
+    } catch (error) {
+      console.error('Error uploading signature:', error);
+      toast.error(error.response?.data?.message || 'Failed to upload signature');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Upload Digital Signature" size="md">
+      <div className="space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Select Signature File (Image or PDF)
+          </label>
+          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gray-400 transition-colors">
+            <div className="space-y-1 text-center">
+              {preview ? (
+                <div className="space-y-3">
+                  <img
+                    src={preview}
+                    alt="Signature preview"
+                    className="mx-auto h-32 w-auto object-contain"
+                  />
+                  <div className="text-sm text-gray-600">
+                    {selectedFile?.name || 'Current signature'}
+                  </div>
+                </div>
+              ) : selectedFile && selectedFile.type === 'application/pdf' ? (
+                <div className="space-y-3">
+                  <FiFile className="mx-auto h-12 w-12 text-gray-400" />
+                  <div className="text-sm text-gray-600">{selectedFile.name}</div>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <FiPenTool className="mx-auto h-12 w-12 text-gray-400" />
+                  <div className="mt-4 flex text-sm text-gray-600">
+                    <label className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500">
+                      <span>Upload a file</span>
+                      <input
+                        type="file"
+                        className="sr-only"
+                        accept="image/*,application/pdf"
+                        onChange={handleFileChange}
+                      />
+                    </label>
+                    <p className="pl-1">or drag and drop</p>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">PNG, JPG, GIF, WEBP, PDF up to 2MB</p>
+                </div>
+              )}
+            </div>
+          </div>
+          {(preview || selectedFile) && (
+            <div className="mt-3">
+              <label className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 text-sm">
+                <span>Change signature</span>
+                <input
+                  type="file"
+                  className="sr-only"
+                  accept="image/*,application/pdf"
+                  onChange={handleFileChange}
+                />
+              </label>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="text-sm text-blue-800">
+            <strong>Note:</strong> Upload a clear image or PDF of your digital signature or DSC. This will be used on invoices and documents.
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-4 border-t">
+          <Button variant="outline" onClick={onClose} disabled={loading}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={loading || !selectedFile}>
+            <FiSave className="h-4 w-4 mr-2" />
+            {loading ? 'Uploading...' : 'Upload Signature'}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// DSC Configuration Modal
+function DSCConfigModal({ isOpen, onClose, company, onSuccess }) {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [certificateType, setCertificateType] = useState('file');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [certificatePassword, setCertificatePassword] = useState('');
+  const [usbTokenProvider, setUsbTokenProvider] = useState('');
+  const [cloudProvider, setCloudProvider] = useState('');
+  const [cloudApiKey, setCloudApiKey] = useState('');
+  const [useForEInvoice, setUseForEInvoice] = useState(true);
+  const [useForEWayBill, setUseForEWayBill] = useState(true);
+
+  const dscConfig = company?.compliance?.dsc || {};
+
+  useEffect(() => {
+    if (company && isOpen) {
+      setCertificateType(dscConfig.certificate_type || 'file');
+      setUsbTokenProvider(dscConfig.usb_token_provider || '');
+      setCloudProvider(dscConfig.cloud_provider || '');
+      setCloudApiKey(dscConfig.cloud_api_key || '');
+      setUseForEInvoice(dscConfig.use_for_einvoice !== false);
+      setUseForEWayBill(dscConfig.use_for_ewaybill !== false);
+      setSelectedFile(null);
+      setCertificatePassword('');
+    }
+  }, [company, isOpen, dscConfig]);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const validTypes = ['.pfx', '.p12', '.cer', '.pem', '.crt'];
+      const ext = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+      if (!validTypes.includes(ext)) {
+        toast.error('Please select a certificate file (.pfx, .p12, .cer, .pem, .crt)');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('File size must be less than 5MB');
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+      // If certificate file is selected, upload it first
+      if (certificateType === 'file' && selectedFile) {
+        const formData = new FormData();
+        formData.append('certificate', selectedFile);
+        formData.append('certificate_type', 'file');
+        if (certificatePassword) {
+          formData.append('certificate_password', certificatePassword);
+        }
+
+        await companyAPI.uploadDSCCertificate(user.company_id, formData);
+      }
+
+      // Update DSC configuration
+      const configData = {
+        certificate_type: certificateType,
+        use_for_einvoice: useForEInvoice,
+        use_for_ewaybill: useForEWayBill,
+      };
+
+      if (certificateType === 'file' && certificatePassword) {
+        configData.certificate_password = certificatePassword;
+      }
+      if (certificateType === 'usb_token') {
+        configData.usb_token_provider = usbTokenProvider;
+      }
+      if (certificateType === 'cloud') {
+        configData.cloud_provider = cloudProvider;
+        configData.cloud_api_key = cloudApiKey;
+      }
+
+      await companyAPI.updateDSCConfig(user.company_id, configData);
+      toast.success('DSC configuration updated successfully');
+      onSuccess();
+    } catch (error) {
+      console.error('Error updating DSC configuration:', error);
+      toast.error(error.response?.data?.message || 'Failed to update DSC configuration');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="DSC Certificate Configuration" size="xl">
+      <div className="space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Certificate Type
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <button
+              type="button"
+              onClick={() => setCertificateType('file')}
+              className={`px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                certificateType === 'file'
+                  ? 'border-primary-500 bg-primary-50 text-primary-700'
+                  : 'border-gray-200 text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="font-semibold mb-1">Certificate File</div>
+              <div className="text-xs">Upload .pfx, .p12, .cer file</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCertificateType('usb_token')}
+              className={`px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                certificateType === 'usb_token'
+                  ? 'border-primary-500 bg-primary-50 text-primary-700'
+                  : 'border-gray-200 text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="font-semibold mb-1">USB Token</div>
+              <div className="text-xs">Use DSC from USB pendrive</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCertificateType('cloud')}
+              className={`px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                certificateType === 'cloud'
+                  ? 'border-primary-500 bg-primary-50 text-primary-700'
+                  : 'border-gray-200 text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="font-semibold mb-1">Cloud Service</div>
+              <div className="text-xs">Third-party DSC service</div>
+            </button>
+          </div>
+        </div>
+
+        {certificateType === 'file' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Upload Certificate File
+            </label>
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gray-400 transition-colors">
+              <div className="space-y-1 text-center">
+                {selectedFile ? (
+                  <div className="space-y-3">
+                    <FiFileText className="mx-auto h-12 w-12 text-gray-400" />
+                    <div className="text-sm text-gray-600">{selectedFile.name}</div>
+                    <div className="text-xs text-gray-500">
+                      {(selectedFile.size / 1024).toFixed(2)} KB
+                    </div>
+                  </div>
+                ) : dscConfig.certificate_filename ? (
+                  <div className="space-y-3">
+                    <FiFileText className="mx-auto h-12 w-12 text-green-400" />
+                    <div className="text-sm text-gray-600">{dscConfig.certificate_filename}</div>
+                    <div className="text-xs text-green-600">Certificate already uploaded</div>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <FiFileText className="mx-auto h-12 w-12 text-gray-400" />
+                    <div className="mt-4 flex text-sm text-gray-600">
+                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500">
+                        <span>Upload certificate</span>
+                        <input
+                          type="file"
+                          className="sr-only"
+                          accept=".pfx,.p12,.cer,.pem,.crt"
+                          onChange={handleFileChange}
+                        />
+                      </label>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">.pfx, .p12, .cer, .pem, .crt up to 5MB</p>
+                  </div>
+                )}
+              </div>
+            </div>
+            {selectedFile && (
+              <div className="mt-3">
+                <label className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 text-sm">
+                  <span>Change certificate</span>
+                  <input
+                    type="file"
+                    className="sr-only"
+                    accept=".pfx,.p12,.cer,.pem,.crt"
+                    onChange={handleFileChange}
+                  />
+                </label>
+              </div>
+            )}
+            <div className="mt-4">
+              <FormInput
+                name="certificate_password"
+                label="Certificate Password (if required)"
+                type="password"
+                value={certificatePassword}
+                onChange={(name, value) => setCertificatePassword(value)}
+                placeholder="Enter certificate password"
+                helperText="Password for .pfx or .p12 certificate files"
+              />
+            </div>
+          </div>
+        )}
+
+        {certificateType === 'usb_token' && (
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="text-sm text-blue-800">
+                <strong>USB Token Instructions:</strong>
+                <ol className="list-decimal list-inside mt-2 space-y-1">
+                  <li>Insert your DSC USB token/pendrive into your computer</li>
+                  <li>Install the DSC provider's software (eMudhra, eSign, etc.)</li>
+                  <li>Install the browser plugin for your DSC provider</li>
+                  <li>When signing documents, the system will prompt you to select the certificate from the USB token</li>
+                  <li>Enter your DSC PIN when prompted</li>
+                </ol>
+              </div>
+            </div>
+            <FormInput
+              name="usb_token_provider"
+              label="DSC Provider (Optional)"
+              value={usbTokenProvider}
+              onChange={(name, value) => setUsbTokenProvider(value)}
+              placeholder="e.g., eMudhra, eSign, Capricorn, SafeNet"
+              helperText="Name of your DSC provider for reference"
+            />
+          </div>
+        )}
+
+        {certificateType === 'cloud' && (
+          <div className="space-y-4">
+            <FormSelect
+              name="cloud_provider"
+              label="Cloud DSC Provider"
+              value={cloudProvider}
+              onChange={(name, value) => setCloudProvider(value)}
+              options={[
+                { value: 'esign', label: 'eSign (eMudhra)' },
+                { value: 'signdesk', label: 'SignDesk' },
+                { value: 'digio', label: 'Digio' },
+                { value: 'other', label: 'Other' },
+              ]}
+              placeholder="Select provider"
+            />
+            <FormInput
+              name="cloud_api_key"
+              label="API Key / Access Token"
+              type="password"
+              value={cloudApiKey}
+              onChange={(name, value) => setCloudApiKey(value)}
+              placeholder="Enter API key from your DSC provider"
+              helperText="Get this from your cloud DSC service provider"
+            />
+          </div>
+        )}
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Use DSC For
+          </label>
+          <div className="space-y-3">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={useForEInvoice}
+                onChange={(e) => setUseForEInvoice(e.target.checked)}
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-sm text-gray-700">E-Invoice Signing</span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={useForEWayBill}
+                onChange={(e) => setUseForEWayBill(e.target.checked)}
+                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-sm text-gray-700">E-Way Bill Signing</span>
+            </label>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-4 border-t">
+          <Button variant="outline" onClick={onClose} disabled={loading}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={loading}>
+            <FiSave className="h-4 w-4 mr-2" />
+            {loading ? 'Saving...' : 'Save Configuration'}
           </Button>
         </div>
       </div>

@@ -7,12 +7,14 @@ import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import Badge from '../../../components/ui/Badge';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
-import { accountingAPI, companyAPI } from '../../../lib/api';
+import { accountingAPI, companyAPI, eInvoiceAPI, eWayBillAPI } from '../../../lib/api';
 import { useApi } from '../../../hooks/useApi';
 import { useAuth } from '../../../contexts/AuthContext';
 import { formatCurrency, formatDate } from '../../../lib/formatters';
 import toast from 'react-hot-toast';
 import { FiArrowLeft, FiPrinter, FiDownload } from 'react-icons/fi';
+import TemplateRenderer from '../../../components/invoices/templates/TemplateRenderer';
+import { generateInvoicePDF, printToPDF } from '../../../lib/pdfService';
 
 export default function VoucherDetail() {
   const router = useRouter();
@@ -28,6 +30,9 @@ export default function VoucherDetail() {
     },
     false
   );
+
+  const [eInvoice, setEInvoice] = useState(null);
+  const [eWayBill, setEWayBill] = useState(null);
 
   // Fetch company information
   useEffect(() => {
@@ -60,6 +65,43 @@ export default function VoucherDetail() {
   }, [id]);
 
   const voucher = data?.voucher || data?.data?.voucher || data;
+
+  // Fetch e-invoice and e-way bill data if available
+  useEffect(() => {
+    const fetchComplianceData = async () => {
+      if (!id || !voucher) return;
+      
+      try {
+        // Fetch e-invoice if voucher type is Sales
+        if (voucher.voucher_type === 'Sales') {
+          try {
+            const einvoiceResponse = await eInvoiceAPI.get(id);
+            if (einvoiceResponse?.data?.eInvoice) {
+              setEInvoice(einvoiceResponse.data.eInvoice);
+            }
+          } catch (err) {
+            // E-invoice might not exist, that's okay
+          }
+
+          // Fetch e-way bill
+          try {
+            const ewaybillResponse = await eWayBillAPI.get(id);
+            if (ewaybillResponse?.data?.eWayBill) {
+              setEWayBill(ewaybillResponse.data.eWayBill);
+            }
+          } catch (err) {
+            // E-way bill might not exist, that's okay
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching compliance data:', err);
+      }
+    };
+
+    if (voucher) {
+      fetchComplianceData();
+    }
+  }, [id, voucher]);
 
   const handlePrint = () => {
     if (!printRef.current) return;
@@ -236,9 +278,25 @@ export default function VoucherDetail() {
     }, 250);
   };
 
-  const handleExportPDF = () => {
-    toast.info('Opening print dialog. Use "Save as PDF" option in your browser.');
-    handlePrint();
+  const handleExportPDF = async () => {
+    if (!printRef.current) {
+      toast.error('Invoice content not available');
+      return;
+    }
+
+    try {
+      toast.loading('Generating PDF...', { id: 'pdf-generate' });
+      const invoiceNumber = voucher?.voucher_number || 'invoice';
+      const printSize = company?.compliance?.invoice_template?.print_size || 'A4';
+      
+      await generateInvoicePDF(printRef.current, invoiceNumber, printSize);
+      toast.success('PDF generated successfully', { id: 'pdf-generate' });
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast.error('Failed to generate PDF. Using print dialog instead.', { id: 'pdf-generate' });
+      // Fallback to print dialog
+      handlePrint();
+    }
   };
 
   if (loading) {
@@ -359,9 +417,27 @@ export default function VoucherDetail() {
             </div>
           }
         >
-          {/* Professional Invoice View */}
+          {/* Professional Invoice View with Template */}
           <Card className="bg-white p-0">
             <div ref={printRef} className="max-w-[210mm] mx-auto bg-white p-5 print:p-0">
+              {voucher && company && (
+                <TemplateRenderer
+                  invoice={{
+                    ...voucher,
+                    eInvoice,
+                    eWayBill,
+                  }}
+                  company={company}
+                  partyLedger={partyLedger}
+                  items={items}
+                />
+              )}
+            </div>
+          </Card>
+
+          {/* Legacy Invoice View - Hidden, kept for reference */}
+          <div className="hidden">
+            <div className="max-w-[210mm] mx-auto bg-white p-5 print:p-0">
               {/* Header Section */}
               <div className="border-b-2 border-black pb-4 mb-5">
                 <div className="flex justify-between mb-4">

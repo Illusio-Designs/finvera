@@ -95,8 +95,121 @@ const uploadProfile = multer({
   fileFilter: imageFilter,
 });
 
+// Company logo storage configuration
+const companyLogoStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const tenantId = req.tenant_id || 'default';
+    const companyDir = path.join(uploadDir, tenantId, 'company');
+    
+    if (!fs.existsSync(companyDir)) {
+      fs.mkdirSync(companyDir, { recursive: true });
+    }
+    
+    cb(null, companyDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, `logo-${uniqueSuffix}${ext}`);
+  },
+});
+
+// Company DSC/Signature storage configuration
+const companySignatureStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const tenantId = req.tenant_id || 'default';
+    const companyDir = path.join(uploadDir, tenantId, 'company');
+    
+    if (!fs.existsSync(companyDir)) {
+      fs.mkdirSync(companyDir, { recursive: true });
+    }
+    
+    cb(null, companyDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, `signature-${uniqueSuffix}${ext}`);
+  },
+});
+
+// Signature file filter (images and PDFs)
+const signatureFilter = (req, file, cb) => {
+  const allowedTypes = /jpeg|jpg|png|gif|webp|pdf/;
+  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = allowedTypes.test(file.mimetype);
+
+  if (mimetype && extname) {
+    return cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only images and PDFs are allowed for signatures.'));
+  }
+};
+
+// DSC Certificate storage configuration
+const dscCertificateStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const tenantId = req.tenant_id || 'default';
+    const companyDir = path.join(uploadDir, tenantId, 'company', 'dsc');
+    
+    if (!fs.existsSync(companyDir)) {
+      fs.mkdirSync(companyDir, { recursive: true });
+    }
+    
+    cb(null, companyDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, `dsc-cert-${uniqueSuffix}${ext}`);
+  },
+});
+
+// DSC Certificate file filter (.pfx, .p12, .cer, .pem)
+const dscCertificateFilter = (req, file, cb) => {
+  const allowedTypes = /pfx|p12|cer|pem|crt|key/;
+  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = /application\/x-pkcs12|application\/pkcs12|application\/x-x509-ca-cert|application\/x-pem-file|application\/octet-stream/.test(file.mimetype);
+
+  if ((mimetype || extname) && extname) {
+    return cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only certificate files (.pfx, .p12, .cer, .pem) are allowed.'));
+  }
+};
+
+// Company logo upload configuration
+const uploadCompanyLogo = multer({
+  storage: companyLogoStorage,
+  limits: {
+    fileSize: parseInt(process.env.MAX_COMPANY_LOGO_SIZE) || 2 * 1024 * 1024, // 2MB default for company logos
+  },
+  fileFilter: imageFilter,
+});
+
+// Company signature/DSC upload configuration
+const uploadCompanySignature = multer({
+  storage: companySignatureStorage,
+  limits: {
+    fileSize: parseInt(process.env.MAX_SIGNATURE_SIZE) || 2 * 1024 * 1024, // 2MB default for signatures
+  },
+  fileFilter: signatureFilter,
+});
+
+// DSC Certificate upload configuration
+const uploadDSCCertificate = multer({
+  storage: dscCertificateStorage,
+  limits: {
+    fileSize: parseInt(process.env.MAX_DSC_CERT_SIZE) || 5 * 1024 * 1024, // 5MB default for DSC certificates
+  },
+  fileFilter: dscCertificateFilter,
+});
+
 module.exports = {
   upload,
   uploadProfile,
+  uploadCompanyLogo,
+  uploadCompanySignature,
+  uploadDSCCertificate,
   uploadDir,
 };

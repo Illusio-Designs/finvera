@@ -2,7 +2,12 @@
  * Get the base URL for uploads/images
  */
 export const getUploadsBaseUrl = () => {
-  // Check for explicit uploads base URL in env
+  // Check for explicit upload URL in env (e.g., http://localhost:3000/upload)
+  if (process.env.NEXT_PUBLIC_UPLOAD_URL) {
+    return process.env.NEXT_PUBLIC_UPLOAD_URL;
+  }
+  
+  // Check for explicit uploads base URL in env (legacy support)
   if (process.env.NEXT_PUBLIC_UPLOADS_BASE_URL) {
     return process.env.NEXT_PUBLIC_UPLOADS_BASE_URL;
   }
@@ -28,9 +33,19 @@ export const getImageUrl = (imagePath) => {
   // Remove leading slash if present
   const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
   
-  // Construct full URL
+  // Get base URL
   const baseUrl = getUploadsBaseUrl();
-  return `${baseUrl}/uploads/${cleanPath}`;
+  
+  // If NEXT_PUBLIC_UPLOAD_URL is set, it should already include the path prefix
+  // Otherwise, append /uploads/ to the base URL
+  if (process.env.NEXT_PUBLIC_UPLOAD_URL) {
+    // Base URL already includes the upload path (e.g., http://localhost:3000/upload)
+    // Just append the image path
+    return `${baseUrl}/${cleanPath}`;
+  } else {
+    // Legacy: append /uploads/ to base URL
+    return `${baseUrl}/uploads/${cleanPath}`;
+  }
 };
 
 /**

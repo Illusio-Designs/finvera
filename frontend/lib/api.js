@@ -125,6 +125,30 @@ export const companyAPI = {
   create: (data) => api.post("/companies", data),
   get: (id) => api.get(`/companies/${id}`),
   update: (id, data) => api.put(`/companies/${id}`, data),
+  uploadLogo: (id, formData) => {
+    return api.post(`/companies/${id}/upload-logo`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+  uploadSignature: (id, formData) => {
+    return api.post(`/companies/${id}/upload-signature`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+  uploadDSCCertificate: (id, formData) => {
+    return api.post(`/companies/${id}/upload-dsc-certificate`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+  updateDSCConfig: (id, data) => {
+    return api.put(`/companies/${id}/dsc-config`, data);
+  },
 };
 
 export const hsnAPI = {
@@ -566,6 +590,10 @@ export const finboxAPI = {
   
   // Session Token
   generateSessionToken: (data) => api.post("/finbox/session", data),
+  
+  // Consent
+  saveConsent: (data) => api.post("/finbox/consent", data),
+  getConsent: () => api.get("/finbox/consent"),
 };
 
 // Legacy Client API (for backward compatibility)

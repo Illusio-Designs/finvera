@@ -45,21 +45,46 @@ export default function WebsiteHeader() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-6">
             <Link href="/" className="text-gray-700 hover:text-primary-600 transition font-medium">
               Home
             </Link>
             <Link href="/features" className="text-gray-700 hover:text-primary-600 transition font-medium">
               Features
             </Link>
+            <Link href="/invoice-templates" className="text-gray-700 hover:text-primary-600 transition font-medium">
+              Templates
+            </Link>
+            <Link href="/use-cases" className="text-gray-700 hover:text-primary-600 transition font-medium">
+              Use Cases
+            </Link>
             <Link href="/pricing" className="text-gray-700 hover:text-primary-600 transition font-medium">
               Pricing
             </Link>
+            <div className="relative group">
+              <button className="text-gray-700 hover:text-primary-600 transition font-medium flex items-center gap-1">
+                Support
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                <Link href="/help" className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition">
+                  Help Center
+                </Link>
+                <Link href="/docs" className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition">
+                  Documentation
+                </Link>
+                <Link href="/contact" className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition">
+                  Contact
+                </Link>
+              </div>
+            </div>
             <Link href="/about" className="text-gray-700 hover:text-primary-600 transition font-medium">
               About
             </Link>
-            <Link href="/contact" className="text-gray-700 hover:text-primary-600 transition font-medium">
-              Contact
+            <Link href="/integrations" className="text-gray-700 hover:text-primary-600 transition font-medium">
+              Integrations
             </Link>
           </div>
 
@@ -99,8 +124,23 @@ export default function WebsiteHeader() {
             <Link href="/features" className="block text-gray-700 hover:text-primary-600 transition font-medium">
               Features
             </Link>
+            <Link href="/invoice-templates" className="block text-gray-700 hover:text-primary-600 transition font-medium">
+              Templates
+            </Link>
+            <Link href="/use-cases" className="block text-gray-700 hover:text-primary-600 transition font-medium">
+              Use Cases
+            </Link>
             <Link href="/pricing" className="block text-gray-700 hover:text-primary-600 transition font-medium">
               Pricing
+            </Link>
+            <Link href="/integrations" className="block text-gray-700 hover:text-primary-600 transition font-medium">
+              Integrations
+            </Link>
+            <Link href="/help" className="block text-gray-700 hover:text-primary-600 transition font-medium">
+              Help Center
+            </Link>
+            <Link href="/docs" className="block text-gray-700 hover:text-primary-600 transition font-medium">
+              Documentation
             </Link>
             <Link href="/about" className="block text-gray-700 hover:text-primary-600 transition font-medium">
               About

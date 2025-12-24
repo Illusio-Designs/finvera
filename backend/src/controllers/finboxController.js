@@ -193,6 +193,134 @@ module.exports = {
   },
 
   /**
+   * Save user consent for FinBox services
+   * POST /finbox/consent
+   */
+  async saveConsent(req, res, next) {
+    try {
+      const userId = req.user_id || req.user?.id || req.user?.sub;
+      const companyId = req.company?.id || req.user?.company_id;
+      
+      if (!userId) {
+        return res.status(401).json({ 
+          success: false,
+          message: 'User not authenticated' 
+        });
+      }
+
+      const {
+        credit_score_consent,
+        bank_statement_consent,
+        data_sharing_consent,
+        terms_conditions_consent,
+        privacy_policy_consent,
+      } = req.body;
+
+      // Validate that all consents are provided
+      if (
+        credit_score_consent === undefined ||
+        bank_statement_consent === undefined ||
+        data_sharing_consent === undefined ||
+        terms_conditions_consent === undefined ||
+        privacy_policy_consent === undefined
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: 'All consent fields are required'
+        });
+      }
+
+      const { FinBoxConsent } = req.tenantModels;
+
+      // Check if consent already exists for this user
+      let consent = await FinBoxConsent.findOne({
+        where: {
+          user_id: userId,
+          is_active: true,
+        },
+      });
+
+      const consentData = {
+        credit_score_consent: Boolean(credit_score_consent),
+        bank_statement_consent: Boolean(bank_statement_consent),
+        data_sharing_consent: Boolean(data_sharing_consent),
+        terms_conditions_consent: Boolean(terms_conditions_consent),
+        privacy_policy_consent: Boolean(privacy_policy_consent),
+        consent_data: {
+          timestamp: new Date().toISOString(),
+          ip_address: req.ip || req.connection.remoteAddress,
+          user_agent: req.get('user-agent'),
+        },
+      };
+
+      if (consent) {
+        // Update existing consent
+        await consent.update({
+          ...consentData,
+          company_id: companyId,
+        });
+      } else {
+        // Create new consent
+        consent = await FinBoxConsent.create({
+          user_id: userId,
+          company_id: companyId,
+          ...consentData,
+        });
+      }
+
+      res.json({
+        success: true,
+        data: consent,
+        message: 'Consent saved successfully',
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Get user consent for FinBox services
+   * GET /finbox/consent
+   */
+  async getConsent(req, res, next) {
+    try {
+      const userId = req.user_id || req.user?.id || req.user?.sub;
+      
+      if (!userId) {
+        return res.status(401).json({ 
+          success: false,
+          message: 'User not authenticated' 
+        });
+      }
+
+      const { FinBoxConsent } = req.tenantModels;
+
+      const consent = await FinBoxConsent.findOne({
+        where: {
+          user_id: userId,
+          is_active: true,
+        },
+        order: [['createdAt', 'DESC']],
+      });
+
+      if (!consent) {
+        return res.json({
+          success: true,
+          data: null,
+          message: 'No consent found',
+        });
+      }
+
+      res.json({
+        success: true,
+        data: consent,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
    * Get bank statement status
    * GET /finbox/bank-statement/:customer_id/status
    */

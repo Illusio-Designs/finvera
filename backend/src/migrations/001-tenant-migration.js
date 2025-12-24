@@ -350,6 +350,31 @@ module.exports = {
         createdAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
         updatedAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
       });
+    } else {
+      // Check if debit_amount and credit_amount columns exist, add them if missing
+      try {
+        const tableDesc = await queryInterface.describeTable('voucher_ledger_entries');
+        
+        if (!tableDesc.debit_amount) {
+          await queryInterface.addColumn('voucher_ledger_entries', 'debit_amount', {
+            type: Sequelize.DECIMAL(15, 2),
+            defaultValue: 0,
+            allowNull: false,
+          });
+          console.log('✓ Added debit_amount column to voucher_ledger_entries');
+        }
+        
+        if (!tableDesc.credit_amount) {
+          await queryInterface.addColumn('voucher_ledger_entries', 'credit_amount', {
+            type: Sequelize.DECIMAL(15, 2),
+            defaultValue: 0,
+            allowNull: false,
+          });
+          console.log('✓ Added credit_amount column to voucher_ledger_entries');
+        }
+      } catch (error) {
+        console.log(`⚠️  Could not check/add columns to voucher_ledger_entries: ${error.message}`);
+      }
     }
 
     // ============================================
@@ -1158,10 +1183,99 @@ module.exports = {
       console.log(`⚠️  Could not create default ledgers: ${error.message}`);
       // Don't fail migration if default ledgers fail
     }
+
+    // Create finbox_consents table
+    try {
+      const [consentsTable] = await queryInterface.sequelize.query(`
+        SELECT COUNT(*) as count FROM information_schema.tables 
+        WHERE table_schema = DATABASE() AND table_name = 'finbox_consents'
+      `);
+      
+      if (consentsTable[0].count === 0) {
+        await queryInterface.createTable('finbox_consents', {
+          id: {
+            type: Sequelize.UUID,
+            defaultValue: Sequelize.UUIDV4,
+            primaryKey: true,
+          },
+          user_id: {
+            type: Sequelize.UUID,
+            allowNull: false,
+            comment: 'User ID who provided the consent',
+          },
+          company_id: {
+            type: Sequelize.UUID,
+            allowNull: true,
+            comment: 'Company ID (from master database)',
+          },
+          credit_score_consent: {
+            type: Sequelize.BOOLEAN,
+            defaultValue: false,
+            comment: 'Consent for FinBox to access credit score from credit bureaus',
+          },
+          bank_statement_consent: {
+            type: Sequelize.BOOLEAN,
+            defaultValue: false,
+            comment: 'Consent to share bank statement data through Account Aggregator',
+          },
+          data_sharing_consent: {
+            type: Sequelize.BOOLEAN,
+            defaultValue: false,
+            comment: 'Consent to share financial data with FinBox and lending partners',
+          },
+          terms_conditions_consent: {
+            type: Sequelize.BOOLEAN,
+            defaultValue: false,
+            comment: 'Consent to Terms & Conditions',
+          },
+          privacy_policy_consent: {
+            type: Sequelize.BOOLEAN,
+            defaultValue: false,
+            comment: 'Consent to Privacy Policy',
+          },
+          consent_data: {
+            type: Sequelize.JSON,
+            allowNull: true,
+            comment: 'Additional consent metadata (timestamp, IP, etc.)',
+          },
+          is_active: {
+            type: Sequelize.BOOLEAN,
+            defaultValue: true,
+            comment: 'Whether this consent record is currently active',
+          },
+          createdAt: {
+            type: Sequelize.DATE,
+            allowNull: false,
+            defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+          },
+          updatedAt: {
+            type: Sequelize.DATE,
+            allowNull: false,
+            defaultValue: Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
+          },
+        });
+
+        // Add indexes
+        await queryInterface.addIndex('finbox_consents', ['user_id'], {
+          name: 'idx_finbox_consents_user_id',
+        });
+        await queryInterface.addIndex('finbox_consents', ['company_id'], {
+          name: 'idx_finbox_consents_company_id',
+        });
+
+        console.log('✅ Created finbox_consents table');
+      } else {
+        console.log('ℹ️  finbox_consents table already exists');
+      }
+    } catch (error) {
+      console.log(`⚠️  Could not create finbox_consents table: ${error.message}`);
+      // Don't fail migration if table creation fails
+    }
   },
 
   async down(queryInterface, Sequelize) {
     // Drop tables in reverse order
+    await queryInterface.dropTable('finbox_consents');
     await queryInterface.dropTable('audit_logs');
     await queryInterface.dropTable('warehouse_stocks');
     await queryInterface.dropTable('warehouses');

@@ -94,6 +94,11 @@ models.Company = masterSequelize.define('Company', {
     allowNull: true,
     validate: { isEmail: true },
   },
+  logo_url: {
+    type: DataTypes.STRING(500),
+    allowNull: true,
+    comment: 'URL path to company logo image',
+  },
 
   // Director/Partner/Proprietor Information (store as JSON array)
   principals: {

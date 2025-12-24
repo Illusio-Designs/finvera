@@ -194,6 +194,13 @@ export default function AdminProfile() {
         name: updatedUser.name,
       });
 
+      // Update image preview to show the uploaded image
+      if (updatedUser.profile_image) {
+        const imageUrl = getProfileImageUrl(updatedUser.profile_image);
+        setImagePreview(imageUrl);
+        setImageError(false);
+      }
+
       setSelectedImage(null);
       toast.success('Profile image updated successfully');
     } catch (error) {

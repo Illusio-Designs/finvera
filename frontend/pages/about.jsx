@@ -2,7 +2,7 @@ import Head from 'next/head';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
-import { FiTarget, FiUsers, FiAward, FiTrendingUp } from 'react-icons/fi';
+import { FiTarget, FiUsers, FiAward, FiTrendingUp, FiShield, FiLink, FiCheck } from 'react-icons/fi';
 
 export default function AboutPage() {
   return (
@@ -92,8 +92,64 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* Stats Section */}
+        {/* Partnerships Section */}
+        <section className="py-20 bg-gradient-to-br from-primary-50 via-white to-primary-100">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+                Partnered with
+              </h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                Trusted integrations and partnerships for seamless business operations
+              </p>
+            </div>
+            <div className="grid md:grid-cols-4 lg:grid-cols-7 gap-6 max-w-7xl mx-auto">
+              {['Tally', 'Sandbox API', 'FinBox', 'GST Portal', 'E-Invoice Portal', 'E-Way Bill Portal', 'Payment Gateways'].map((partner) => (
+                <div key={partner} className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition border border-gray-200 text-center">
+                  <div className="h-16 flex items-center justify-center mb-3">
+                    <span className="text-xl font-bold text-gray-400">{partner}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Security & Trust Section */}
         <section className="py-20 bg-white">
+          <div className="container mx-auto px-6">
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-12">
+                <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+                  Security & Trust
+                </h2>
+                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                  Your data security is our top priority
+                </p>
+              </div>
+              <div className="grid md:grid-cols-3 gap-8">
+                <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-lg border border-primary-100 text-center">
+                  <FiShield className="text-5xl text-primary-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">Bank-Level Security</h3>
+                  <p className="text-gray-600">256-bit encryption and industry-standard security practices</p>
+                </div>
+                <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-lg border border-primary-100 text-center">
+                  <FiAward className="text-5xl text-primary-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">Compliance</h3>
+                  <p className="text-gray-600">GDPR compliant and data protection regulations</p>
+                </div>
+                <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-lg border border-primary-100 text-center">
+                  <FiCheck className="text-5xl text-primary-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">Reliability</h3>
+                  <p className="text-gray-600">99.9% uptime guarantee with automated backups</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Stats Section */}
+        <section className="py-20 bg-gradient-to-br from-primary-50 via-white to-primary-100">
           <div className="container mx-auto px-6">
             <div className="grid md:grid-cols-4 gap-8 max-w-6xl mx-auto">
               <div className="text-center">
