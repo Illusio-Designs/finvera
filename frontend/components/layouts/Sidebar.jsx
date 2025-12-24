@@ -44,7 +44,7 @@ export default function Sidebar({ items = [], isOpen = true, onClose, isCollapse
       const buttonContent = (
         <button
           onClick={() => toggleExpand(item.label)}
-          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors text-sm font-medium ${
+          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors text-sm font-normal ${
             isActiveState
               ? 'bg-white/20 text-white'
               : 'text-white hover:bg-white/10'
@@ -90,7 +90,7 @@ export default function Sidebar({ items = [], isOpen = true, onClose, isCollapse
                         onClick={() => toggleExpand(`${item.label}-${child.label}`)}
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
                           childIsActiveState
-                            ? 'bg-white/20 text-white font-medium'
+                            ? 'bg-white/20 text-white font-normal'
                             : 'text-white/80 hover:bg-white/10'
                         }`}
                       >
@@ -114,7 +114,7 @@ export default function Sidebar({ items = [], isOpen = true, onClose, isCollapse
                                 href={grandChild.href}
                                 className={`flex items-center px-3 py-2 rounded-lg text-sm transition-colors ${
                                   grandChildIsActive
-                                    ? 'bg-white/25 text-white font-medium'
+                                    ? 'bg-white/25 text-white font-normal'
                                     : 'text-white/70 hover:bg-white/10'
                                 }`}
                               >
@@ -141,7 +141,7 @@ export default function Sidebar({ items = [], isOpen = true, onClose, isCollapse
                     href={child.href}
                     className={`flex items-center px-3 py-2 rounded-lg text-sm transition-colors ${
                       childIsActive
-                        ? 'bg-white/20 text-white font-medium'
+                        ? 'bg-white/20 text-white font-normal'
                         : 'text-white/80 hover:bg-white/10'
                     }`}
                   >
@@ -166,7 +166,7 @@ export default function Sidebar({ items = [], isOpen = true, onClose, isCollapse
     const linkContent = (
       <Link
         href={item.href || '#'}
-        className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+        className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-normal transition-colors ${
           linkIsActive
             ? 'bg-white/20 text-white'
             : 'text-white hover:bg-white/10'
@@ -250,7 +250,7 @@ export default function Sidebar({ items = [], isOpen = true, onClose, isCollapse
               ) : (
                 <>
                   <FiChevronLeft className="h-5 w-5 flex-shrink-0" />
-                  <span className="text-sm font-medium">Collapse</span>
+                  <span className="text-sm font-normal">Collapse</span>
                 </>
               )}
             </button>

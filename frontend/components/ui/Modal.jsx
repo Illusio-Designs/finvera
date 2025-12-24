@@ -16,26 +16,27 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', c
   if (!isOpen) return null;
 
   const sizes = {
-    sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
+    sm: 'max-w-sm',
+    md: 'max-w-md',
+    lg: 'max-w-lg',
+    xl: 'max-w-xl',
     full: 'max-w-full mx-4',
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Background overlay */}
+    <div className="fixed inset-0 z-[9999] overflow-y-auto">
+      {/* Background overlay - covers everything including header with low opacity */}
       <div
-        className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+        className="fixed inset-0 bg-gray-900 bg-opacity-40 transition-opacity"
         onClick={onClose}
+        aria-hidden="true"
       ></div>
 
       {/* Modal container - centered using flexbox */}
-      <div className="flex min-h-full items-center justify-center p-4">
+      <div className="flex min-h-full items-center justify-center p-4 pointer-events-none">
         {/* Modal panel */}
         <div
-          className={`relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all w-full ${sizes[size]} ${className}`}
+          className={`relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all w-full pointer-events-auto ${sizes[size]} ${className}`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -56,7 +57,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', c
           )}
 
           {/* Content */}
-          <div className="px-6 py-4 max-h-[calc(100vh-12rem)] overflow-y-auto">{children}</div>
+          <div className="px-6 py-4 max-h-[calc(100vh-12rem)] overflow-y-auto scrollbar-hide">{children}</div>
         </div>
       </div>
     </div>
