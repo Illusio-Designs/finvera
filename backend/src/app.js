@@ -61,7 +61,19 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Company-Id'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With', 
+    'X-Company-Id',
+    'Accept',
+    'Origin',
+    'Access-Control-Request-Method',
+    'Access-Control-Request-Headers',
+    'X-Encrypt-Response'
+  ],
+  exposedHeaders: ['Content-Type', 'Authorization'],
+  preflightContinue: false,
 };
 app.use(cors(corsOptions));
 
@@ -86,8 +98,8 @@ const limiter = rateLimit({
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   skip: (req) => {
-    // Skip rate limiting for health check
-    return req.path === '/health';
+    // Skip rate limiting for health check and OPTIONS (preflight) requests
+    return req.path === '/health' || req.method === 'OPTIONS';
   },
 });
 app.use('/api/', limiter);
@@ -110,6 +122,39 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Input sanitization
 app.use(sanitizeInput);
+
+// Explicit OPTIONS handler middleware for /api routes to handle preflight requests
+// This must be BEFORE routes to catch preflight requests
+app.use('/api', (req, res, next) => {
+  // Handle OPTIONS (preflight) requests
+  if (req.method === 'OPTIONS') {
+    const origin = req.headers.origin;
+    if (origin) {
+      // Check if origin is allowed using the same logic as CORS
+      corsOptions.origin(origin, (err, allowed) => {
+        if (allowed) {
+          res.header('Access-Control-Allow-Origin', origin);
+          res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+          res.header('Access-Control-Allow-Headers', corsOptions.allowedHeaders.join(', '));
+          res.header('Access-Control-Allow-Credentials', 'true');
+          res.header('Access-Control-Max-Age', '86400'); // 24 hours
+          return res.sendStatus(200);
+        } else {
+          return res.sendStatus(403);
+        }
+      });
+    } else {
+      // No origin header, allow it
+      res.header('Access-Control-Allow-Origin', '*');
+      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+      res.header('Access-Control-Allow-Headers', corsOptions.allowedHeaders.join(', '));
+      return res.sendStatus(200);
+    }
+  } else {
+    // Not an OPTIONS request, continue to next middleware
+    next();
+  }
+});
 
 // Payload encryption/decryption (optional - activates when client sends encrypted data)
 app.use('/api', decryptRequest, encryptResponse);
