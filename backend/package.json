@@ -4,8 +4,8 @@
   "description": "Multi-tenant accounting SaaS backend",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "node --max-old-space-size=4096 --expose-gc server.js",
+    "dev": "nodemon --exec \"node --max-old-space-size=4096 --expose-gc\" server.js",
     "migrate": "sequelize db:migrate",
     "migrate:undo": "sequelize db:migrate:undo",
     "seed": "sequelize db:seed:all",

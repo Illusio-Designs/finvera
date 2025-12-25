@@ -157,42 +157,42 @@
 
 ### Backend Setup
 
-```bash
+   ```bash
 # Clone repository
 git clone https://github.com/Illusio-Designs/finvera.git
 cd finvera/backend
 
 # Install dependencies
-npm install
+   npm install
 
 # Configure environment
-cp .env.example .env
+   cp .env.example .env
 # Edit .env with your configuration
 
 # Setup database
-npm run migrate
-npm run seed
+   npm run migrate
+   npm run seed
 
 # Start development server
-npm run dev
-```
+   npm run dev
+   ```
 
 ### Frontend Setup
 
-```bash
+   ```bash
 # Navigate to frontend
 cd ../frontend
 
 # Install dependencies
-npm install
+   npm install
 
 # Configure environment
-cp .env.example .env
+   cp .env.example .env
 # Edit .env with your configuration
 
 # Start development server
-npm run dev
-```
+   npm run dev
+   ```
 
 Visit `http://localhost:3001` to see the application.
 
