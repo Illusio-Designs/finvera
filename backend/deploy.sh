@@ -20,7 +20,7 @@ FTP_SERVER="ftp.illusiodesigns.agency"
 FTP_USER="finvera@illusiodesigns.agency"
 FTP_PASS="Rishi@1995"
 REMOTE_BUILD_DIR="build"
-LOCAL_STAGING="staging"
+# Removed LOCAL_STAGING - using direct upload now
 
 echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${CYAN}║                                                            ║${NC}"
@@ -29,15 +29,7 @@ echo -e "${CYAN}║                                                            �
 echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-# Cleanup function
-cleanup() {
-    if [ -d "$LOCAL_STAGING" ]; then
-        echo -e "\n${YELLOW}Cleaning up local staging...${NC}"
-        rm -rf "$LOCAL_STAGING"
-        echo -e "${GREEN}✓${NC} Cleanup done"
-    fi
-}
-trap cleanup EXIT
+# No cleanup needed - direct upload
 
 echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
 echo -e "${BLUE}Configuration:${NC}"
@@ -79,10 +71,10 @@ fi
 echo ""
 
 # ============================================================================
-# STEP 2: PREPARE LOCAL STAGING
+# STEP 2: VALIDATE SOURCE FILES
 # ============================================================================
 echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║  STEP 2: Preparing Local Files                            ║${NC}"
+echo -e "${CYAN}║  STEP 2: Validating Source Files                          ║${NC}"
 echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -93,32 +85,33 @@ if [ ! -f "server.js" ] || [ ! -f "package.json" ]; then
 fi
 echo -e "${GREEN}✓${NC} Source directory validated"
 
-# Create staging
-echo -e "${YELLOW}Creating local staging directory...${NC}"
-rm -rf "$LOCAL_STAGING"
-mkdir -p "$LOCAL_STAGING"
+# Count files that will be uploaded (excluding unwanted files)
+LOCAL_FILE_COUNT=$(find . -type f \
+  ! -path "./node_modules/*" \
+  ! -path "./.git/*" \
+  ! -path "./uploads/*" \
+  ! -path "./staging/*" \
+  ! -path "./build/*" \
+  ! -path "./deploy-package/*" \
+  ! -path "./.vscode/*" \
+  ! -path "./.idea/*" \
+  ! -path "./.cursor/*" \
+  ! -name "package-lock.json" \
+  ! -name ".env*" \
+  ! -name "*.log" \
+  ! -name ".ftpconfig" \
+  ! -name "BUILD.zip" \
+  ! -name "PRODUCTION-READY.tar.gz" \
+  ! -name "finvera-backend.tar.gz" \
+  ! -name "deploy*.sh" \
+  ! -name "deploy*.log" \
+  ! -name "deploy*.txt" \
+  ! -name "setup-server.sh" \
+  ! -name "test-ftp.sh" \
+  ! -name "*.md" \
+  2>/dev/null | wc -l)
 
-# Copy all files
-echo -e "${YELLOW}Copying files to staging...${NC}"
-cp -r * "$LOCAL_STAGING/" 2>/dev/null || true
-cp -r .[!.]* "$LOCAL_STAGING/" 2>/dev/null || true
-
-# Apply exclusions
-echo -e "${YELLOW}Applying exclusions...${NC}"
-cd "$LOCAL_STAGING"
-
-rm -rf node_modules .git uploads staging build deploy-package
-rm -rf .vscode .idea .cursor
-rm -f package-lock.json .env* *.log .ftpconfig
-rm -f BUILD.zip PRODUCTION-READY.tar.gz finvera-backend.tar.gz
-rm -f deploy*.sh deploy*.log deploy*.txt setup-server.sh test-ftp.sh
-find . -name "*.md" -type f -delete
-
-cd ..
-
-LOCAL_FILE_COUNT=$(find "$LOCAL_STAGING" -type f | wc -l)
-echo -e "${GREEN}✓${NC} Files prepared: ${CYAN}$LOCAL_FILE_COUNT${NC}"
-echo -e "${GREEN}✓${NC} Exclusions applied"
+echo -e "${GREEN}✓${NC} Files to upload: ${CYAN}$LOCAL_FILE_COUNT${NC}"
 echo ""
 
 # ============================================================================
@@ -178,7 +171,29 @@ cd $REMOTE_BUILD_DIR;
 mirror --reverse --delete --verbose --parallel=3 \
   --exclude-glob .DS_Store \
   --exclude-glob Thumbs.db \
-  $LOCAL_STAGING/ ./;
+  --exclude-glob 'node_modules/**' \
+  --exclude-glob '.git/**' \
+  --exclude-glob 'uploads/**' \
+  --exclude-glob 'staging/**' \
+  --exclude-glob 'build/**' \
+  --exclude-glob 'deploy-package/**' \
+  --exclude-glob '.vscode/**' \
+  --exclude-glob '.idea/**' \
+  --exclude-glob '.cursor/**' \
+  --exclude-glob 'package-lock.json' \
+  --exclude-glob '.env*' \
+  --exclude-glob '*.log' \
+  --exclude-glob '.ftpconfig' \
+  --exclude-glob 'BUILD.zip' \
+  --exclude-glob 'PRODUCTION-READY.tar.gz' \
+  --exclude-glob 'finvera-backend.tar.gz' \
+  --exclude-glob 'deploy*.sh' \
+  --exclude-glob 'deploy*.log' \
+  --exclude-glob 'deploy*.txt' \
+  --exclude-glob 'setup-server.sh' \
+  --exclude-glob 'test-ftp.sh' \
+  --exclude-glob '*.md' \
+  . .;
 bye;
 "
 
