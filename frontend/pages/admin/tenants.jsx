@@ -394,21 +394,15 @@ export default function TenantsList() {
                 disabled={modalMode === 'edit'}
               />
 
-              <FormInput
+              <FormPhoneInput
                 name="phone"
                 label="Phone"
-                type="tel"
                 value={formData.phone}
-                onChange={(name, value) => {
-                  // Only allow digits
-                  const digitsOnly = value.replace(/\D/g, '');
-                  handleChange(name, digitsOnly);
-                }}
+                onChange={handleChange}
                 error={formErrors.phone}
                 touched={!!formErrors.phone}
                 required
-                placeholder="10 digits"
-                maxLength={10}
+                defaultCountry="IN"
               />
 
               {modalMode === 'create' && (

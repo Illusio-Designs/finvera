@@ -5,6 +5,7 @@ import PageLayout from '../../components/layouts/PageLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import FormInput from '../../components/forms/FormInput';
+import FormPhoneInput from '../../components/forms/FormPhoneInput';
 import FormTextarea from '../../components/forms/FormTextarea';
 import DataTable from '../../components/tables/DataTable';
 import { accountingAPI } from '../../lib/api';
@@ -320,13 +321,14 @@ export default function WarehousesPage() {
                     placeholder="Enter contact person name"
                   />
 
-                  <FormInput
+                  <FormPhoneInput
                     name="contact_phone"
                     label="Contact Phone"
                     value={formData.contact_phone}
                     onChange={(name, value) => handleChange(name, value)}
                     error={errors.contact_phone}
-                    placeholder="Enter contact phone"
+                    touched={!!errors.contact_phone}
+                    defaultCountry="IN"
                   />
 
                   <FormInput
