@@ -14,10 +14,14 @@ const sequelize = new Sequelize(
     dialect: 'mysql',
     logging: process.env.NODE_ENV === 'development' ? (msg) => logger.debug(msg) : false,
     pool: {
-      max: 5,
+      max: 3,
       min: 0,
       acquire: 30000,
       idle: 10000,
+      evict: 1000,
+    },
+    dialectOptions: {
+      connectTimeout: 60000,
     },
   },
 );
@@ -34,11 +38,23 @@ async function initDatabase() {
       port: process.env.DB_PORT || 3306,
       dialect: 'mysql',
       logging: false,
+      pool: {
+        max: 1,
+        min: 0,
+        acquire: 30000,
+        idle: 10000,
+      },
     });
 
     // Create main database if it doesn't exist
     await rootConnection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
     await rootConnection.close();
+    
+    // Allow memory to be freed
+    if (global.gc) {
+      global.gc();
+    }
+    await new Promise(resolve => setTimeout(resolve, 50));
     
     logger.info(`Main database '${dbName}' ready`);
 

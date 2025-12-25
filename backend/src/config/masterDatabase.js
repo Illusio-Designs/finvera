@@ -20,10 +20,14 @@ const masterSequelize = new Sequelize(
     dialect: 'mysql',
     logging: process.env.NODE_ENV === 'development' ? (msg) => logger.debug(msg) : false,
     pool: {
-      max: 10,
-      min: 2,
+      max: 3,
+      min: 0,
       acquire: 30000,
       idle: 10000,
+      evict: 1000,
+    },
+    dialectOptions: {
+      connectTimeout: 60000,
     },
   },
 );
@@ -67,8 +71,20 @@ async function initMasterDatabase() {
     logger.info('  ✓ tds_sections (shared TDS sections)');
     logger.info('  ✓ accounting_years (shared accounting periods)');
 
+    // Allow memory to be freed
+    if (global.gc) {
+      global.gc();
+    }
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
     // Seed default data using consolidated seeder
     await seedMasterData();
+    
+    // Allow memory to be freed
+    if (global.gc) {
+      global.gc();
+    }
+    await new Promise(resolve => setTimeout(resolve, 50));
     
     // Also run the consolidated admin-master seeder for master DB parts
     await runMasterSeeder();

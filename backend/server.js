@@ -16,16 +16,39 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // Test database connection
 async function startServer() {
   try {
+    // Force garbage collection if available
+    if (global.gc) {
+      global.gc();
+    }
+    
     logger.info('🔄 Initializing databases...');
     
     // 1. Initialize Master Database (for tenant metadata)
     logger.info('📦 Setting up master database for tenant metadata...');
     await initMasterDatabase();
     
+    // Allow memory to be freed
+    if (global.gc) {
+      global.gc();
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     // 2. Initialize Main Database (for admin, salesman, distributor, etc.)
     logger.info('📦 Setting up main database for system models...');
     await initDatabase();
+    
+    // Allow memory to be freed
+    if (global.gc) {
+      global.gc();
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     await syncDatabase();
+
+    // Final garbage collection
+    if (global.gc) {
+      global.gc();
+    }
 
     logger.info('✅ All databases initialized successfully');
     
@@ -84,9 +107,27 @@ process.on('SIGINT', async () => {
 });
 
 // Handle unhandled promise rejections
-process.on('unhandledRejection', (err) => {
+process.on('unhandledRejection', (err, promise) => {
   logger.error('Unhandled Promise Rejection:', err);
-  process.exit(1);
+  
+  // If it's a WebAssembly memory error, try to recover
+  if (err.message && err.message.includes('WebAssembly') && err.message.includes('Out of memory')) {
+    logger.error('⚠️  WebAssembly memory error detected. This may be due to:');
+    logger.error('   1. Insufficient system memory');
+    logger.error('   2. Too many concurrent operations');
+    logger.error('   3. Memory fragmentation');
+    logger.error('');
+    logger.error('💡 Suggestions:');
+    logger.error('   - Close other applications to free memory');
+    logger.error('   - Restart your computer');
+    logger.error('   - Check if MySQL is running and accessible');
+    logger.error('   - Try running: NODE_OPTIONS="--max-old-space-size=4096" npm run dev');
+  }
+  
+  // Give it a moment before exiting to allow logs to flush
+  setTimeout(() => {
+    process.exit(1);
+  }, 1000);
 });
 
 // Handle uncaught exceptions
