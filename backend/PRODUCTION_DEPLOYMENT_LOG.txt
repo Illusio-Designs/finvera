@@ -1,0 +1,420 @@
+╔════════════════════════════════════════════════════════════╗
+║                                                            ║
+║       PRODUCTION DEPLOYMENT SCRIPT - COMPLETE LOG          ║
+║                                                            ║
+╚════════════════════════════════════════════════════════════╝
+
+Date: December 25, 2025
+Script: deploy-production.sh
+Status: PARTIALLY COMPLETED (FTP timeout)
+
+═══════════════════════════════════════════════════════════
+📋 CONFIGURATION
+═══════════════════════════════════════════════════════════
+
+FTP Server: ftp.illusiodesigns.agency
+FTP User: finvera@illusiodesigns.agency
+FTP Password: Rishi@1995
+Remote Directory: / (root)
+Source Directory: . (current)
+Staging Directory: build/
+
+═══════════════════════════════════════════════════════════
+✅ STEP 1: VALIDATE SOURCE DIRECTORY
+═══════════════════════════════════════════════════════════
+
+Status: ✅ COMPLETED
+
+Checks Performed:
+  ✓ Source directory exists
+  ✓ server.js found
+  ✓ package.json found
+  ✓ All essential files present
+
+Result: Source directory validated successfully
+
+═══════════════════════════════════════════════════════════
+✅ STEP 2: PREPARE STAGING AREA
+═══════════════════════════════════════════════════════════
+
+Status: ✅ COMPLETED
+
+Actions Performed:
+  ✓ Removed existing build/ directory
+  ✓ Created fresh build/ directory
+  ✓ Copied all files from source
+  ✓ Copied hidden files (.eslintrc, .gitignore, etc.)
+
+Result: Staging area created successfully
+
+═══════════════════════════════════════════════════════════
+✅ STEP 3: APPLY EXCLUSIONS
+═══════════════════════════════════════════════════════════
+
+Status: ✅ COMPLETED
+
+Directories Removed:
+  ✓ node_modules/ (npm packages)
+  ✓ .git/ (version control)
+  ✓ uploads/ (user uploads)
+  ✓ build/ (self-reference)
+  ✓ deploy-*/ (deployment folders)
+  ✓ .vscode/ (VS Code config)
+  ✓ .idea/ (IDE config)
+
+Files Removed:
+  ✓ package-lock.json (lock file)
+  ✓ .env* (all environment files)
+  ✓ *.log (all log files)
+  ✓ *.md (all markdown files)
+  ✓ .ftpconfig (FTP credentials)
+  ✓ BUILD.zip (previous archive)
+  ✓ deploy-*.sh (deployment scripts)
+
+Result: All exclusions applied successfully
+
+Files Ready: 340
+Directories: 31
+
+═══════════════════════════════════════════════════════════
+✅ STEP 4: TEST FTP CONNECTION
+═══════════════════════════════════════════════════════════
+
+Status: ✅ COMPLETED
+
+Test Performed:
+  ✓ Connected to ftp.illusiodesigns.agency
+  ✓ Authenticated as finvera@illusiodesigns.agency
+  ✓ Verified server access
+  ✓ pwd command executed successfully
+
+Result: FTP connection successful
+
+═══════════════════════════════════════════════════════════
+⏱️ STEP 5: UPLOAD FILES VIA LFTP
+═══════════════════════════════════════════════════════════
+
+Status: ⏱️ TIMEOUT (ABORTED)
+
+Upload Details:
+  • Files to upload: 340
+  • Target directory: / (root)
+  • Upload method: LFTP mirror
+  • Parallel connections: 5
+  • SSL: Enabled
+
+Actions Performed:
+  ✓ Connection established
+  ✓ Mirror operation started
+  ✗ Upload aborted due to timeout
+
+Issue: FTP upload times out in cloud environment
+Reason: External network operations have strict timeouts
+
+Result: Upload did not complete
+
+═══════════════════════════════════════════════════════════
+📊 DEPLOYMENT STATISTICS
+═══════════════════════════════════════════════════════════
+
+Files Prepared: 340
+Directories: 31
+Total Size: 3.2MB
+Staging Directory: build/
+
+Archive Created: PRODUCTION-READY.tar.gz
+Archive Size: 588KB
+Compression: gzip
+
+Included:
+  ✓ All source code (src/)
+  ✓ Controllers (44 files)
+  ✓ Models (26 files)
+  ✓ Routes (30 files)
+  ✓ Services (17 files)
+  ✓ Middleware (8 files)
+  ✓ Utils (8 files)
+  ✓ Config files
+  ✓ Migrations (2 files)
+  ✓ Seeders (4 files)
+  ✓ server.js
+  ✓ package.json
+  ✓ .env.example
+
+Excluded (as requested):
+  ✗ node_modules/
+  ✗ .git/
+  ✗ uploads/
+  ✗ .env files
+  ✗ *.md files
+  ✗ package-lock.json
+  ✗ BUILD.zip
+  ✗ deployment scripts
+
+═══════════════════════════════════════════════════════════
+🎯 ALTERNATIVE DEPLOYMENT SOLUTIONS
+═══════════════════════════════════════════════════════════
+
+Since FTP upload timed out, here are alternative methods:
+
+─────────────────────────────────────────────────────────
+OPTION 1: cPanel Upload (RECOMMENDED) ⭐
+─────────────────────────────────────────────────────────
+
+File: PRODUCTION-READY.tar.gz
+Size: 588KB
+Location: /workspace/backend/PRODUCTION-READY.tar.gz
+
+Advantages:
+  ✓ Single file upload (fast)
+  ✓ All exclusions already applied
+  ✓ No manual cleanup needed
+  ✓ Ready to extract and use
+
+Steps:
+1. Login to cPanel
+   URL: https://illusiodesigns.agency:2083
+   User: finvera@illusiodesigns.agency
+   Pass: Rishi@1995
+
+2. Open File Manager
+   Navigate to: / (root directory)
+
+3. Upload PRODUCTION-READY.tar.gz
+   Click Upload
+   Select file
+   Wait for upload (588KB - very fast)
+
+4. Extract Archive
+   Right-click PRODUCTION-READY.tar.gz
+   Click "Extract"
+   Extract to: / (current directory)
+   Files will be placed in root
+
+5. Verify Extraction
+   Check that files are in root:
+   • src/
+   • config/
+   • server.js
+   • package.json
+   • etc.
+
+6. Set Permissions
+   chmod 777 -R /home/finvera/
+   (if needed, as you mentioned)
+
+7. Setup on Server
+   SSH in and continue with:
+   • Create .env
+   • npm install
+   • Run migrations
+   • Start server
+
+─────────────────────────────────────────────────────────
+OPTION 2: BUILD.zip (Alternative)
+─────────────────────────────────────────────────────────
+
+File: BUILD.zip
+Size: 276KB
+Location: /workspace/backend/BUILD.zip
+
+This is the previous package with files in build-deploy/ folder.
+
+Steps:
+1. Upload BUILD.zip via cPanel
+2. Extract to create build-deploy/ folder
+3. Move to appropriate location
+
+─────────────────────────────────────────────────────────
+OPTION 3: SCP Upload (SSH Required)
+─────────────────────────────────────────────────────────
+
+Command:
+scp PRODUCTION-READY.tar.gz finvera@illusiodesigns.agency:~/
+
+Then on server:
+ssh finvera@illusiodesigns.agency
+tar -xzf PRODUCTION-READY.tar.gz
+rm PRODUCTION-READY.tar.gz
+
+─────────────────────────────────────────────────────────
+OPTION 4: FileZilla (FTP Client)
+─────────────────────────────────────────────────────────
+
+Host: ftp.illusiodesigns.agency
+Port: 21
+User: finvera@illusiodesigns.agency
+Pass: Rishi@1995
+
+Upload PRODUCTION-READY.tar.gz
+Extract via SSH or cPanel
+
+═══════════════════════════════════════════════════════════
+📝 POST-DEPLOYMENT SETUP (On Server)
+═══════════════════════════════════════════════════════════
+
+After uploading and extracting files:
+
+1. SSH into server
+   ssh finvera@illusiodesigns.agency
+   Password: Rishi@1995
+
+2. Navigate to directory
+   cd ~
+   OR
+   cd /home/finvera
+
+3. Verify files
+   ls -la
+   # Should see: src/, config/, server.js, package.json, etc.
+
+4. Set permissions (if needed)
+   chmod 777 -R .
+
+5. Create .env file
+   cp .env.example .env
+   nano .env
+
+6. Update .env with:
+   - Database credentials (DB_HOST, DB_USER, DB_PASSWORD)
+   - Security keys (use: openssl rand -base64 32)
+   - Google OAuth credentials
+   - Domain configuration
+   - JWT secrets
+
+7. Generate security keys
+   openssl rand -base64 32    # ENCRYPTION_KEY
+   openssl rand -base64 48    # PAYLOAD_ENCRYPTION_KEY
+   openssl rand -base64 64    # JWT_SECRET
+   openssl rand -base64 64    # JWT_REFRESH_SECRET
+   openssl rand -base64 64    # SESSION_SECRET
+
+8. Install dependencies
+   npm install --production
+
+9. Create required directories
+   mkdir -p logs uploads
+   chmod 777 logs uploads
+
+10. Run database migrations
+    npm run migrate
+
+11. Start server
+    pm2 start server.js --name finvera-backend
+    pm2 save
+    pm2 startup
+
+12. Verify deployment
+    pm2 status
+    curl http://localhost:3000/health
+    pm2 logs finvera-backend
+
+═══════════════════════════════════════════════════════════
+✅ VERIFICATION CHECKLIST
+═══════════════════════════════════════════════════════════
+
+After deployment:
+
+[ ] Files uploaded to server
+[ ] Files extracted in correct location
+[ ] Permissions set (777 if required)
+[ ] .env file created and configured
+[ ] Database credentials updated
+[ ] Security keys generated
+[ ] npm dependencies installed
+[ ] logs/ and uploads/ directories created
+[ ] Database migrations completed
+[ ] Server started with PM2
+[ ] PM2 shows "online" status
+[ ] Health check passes
+[ ] No errors in logs
+
+Success Indicators:
+  ✓ pm2 status shows "online"
+  ✓ curl http://localhost:3000/health returns 200
+  ✓ pm2 logs shows no critical errors
+  ✓ All 340 files present on server
+
+═══════════════════════════════════════════════════════════
+📋 DEPLOYMENT LOG TIMELINE
+═══════════════════════════════════════════════════════════
+
+12:42 UTC - Script started
+12:42 UTC - Source validated ✅
+12:42 UTC - Staging created ✅
+12:42 UTC - Exclusions applied ✅
+12:42 UTC - FTP tested ✅
+12:42 UTC - Upload started
+12:47 UTC - Upload aborted (timeout) ⏱️
+12:52 UTC - Created PRODUCTION-READY.tar.gz ✅
+
+Total Time: ~10 minutes
+Status: Script worked, FTP timeout occurred
+
+═══════════════════════════════════════════════════════════
+🔍 TROUBLESHOOTING
+═══════════════════════════════════════════════════════════
+
+Issue: FTP upload times out
+Solution: Use cPanel manual upload (fastest and most reliable)
+
+Issue: Cannot upload via cPanel
+Solution: Use SCP or FileZilla
+
+Issue: Files in wrong location after extraction
+Solution: Extract to / (root) or move files after extraction
+
+Issue: Permissions errors on server
+Solution: chmod 777 -R /home/finvera/
+
+Issue: npm install fails
+Solution: Check Node.js version (needs 18+)
+
+Issue: Database connection fails
+Solution: Verify .env credentials
+
+Issue: PM2 won't start
+Solution: Check logs: pm2 logs finvera-backend
+
+═══════════════════════════════════════════════════════════
+📦 FILES AVAILABLE FOR DEPLOYMENT
+═══════════════════════════════════════════════════════════
+
+1. PRODUCTION-READY.tar.gz (588KB) ⭐ RECOMMENDED
+   Location: /workspace/backend/PRODUCTION-READY.tar.gz
+   Contents: 340 files, all exclusions applied
+   Extract to: / (root directory)
+   Ready to use: Yes
+
+2. BUILD.zip (276KB)
+   Location: /workspace/backend/BUILD.zip
+   Contents: 169 files in build-deploy/ folder
+   Extract to: creates build-deploy/ folder
+   Ready to use: Yes
+
+3. build/ directory (3.2MB)
+   Location: /workspace/backend/build/
+   Contents: 340 files, staging directory
+   Use: For manual file-by-file upload if needed
+
+═══════════════════════════════════════════════════════════
+✅ FINAL STATUS
+═══════════════════════════════════════════════════════════
+
+Deployment Script: ✅ Executed successfully (4/5 steps)
+File Preparation: ✅ 100% Complete (340 files)
+Exclusions: ✅ All applied correctly
+Archive Created: ✅ PRODUCTION-READY.tar.gz (588KB)
+FTP Upload: ⏱️ Timeout (cloud environment limitation)
+
+RECOMMENDATION: Upload PRODUCTION-READY.tar.gz via cPanel
+
+═══════════════════════════════════════════════════════════
+
+Next Action: Upload PRODUCTION-READY.tar.gz via cPanel File Manager
+
+═══════════════════════════════════════════════════════════
+
+Generated: December 25, 2025
+Script Version: deploy-production.sh
+Log Version: 1.0
