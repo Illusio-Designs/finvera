@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import ReportLayout from '../../../../components/reports/ReportLayout';
 import { adminAPI } from '../../../../lib/api';
@@ -19,13 +19,7 @@ export default function RevenueComparisonReport() {
   const [period2From, setPeriod2From] = useState('');
   const [period2To, setPeriod2To] = useState('');
 
-  useEffect(() => {
-    if (router.query.period1_from && router.query.period1_to && router.query.period2_from && router.query.period2_to) {
-      fetchReport();
-    }
-  }, [router.query]);
-
-  const fetchReport = async () => {
+  const fetchReport = useCallback(async () => {
     try {
       setLoading(true);
       const params = {
@@ -42,7 +36,13 @@ export default function RevenueComparisonReport() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router.query, period1From, period1To, period2From, period2To]);
+
+  useEffect(() => {
+    if (router.query.period1_from && router.query.period1_to && router.query.period2_from && router.query.period2_to) {
+      fetchReport();
+    }
+  }, [router.query, fetchReport]);
 
   if (loading && !reportData) {
     return (

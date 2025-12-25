@@ -56,8 +56,8 @@ async function initMasterDatabase() {
     let retries = 3;
     while (retries > 0) {
       try {
-        await masterSequelize.authenticate();
-        logger.info('Master database connection established');
+    await masterSequelize.authenticate();
+    logger.info('Master database connection established');
         break;
       } catch (authError) {
         if (authError.message && authError.message.includes('WebAssembly') && retries > 1) {
@@ -104,7 +104,7 @@ async function initMasterDatabase() {
       global.gc();
     }
     await new Promise(resolve => setTimeout(resolve, 50));
-    
+
     // Seed default data using consolidated seeder
     await seedMasterData();
     

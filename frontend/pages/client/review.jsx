@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import ClientLayout from '../../components/layouts/ClientLayout';
@@ -29,11 +29,7 @@ export default function ReviewPage() {
   });
   const [errors, setErrors] = useState({});
 
-  useEffect(() => {
-    fetchMyReview();
-  }, []);
-
-  const fetchMyReview = async () => {
+  const fetchMyReview = useCallback(async () => {
     try {
       setLoading(true);
       const response = await reviewAPI.getMy();

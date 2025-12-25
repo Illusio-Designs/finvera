@@ -852,7 +852,7 @@ function EInvoiceModal({ isOpen, onClose, company, onSuccess }) {
       setCurrentStep(0);
       setErrors({});
     }
-  }, [company, isOpen]);
+  }, [company, isOpen, eInvoice.applicable, eInvoice.username]);
 
   const handleChange = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -1012,7 +1012,7 @@ function EWayBillModal({ isOpen, onClose, company, onSuccess }) {
       setCurrentStep(0);
       setErrors({});
     }
-  }, [company, isOpen]);
+  }, [company, isOpen, eWayBill.applicable, eWayBill.username]);
 
   const handleChange = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -1180,7 +1180,7 @@ function InvoiceNumberingModal({ isOpen, onClose, company, onSuccess }) {
       setCurrentStep(0);
       setErrors({});
     }
-  }, [company, isOpen]);
+  }, [company, isOpen, salesConfig.prefix, salesConfig.suffix, salesConfig.padding, purchaseConfig.prefix, purchaseConfig.suffix, purchaseConfig.padding]);
 
   const handleChange = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -1634,6 +1634,7 @@ function LogoUploadModal({ isOpen, onClose, company, onSuccess }) {
             <div className="space-y-1 text-center">
               {preview ? (
                 <div className="space-y-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={preview}
                     alt="Logo preview"
@@ -1766,6 +1767,7 @@ function SignatureUploadModal({ isOpen, onClose, company, onSuccess }) {
             <div className="space-y-1 text-center">
               {preview ? (
                 <div className="space-y-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={preview}
                     alt="Signature preview"
@@ -1848,7 +1850,7 @@ function DSCConfigModal({ isOpen, onClose, company, onSuccess }) {
   const [useForEInvoice, setUseForEInvoice] = useState(true);
   const [useForEWayBill, setUseForEWayBill] = useState(true);
 
-  const dscConfig = company?.compliance?.dsc || {};
+  const dscConfig = useMemo(() => company?.compliance?.dsc || {}, [company?.compliance?.dsc]);
 
   useEffect(() => {
     if (company && isOpen) {

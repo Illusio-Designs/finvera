@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import ClientLayout from '../../components/layouts/ClientLayout';
@@ -71,13 +71,7 @@ export default function ClientDashboard() {
   const router = useRouter();
   const { user } = useAuth();
 
-  useEffect(() => {
-    fetchDashboardData();
-    fetchCompanyName();
-    fetchRecentTickets();
-  }, [user?.company_id]);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       const response = await accountingAPI.dashboard();
@@ -126,9 +120,9 @@ export default function ClientDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchCompanyName = async () => {
+  const fetchCompanyName = useCallback(async () => {
     try {
       if (!user?.company_id) {
         setCompanyName('Client');
@@ -146,9 +140,9 @@ export default function ClientDashboard() {
       console.error('Failed to fetch company name:', error);
       setCompanyName('Client');
     }
-  };
+  }, [user?.company_id]);
 
-  const fetchRecentTickets = async () => {
+  const fetchRecentTickets = useCallback(async () => {
     try {
       setTicketsLoading(true);
       const response = await clientSupportAPI.tickets.list({
@@ -163,7 +157,13 @@ export default function ClientDashboard() {
     } finally {
       setTicketsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+    fetchCompanyName();
+    fetchRecentTickets();
+  }, [fetchDashboardData, fetchCompanyName, fetchRecentTickets]);
 
   const handleGetLoanClick = () => {
     setShowConsentModal(true);

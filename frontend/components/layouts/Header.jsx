@@ -3,19 +3,19 @@ import Image from 'next/image';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'next/router';
 import { getProfileImageUrl } from '../../lib/imageUtils';
-import { companyAPI, searchAPI } from '../../lib/api';
+import { companyAPI, searchAPI, authAPI } from '../../lib/api';
 import { canAccessClientPortal } from '../../lib/roleConfig';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import {
   FiMenu, FiBell, FiSearch, FiUser, FiSettings,
   FiLogOut, FiChevronDown, FiX, FiBriefcase, FiPlus,
-  FiFileText, FiPackage, FiLayers, FiCreditCard, FiUsers, FiHeadphones
+  FiFileText, FiPackage, FiLayers, FiCreditCard, FiUsers, FiHeadphones, FiCamera
 } from 'react-icons/fi';
 import NotificationDropdown from '../notifications/NotificationDropdown';
 
 export default function Header({ onMenuClick, title, actions }) {
-  const { user, logout, switchCompany } = useAuth();
+  const { user, logout, switchCompany, updateUser } = useAuth();
   const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
@@ -27,6 +27,7 @@ export default function Header({ onMenuClick, title, actions }) {
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [uploadingProfileImage, setUploadingProfileImage] = useState(false);
   const menuRef = useRef(null);
   const companyDropdownRef = useRef(null);
   const searchRef = useRef(null);
@@ -35,6 +36,7 @@ export default function Header({ onMenuClick, title, actions }) {
   const companiesFetchedRef = useRef(false);
   const lastUserIdRef = useRef(null);
   const searchTimeoutRef = useRef(null);
+  const profileImageInputRef = useRef(null);
 
   useEffect(() => {
     setMounted(true);
@@ -241,6 +243,56 @@ export default function Header({ onMenuClick, title, actions }) {
     } else {
       // Default to client login for other paths
       router.replace('/client/login');
+    }
+  };
+
+  const handleProfileImageClick = () => {
+    if (profileImageInputRef.current) {
+      profileImageInputRef.current.click();
+    }
+  };
+
+  const handleProfileImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setUploadingProfileImage(true);
+      const formData = new FormData();
+      formData.append('profile_image', file);
+
+      const response = await authAPI.uploadProfileImage(formData);
+      const updatedUser = response.data?.data?.user || response.data?.user || response.data;
+
+      // Update auth context
+      updateUser({
+        profile_image: updatedUser.profile_image,
+        name: updatedUser.name || user?.name,
+      });
+
+      toast.success('Profile picture updated successfully');
+      setShowUserMenu(false);
+    } catch (error) {
+      console.error('Error uploading profile image:', error);
+      toast.error(error.response?.data?.message || 'Failed to upload profile picture');
+    } finally {
+      setUploadingProfileImage(false);
+      // Reset file input
+      if (profileImageInputRef.current) {
+        profileImageInputRef.current.value = '';
+      }
     }
   };
 
@@ -487,13 +539,82 @@ export default function Header({ onMenuClick, title, actions }) {
               {showUserMenu && (
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[70]">
                   <div className="px-4 py-3 border-b border-gray-200">
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div 
+                        className="relative cursor-pointer group"
+                        onClick={handleProfileImageClick}
+                        title="Click to update profile picture"
+                      >
+                        {user?.profile_image ? (
+                          <div className="relative h-12 w-12">
+                            <Image
+                              src={getProfileImageUrl(user.profile_image) || ''}
+                              alt={user?.name || user?.email || 'User'}
+                              fill
+                              className="rounded-full object-cover border-2 border-primary-200 group-hover:opacity-80 transition"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                const fallback = e.target.nextElementSibling;
+                                if (fallback) fallback.classList.remove('hidden');
+                              }}
+                              unoptimized
+                            />
+                            <div className="hidden h-12 w-12 rounded-full bg-primary-600 flex items-center justify-center text-white text-sm font-medium absolute top-0 left-0">
+                              {(user?.name?.charAt(0) || user?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()}
+                            </div>
+                            {uploadingProfileImage && (
+                              <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                              </div>
+                            )}
+                            {!uploadingProfileImage && (
+                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 rounded-full flex items-center justify-center transition">
+                                <FiCamera className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition" />
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="h-12 w-12 rounded-full bg-primary-600 flex items-center justify-center text-white text-sm font-medium group-hover:opacity-80 transition relative">
+                            {(user?.name?.charAt(0) || user?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()}
+                            {uploadingProfileImage && (
+                              <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                              </div>
+                            )}
+                            {!uploadingProfileImage && (
+                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 rounded-full flex items-center justify-center transition">
+                                <FiCamera className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition" />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-gray-900 truncate">
                       {user?.name || user?.full_name || user?.email || 'User'}
                     </div>
-                    <div className="text-xs text-gray-500 mt-0.5">
+                        <div className="text-xs text-gray-500 mt-0.5 truncate">
                       {user?.email || ''}
+                        </div>
+                      </div>
                     </div>
+                    <input
+                      ref={profileImageInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfileImageChange}
+                      className="hidden"
+                      disabled={uploadingProfileImage}
+                    />
                   </div>
+                  <button
+                    onClick={handleProfileImageClick}
+                    disabled={uploadingProfileImage}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <FiCamera className="h-4 w-4" />
+                    <span>{uploadingProfileImage ? 'Uploading...' : 'Update Profile Picture'}</span>
+                  </button>
                   <button
                     onClick={() => {
                       if (!mounted) return;

@@ -174,6 +174,7 @@ export default function SimpleGST1({ invoice, company, partyLedger, items, setti
             </div>
             {eInvoice?.signed_qr_code && (
               <div className="mt-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src={eInvoice.signed_qr_code} 
                   alt="E-Invoice QR Code" 

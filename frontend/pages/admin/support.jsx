@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import AdminLayout from '../../components/layouts/AdminLayout';
 import PageLayout from '../../components/layouts/PageLayout';
@@ -35,11 +35,7 @@ export default function SupportTicketsList() {
     totalPages: 0,
   });
 
-  useEffect(() => {
-    fetchTickets();
-  }, [filters.status, filters.priority, filters.category, pagination.page]);
-
-  const fetchTickets = async () => {
+  const fetchTickets = useCallback(async () => {
     try {
       setLoading(true);
       const response = await adminAPI.support.tickets.list({
@@ -61,7 +57,11 @@ export default function SupportTicketsList() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters.status, filters.priority, filters.category, pagination.page, pagination.limit]);
+
+  useEffect(() => {
+    fetchTickets();
+  }, [fetchTickets]);
 
   const handleView = async (row) => {
     try {

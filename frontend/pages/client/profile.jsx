@@ -326,6 +326,7 @@ export default function ClientProfile() {
               <div className="relative">
                 <div className="h-32 w-32 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-lg">
                   {imagePreview && !imageError ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={imagePreview}
                       alt="Profile"

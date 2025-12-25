@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import ClientLayout from '../../components/layouts/ClientLayout';
@@ -47,6 +47,66 @@ export default function LoanPage() {
   const [eligibility, setEligibility] = useState(null);
   const [bankStatementStatus, setBankStatementStatus] = useState(null);
 
+  const fetchCompanyData = useCallback(async () => {
+    try {
+      if (!user?.company_id) return;
+      
+      const response = await companyAPI.list();
+      const companies = response.data?.data || response.data || [];
+      const currentCompany = companies.find(c => c.id === user.company_id);
+      
+      if (currentCompany) {
+        setCompanyData(currentCompany);
+        setCompanyName(currentCompany.company_name || '');
+        setFormData(prev => ({
+          ...prev,
+          pan: currentCompany.pan || '',
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch company data:', error);
+    }
+  }, [user?.company_id]);
+
+  const checkConsent = useCallback(async () => {
+    try {
+      // First check backend for consent
+      const response = await finboxAPI.getConsent();
+      const backendConsent = response.data?.data;
+      
+      if (backendConsent && backendConsent.is_active) {
+        // Consent exists in backend, also update localStorage for quick access
+        localStorage.setItem('finbox_consent', JSON.stringify({
+          creditScore: backendConsent.credit_score_consent,
+          bankStatement: backendConsent.bank_statement_consent,
+          dataSharing: backendConsent.data_sharing_consent,
+          termsConditions: backendConsent.terms_conditions_consent,
+          privacyPolicy: backendConsent.privacy_policy_consent,
+          timestamp: backendConsent.createdAt,
+          userId: user?.id,
+          companyId: user?.company_id,
+        }));
+        return;
+      }
+
+      // Fallback to localStorage check
+      const existingConsent = localStorage.getItem('finbox_consent');
+      if (!existingConsent) {
+        // If no consent found, redirect back to dashboard to get consent
+        toast.error('Please provide consent first');
+        router.push('/client/dashboard');
+      }
+    } catch (error) {
+      console.error('Error checking consent:', error);
+      // Fallback to localStorage check
+      const existingConsent = localStorage.getItem('finbox_consent');
+      if (!existingConsent) {
+        toast.error('Please provide consent first');
+        router.push('/client/dashboard');
+      }
+    }
+  }, [user?.id, user?.company_id, router]);
+
   useEffect(() => {
     fetchCompanyData();
     checkConsent();
@@ -57,7 +117,7 @@ export default function LoanPage() {
         customer_id: user?.id || user?.company_id || '',
       }));
     }
-  }, [user, router]);
+  }, [user, router, fetchCompanyData, checkConsent]);
 
   const checkConsent = async () => {
     try {
