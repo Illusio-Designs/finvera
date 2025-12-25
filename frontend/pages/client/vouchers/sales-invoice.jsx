@@ -267,7 +267,7 @@ export default function SalesInvoicePage() {
     };
 
     fetchLedgerDetails();
-  }, [formData.party_ledger_id, supplierState]);
+  }, [formData.party_ledger_id, supplierState, ledgers]);
 
   // Update shipping address based on selected option
   useEffect(() => {
@@ -314,7 +314,7 @@ export default function SalesInvoicePage() {
         }));
       }
     }
-  }, [formData.shipping_option, formData.shipping_address_id, shippingLocations, partyLedger]);
+  }, [formData.shipping_option, formData.shipping_address_id, shippingLocations, partyLedger, formData.shipping_address, formData.shipping_city]);
 
   const handleFormChange = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));

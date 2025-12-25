@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import ReportLayout from '../../../../components/reports/ReportLayout';
 import { adminAPI } from '../../../../lib/api';
@@ -12,11 +12,7 @@ export default function CommissionSummaryReport() {
   const [loading, setLoading] = useState(true);
   const [reportData, setReportData] = useState(null);
 
-  useEffect(() => {
-    fetchReport();
-  }, [router.query]);
-
-  const fetchReport = async () => {
+  const fetchReport = useCallback(async () => {
     try {
       setLoading(true);
       const params = {
@@ -31,7 +27,11 @@ export default function CommissionSummaryReport() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router.query]);
+
+  useEffect(() => {
+    fetchReport();
+  }, [fetchReport]);
 
   if (loading) {
     return (

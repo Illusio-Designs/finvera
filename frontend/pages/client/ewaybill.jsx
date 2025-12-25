@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import ClientLayout from '../../components/layouts/ClientLayout';
@@ -51,7 +51,7 @@ export default function EWayBillList() {
         fetchEWB();
       }
     }
-  }, [voucher_id, view]);
+  }, [voucher_id, view, fetchEWB]);
 
   const {
     data: tableData,
