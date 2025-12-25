@@ -73,7 +73,11 @@ export default function ReviewPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchMyReview();
+  }, [fetchMyReview]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
