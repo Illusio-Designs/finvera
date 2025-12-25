@@ -1,0 +1,614 @@
+{
+  "api": {
+    "name": "Finvera API",
+    "baseUrl": "http://localhost:3000/api",
+    "authentication": {
+      "type": "JWT",
+      "header": "Authorization: Bearer <access_token>",
+      "description": "Most endpoints require JWT authentication. Include the token in the Authorization header."
+    },
+    "rateLimiting": {
+      "default": "100 requests per 15 minutes per IP",
+      "authentication": "10 requests per 15 minutes per IP"
+    },
+    "notes": [
+      "All dates should be in ISO 8601 format (YYYY-MM-DD)",
+      "All monetary amounts are in INR (Indian Rupees)",
+      "GST rates are percentages (e.g., 18 for 18%)",
+      "All UUIDs are in standard UUID v4 format",
+      "Pagination: Default page=1, limit=20",
+      "E-Invoice integration requires NIC IRP portal credentials (configure in .env)"
+    ],
+    "routes": {
+      "authentication": [
+        {
+          "method": "POST",
+          "path": "/api/auth/register",
+          "description": "Register Tenant",
+          "requiresAuth": false,
+          "requestBody": {
+            "contentType": "application/json",
+            "schema": {
+              "email": "string (admin@company.com)",
+              "password": "string (SecurePass123)",
+              "company_name": "string (ABC Company)"
+            }
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/login",
+          "description": "Login",
+          "requiresAuth": false,
+          "requestBody": {
+            "contentType": "application/json",
+            "schema": {
+              "email": "string (admin@company.com)",
+              "password": "string (SecurePass123)"
+            }
+          },
+          "response": {
+            "user": {
+              "id": "uuid",
+              "email": "admin@company.com",
+              "tenant_id": "uuid"
+            },
+            "accessToken": "jwt_token",
+            "refreshToken": "jwt_refresh_token",
+            "jti": "session_id"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/refresh",
+          "description": "Refresh Token",
+          "requiresAuth": false,
+          "requestBody": {
+            "contentType": "application/json",
+            "schema": {
+              "refreshToken": "jwt_refresh_token"
+            }
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/logout",
+          "description": "Logout",
+          "requiresAuth": true,
+          "requestBody": {
+            "contentType": "application/json",
+            "schema": {
+              "jti": "session_id"
+            }
+          }
+        }
+      ],
+      "accounting": [
+        {
+          "method": "POST",
+          "path": "/api/accounting/invoices/sales",
+          "description": "Create Sales Invoice",
+          "requiresAuth": true,
+          "requestBody": {
+            "contentType": "application/json",
+            "schema": {
+              "voucher_date": "string (2025-01-15)",
+              "party_ledger_id": "uuid",
+              "place_of_supply": "string (Maharashtra)",
+              "items": [
+                {
+                  "item_description": "string (Product A)",
+                  "hsn_sac_code": "string (12345678)",
+                  "quantity": "number (10)",
+                  "rate": "number (1000)",
+                  "gst_rate": "number (18)"
+                }
+              ],
+              "narration": "string (Sales invoice)"
+            }
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/accounting/invoices/purchase",
+          "description": "Create Purchase Invoice",
+          "requiresAuth": true,
+          "requestBody": {
+            "contentType": "application/json",
+            "schema": {
+              "voucher_date": "string (2025-01-15)",
+              "party_ledger_id": "uuid",
+              "place_of_supply": "string (Maharashtra)",
+              "items": [
+                {
+                  "item_description": "string (Raw Material)",
+                  "hsn_sac_code": "string (12345678)",
+                  "quantity": "number (50)",
+                  "rate": "number (500)",
+                  "gst_rate": "number (18)"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/accounting/payments",
+          "description": "Create Payment Voucher",
+          "requiresAuth": true,
+          "requestBody": {
+            "contentType": "application/json",
+            "schema": {
+              "voucher_date": "string (2025-01-15)",
+              "party_ledger_id": "uuid",
+              "amount": "number (5000)",
+              "payment_mode": "string (Bank Transfer)",
+              "bank_ledger_id": "uuid",
+              "narration": "string (Payment to supplier)"
+            }
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/accounting/receipts",
+          "description": "Create Receipt Voucher",
+          "requiresAuth": true,
+          "requestBody": {
+            "contentType": "application/json",
+            "schema": {
+              "voucher_date": "string (2025-01-15)",
+              "party_ledger_id": "uuid",
+              "amount": "number (10000)",
+              "payment_mode": "string (Bank Transfer)",
+              "bank_ledger_id": "uuid",
+              "narration": "string (Receipt from customer)"
+            }
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/accounting/journals",
+          "description": "Create Journal Entry",
+          "requiresAuth": true,
+          "requestBody": {
+            "contentType": "application/json",
+            "schema": {
+              "voucher_date": "string (2025-01-15)",
+              "ledger_entries": [
+                {
+                  "ledger_id": "uuid",
+                  "debit_amount": "number (1000)",
+                  "credit_amount": "number (0)",
+                  "narration": "string (Debit entry)"
+                },
+                {
+                  "ledger_id": "uuid",
+                  "debit_amount": "number (0)",
+                  "credit_amount": "number (1000)",
+                  "narration": "string (Credit entry)"
+                }
+              ],
+              "narration": "string (Adjustment entry)"
+            }
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/accounting/vouchers/:id/post",
+          "description": "Post Voucher",
+          "requiresAuth": true,
+          "pathParameters": {
+            "id": "uuid (voucher id)"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/accounting/vouchers",
+          "description": "List Vouchers",
+          "requiresAuth": true,
+          "queryParameters": {
+            "page": "number (default: 1)",
+            "limit": "number (default: 20)",
+            "status": "string (posted)",
+            "startDate": "string (2025-01-01)",
+            "endDate": "string (2025-01-31)"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/accounting/ledgers",
+          "description": "Create Ledger",
+          "requiresAuth": true,
+          "requestBody": {
+            "contentType": "application/json",
+            "schema": {
+              "ledger_code": "string (CUST001)",
+              "ledger_name": "string (Acme Corporation)",
+              "account_group_id": "uuid",
+              "ledger_type": "string (Customer)",
+              "email": "string (contact@acme.com)",
+              "phone": "string (1234567890)",
+              "gstin": "string (27ABCDE1234F1Z5)",
+              "pan": "string (ABCDE1234F)",
+              "opening_balance": "number (0)",
+              "opening_balance_type": "string (Debit)"
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/accounting/ledgers/:id/balance",
+          "description": "Get Ledger Balance",
+          "requiresAuth": true,
+          "pathParameters": {
+            "id": "uuid (ledger id)"
+          },
+          "queryParameters": {
+            "as_on_date": "string (2025-01-31)"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/accounting/outstanding",
+          "description": "Get Outstanding Bills",
+          "requiresAuth": true,
+          "queryParameters": {
+            "ledger_id": "uuid",
+            "as_on_date": "string (2025-01-31)"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/accounting/bills/allocate",
+          "description": "Allocate Payment to Bills",
+          "requiresAuth": true,
+          "requestBody": {
+            "contentType": "application/json",
+            "schema": {
+              "payment_voucher_id": "uuid",
+              "allocations": [
+                {
+                  "bill_id": "uuid",
+                  "allocated_amount": "number (5000)"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/accounting/bills/aging",
+          "description": "Aging Report",
+          "requiresAuth": true,
+          "queryParameters": {
+            "ledger_id": "uuid",
+            "as_on_date": "string (2025-01-31)"
+          }
+        }
+      ],
+      "reports": [
+        {
+          "method": "GET",
+          "path": "/api/reports/trial-balance",
+          "description": "Trial Balance",
+          "requiresAuth": true,
+          "queryParameters": {
+            "as_on_date": "string (2025-01-31)"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/reports/balance-sheet",
+          "description": "Balance Sheet",
+          "requiresAuth": true,
+          "queryParameters": {
+            "as_on_date": "string (2025-01-31)"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/reports/profit-loss",
+          "description": "Profit & Loss",
+          "requiresAuth": true,
+          "queryParameters": {
+            "from_date": "string (2025-01-01)",
+            "to_date": "string (2025-01-31)"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/reports/ledger-statement",
+          "description": "Ledger Statement",
+          "requiresAuth": true,
+          "queryParameters": {
+            "ledger_id": "uuid",
+            "from_date": "string (2025-01-01)",
+            "to_date": "string (2025-01-31)"
+          }
+        }
+      ],
+      "gst": [
+        {
+          "method": "POST",
+          "path": "/api/gst/gstins",
+          "description": "Create GSTIN",
+          "requiresAuth": true,
+          "requestBody": {
+            "contentType": "application/json",
+            "schema": {
+              "gstin": "string (27ABCDE1234F1Z5)",
+              "legal_name": "string (ABC Company Pvt Ltd)",
+              "state": "string (Maharashtra)",
+              "state_code": "string (27)",
+              "registration_type": "string (Regular)",
+              "is_primary": "boolean (true)",
+              "e_invoice_applicable": "boolean (true)"
+            }
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/gst/returns/gstr1",
+          "description": "Generate GSTR-1",
+          "requiresAuth": true,
+          "requestBody": {
+            "contentType": "application/json",
+            "schema": {
+              "gstin": "string (27ABCDE1234F1Z5)",
+              "period": "string (01-2025)"
+            }
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/gst/returns/gstr3b",
+          "description": "Generate GSTR-3B",
+          "requiresAuth": true,
+          "requestBody": {
+            "contentType": "application/json",
+            "schema": {
+              "gstin": "string (27ABCDE1234F1Z5)",
+              "period": "string (01-2025)"
+            }
+          }
+        }
+      ],
+      "tds": [
+        {
+          "method": "POST",
+          "path": "/api/tds/calculate",
+          "description": "Calculate TDS",
+          "requiresAuth": true,
+          "requestBody": {
+            "contentType": "application/json",
+            "schema": {
+              "voucher_id": "uuid",
+              "tds_section": "string (194C)",
+              "tds_rate": "number (10)"
+            }
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/tds/return",
+          "description": "Generate TDS Return",
+          "requiresAuth": true,
+          "requestBody": {
+            "contentType": "application/json",
+            "schema": {
+              "quarter": "string (Q1-2025)",
+              "financial_year": "string (2024-2025)"
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/tds/certificate/:id",
+          "description": "Generate TDS Certificate (Form 16A)",
+          "requiresAuth": true,
+          "pathParameters": {
+            "id": "uuid"
+          }
+        }
+      ],
+      "admin": [
+        {
+          "method": "GET",
+          "path": "/api/admin/dashboard",
+          "description": "Platform Dashboard",
+          "requiresAuth": true,
+          "accessLevel": "Super Admin Only"
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/analytics/revenue",
+          "description": "Revenue Analytics",
+          "requiresAuth": true,
+          "accessLevel": "Super Admin Only",
+          "queryParameters": {
+            "period": "string (monthly)",
+            "startDate": "string (2025-01-01)",
+            "endDate": "string (2025-01-31)"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/distributors",
+          "description": "List Distributors",
+          "requiresAuth": true,
+          "accessLevel": "Super Admin Only",
+          "queryParameters": {
+            "page": "number (default: 1)",
+            "limit": "number (default: 20)",
+            "status": "string (active)"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/distributors",
+          "description": "Create Distributor",
+          "requiresAuth": true,
+          "accessLevel": "Super Admin Only",
+          "requestBody": {
+            "contentType": "application/json",
+            "schema": {
+              "email": "string (distributor@example.com)",
+              "password": "string (Password123)",
+              "distributor_code": "string (DIST001)",
+              "company_name": "string (Distributor Company)",
+              "contact_person": "string (John Doe)",
+              "phone": "string (1234567890)",
+              "territory": "array ([\"Maharashtra\", \"Gujarat\"])",
+              "commission_rate": "number (5)"
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/salesmen",
+          "description": "List Salesmen",
+          "requiresAuth": true,
+          "accessLevel": "Super Admin Only",
+          "queryParameters": {
+            "distributor_id": "uuid",
+            "page": "number (default: 1)",
+            "limit": "number (default: 20)"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/commissions/summary",
+          "description": "Commission Summary",
+          "requiresAuth": true,
+          "accessLevel": "Super Admin Only",
+          "queryParameters": {
+            "period": "string (01-2025)",
+            "recipient_type": "string (salesman)"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/payouts/generate",
+          "description": "Generate Payouts",
+          "requiresAuth": true,
+          "accessLevel": "Super Admin Only",
+          "requestBody": {
+            "contentType": "application/json",
+            "schema": {
+              "period": "string (01-2025)",
+              "recipient_type": "string (salesman)"
+            }
+          }
+        }
+      ],
+      "einvoice": [
+        {
+          "method": "POST",
+          "path": "/api/einvoice/generate",
+          "description": "Generate IRN (Invoice Reference Number)",
+          "requiresAuth": true,
+          "requestBody": {
+            "contentType": "application/json",
+            "schema": {
+              "voucher_id": "uuid"
+            }
+          },
+          "response": {
+            "success": true,
+            "eInvoice": {
+              "id": "uuid",
+              "irn": "string (IRN1234567890ABCDEF)",
+              "ack_number": "string (ACK123456)",
+              "ack_date": "string (2025-01-15)",
+              "qr_code": "string (data:image/png;base64,...)",
+              "status": "string (generated)"
+            }
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/einvoice/cancel/:voucher_id",
+          "description": "Cancel E-Invoice",
+          "requiresAuth": true,
+          "pathParameters": {
+            "voucher_id": "uuid"
+          },
+          "requestBody": {
+            "contentType": "application/json",
+            "schema": {
+              "reason": "string (1-4)"
+            }
+          },
+          "notes": {
+            "cancellationReasons": {
+              "1": "Duplicate",
+              "2": "Data entry mistake",
+              "3": "Order cancelled",
+              "4": "Other"
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/einvoice/voucher/:voucher_id",
+          "description": "Get E-Invoice Details",
+          "requiresAuth": true,
+          "pathParameters": {
+            "voucher_id": "uuid"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/einvoice",
+          "description": "List E-Invoices",
+          "requiresAuth": true,
+          "queryParameters": {
+            "page": "number (default: 1)",
+            "limit": "number (default: 20)",
+            "status": "string (generated)"
+          }
+        }
+      ]
+    },
+    "errorResponses": {
+      "400": {
+        "status": 400,
+        "name": "Bad Request",
+        "response": {
+          "success": false,
+          "message": "Validation failed",
+          "errors": []
+        }
+      },
+      "401": {
+        "status": 401,
+        "name": "Unauthorized",
+        "response": {
+          "message": "Authentication required"
+        }
+      },
+      "403": {
+        "status": 403,
+        "name": "Forbidden",
+        "response": {
+          "message": "Insufficient permissions"
+        }
+      },
+      "404": {
+        "status": 404,
+        "name": "Not Found",
+        "response": {
+          "message": "Resource not found"
+        }
+      },
+      "500": {
+        "status": 500,
+        "name": "Internal Server Error",
+        "response": {
+          "success": false,
+          "message": "Internal server error"
+        }
+      }
+    }
+  }
+}
