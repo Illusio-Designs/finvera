@@ -82,23 +82,57 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
           // If user still doesn't exist, check if there's a tenant with this email
           if (!user) {
             const masterModels = require('../models/masterModels');
-            const tenant = await masterModels.TenantMaster.findOne({ 
+            let tenant = await masterModels.TenantMaster.findOne({ 
               where: { email: normalizedEmail } 
             });
 
-            // Create user with tenant_id if tenant exists
+            // If no tenant exists, create one for the new Google user
+            if (!tenant) {
+              const companyName = displayName || email.split('@')[0];
+              
+              // Generate a unique subdomain based on email
+              const baseSubdomain = normalizedEmail.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+              let subdomain = baseSubdomain;
+              let subdomainExists = await masterModels.TenantMaster.findOne({ where: { subdomain } });
+              let counter = 1;
+              
+              // Keep trying until we find a unique subdomain
+              while (subdomainExists) {
+                subdomain = `${baseSubdomain}${counter}`;
+                subdomainExists = await masterModels.TenantMaster.findOne({ where: { subdomain } });
+                counter++;
+              }
+
+              // Set trial period (30 days from now)
+              const trialEnd = new Date();
+              trialEnd.setDate(trialEnd.getDate() + 30);
+
+              tenant = await masterModels.TenantMaster.create({
+                email: normalizedEmail,
+                company_name: companyName,
+                subdomain: subdomain,
+                is_trial: true,
+                trial_ends_at: trialEnd,
+                subscription_plan: 'trial',
+                acquisition_category: 'organic',
+                is_active: true,
+              });
+              logger.info(`New tenant created for Google user: ${normalizedEmail}, tenant_id: ${tenant.id}, subdomain: ${subdomain}`);
+            }
+
+            // Create user with tenant_id
             user = await User.create({
               email: normalizedEmail,
               google_id: id,
               name: displayName || email.split('@')[0],
               password: null, // No password for OAuth users
               profile_image: profileImage,
-              role: tenant ? 'tenant_admin' : 'user', // Default role
-              tenant_id: tenant ? tenant.id : null,
+              role: 'tenant_admin', // All Google signups are tenant admins
+              tenant_id: tenant.id,
               is_active: true,
             });
 
-            logger.info(`New user created via Google OAuth: ${user.email}, tenant_id: ${user.tenant_id || 'none'}`);
+            logger.info(`New user created via Google OAuth: ${user.email}, tenant_id: ${user.tenant_id}`);
           } else {
             // Update last login
             user.last_login = new Date();

@@ -15,7 +15,7 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        const { token, refreshToken, jti, error: errorParam } = router.query;
+        const { token, refreshToken, jti, error: errorParam, needsCompany } = router.query;
 
         if (errorParam) {
           setError(errorParam);
@@ -82,14 +82,19 @@ export default function AuthCallback() {
             const role = normalizedUser.role;
             let redirectPath = '/';
 
+            // Check if user needs to create a company
+            if (needsCompany === 'true' || !normalizedUser.company_id) {
+              toast.success('Welcome! Please create your company to continue.');
+              setTimeout(() => {
+                router.replace('/client/companies');
+              }, 500);
+              return;
+            }
+
             if (canAccessAdminPortal(role)) {
               redirectPath = getDefaultRedirect(role, normalizedUser.id);
             } else if (canAccessClientPortal(role)) {
-              if (!normalizedUser.company_id) {
-                redirectPath = '/client/companies';
-              } else {
-                redirectPath = getDefaultRedirect(role, normalizedUser.id);
-              }
+              redirectPath = getDefaultRedirect(role, normalizedUser.id);
             }
 
             toast.success('Login successful!');
@@ -123,7 +128,7 @@ export default function AuthCallback() {
     if (router.isReady) {
       handleCallback();
     }
-  }, [router.isReady, router.query, updateUser]);
+  }, [router.isReady, router.query, updateUser, router]);
 
   if (loading) {
     return (
