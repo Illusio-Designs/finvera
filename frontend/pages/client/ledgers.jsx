@@ -8,6 +8,7 @@ import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import Modal from '../../components/ui/Modal';
 import FormInput from '../../components/forms/FormInput';
+import FormPhoneInput from '../../components/forms/FormPhoneInput';
 import FormSelect from '../../components/forms/FormSelect';
 import FormDatePicker from '../../components/forms/FormDatePicker';
 import FormTextarea from '../../components/forms/FormTextarea';
@@ -995,14 +996,14 @@ export default function LedgersList() {
                       touched={!!formErrors.country}
                       placeholder="India"
                     />
-                    <FormInput
+                    <FormPhoneInput
                       name="phone"
                       label="Phone"
                       value={formData.phone}
                       onChange={handleChange}
                       error={formErrors.phone}
                       touched={!!formErrors.phone}
-                      type="tel"
+                      defaultCountry="IN"
                     />
                     <FormInput
                       name="email"

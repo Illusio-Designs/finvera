@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import Head from 'next/head';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
+import FormPhoneInput from '../components/forms/FormPhoneInput';
 import { FiMail, FiPhone, FiMapPin, FiSend, FiCalendar, FiVideo, FiMessageCircle } from 'react-icons/fi';
 
 export default function ContactPage() {
+  const [phone, setPhone] = useState('');
+  
   return (
     <>
       <Head>
@@ -133,10 +137,11 @@ export default function ContactPage() {
                         />
                       </div>
                       <div>
-                        <input
-                          type="tel"
-                          placeholder="Phone Number"
-                          className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-lg"
+                        <FormPhoneInput
+                          name="phone"
+                          value={phone}
+                          onChange={(name, value) => setPhone(value)}
+                          defaultCountry="IN"
                         />
                       </div>
                       <button

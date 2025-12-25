@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getProfileImageUrl } from '../../lib/imageUtils';
 import toast, { Toaster } from 'react-hot-toast';
 import FormInput from '../../components/forms/FormInput';
+import FormPhoneInput from '../../components/forms/FormPhoneInput';
 import Button from '../../components/ui/Button';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { FiUser, FiMail, FiPhone, FiCamera, FiSave, FiX } from 'react-icons/fi';
@@ -425,15 +426,14 @@ export default function AdminProfile() {
                 placeholder="Enter your email address"
               />
 
-              <FormInput
+              <FormPhoneInput
                 name="phone"
                 label="Phone Number"
-                type="tel"
                 value={formData.phone}
                 onChange={handleInputChange}
                 error={errors.phone}
                 touched={true}
-                placeholder="Enter your phone number"
+                defaultCountry="IN"
               />
             </div>
 
