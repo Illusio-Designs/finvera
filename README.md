@@ -124,6 +124,7 @@ finvera/
 ### Core Features
 - Multi-tenancy with complete data isolation
 - JWT authentication with Redis sessions
+- **Google OAuth 2.0 Sign-Up/Login** - Seamless authentication with Google accounts
 - Role-based access control (RBAC)
 - File upload with Multer
 - Input sanitization and security
@@ -173,6 +174,8 @@ finvera/
 - `POST /api/auth/register` - Register tenant
 - `POST /api/auth/login` - Login
 - `POST /api/auth/refresh` - Refresh token
+- `GET /api/auth/google` - Initiate Google OAuth sign-up/login
+- `GET /api/auth/google/callback` - Google OAuth callback handler
 
 ### Accounting
 - `POST /api/accounting/invoices/sales` - Create sales invoice
@@ -281,7 +284,10 @@ node src/utils/testEncryption.js
 - E-Invoice API credentials (E_INVOICE_API_URL, E_INVOICE_API_KEY)
 - Email/SMTP settings (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS)
 - Razorpay credentials (RAZORPAY_KEY_ID, RAZORPAY_SECRET_KEY, RAZORPAY_WEBHOOK_SECRET)
-- Google OAuth (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)
+- **Google OAuth** (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_CALLBACK_URL, SESSION_SECRET)
+  - Enable Google sign-up/login functionality
+  - Requires Google Cloud Console configuration
+  - See [Google OAuth Setup Guide](/GOOGLE_SIGNUP_IMPLEMENTATION.md)
 
 ### Frontend (.env)
 

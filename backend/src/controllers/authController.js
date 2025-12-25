@@ -256,19 +256,18 @@ module.exports = {
 
       // Handle company selection for tenant users (similar to regular login)
       let selectedCompany = null;
+      let needsCompanyCreation = false;
+      
       if (user.tenant_id && ['tenant_admin', 'user', 'accountant'].includes(user.role)) {
         const companies = await masterModels.Company.findAll({
           where: { tenant_id: user.tenant_id, is_active: true },
         });
 
         if (companies.length === 0) {
-          return res.status(400).json({
-            message: 'No company found for this tenant. Please create a company first.',
-          });
-        }
-
-        // If only one company, auto-select it
-        if (companies.length === 1) {
+          // User has tenant but no company - needs to create company
+          needsCompanyCreation = true;
+        } else if (companies.length === 1) {
+          // If only one company, auto-select it
           selectedCompany = companies[0];
         } else {
           // Multiple companies - check if company_id provided in query
@@ -296,12 +295,15 @@ module.exports = {
           }
         }
 
-        if (!selectedCompany.db_provisioned) {
+        if (selectedCompany && !selectedCompany.db_provisioned) {
           return res.status(503).json({
             message: 'Company database is being provisioned',
             company_id: selectedCompany.id,
           });
         }
+      } else if (!user.tenant_id) {
+        // New Google user without a tenant - needs to create company
+        needsCompanyCreation = true;
       }
 
       // Generate JWT tokens
@@ -334,7 +336,15 @@ module.exports = {
         }
       }
 
-      const redirectUrl = `${frontendUrl}/auth/callback?token=${tokens.accessToken}&refreshToken=${tokens.refreshToken}&jti=${tokens.jti}`;
+      // Build redirect URL based on whether user needs company creation
+      let redirectUrl;
+      if (needsCompanyCreation) {
+        // User needs to create a company - redirect to company creation with tokens
+        redirectUrl = `${frontendUrl}/auth/callback?token=${tokens.accessToken}&refreshToken=${tokens.refreshToken}&jti=${tokens.jti}&needsCompany=true`;
+      } else {
+        // User has company - redirect to normal callback
+        redirectUrl = `${frontendUrl}/auth/callback?token=${tokens.accessToken}&refreshToken=${tokens.refreshToken}&jti=${tokens.jti}`;
+      }
 
       // If request expects JSON (API call), return JSON
       if (req.headers.accept && req.headers.accept.includes('application/json')) {
@@ -349,6 +359,7 @@ module.exports = {
             full_name: user.name || user.full_name || null,
             profile_image: user.profile_image || null,
           },
+          needsCompanyCreation,
           ...tokens,
         });
       }
