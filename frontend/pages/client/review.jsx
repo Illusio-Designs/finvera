@@ -73,7 +73,7 @@ export default function ReviewPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.name]);
 
   useEffect(() => {
     fetchMyReview();
