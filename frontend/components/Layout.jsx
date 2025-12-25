@@ -36,6 +36,7 @@ export default function Layout({ children, title = 'Finvera - Accounting Softwar
               <div className="flex items-center">
                 <Link href="/" className="flex items-center">
                   <div className="bg-white rounded-md px-3 py-2 flex items-center justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img 
                       src="/Finallogo.png" 
                       alt="Finvera" 

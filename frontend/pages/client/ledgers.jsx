@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import ClientLayout from '../../components/layouts/ClientLayout';
@@ -65,11 +65,11 @@ export default function LedgersList() {
 
   // Fetch account groups for dropdown
   const { data: groupsData } = useApi(() => accountingAPI.accountGroups.list({ limit: 1000 }), true);
-  const groups = groupsData?.data || groupsData || [];
-  const groupOptions = groups.map((g) => ({
+  const groups = useMemo(() => groupsData?.data || groupsData || [], [groupsData]);
+  const groupOptions = useMemo(() => groups.map((g) => ({
     value: g.id,
     label: `${g.group_code} - ${g.name}`,
-  }));
+  })), [groups]);
 
   // Get selected account group details
   const selectedGroup = useMemo(() => {
@@ -143,7 +143,7 @@ export default function LedgersList() {
         fetchStatement().catch(err => console.error('Error fetching statement:', err));
       }
     }
-  }, [id, view]);
+  }, [id, view, fetchLedger, fetchBalance, fetchStatement]);
 
   const {
     data: tableData,
