@@ -4,7 +4,7 @@ import ReportLayout from '../../../../components/reports/ReportLayout';
 import { adminAPI } from '../../../../lib/api';
 import { formatCurrency } from '../../../../lib/formatters';
 import toast from 'react-hot-toast';
-import { FiTrophy, FiTrendingUp } from 'react-icons/fi';
+import { FiAward, FiTrendingUp } from 'react-icons/fi';
 
 export default function ExecutiveSummaryReport() {
   const router = useRouter();
@@ -69,7 +69,7 @@ export default function ExecutiveSummaryReport() {
         {/* Top 10 Distributors */}
         <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <FiTrophy className="mr-2 h-5 w-5 text-yellow-500" />
+            <FiAward className="mr-2 h-5 w-5 text-yellow-500" />
             Top 10 Distributors
           </h2>
           <div className="space-y-3">
@@ -97,7 +97,7 @@ export default function ExecutiveSummaryReport() {
         {/* Top 10 Salesmen */}
         <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <FiTrophy className="mr-2 h-5 w-5 text-yellow-500" />
+            <FiAward className="mr-2 h-5 w-5 text-yellow-500" />
             Top 10 Salesmen
           </h2>
           <div className="space-y-3">

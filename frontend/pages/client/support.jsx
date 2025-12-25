@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import ClientLayout from '../../components/layouts/ClientLayout';
 import PageLayout from '../../components/layouts/PageLayout';
