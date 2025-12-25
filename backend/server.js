@@ -44,6 +44,17 @@ async function startServer() {
       logger.info(`   - Main DB: ${process.env.DB_NAME || 'finvera_db'} (Admin, Salesman, Distributor, etc.)`);
       logger.info(`   - Master DB: ${process.env.MASTER_DB_NAME || 'finvera_master'} (Tenant metadata only)`);
       logger.info(`   - Tenant DBs: Created dynamically per tenant`);
+    }).on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        logger.error(`❌ Port ${PORT} is already in use. Please:`);
+        logger.error(`   1. Stop the process using port ${PORT}`);
+        logger.error(`   2. Or set a different PORT in your .env file`);
+        logger.error(`   3. On Windows, find the process: netstat -ano | findstr :${PORT}`);
+        logger.error(`   4. Then kill it: taskkill /PID <PID> /F`);
+      } else {
+        logger.error('❌ Server failed to start:', err);
+      }
+      process.exit(1);
     });
   } catch (error) {
     logger.error('❌ Server startup failed:', error);
