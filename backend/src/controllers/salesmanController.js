@@ -154,7 +154,10 @@ module.exports = {
   async update(req, res, next) {
     try {
       const { id } = req.params;
-      const salesman = await Salesman.findByPk(id);
+      const { full_name, email, password, ...salesmanData } = req.body;
+      const salesman = await Salesman.findByPk(id, {
+        include: [{ model: User, attributes: ['id', 'email', 'name'] }],
+      });
 
       if (!salesman) {
         return res.status(404).json({ message: 'Salesman not found' });
@@ -165,8 +168,39 @@ module.exports = {
         return res.status(400).json({ message: 'salesman_code cannot be changed' });
       }
 
-      await salesman.update(req.body);
-      res.json(salesman);
+      const tx = await sequelize.transaction();
+      try {
+        // Update salesman
+        await salesman.update(salesmanData, { transaction: tx });
+
+        // Update user if email, password, or full_name is provided
+        if (salesman.User) {
+          const userUpdateData = {};
+          if (email) userUpdateData.email = email;
+          if (full_name) userUpdateData.name = full_name;
+          if (password) {
+            const bcrypt = require('bcryptjs');
+            const password_hash = await bcrypt.hash(password, 10);
+            userUpdateData.password = password_hash;
+          }
+
+          if (Object.keys(userUpdateData).length > 0) {
+            await salesman.User.update(userUpdateData, { transaction: tx });
+          }
+        }
+
+        await tx.commit();
+
+        // Reload salesman with updated User data
+        await salesman.reload({
+          include: [{ model: User, attributes: ['id', 'email', 'name'] }],
+        });
+
+        res.json(salesman);
+      } catch (err) {
+        await tx.rollback();
+        throw err;
+      }
     } catch (err) {
       next(err);
     }

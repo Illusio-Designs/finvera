@@ -483,9 +483,25 @@ module.exports = {
           type: Sequelize.STRING(50),
           allowNull: false,
         },
+        plan_name: {
+          type: Sequelize.STRING(255),
+          allowNull: true,
+        },
+        description: {
+          type: Sequelize.TEXT,
+          allowNull: true,
+        },
         billing_cycle: {
           type: Sequelize.STRING(20),
           allowNull: false,
+        },
+        base_price: {
+          type: Sequelize.DECIMAL(15, 2),
+          allowNull: true,
+        },
+        discounted_price: {
+          type: Sequelize.DECIMAL(15, 2),
+          allowNull: true,
         },
         amount: {
           type: Sequelize.DECIMAL(15, 2),
@@ -494,6 +510,66 @@ module.exports = {
         currency: {
           type: Sequelize.STRING(3),
           defaultValue: 'INR',
+        },
+        trial_days: {
+          type: Sequelize.INTEGER,
+          defaultValue: 0,
+        },
+        max_users: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+        max_invoices_per_month: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+        max_companies: {
+          type: Sequelize.INTEGER,
+          defaultValue: 1,
+        },
+        storage_limit_gb: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+        features: {
+          type: Sequelize.JSON,
+          allowNull: true,
+        },
+        salesman_commission_rate: {
+          type: Sequelize.DECIMAL(5, 2),
+          allowNull: true,
+        },
+        distributor_commission_rate: {
+          type: Sequelize.DECIMAL(5, 2),
+          allowNull: true,
+        },
+        renewal_commission_rate: {
+          type: Sequelize.DECIMAL(5, 2),
+          allowNull: true,
+        },
+        is_active: {
+          type: Sequelize.BOOLEAN,
+          defaultValue: true,
+        },
+        is_visible: {
+          type: Sequelize.BOOLEAN,
+          defaultValue: true,
+        },
+        is_featured: {
+          type: Sequelize.BOOLEAN,
+          defaultValue: false,
+        },
+        display_order: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+        valid_from: {
+          type: Sequelize.DATE,
+          allowNull: true,
+        },
+        valid_until: {
+          type: Sequelize.DATE,
+          allowNull: true,
         },
         start_date: {
           type: Sequelize.DATE,
@@ -536,6 +612,130 @@ module.exports = {
       await addIndexIfNotExists('subscriptions', ['tenant_id'], { name: 'idx_subscriptions_tenant_id' });
       await addIndexIfNotExists('subscriptions', ['razorpay_subscription_id'], { name: 'idx_subscriptions_razorpay_id', unique: true });
       await addIndexIfNotExists('subscriptions', ['status'], { name: 'idx_subscriptions_status' });
+    } else {
+      // Table exists, add new columns if they don't exist
+      const columnExists = async (column) => {
+        const [results] = await queryInterface.sequelize.query(
+          `SHOW COLUMNS FROM subscriptions LIKE '${column}'`
+        );
+        return results.length > 0;
+      };
+
+      // Add new columns
+      if (!(await columnExists('plan_name'))) {
+        await queryInterface.addColumn('subscriptions', 'plan_name', {
+          type: Sequelize.STRING(255),
+          allowNull: true,
+        });
+      }
+      if (!(await columnExists('description'))) {
+        await queryInterface.addColumn('subscriptions', 'description', {
+          type: Sequelize.TEXT,
+          allowNull: true,
+        });
+      }
+      if (!(await columnExists('base_price'))) {
+        await queryInterface.addColumn('subscriptions', 'base_price', {
+          type: Sequelize.DECIMAL(15, 2),
+          allowNull: true,
+        });
+      }
+      if (!(await columnExists('discounted_price'))) {
+        await queryInterface.addColumn('subscriptions', 'discounted_price', {
+          type: Sequelize.DECIMAL(15, 2),
+          allowNull: true,
+        });
+      }
+      if (!(await columnExists('trial_days'))) {
+        await queryInterface.addColumn('subscriptions', 'trial_days', {
+          type: Sequelize.INTEGER,
+          defaultValue: 0,
+        });
+      }
+      if (!(await columnExists('max_users'))) {
+        await queryInterface.addColumn('subscriptions', 'max_users', {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        });
+      }
+      if (!(await columnExists('max_invoices_per_month'))) {
+        await queryInterface.addColumn('subscriptions', 'max_invoices_per_month', {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        });
+      }
+      if (!(await columnExists('max_companies'))) {
+        await queryInterface.addColumn('subscriptions', 'max_companies', {
+          type: Sequelize.INTEGER,
+          defaultValue: 1,
+        });
+      }
+      if (!(await columnExists('storage_limit_gb'))) {
+        await queryInterface.addColumn('subscriptions', 'storage_limit_gb', {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        });
+      }
+      if (!(await columnExists('features'))) {
+        await queryInterface.addColumn('subscriptions', 'features', {
+          type: Sequelize.JSON,
+          allowNull: true,
+        });
+      }
+      if (!(await columnExists('salesman_commission_rate'))) {
+        await queryInterface.addColumn('subscriptions', 'salesman_commission_rate', {
+          type: Sequelize.DECIMAL(5, 2),
+          allowNull: true,
+        });
+      }
+      if (!(await columnExists('distributor_commission_rate'))) {
+        await queryInterface.addColumn('subscriptions', 'distributor_commission_rate', {
+          type: Sequelize.DECIMAL(5, 2),
+          allowNull: true,
+        });
+      }
+      if (!(await columnExists('renewal_commission_rate'))) {
+        await queryInterface.addColumn('subscriptions', 'renewal_commission_rate', {
+          type: Sequelize.DECIMAL(5, 2),
+          allowNull: true,
+        });
+      }
+      if (!(await columnExists('is_active'))) {
+        await queryInterface.addColumn('subscriptions', 'is_active', {
+          type: Sequelize.BOOLEAN,
+          defaultValue: true,
+        });
+      }
+      if (!(await columnExists('is_visible'))) {
+        await queryInterface.addColumn('subscriptions', 'is_visible', {
+          type: Sequelize.BOOLEAN,
+          defaultValue: true,
+        });
+      }
+      if (!(await columnExists('is_featured'))) {
+        await queryInterface.addColumn('subscriptions', 'is_featured', {
+          type: Sequelize.BOOLEAN,
+          defaultValue: false,
+        });
+      }
+      if (!(await columnExists('display_order'))) {
+        await queryInterface.addColumn('subscriptions', 'display_order', {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        });
+      }
+      if (!(await columnExists('valid_from'))) {
+        await queryInterface.addColumn('subscriptions', 'valid_from', {
+          type: Sequelize.DATE,
+          allowNull: true,
+        });
+      }
+      if (!(await columnExists('valid_until'))) {
+        await queryInterface.addColumn('subscriptions', 'valid_until', {
+          type: Sequelize.DATE,
+          allowNull: true,
+        });
+      }
     }
 
     // 6. PAYMENTS TABLE (in master DB for Razorpay)
@@ -702,6 +902,46 @@ module.exports = {
         createdAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
         updatedAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
       });
+    } else {
+      // Table exists, add new columns if they don't exist
+      const columnExists = async (column) => {
+        const [results] = await queryInterface.sequelize.query(
+          `SHOW COLUMNS FROM subscription_plans LIKE '${column}'`
+        );
+        return results.length > 0;
+      };
+
+      // Add new columns if they don't exist
+      if (!(await columnExists('is_visible'))) {
+        await queryInterface.addColumn('subscription_plans', 'is_visible', {
+          type: Sequelize.BOOLEAN,
+          defaultValue: true,
+        });
+      }
+      if (!(await columnExists('is_featured'))) {
+        await queryInterface.addColumn('subscription_plans', 'is_featured', {
+          type: Sequelize.BOOLEAN,
+          defaultValue: false,
+        });
+      }
+      if (!(await columnExists('display_order'))) {
+        await queryInterface.addColumn('subscription_plans', 'display_order', {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        });
+      }
+      if (!(await columnExists('valid_from'))) {
+        await queryInterface.addColumn('subscription_plans', 'valid_from', {
+          type: Sequelize.DATE,
+          allowNull: true,
+        });
+      }
+      if (!(await columnExists('valid_until'))) {
+        await queryInterface.addColumn('subscription_plans', 'valid_until', {
+          type: Sequelize.DATE,
+          allowNull: true,
+        });
+      }
     }
 
     // 3. DISTRIBUTORS TABLE

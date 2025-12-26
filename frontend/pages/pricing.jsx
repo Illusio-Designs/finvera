@@ -11,6 +11,7 @@ export default function PricingPage() {
   const [clientRegisterUrl, setClientRegisterUrl] = useState('');
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' or 'yearly'
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -104,6 +105,40 @@ export default function PricingPage() {
           </div>
         </section>
 
+        {/* Billing Cycle Toggle */}
+        <section className="py-8 bg-white border-b">
+          <div className="container mx-auto px-6">
+            <div className="max-w-md mx-auto">
+              <div className="flex items-center justify-center gap-4">
+                <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-gray-900' : 'text-gray-500'}`}>
+                  Monthly
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
+                  className={`relative inline-flex h-8 w-16 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                    billingCycle === 'yearly' ? 'bg-primary-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                      billingCycle === 'yearly' ? 'translate-x-9' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+                <span className={`text-sm font-medium ${billingCycle === 'yearly' ? 'text-gray-900' : 'text-gray-500'}`}>
+                  Yearly
+                </span>
+                {billingCycle === 'yearly' && (
+                  <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded">
+                    Save up to 20%
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Pricing Cards */}
         <section className="py-24 bg-white">
           <div className="container mx-auto px-6">
@@ -117,15 +152,22 @@ export default function PricingPage() {
                 {plans.map((plan, index) => {
                   const Icon = getPlanIcon(plan.plan_name);
                   const isPopular = plan.is_featured;
-                  const originalPrice = plan.base_price;
-                  const discountedPrice = plan.discounted_price;
-                  const price = discountedPrice || originalPrice;
+                  
+                  // Calculate prices based on billing cycle
+                  let monthlyPrice = parseFloat(plan.base_price || 0);
+                  let yearlyPrice = plan.discounted_price ? parseFloat(plan.discounted_price * 12) : parseFloat(plan.base_price * 12);
+                  
+                  const currentPrice = billingCycle === 'yearly' ? yearlyPrice : monthlyPrice;
+                  const originalYearlyPrice = monthlyPrice * 12;
+                  const yearlySavings = originalYearlyPrice - yearlyPrice;
+                  const yearlySavingsPercent = plan.discounted_price ? Math.round(((originalYearlyPrice - yearlyPrice) / originalYearlyPrice) * 100) : 0;
+                  
                   const features = plan.features && typeof plan.features === 'object' 
                     ? (Array.isArray(plan.features) ? plan.features : Object.values(plan.features))
                     : [];
-                  const billingPeriod = plan.billing_cycle === 'yearly' ? '/year' : plan.billing_cycle === 'monthly' ? '/month' : '';
-                  const hasCustomPrice = !price && price !== 0;
-                  const hasDiscount = discountedPrice && discountedPrice < originalPrice;
+                  const billingPeriod = billingCycle === 'yearly' ? '/year' : '/month';
+                  const hasCustomPrice = !currentPrice && currentPrice !== 0;
+                  const hasDiscount = billingCycle === 'yearly' && plan.discounted_price && yearlySavings > 0;
                   
                   return (
                     <div
@@ -164,16 +206,16 @@ export default function PricingPage() {
                         {hasDiscount && (
                           <div className="mb-2">
                             <span className={`text-lg line-through ${isPopular ? 'text-primary-200' : 'text-gray-400'}`}>
-                              {formatPrice(originalPrice, plan.currency)}
+                              {formatPrice(originalYearlyPrice, plan.currency)}
                             </span>
                             <span className={`ml-2 text-xs font-semibold ${isPopular ? 'text-white' : 'text-green-600'} bg-green-100 px-2 py-1 rounded`}>
-                              Save {formatPrice(originalPrice - discountedPrice, plan.currency)}
+                              Save {formatPrice(yearlySavings, plan.currency)} ({yearlySavingsPercent}%)
                             </span>
                           </div>
                         )}
                         <div>
                           <span className={`text-5xl font-extrabold ${isPopular ? 'text-white' : 'text-gray-900'}`}>
-                            {formatPrice(price, plan.currency)}
+                            {formatPrice(currentPrice, plan.currency)}
                           </span>
                           {billingPeriod && (
                             <span className={`text-xl ml-2 ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>
@@ -181,6 +223,11 @@ export default function PricingPage() {
                             </span>
                           )}
                         </div>
+                        {billingCycle === 'yearly' && (
+                          <p className={`text-xs mt-1 ${isPopular ? 'text-primary-200' : 'text-gray-500'}`}>
+                            {formatPrice(monthlyPrice, plan.currency)}/month billed annually
+                          </p>
+                        )}
                         {plan.trial_days > 0 && (
                           <p className={`text-sm mt-2 ${isPopular ? 'text-primary-100' : 'text-gray-500'}`}>
                             <span className="inline-block bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold">
@@ -246,7 +293,7 @@ export default function PricingPage() {
 
                       {/* CTA Button */}
                       <a
-                        href={!hasCustomPrice ? getClientRegisterUrl() : '/contact'}
+                        href={!hasCustomPrice ? `${getClientRegisterUrl()}?plan_id=${plan.id}&billing_cycle=${billingCycle}` : '/contact'}
                         target={!hasCustomPrice ? '_blank' : undefined}
                         rel={!hasCustomPrice ? 'noopener noreferrer' : undefined}
                         className={`block w-full text-center py-4 rounded-lg font-semibold text-lg transition ${

@@ -365,6 +365,7 @@ export default function TenantsList() {
             onClose={handleCloseModal}
             title={modalMode === 'create' ? 'Create New Tenant' : 'Edit Tenant'}
             size="lg"
+            closeOnClickOutside={modalMode !== 'edit'}
           >
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Basic Information */}

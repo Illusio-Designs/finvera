@@ -329,6 +329,7 @@ export default function SalesmenList() {
             title={modalMode === 'create' ? 'Create New Salesman' : 'Edit Salesman'}
             size="xl"
             className="max-h-[90vh] overflow-y-auto"
+            closeOnClickOutside={modalMode !== 'edit'}
           >
             {loading && (
               <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-lg">

@@ -15,6 +15,7 @@ router.use(authenticate);
 // Subscription management
 router.post('/subscriptions', subscriptionController.createSubscription);
 router.get('/subscriptions/current', subscriptionController.getCurrentSubscription);
+router.put('/subscriptions/:id', subscriptionController.updateSubscription);
 router.post('/subscriptions/cancel', subscriptionController.cancelSubscription);
 
 // Payment management

@@ -212,7 +212,7 @@ function EditProfileModal({ isOpen, onClose, user, onSuccess }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Edit Profile" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title="Edit Profile" size="lg" closeOnClickOutside={false}>
       <div className="space-y-6">
         <Stepper steps={steps} currentStep={currentStep} />
 
@@ -383,7 +383,7 @@ function ChangePasswordModal({ isOpen, onClose }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Change Password" size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title="Change Password" size="md" closeOnClickOutside={false}>
       <div className="space-y-4">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-sm text-blue-900">

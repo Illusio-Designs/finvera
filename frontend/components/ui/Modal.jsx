@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import IconButton from './IconButton';
 
-export default function Modal({ isOpen, onClose, title, children, size = 'md', className = '' }) {
+export default function Modal({ isOpen, onClose, title, children, size = 'md', className = '', closeOnClickOutside = true }) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -28,7 +28,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', c
       {/* Background overlay - covers everything including header with low opacity */}
       <div
         className="fixed inset-0 bg-gray-900 bg-opacity-40 transition-opacity"
-        onClick={onClose}
+        onClick={closeOnClickOutside ? onClose : undefined}
         aria-hidden="true"
       ></div>
 
