@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: finvera-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      # Add other environment variables in Render dashboard
+
+databases:
+  - name: finvera-mysql
+    plan: free
+    databaseName: finvera_db
+    user: finvera_user
+
