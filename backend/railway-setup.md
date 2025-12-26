@@ -1,5 +1,17 @@
 # Railway Deployment Setup
 
+## ⚠️ IMPORTANT: Monorepo Configuration
+
+Your project structure is:
+```
+finvera/
+├── backend/    ← Your backend code is here
+├── frontend/   ← Your frontend code is here
+└── README.md
+```
+
+**Railway needs to know to use the `backend/` directory as the root.**
+
 ## Step-by-Step Guide
 
 ### 1. Sign Up
@@ -10,7 +22,12 @@
 - Click "New Project"
 - Select "Deploy from GitHub repo"
 - Choose your `finvera` repository
-- Select the `backend` folder or create a monorepo setup
+
+### 3. ⚠️ CRITICAL: Set Root Directory
+- After connecting the repo, go to **Settings** → **Source**
+- Set **Root Directory** to: `backend`
+- This tells Railway to treat `backend/` as the project root
+- **Without this, Railway will fail with "Railpack could not determine how to build"**
 
 ### 3. Add MySQL Database
 - In your Railway project, click "New"
