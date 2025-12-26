@@ -86,18 +86,19 @@ export default function AuthCallback() {
             if (needsCompany === 'true' || !normalizedUser.company_id) {
               toast.success('Welcome! Please create your company to continue.');
               
-              // Check if we need to redirect to a different subdomain
-              const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
-              const currentHost = window.location.hostname;
-              const targetHost = `client.${mainDomain}`;
-              
               setTimeout(() => {
-                // If we're on the main domain and need to go to client subdomain
-                if (currentHost === mainDomain && targetHost !== currentHost) {
+                // Always redirect to client subdomain for company creation
+                const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
+                const currentHost = window.location.hostname;
+                
+                // Check if we're NOT already on client subdomain
+                if (!currentHost.startsWith('client.')) {
                   // Redirect to client subdomain
-                  window.location.href = `${window.location.protocol}//${targetHost}/client/companies`;
+                  const targetUrl = `${window.location.protocol}//client.${mainDomain}/client/companies`;
+                  console.log('Redirecting to:', targetUrl);
+                  window.location.href = targetUrl;
                 } else {
-                  // Stay on current domain
+                  // Already on client subdomain, use router
                   router.replace('/client/companies');
                 }
               }, 500);
@@ -107,25 +108,31 @@ export default function AuthCallback() {
             // Get target subdomain based on role
             const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
             const currentHost = window.location.hostname;
-            let targetHost = currentHost;
             
             if (canAccessAdminPortal(role)) {
               redirectPath = getDefaultRedirect(role, normalizedUser.id);
-              targetHost = `admin.${mainDomain}`;
+              // Redirect to admin subdomain
+              const targetUrl = `${window.location.protocol}//admin.${mainDomain}${redirectPath}`;
+              console.log('Redirecting admin to:', targetUrl);
+              toast.success('Login successful!');
+              setTimeout(() => {
+                window.location.href = targetUrl;
+              }, 500);
             } else if (canAccessClientPortal(role)) {
               redirectPath = getDefaultRedirect(role, normalizedUser.id);
-              targetHost = `client.${mainDomain}`;
-            }
-
-            toast.success('Login successful!');
-            setTimeout(() => {
-              // If we need to redirect to a different subdomain
-              if (targetHost !== currentHost && targetHost.includes('.')) {
-                window.location.href = `${window.location.protocol}//${targetHost}${redirectPath}`;
-              } else {
+              // Redirect to client subdomain
+              const targetUrl = `${window.location.protocol}//client.${mainDomain}${redirectPath}`;
+              console.log('Redirecting client to:', targetUrl);
+              toast.success('Login successful!');
+              setTimeout(() => {
+                window.location.href = targetUrl;
+              }, 500);
+            } else {
+              toast.success('Login successful!');
+              setTimeout(() => {
                 router.replace(redirectPath);
-              }
-            }, 500);
+              }, 500);
+            }
           } else {
             throw new Error('Failed to fetch user profile');
           }
