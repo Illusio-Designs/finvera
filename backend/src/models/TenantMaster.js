@@ -15,8 +15,9 @@ const TenantMaster = masterSequelize.define(
       primaryKey: true,
     },
     company_name: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       allowNull: false,
+      comment: 'Changed to TEXT to reduce row size',
     },
     subdomain: {
       type: DataTypes.STRING(50),
@@ -35,8 +36,9 @@ const TenantMaster = masterSequelize.define(
       // Uniqueness is enforced at application level
     },
     db_host: {
-      type: DataTypes.STRING(255),
+      type: DataTypes.TEXT,
       defaultValue: process.env.DB_HOST || 'localhost',
+      comment: 'Changed to TEXT to reduce row size',
     },
     db_port: {
       type: DataTypes.INTEGER,
@@ -47,9 +49,9 @@ const TenantMaster = masterSequelize.define(
       allowNull: true,
     },
     db_password: {
-      type: DataTypes.STRING(255),
+      type: DataTypes.TEXT,
       allowNull: true,
-      comment: 'Legacy: previously used for tenant database. Now databases are provisioned per company.',
+      comment: 'Legacy: previously used for tenant database. Changed to TEXT to reduce row size.',
     },
     
     // Tenant metadata
@@ -117,11 +119,12 @@ const TenantMaster = masterSequelize.define(
     pincode: DataTypes.STRING(10),
     phone: DataTypes.STRING(15),
     email: {
-      type: DataTypes.STRING(255),
+      type: DataTypes.TEXT,
       allowNull: false,
       validate: {
         isEmail: true,
       },
+      comment: 'Changed to TEXT to reduce row size',
     },
     
     // Status
@@ -153,6 +156,18 @@ const TenantMaster = masterSequelize.define(
     storage_used_mb: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
+    },
+    
+    // Razorpay integration
+    razorpay_customer_id: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: 'Razorpay customer ID for payment processing',
+    },
+    razorpay_subscription_id: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: 'Razorpay subscription ID for recurring payments',
     },
     
     // Metadata

@@ -6,6 +6,7 @@ import PageLayout from '../../components/layouts/PageLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import FormInput from '../../components/forms/FormInput';
+import FormPhoneInput from '../../components/forms/FormPhoneInput';
 import FormSelect from '../../components/forms/FormSelect';
 import FormTextarea from '../../components/forms/FormTextarea';
 import FormDatePicker from '../../components/forms/FormDatePicker';
@@ -503,11 +504,12 @@ export default function CompaniesPage() {
                       value={formData.pincode}
                       onChange={handleChange}
                     />
-                    <FormInput
+                    <FormPhoneInput
                       name="contact_number"
                       label="Contact Number"
                       value={formData.contact_number}
                       onChange={handleChange}
+                      defaultCountry="IN"
                     />
                     <FormInput
                       name="email"
@@ -545,12 +547,12 @@ export default function CompaniesPage() {
                       onChange={handleChange}
                       placeholder="Optional"
                     />
-                    <FormInput
+                    <FormPhoneInput
                       name="principal_phone"
                       label="Contact"
                       value={formData.principal_phone}
                       onChange={handleChange}
-                      placeholder="Optional"
+                      defaultCountry="IN"
                     />
                     <div className="md:col-span-2">
                       <FormTextarea
