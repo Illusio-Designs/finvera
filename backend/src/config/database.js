@@ -37,7 +37,7 @@ if (process.env.MYSQL_URL) {
   logger.info(`[DB CONFIG] Main DB Connection: host=${dbHost}, port=${dbPort}, user=${dbUser}, database=${dbName}`);
   if (!process.env.DB_HOST || dbHost === 'localhost') {
     logger.warn(`[DB CONFIG] ⚠️  DB_HOST is 'localhost'. This will fail on Railway.`);
-    logger.warn(`[DB CONFIG] Please set MYSQL_URL=${{MySQL.MYSQL_URL}} in Railway environment variables.`);
+    logger.warn(`[DB CONFIG] Please set MYSQL_URL=\${{MySQL.MYSQL_URL}} in Railway environment variables.`);
   }
   
   sequelize = new Sequelize(
