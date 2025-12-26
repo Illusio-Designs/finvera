@@ -18,6 +18,7 @@ async function startServer() {
     // Log environment status at startup (without sensitive data)
     logger.info('🔍 Environment check:');
     logger.info(`   MYSQL_URL: ${process.env.MYSQL_URL ? 'SET' : 'NOT SET'}`);
+    logger.info(`   DATABASE_URL: ${process.env.DATABASE_URL ? 'SET' : 'NOT SET'}`);
     logger.info(`   DB_HOST: ${process.env.DB_HOST || 'NOT SET (will default to localhost)'}`);
     logger.info(`   DB_USER: ${process.env.DB_USER || 'NOT SET (will default to root)'}`);
     logger.info(`   DB_NAME: ${process.env.DB_NAME || 'NOT SET (will default to finvera_db)'}`);
@@ -103,8 +104,10 @@ async function startServer() {
     initSocketServer(server);
     
     // Start server
-    server.listen(PORT, () => {
-      logger.info(`🚀 Server running on port ${PORT} in ${NODE_ENV} mode`);
+    // Bind to 0.0.0.0 for Render/cloud platforms (they require it)
+    const HOST = process.env.HOST || '0.0.0.0';
+    server.listen(PORT, HOST, () => {
+      logger.info(`🚀 Server running on ${HOST}:${PORT} in ${NODE_ENV} mode`);
       logger.info(`📍 API: http://localhost:${PORT}/api`);
       logger.info(`🔌 WebSocket: ws://localhost:${PORT}`);
       logger.info(`📊 Databases:`);
