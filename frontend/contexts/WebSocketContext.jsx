@@ -33,8 +33,9 @@ export function WebSocketProvider({ children }) {
 
     // Get WebSocket URL from environment or use default
     // Extract base URL from API URL if WS URL not specified
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || apiUrl;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://finvera.illusiodesigns.agency/api';
+    const baseUrl = apiUrl.replace('/api', '');
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || baseUrl;
 
     // Create socket connection
     const newSocket = io(wsUrl, {

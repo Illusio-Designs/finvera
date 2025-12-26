@@ -139,7 +139,7 @@ export default function AdminLogin() {
             <button
               type="button"
               onClick={() => {
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://finvera.illusiodesigns.agency/api';
                 window.location.href = `${apiUrl}/auth/google`;
               }}
               className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition-colors font-medium shadow-sm"

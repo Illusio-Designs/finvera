@@ -1,6 +1,6 @@
 import { encryptPayload, decryptPayload } from './encryption';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://finvera.illusiodesigns.agency/api';
 
 /**
  * Secure API client with automatic encryption/decryption

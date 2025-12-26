@@ -9,17 +9,17 @@ const nextConfig = {
     output: 'standalone',
   }),
   env: {
-    API_URL: process.env.API_URL || 'http://localhost:3000/api',
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api',
-    NEXT_PUBLIC_UPLOAD_URL: process.env.NEXT_PUBLIC_UPLOAD_URL || 'http://localhost:3000/uploads',
-    MAIN_DOMAIN: process.env.MAIN_DOMAIN || process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'localhost',
+    API_URL: process.env.API_URL || 'https://finvera.illusiodesigns.agency/api',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://finvera.illusiodesigns.agency/api',
+    NEXT_PUBLIC_UPLOAD_URL: process.env.NEXT_PUBLIC_UPLOAD_URL || 'https://finvera.illusiodesigns.agency/uploads',
+    MAIN_DOMAIN: process.env.MAIN_DOMAIN || process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.illusiodesigns.agency',
     NEXT_PUBLIC_MAIN_DOMAIN: process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions',
   },
   async rewrites() {
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.API_URL || 'http://localhost:3000/api'}/:path*`,
+        destination: `${process.env.API_URL || 'https://finvera.illusiodesigns.agency/api'}/:path*`,
       },
     ];
   },
