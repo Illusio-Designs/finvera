@@ -1,22 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import ReportLayout from '../../../../components/reports/ReportLayout';
 import { adminAPI } from '../../../../lib/api';
 import { formatCurrency } from '../../../../lib/formatters';
 import toast from 'react-hot-toast';
 import DataTable from '../../../../components/tables/DataTable';
-import { FiTrophy } from 'react-icons/fi';
+import { FiAward } from 'react-icons/fi';
 
 export default function SalesmanPerformanceReport() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [reportData, setReportData] = useState(null);
 
-  useEffect(() => {
-    fetchReport();
-  }, [router.query]);
-
-  const fetchReport = async () => {
+  const fetchReport = useCallback(async () => {
     try {
       setLoading(true);
       const params = {
@@ -31,7 +27,11 @@ export default function SalesmanPerformanceReport() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router.query]);
+
+  useEffect(() => {
+    fetchReport();
+  }, [fetchReport]);
 
   const columns = [
     { header: 'Rank', accessor: 'rank', cell: (row, index) => `#${index + 1}` },
@@ -73,7 +73,7 @@ export default function SalesmanPerformanceReport() {
       {reportData?.top_performers && reportData.top_performers.length > 0 && (
         <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <FiTrophy className="mr-2 h-5 w-5 text-yellow-500" />
+            <FiAward className="mr-2 h-5 w-5 text-yellow-500" />
             Top 10 Performers
           </h2>
           <div className="space-y-3">

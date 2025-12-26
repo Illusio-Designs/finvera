@@ -85,22 +85,54 @@ export default function AuthCallback() {
             // Check if user needs to create a company
             if (needsCompany === 'true' || !normalizedUser.company_id) {
               toast.success('Welcome! Please create your company to continue.');
+              
               setTimeout(() => {
-                router.replace('/client/companies');
+                // Always redirect to client subdomain for company creation
+                const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
+                const currentHost = window.location.hostname;
+                
+                // Check if we're NOT already on client subdomain
+                if (!currentHost.startsWith('client.')) {
+                  // Redirect to client subdomain
+                  const targetUrl = `${window.location.protocol}//client.${mainDomain}/client/companies`;
+                  console.log('Redirecting to:', targetUrl);
+                  window.location.href = targetUrl;
+                } else {
+                  // Already on client subdomain, use router
+                  router.replace('/client/companies');
+                }
               }, 500);
               return;
             }
 
+            // Get target subdomain based on role
+            const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
+            const currentHost = window.location.hostname;
+            
             if (canAccessAdminPortal(role)) {
               redirectPath = getDefaultRedirect(role, normalizedUser.id);
+              // Redirect to admin subdomain
+              const targetUrl = `${window.location.protocol}//admin.${mainDomain}${redirectPath}`;
+              console.log('Redirecting admin to:', targetUrl);
+              toast.success('Login successful!');
+              setTimeout(() => {
+                window.location.href = targetUrl;
+              }, 500);
             } else if (canAccessClientPortal(role)) {
               redirectPath = getDefaultRedirect(role, normalizedUser.id);
+              // Redirect to client subdomain
+              const targetUrl = `${window.location.protocol}//client.${mainDomain}${redirectPath}`;
+              console.log('Redirecting client to:', targetUrl);
+              toast.success('Login successful!');
+              setTimeout(() => {
+                window.location.href = targetUrl;
+              }, 500);
+            } else {
+              toast.success('Login successful!');
+              setTimeout(() => {
+                router.replace(redirectPath);
+              }, 500);
             }
-
-            toast.success('Login successful!');
-            setTimeout(() => {
-              router.replace(redirectPath);
-            }, 500);
           } else {
             throw new Error('Failed to fetch user profile');
           }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import ClientLayout from '../../components/layouts/ClientLayout';
 import PageLayout from '../../components/layouts/PageLayout';
@@ -52,11 +52,7 @@ export default function ClientSupport() {
     comment: '',
   });
 
-  useEffect(() => {
-    fetchTickets();
-  }, [filters.status, filters.priority, filters.category, pagination.page]);
-
-  const fetchTickets = async () => {
+  const fetchTickets = useCallback(async () => {
     try {
       setLoading(true);
       const response = await clientSupportAPI.tickets.list({
@@ -78,7 +74,11 @@ export default function ClientSupport() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters.status, filters.priority, filters.category, pagination.page, pagination.limit]);
+
+  useEffect(() => {
+    fetchTickets();
+  }, [fetchTickets]);
 
   const handleCreateTicket = async () => {
     if (!createForm.subject.trim() || !createForm.description.trim()) {

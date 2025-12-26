@@ -8,6 +8,7 @@ import Modal from '../../components/ui/Modal';
 import Card from '../../components/ui/Card';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import FormInput from '../../components/forms/FormInput';
+import FormPhoneInput from '../../components/forms/FormPhoneInput';
 import FormSelect from '../../components/forms/FormSelect';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useTable } from '../../hooks/useTable';
@@ -394,21 +395,15 @@ export default function TenantsList() {
                 disabled={modalMode === 'edit'}
               />
 
-              <FormInput
+              <FormPhoneInput
                 name="phone"
                 label="Phone"
-                type="tel"
                 value={formData.phone}
-                onChange={(name, value) => {
-                  // Only allow digits
-                  const digitsOnly = value.replace(/\D/g, '');
-                  handleChange(name, digitsOnly);
-                }}
+                onChange={handleChange}
                 error={formErrors.phone}
                 touched={!!formErrors.phone}
                 required
-                placeholder="10 digits"
-                maxLength={10}
+                defaultCountry="IN"
               />
 
               {modalMode === 'create' && (

@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import Head from 'next/head';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
+import FormPhoneInput from '../components/forms/FormPhoneInput';
 import { FiMail, FiPhone, FiMapPin, FiSend, FiCalendar, FiVideo, FiMessageCircle } from 'react-icons/fi';
 
 export default function ContactPage() {
+  const [phone, setPhone] = useState('');
+  
   return (
     <>
       <Head>
@@ -133,10 +137,11 @@ export default function ContactPage() {
                         />
                       </div>
                       <div>
-                        <input
-                          type="tel"
-                          placeholder="Phone Number"
-                          className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-lg"
+                        <FormPhoneInput
+                          name="phone"
+                          value={phone}
+                          onChange={(name, value) => setPhone(value)}
+                          defaultCountry="IN"
                         />
                       </div>
                       <button
@@ -195,49 +200,49 @@ export default function ContactPage() {
                   </div>
 
                   {/* Send Message Form */}
-                  <div className="bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl shadow-xl border border-primary-100">
-                    <h3 className="text-3xl font-bold text-gray-900 mb-6">Send us a Message</h3>
-                    <form className="space-y-5">
-                      <div>
-                        <input
-                          type="text"
-                          placeholder="Your Name"
-                          className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-lg"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <input
-                          type="email"
-                          placeholder="Your Email"
-                          className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-lg"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <input
-                          type="text"
-                          placeholder="Subject"
-                          className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-lg"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <textarea
-                          placeholder="Your Message"
-                          rows="6"
-                          className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-lg"
-                          required
-                        ></textarea>
-                      </div>
-                      <button
-                        type="submit"
-                        className="w-full bg-primary-600 text-white py-4 rounded-xl hover:bg-primary-700 transition font-semibold text-lg shadow-lg flex items-center justify-center gap-2"
-                      >
-                        <FiSend className="text-xl" />
-                        Send Message
-                      </button>
-                    </form>
+                <div className="bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl shadow-xl border border-primary-100">
+                  <h3 className="text-3xl font-bold text-gray-900 mb-6">Send us a Message</h3>
+                  <form className="space-y-5">
+                    <div>
+                      <input
+                        type="text"
+                        placeholder="Your Name"
+                        className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-lg"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="email"
+                        placeholder="Your Email"
+                        className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-lg"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        placeholder="Subject"
+                        className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-lg"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <textarea
+                        placeholder="Your Message"
+                        rows="6"
+                        className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-lg"
+                        required
+                      ></textarea>
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full bg-primary-600 text-white py-4 rounded-xl hover:bg-primary-700 transition font-semibold text-lg shadow-lg flex items-center justify-center gap-2"
+                    >
+                      <FiSend className="text-xl" />
+                      Send Message
+                    </button>
+                  </form>
                   </div>
                 </div>
               </div>

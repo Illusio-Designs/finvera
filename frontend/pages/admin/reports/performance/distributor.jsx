@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import ReportLayout from '../../../../components/reports/ReportLayout';
 import { adminAPI } from '../../../../lib/api';
@@ -7,18 +7,14 @@ import toast from 'react-hot-toast';
 import DataTable from '../../../../components/tables/DataTable';
 import Card from '../../../../components/ui/Card';
 import LoadingSpinner from '../../../../components/ui/LoadingSpinner';
-import { FiTrophy, FiTrendingUp } from 'react-icons/fi';
+import { FiAward, FiTrendingUp } from 'react-icons/fi';
 
 export default function DistributorPerformanceReport() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [reportData, setReportData] = useState(null);
 
-  useEffect(() => {
-    fetchReport();
-  }, [router.query]);
-
-  const fetchReport = async () => {
+  const fetchReport = useCallback(async () => {
     try {
       setLoading(true);
       const params = {
@@ -33,7 +29,11 @@ export default function DistributorPerformanceReport() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router.query]);
+
+  useEffect(() => {
+    fetchReport();
+  }, [fetchReport]);
 
   const columns = [
     { header: 'Rank', accessor: 'rank', cell: (row, index) => `#${index + 1}` },
@@ -74,7 +74,7 @@ export default function DistributorPerformanceReport() {
       {reportData?.top_performers && reportData.top_performers.length > 0 && (
         <Card>
           <div className="flex items-center mb-4">
-            <FiTrophy className="mr-2 h-5 w-5 text-yellow-500" />
+            <FiAward className="mr-2 h-5 w-5 text-yellow-500" />
             <h2 className="text-lg font-semibold text-gray-900">Top 10 Performers</h2>
           </div>
           <div className="space-y-3">
