@@ -15,6 +15,16 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // Test database connection
 async function startServer() {
   try {
+    // Log environment status at startup (without sensitive data)
+    logger.info('🔍 Environment check:');
+    logger.info(`   MYSQL_URL: ${process.env.MYSQL_URL ? 'SET' : 'NOT SET'}`);
+    logger.info(`   DB_HOST: ${process.env.DB_HOST || 'NOT SET (will default to localhost)'}`);
+    logger.info(`   DB_USER: ${process.env.DB_USER || 'NOT SET (will default to root)'}`);
+    logger.info(`   DB_NAME: ${process.env.DB_NAME || 'NOT SET (will default to finvera_db)'}`);
+    logger.info(`   MASTER_DB_NAME: ${process.env.MASTER_DB_NAME || 'NOT SET (will default to finvera_master)'}`);
+    logger.info(`   NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`   PORT: ${process.env.PORT || '3000'}`);
+    
     // Force garbage collection if available
     if (global.gc) {
       global.gc();
@@ -115,6 +125,35 @@ async function startServer() {
     });
   } catch (error) {
     logger.error('❌ Server startup failed:', error);
+    logger.error('❌ Error details:', {
+      message: error.message,
+      code: error.code,
+      errno: error.errno,
+      sql: error.sql,
+      sqlState: error.sqlState,
+      stack: error.stack,
+    });
+    if (error.original) {
+      logger.error('❌ Original error:', {
+        message: error.original.message,
+        code: error.original.code,
+        errno: error.original.errno,
+        sql: error.original.sql,
+        sqlState: error.original.sqlState,
+      });
+    }
+    // Log environment variable status (without sensitive data)
+    logger.error('❌ Environment check:');
+    logger.error(`   MYSQL_URL: ${process.env.MYSQL_URL ? 'SET' : 'NOT SET'}`);
+    logger.error(`   DB_HOST: ${process.env.DB_HOST || 'NOT SET'}`);
+    logger.error(`   DB_USER: ${process.env.DB_USER || 'NOT SET'}`);
+    logger.error(`   DB_NAME: ${process.env.DB_NAME || 'NOT SET'}`);
+    logger.error(`   MASTER_DB_NAME: ${process.env.MASTER_DB_NAME || 'NOT SET'}`);
+    logger.error(`   NODE_ENV: ${process.env.NODE_ENV || 'NOT SET'}`);
+    logger.error(`   PORT: ${process.env.PORT || 'NOT SET'}`);
+    
+    // Wait a bit to ensure logs are flushed
+    await new Promise(resolve => setTimeout(resolve, 1000));
     process.exit(1);
   }
 }
