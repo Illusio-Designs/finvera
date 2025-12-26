@@ -9,8 +9,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
+      # PORT is automatically set by Render - don't override it
+      # Render will provide PORT environment variable automatically
       # Database variables (use Render's DATABASE_URL or individual vars)
       # DATABASE_URL will be auto-provided if you add MySQL database
       # Or use: DB_HOST, DB_USER, DB_PASSWORD, DB_NAME from database service

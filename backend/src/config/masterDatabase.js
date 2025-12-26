@@ -13,13 +13,14 @@ const logger = require('../utils/logger');
  */
 const masterDbName = process.env.MASTER_DB_NAME || 'finvera_master';
 
-// Support Railway's MYSQL_URL connection string or individual variables
+// Support MYSQL_URL (Railway), DATABASE_URL (Render), or individual variables
 let masterSequelize;
-if (process.env.MYSQL_URL) {
-  // Use Railway's MYSQL_URL connection string (format: mysql://user:password@host:port/database)
-  logger.info(`[DB CONFIG] Using MYSQL_URL connection string for master database`);
+if (process.env.MYSQL_URL || process.env.DATABASE_URL) {
+  // Use connection string (Railway uses MYSQL_URL, Render uses DATABASE_URL)
+  const connectionUrl = process.env.MYSQL_URL || process.env.DATABASE_URL;
+  logger.info(`[DB CONFIG] Using connection string (${process.env.MYSQL_URL ? 'MYSQL_URL' : 'DATABASE_URL'}) for master database`);
   // Parse URL and replace database name with master database name
-  const url = new URL(process.env.MYSQL_URL);
+  const url = new URL(connectionUrl);
   url.pathname = `/${masterDbName}`;
   masterSequelize = new Sequelize(url.toString(), {
     dialect: 'mysql',
@@ -79,10 +80,11 @@ async function initMasterDatabase() {
     
     // Connect without database name to create it
     let rootConnection;
-    if (process.env.MYSQL_URL) {
-      logger.info(`[INIT] Using MYSQL_URL for database creation`);
-      // Use MYSQL_URL but without database name
-      const url = new URL(process.env.MYSQL_URL);
+    if (process.env.MYSQL_URL || process.env.DATABASE_URL) {
+      const connectionUrl = process.env.MYSQL_URL || process.env.DATABASE_URL;
+      logger.info(`[INIT] Using connection string (${process.env.MYSQL_URL ? 'MYSQL_URL' : 'DATABASE_URL'}) for database creation`);
+      // Use connection string but without database name
+      const url = new URL(connectionUrl);
       url.pathname = '/';
       rootConnection = new Sequelize(url.toString(), {
         dialect: 'mysql',
