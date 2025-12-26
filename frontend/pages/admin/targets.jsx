@@ -354,6 +354,7 @@ export default function TargetsList() {
             onClose={handleCloseModal}
             title={modalMode === 'create' ? 'Set New Target' : 'Edit Target'}
             size="lg"
+            closeOnClickOutside={modalMode !== 'edit'}
           >
             {loading && (
               <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-lg">

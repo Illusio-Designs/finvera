@@ -518,6 +518,16 @@ export const pricingAPI = {
   delete: (id) => api.delete(`/pricing/${id}`),
 };
 
+// Subscription API
+export const subscriptionAPI = {
+  create: (data) => api.post("/subscriptions", data),
+  getCurrent: () => api.get("/subscriptions/current"),
+  update: (id, data) => api.put(`/subscriptions/${id}`, data),
+  cancel: (data) => api.post("/subscriptions/cancel", data),
+  verifyPayment: (data) => api.post("/payments/verify", data),
+  getPaymentHistory: () => api.get("/payments/history"),
+};
+
 export const fileAPI = {
   upload: (formData) => {
     return api.post("/files/upload", formData, {

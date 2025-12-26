@@ -224,6 +224,7 @@ export default function GSTINsList() {
             }}
             title={editingId ? 'Edit GSTIN' : 'New GSTIN'}
             size="md"
+            closeOnClickOutside={!editingId}
           >
             <form onSubmit={handleSubmit} className="space-y-6">
               <FormInput

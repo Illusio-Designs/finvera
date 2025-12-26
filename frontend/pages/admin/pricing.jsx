@@ -41,6 +41,16 @@ export default function PricingList() {
     distributor_commission_rate: '',
     renewal_commission_rate: '',
     is_active: true,
+    is_visible: true,
+    is_featured: false,
+    display_order: '',
+    valid_from: '',
+    valid_until: '',
+    features: {
+      gst_filing: false,
+      e_invoicing: false,
+      features_list: [],
+    },
   });
   const [formErrors, setFormErrors] = useState({});
 
@@ -82,6 +92,25 @@ export default function PricingList() {
         distributor_commission_rate: plan.distributor_commission_rate?.toString() || '',
         renewal_commission_rate: plan.renewal_commission_rate?.toString() || '',
         is_active: plan.is_active !== undefined ? plan.is_active : true,
+        is_visible: plan.is_visible !== undefined ? plan.is_visible : true,
+        is_featured: plan.is_featured || false,
+        display_order: plan.display_order?.toString() || '',
+        valid_from: plan.valid_from ? new Date(plan.valid_from).toISOString().split('T')[0] : '',
+        valid_until: plan.valid_until ? new Date(plan.valid_until).toISOString().split('T')[0] : '',
+        features: (() => {
+          if (typeof plan.features === 'string') {
+            try {
+              return JSON.parse(plan.features);
+            } catch {
+              return { gst_filing: false, e_invoicing: false, features_list: [] };
+            }
+          }
+          return plan.features || {
+            gst_filing: false,
+            e_invoicing: false,
+            features_list: [],
+          };
+        })(),
       });
       setEditingId(row.id);
       setModalMode('edit');
@@ -138,6 +167,16 @@ export default function PricingList() {
         salesman_commission_rate: formData.salesman_commission_rate ? parseFloat(formData.salesman_commission_rate) : null,
         distributor_commission_rate: formData.distributor_commission_rate ? parseFloat(formData.distributor_commission_rate) : null,
         renewal_commission_rate: formData.renewal_commission_rate ? parseFloat(formData.renewal_commission_rate) : null,
+        is_visible: formData.is_visible !== undefined ? formData.is_visible : true,
+        is_featured: formData.is_featured || false,
+        display_order: formData.display_order ? parseInt(formData.display_order) : null,
+        valid_from: formData.valid_from ? new Date(formData.valid_from).toISOString() : null,
+        valid_until: formData.valid_until ? new Date(formData.valid_until).toISOString() : null,
+        features: formData.features || {
+          gst_filing: false,
+          e_invoicing: false,
+          features_list: [],
+        },
       };
 
       if (modalMode === 'create') {
@@ -174,6 +213,16 @@ export default function PricingList() {
       distributor_commission_rate: '',
       renewal_commission_rate: '',
       is_active: true,
+      is_visible: true,
+      is_featured: false,
+      display_order: '',
+      valid_from: '',
+      valid_until: '',
+      features: {
+        gst_filing: false,
+        e_invoicing: false,
+        features_list: [],
+      },
     });
     setFormErrors({});
     setEditingId(null);
@@ -185,7 +234,11 @@ export default function PricingList() {
   };
 
   const handleChange = (name, value) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'features' && typeof value === 'object') {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
     if (formErrors[name]) {
       setFormErrors(prev => {
         const newErrors = { ...prev };
@@ -281,6 +334,7 @@ export default function PricingList() {
             title={modalMode === 'create' ? 'Create Subscription Plan' : 'Edit Subscription Plan'}
             size="xl"
             className="max-h-[90vh] overflow-y-auto"
+            closeOnClickOutside={modalMode !== 'edit'}
           >
             {loading && (
               <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-lg">
@@ -464,7 +518,12 @@ export default function PricingList() {
                 />
               </div>
 
-              {modalMode === 'edit' && (
+              <div className="flex items-center gap-2 mb-4 mt-6 pt-4 border-t border-gray-200">
+                <FiTag className="h-5 w-5 text-primary-600" />
+                <h3 className="text-sm font-semibold text-gray-700">Visibility & Display</h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <FormSelect
                   name="is_active"
                   label="Status"
@@ -477,7 +536,125 @@ export default function PricingList() {
                     { value: 'false', label: 'Inactive' },
                   ]}
                 />
-              )}
+
+                <FormSelect
+                  name="is_visible"
+                  label="Visible"
+                  value={formData.is_visible ? 'true' : 'false'}
+                  onChange={(name, value) => handleChange('is_visible', value === 'true')}
+                  error={formErrors.is_visible}
+                  touched={!!formErrors.is_visible}
+                  options={[
+                    { value: 'true', label: 'Visible' },
+                    { value: 'false', label: 'Hidden' },
+                  ]}
+                />
+
+                <FormSelect
+                  name="is_featured"
+                  label="Featured"
+                  value={formData.is_featured ? 'true' : 'false'}
+                  onChange={(name, value) => handleChange('is_featured', value === 'true')}
+                  error={formErrors.is_featured}
+                  touched={!!formErrors.is_featured}
+                  options={[
+                    { value: 'true', label: 'Featured' },
+                    { value: 'false', label: 'Not Featured' },
+                  ]}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormInput
+                  name="display_order"
+                  label="Display Order"
+                  type="number"
+                  value={formData.display_order}
+                  onChange={handleChange}
+                  error={formErrors.display_order}
+                  touched={!!formErrors.display_order}
+                  min="0"
+                  placeholder="Order in list"
+                />
+
+                <FormInput
+                  name="valid_from"
+                  label="Valid From"
+                  type="date"
+                  value={formData.valid_from}
+                  onChange={handleChange}
+                  error={formErrors.valid_from}
+                  touched={!!formErrors.valid_from}
+                />
+
+                <FormInput
+                  name="valid_until"
+                  label="Valid Until"
+                  type="date"
+                  value={formData.valid_until}
+                  onChange={handleChange}
+                  error={formErrors.valid_until}
+                  touched={!!formErrors.valid_until}
+                />
+              </div>
+
+              <div className="flex items-center gap-2 mb-4 mt-6 pt-4 border-t border-gray-200">
+                <FiTag className="h-5 w-5 text-primary-600" />
+                <h3 className="text-sm font-semibold text-gray-700">Features</h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="gst_filing"
+                    checked={formData.features?.gst_filing || false}
+                    onChange={(e) => handleChange('features', {
+                      ...formData.features,
+                      gst_filing: e.target.checked,
+                    })}
+                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  />
+                  <label htmlFor="gst_filing" className="text-sm font-medium text-gray-700">
+                    GST Filing
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="e_invoicing"
+                    checked={formData.features?.e_invoicing || false}
+                    onChange={(e) => handleChange('features', {
+                      ...formData.features,
+                      e_invoicing: e.target.checked,
+                    })}
+                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  />
+                  <label htmlFor="e_invoicing" className="text-sm font-medium text-gray-700">
+                    E-Invoicing
+                  </label>
+                </div>
+              </div>
+
+              <FormTextarea
+                name="features_list"
+                label="Features List (comma-separated)"
+                value={Array.isArray(formData.features?.features_list) 
+                  ? formData.features.features_list.join(', ') 
+                  : (formData.features?.features_list || '')}
+                onChange={(name, value) => {
+                  const featuresList = value.split(',').map(f => f.trim()).filter(f => f);
+                  handleChange('features', {
+                    ...formData.features,
+                    features_list: featuresList,
+                  });
+                }}
+                error={formErrors.features_list}
+                touched={!!formErrors.features_list}
+                rows={4}
+                placeholder="GST Filing, Basic Reports, Invoice Management, etc."
+              />
 
               <div className="flex gap-3 pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
                 <Button type="submit" disabled={loading} loading={loading}>

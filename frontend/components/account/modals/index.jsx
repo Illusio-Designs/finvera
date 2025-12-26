@@ -21,9 +21,9 @@ export function AlertWarningModal({ isOpen, onClose, title = 'Warning', message,
   );
 }
 
-export function FullScreenModal({ isOpen, onClose, title, children }) {
+export function FullScreenModal({ isOpen, onClose, title, children, closeOnClickOutside = true }) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} size="full" className="h-[90vh]">
+    <Modal isOpen={isOpen} onClose={onClose} title={title} size="full" className="h-[90vh]" closeOnClickOutside={closeOnClickOutside}>
       <div className="h-[75vh] overflow-auto">{children}</div>
     </Modal>
   );

@@ -771,6 +771,7 @@ export default function LedgersList() {
             }}
             title={editingId ? 'Edit Ledger' : 'New Ledger'}
             size="xl"
+            closeOnClickOutside={!editingId}
           >
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Basic Information */}

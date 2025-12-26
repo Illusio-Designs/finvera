@@ -141,9 +141,28 @@ module.exports = {
           razorpay_plan_id: razorpayPlanId,
           status: razorpaySubscription.status,
           plan_code: plan.plan_code,
+          plan_name: plan.plan_name,
+          description: plan.description,
           billing_cycle: billing_cycle,
+          base_price: plan.base_price,
+          discounted_price: plan.discounted_price,
           amount: amount,
           currency: plan.currency || 'INR',
+          trial_days: plan.trial_days || 0,
+          max_users: plan.max_users,
+          max_invoices_per_month: plan.max_invoices_per_month,
+          max_companies: plan.max_companies || 1,
+          storage_limit_gb: plan.storage_limit_gb,
+          features: plan.features,
+          salesman_commission_rate: plan.salesman_commission_rate,
+          distributor_commission_rate: plan.distributor_commission_rate,
+          renewal_commission_rate: plan.renewal_commission_rate,
+          is_active: plan.is_active !== undefined ? plan.is_active : true,
+          is_visible: plan.is_visible !== undefined ? plan.is_visible : true,
+          is_featured: plan.is_featured || false,
+          display_order: plan.display_order,
+          valid_from: plan.valid_from,
+          valid_until: plan.valid_until,
           start_date: startDate,
           end_date: endDate,
           current_period_start: startDate,
@@ -235,6 +254,98 @@ module.exports = {
       return res.json({ success: true, subscription });
     } catch (err) {
       logger.error('Get subscription error:', err);
+      next(err);
+    }
+  },
+
+  /**
+   * Update subscription
+   */
+  async updateSubscription(req, res, next) {
+    try {
+      const { id } = req.params;
+      const {
+        plan_code,
+        plan_name,
+        description,
+        billing_cycle,
+        base_price,
+        discounted_price,
+        amount,
+        currency,
+        trial_days,
+        max_users,
+        max_invoices_per_month,
+        max_companies,
+        storage_limit_gb,
+        features,
+        salesman_commission_rate,
+        distributor_commission_rate,
+        renewal_commission_rate,
+        is_active,
+        is_visible,
+        is_featured,
+        display_order,
+        valid_from,
+        valid_until,
+        start_date,
+        end_date,
+        current_period_start,
+        current_period_end,
+        status,
+        notes,
+        metadata,
+      } = req.body;
+
+      const masterModels = req.masterModels || require('../models/masterModels');
+      const subscription = await masterModels.Subscription.findByPk(id);
+
+      if (!subscription) {
+        return res.status(404).json({ message: 'Subscription not found' });
+      }
+
+      // Build update object with only provided fields
+      const updateData = {};
+      if (plan_code !== undefined) updateData.plan_code = plan_code;
+      if (plan_name !== undefined) updateData.plan_name = plan_name;
+      if (description !== undefined) updateData.description = description;
+      if (billing_cycle !== undefined) updateData.billing_cycle = billing_cycle;
+      if (base_price !== undefined) updateData.base_price = base_price;
+      if (discounted_price !== undefined) updateData.discounted_price = discounted_price;
+      if (amount !== undefined) updateData.amount = amount;
+      if (currency !== undefined) updateData.currency = currency;
+      if (trial_days !== undefined) updateData.trial_days = trial_days;
+      if (max_users !== undefined) updateData.max_users = max_users;
+      if (max_invoices_per_month !== undefined) updateData.max_invoices_per_month = max_invoices_per_month;
+      if (max_companies !== undefined) updateData.max_companies = max_companies;
+      if (storage_limit_gb !== undefined) updateData.storage_limit_gb = storage_limit_gb;
+      if (features !== undefined) updateData.features = features;
+      if (salesman_commission_rate !== undefined) updateData.salesman_commission_rate = salesman_commission_rate;
+      if (distributor_commission_rate !== undefined) updateData.distributor_commission_rate = distributor_commission_rate;
+      if (renewal_commission_rate !== undefined) updateData.renewal_commission_rate = renewal_commission_rate;
+      if (is_active !== undefined) updateData.is_active = is_active;
+      if (is_visible !== undefined) updateData.is_visible = is_visible;
+      if (is_featured !== undefined) updateData.is_featured = is_featured;
+      if (display_order !== undefined) updateData.display_order = display_order;
+      if (valid_from !== undefined) updateData.valid_from = valid_from;
+      if (valid_until !== undefined) updateData.valid_until = valid_until;
+      if (start_date !== undefined) updateData.start_date = start_date;
+      if (end_date !== undefined) updateData.end_date = end_date;
+      if (current_period_start !== undefined) updateData.current_period_start = current_period_start;
+      if (current_period_end !== undefined) updateData.current_period_end = current_period_end;
+      if (status !== undefined) updateData.status = status;
+      if (notes !== undefined) updateData.notes = notes;
+      if (metadata !== undefined) updateData.metadata = metadata;
+
+      await subscription.update(updateData);
+
+      return res.json({
+        success: true,
+        message: 'Subscription updated successfully',
+        subscription: subscription,
+      });
+    } catch (err) {
+      logger.error('Update subscription error:', err);
       next(err);
     }
   },

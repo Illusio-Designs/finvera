@@ -41,9 +41,25 @@ const Subscription = masterSequelize.define('Subscription', {
     type: DataTypes.STRING(50),
     allowNull: false,
   },
+  plan_name: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
   billing_cycle: {
     type: DataTypes.STRING(20),
     allowNull: false,
+  },
+  base_price: {
+    type: DataTypes.DECIMAL(15, 2),
+    allowNull: true,
+  },
+  discounted_price: {
+    type: DataTypes.DECIMAL(15, 2),
+    allowNull: true,
   },
   amount: {
     type: DataTypes.DECIMAL(15, 2),
@@ -52,6 +68,66 @@ const Subscription = masterSequelize.define('Subscription', {
   currency: {
     type: DataTypes.STRING(3),
     defaultValue: 'INR',
+  },
+  trial_days: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
+  max_users: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
+  max_invoices_per_month: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
+  max_companies: {
+    type: DataTypes.INTEGER,
+    defaultValue: 1,
+  },
+  storage_limit_gb: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
+  features: {
+    type: DataTypes.JSON,
+    allowNull: true,
+  },
+  salesman_commission_rate: {
+    type: DataTypes.DECIMAL(5, 2),
+    allowNull: true,
+  },
+  distributor_commission_rate: {
+    type: DataTypes.DECIMAL(5, 2),
+    allowNull: true,
+  },
+  renewal_commission_rate: {
+    type: DataTypes.DECIMAL(5, 2),
+    allowNull: true,
+  },
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+  },
+  is_visible: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+  },
+  is_featured: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  display_order: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
+  valid_from: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  valid_until: {
+    type: DataTypes.DATE,
+    allowNull: true,
   },
   start_date: {
     type: DataTypes.DATE,

@@ -150,7 +150,10 @@ module.exports = {
   async update(req, res, next) {
     try {
       const { id } = req.params;
-      const distributor = await Distributor.findByPk(id);
+      const { full_name, email, password, ...distributorData } = req.body;
+      const distributor = await Distributor.findByPk(id, {
+        include: [{ model: User, attributes: ['id', 'email', 'name'] }],
+      });
 
       if (!distributor) {
         return res.status(404).json({ message: 'Distributor not found' });
@@ -161,8 +164,38 @@ module.exports = {
         return res.status(400).json({ message: 'distributor_code cannot be changed' });
       }
 
-      await distributor.update(req.body);
-      res.json(distributor);
+      const tx = await sequelize.transaction();
+      try {
+        // Update distributor
+        await distributor.update(distributorData, { transaction: tx });
+
+        // Update user if email, password, or full_name is provided
+        if (distributor.User) {
+          const userUpdateData = {};
+          if (email) userUpdateData.email = email;
+          if (full_name) userUpdateData.name = full_name;
+          if (password) {
+            const password_hash = await bcrypt.hash(password, 10);
+            userUpdateData.password = password_hash;
+          }
+
+          if (Object.keys(userUpdateData).length > 0) {
+            await distributor.User.update(userUpdateData, { transaction: tx });
+          }
+        }
+
+        await tx.commit();
+
+        // Reload distributor with updated User data
+        await distributor.reload({
+          include: [{ model: User, attributes: ['id', 'email', 'name'] }],
+        });
+
+        res.json(distributor);
+      } catch (err) {
+        await tx.rollback();
+        throw err;
+      }
     } catch (err) {
       next(err);
     }

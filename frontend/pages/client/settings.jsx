@@ -635,7 +635,7 @@ function EditCompanyModal({ isOpen, onClose, company, onSuccess }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Edit Company" size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} title="Edit Company" size="xl" closeOnClickOutside={false}>
       <div className="space-y-6">
         <Stepper steps={steps} currentStep={currentStep} />
 
@@ -906,7 +906,7 @@ function EInvoiceModal({ isOpen, onClose, company, onSuccess }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="E-Invoice Configuration" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title="E-Invoice Configuration" size="lg" closeOnClickOutside={false}>
       <div className="space-y-6">
         <Stepper steps={steps} currentStep={currentStep} />
 
@@ -1066,7 +1066,7 @@ function EWayBillModal({ isOpen, onClose, company, onSuccess }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="E-Way Bill Configuration" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title="E-Way Bill Configuration" size="lg" closeOnClickOutside={false}>
       <div className="space-y-6">
         <Stepper steps={steps} currentStep={currentStep} />
 
@@ -1233,7 +1233,7 @@ function InvoiceNumberingModal({ isOpen, onClose, company, onSuccess }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Invoice Numbering Configuration" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title="Invoice Numbering Configuration" size="lg" closeOnClickOutside={false}>
       <div className="space-y-6">
         <Stepper steps={steps} currentStep={currentStep} />
 
@@ -1422,7 +1422,7 @@ function InvoiceTemplateModal({ isOpen, onClose, company, onSuccess }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Invoice Template Settings" size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} title="Invoice Template Settings" size="xl" closeOnClickOutside={false}>
       <div className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -1624,7 +1624,7 @@ function LogoUploadModal({ isOpen, onClose, company, onSuccess }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Upload Company Logo" size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title="Upload Company Logo" size="md" closeOnClickOutside={false}>
       <div className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1757,7 +1757,7 @@ function SignatureUploadModal({ isOpen, onClose, company, onSuccess }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Upload Digital Signature" size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title="Upload Digital Signature" size="md" closeOnClickOutside={false}>
       <div className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1927,7 +1927,7 @@ function DSCConfigModal({ isOpen, onClose, company, onSuccess }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="DSC Certificate Configuration" size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} title="DSC Certificate Configuration" size="xl" closeOnClickOutside={false}>
       <div className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">

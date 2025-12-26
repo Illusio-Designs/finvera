@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
 import toast, { Toaster } from 'react-hot-toast';
@@ -7,6 +7,7 @@ import FormInput from '../../components/forms/FormInput';
 import FormPasswordInput from '../../components/forms/FormPasswordInput';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
+import { pricingAPI } from '../../lib/api';
 
 export default function ClientRegister() {
   const [formData, setFormData] = useState({
@@ -16,8 +17,35 @@ export default function ClientRegister() {
     company_name: '',
   });
   const [loading, setLoading] = useState(false);
+  const [plan, setPlan] = useState(null);
+  const [billingCycle, setBillingCycle] = useState('monthly');
+  const [planLoading, setPlanLoading] = useState(false);
   const { register } = useAuth();
   const router = useRouter();
+  
+  useEffect(() => {
+    // Get plan_id and billing_cycle from URL query params
+    const { plan_id, billing_cycle } = router.query;
+    if (plan_id) {
+      setBillingCycle(billing_cycle || 'monthly');
+      fetchPlan(plan_id);
+    }
+  }, [router.query]);
+  
+  const fetchPlan = async (planId) => {
+    try {
+      setPlanLoading(true);
+      const response = await pricingAPI.get(planId);
+      if (response.data) {
+        setPlan(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching plan:', error);
+      toast.error('Failed to load plan details');
+    } finally {
+      setPlanLoading(false);
+    }
+  };
 
   const handleChange = (name, value) => {
     setFormData({
@@ -43,7 +71,12 @@ export default function ClientRegister() {
       
       if (result.success) {
         toast.success('Registration successful!');
-        router.push('/client/dashboard');
+        // If plan was selected, redirect to subscription page
+        if (router.query.plan_id) {
+          router.push(`/client/subscribe?plan_id=${router.query.plan_id}&billing_cycle=${billingCycle}`);
+        } else {
+          router.push('/client/dashboard');
+        }
       } else {
         toast.error(result.message || 'Registration failed');
       }
@@ -67,6 +100,72 @@ export default function ClientRegister() {
               Sign up for your Finvera account
             </p>
           </div>
+          
+          {/* Plan Selection Display */}
+          {plan && (
+            <div className="mb-6 p-4 bg-primary-50 rounded-lg border border-primary-200">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-900">{plan.plan_name}</h3>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setBillingCycle('monthly')}
+                    className={`px-3 py-1 text-sm font-medium rounded ${
+                      billingCycle === 'monthly'
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-white text-gray-700 border border-gray-300'
+                    }`}
+                  >
+                    Monthly
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBillingCycle('yearly')}
+                    className={`px-3 py-1 text-sm font-medium rounded ${
+                      billingCycle === 'yearly'
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-white text-gray-700 border border-gray-300'
+                    }`}
+                  >
+                    Yearly
+                  </button>
+                </div>
+              </div>
+              <div className="text-center">
+                <span className="text-2xl font-bold text-gray-900">
+                  {new Intl.NumberFormat('en-IN', {
+                    style: 'currency',
+                    currency: plan.currency || 'INR',
+                    minimumFractionDigits: 0,
+                  }).format(
+                    billingCycle === 'yearly' && plan.discounted_price
+                      ? plan.discounted_price * 12
+                      : billingCycle === 'yearly'
+                      ? plan.base_price * 12
+                      : plan.base_price
+                  )}
+                </span>
+                <span className="text-gray-600 ml-1">
+                  {billingCycle === 'yearly' ? '/year' : '/month'}
+                </span>
+                {billingCycle === 'yearly' && plan.discounted_price && (
+                  <div className="mt-1">
+                    <span className="text-sm text-gray-500 line-through">
+                      {new Intl.NumberFormat('en-IN', {
+                        style: 'currency',
+                        currency: plan.currency || 'INR',
+                        minimumFractionDigits: 0,
+                      }).format(plan.base_price * 12)}
+                    </span>
+                    <span className="ml-2 text-sm text-green-600 font-semibold">
+                      Save {Math.round(((plan.base_price * 12 - plan.discounted_price * 12) / (plan.base_price * 12)) * 100)}%
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
               <FormInput
