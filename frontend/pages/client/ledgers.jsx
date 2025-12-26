@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import ClientLayout from '../../components/layouts/ClientLayout';
@@ -8,6 +8,7 @@ import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import Modal from '../../components/ui/Modal';
 import FormInput from '../../components/forms/FormInput';
+import FormPhoneInput from '../../components/forms/FormPhoneInput';
 import FormSelect from '../../components/forms/FormSelect';
 import FormDatePicker from '../../components/forms/FormDatePicker';
 import FormTextarea from '../../components/forms/FormTextarea';
@@ -65,11 +66,11 @@ export default function LedgersList() {
 
   // Fetch account groups for dropdown
   const { data: groupsData } = useApi(() => accountingAPI.accountGroups.list({ limit: 1000 }), true);
-  const groups = groupsData?.data || groupsData || [];
-  const groupOptions = groups.map((g) => ({
+  const groups = useMemo(() => groupsData?.data || groupsData || [], [groupsData]);
+  const groupOptions = useMemo(() => groups.map((g) => ({
     value: g.id,
     label: `${g.group_code} - ${g.name}`,
-  }));
+  })), [groups]);
 
   // Get selected account group details
   const selectedGroup = useMemo(() => {
@@ -143,7 +144,7 @@ export default function LedgersList() {
         fetchStatement().catch(err => console.error('Error fetching statement:', err));
       }
     }
-  }, [id, view]);
+  }, [id, view, fetchLedger, fetchBalance, fetchStatement]);
 
   const {
     data: tableData,
@@ -995,14 +996,14 @@ export default function LedgersList() {
                       touched={!!formErrors.country}
                       placeholder="India"
                     />
-                    <FormInput
+                    <FormPhoneInput
                       name="phone"
                       label="Phone"
                       value={formData.phone}
                       onChange={handleChange}
                       error={formErrors.phone}
                       touched={!!formErrors.phone}
-                      type="tel"
+                      defaultCountry="IN"
                     />
                     <FormInput
                       name="email"

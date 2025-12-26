@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import AdminLayout from '../../components/layouts/AdminLayout';
@@ -74,11 +74,7 @@ export default function AdminDashboard() {
     },
   });
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, [userRole]);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       // Fetch role-specific dashboard data
       if (userRole === 'distributor') {
@@ -124,9 +120,9 @@ export default function AdminDashboard() {
         }
       } else {
         // Admin/super_admin/finance_manager - fetch admin dashboard
-      const response = await adminAPI.dashboard();
-      const data = response.data.data || response.data;
-      setStats(data);
+        const response = await adminAPI.dashboard();
+        const data = response.data.data || response.data;
+        setStats(data);
       }
     } catch (error) {
       toast.error('Failed to load dashboard data');
@@ -134,7 +130,11 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userRole, user?.id, user?.user_id]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   const statCards = [
     {

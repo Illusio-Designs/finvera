@@ -20,10 +20,14 @@ const masterSequelize = new Sequelize(
     dialect: 'mysql',
     logging: process.env.NODE_ENV === 'development' ? (msg) => logger.debug(msg) : false,
     pool: {
-      max: 10,
-      min: 2,
+      max: 3,
+      min: 0,
       acquire: 30000,
       idle: 10000,
+      evict: 1000,
+    },
+    dialectOptions: {
+      connectTimeout: 60000,
     },
   },
 );
@@ -48,15 +52,43 @@ async function initMasterDatabase() {
     
     logger.info(`Master database '${masterDbName}' ready`);
 
-    // Test connection
+    // Test connection with retry logic for WebAssembly errors
+    let retries = 3;
+    while (retries > 0) {
+      try {
     await masterSequelize.authenticate();
     logger.info('Master database connection established');
+        break;
+      } catch (authError) {
+        if (authError.message && authError.message.includes('WebAssembly') && retries > 1) {
+          logger.warn(`⚠️  WebAssembly error during auth, retrying... (${retries - 1} attempts left)`);
+          await new Promise(resolve => setTimeout(resolve, 500));
+          if (global.gc) {
+            global.gc();
+          }
+          retries--;
+        } else {
+          throw authError;
+        }
+      }
+    }
 
     // Run migrations for master database
     await runMasterMigrations();
     
+    // Allow memory to be freed
+    if (global.gc) {
+      global.gc();
+    }
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
     // Sync all master models (shared accounting structure)
+    // Lazy load models to reduce initial memory footprint
     const masterModels = require('../models/masterModels');
+    
+    // Add delay before sync to allow WebAssembly to initialize if needed
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     await masterModels.syncMasterModels();
     
     logger.info('Master database models synchronized:');
@@ -67,8 +99,20 @@ async function initMasterDatabase() {
     logger.info('  ✓ tds_sections (shared TDS sections)');
     logger.info('  ✓ accounting_years (shared accounting periods)');
 
+    // Allow memory to be freed
+    if (global.gc) {
+      global.gc();
+    }
+    await new Promise(resolve => setTimeout(resolve, 50));
+
     // Seed default data using consolidated seeder
     await seedMasterData();
+    
+    // Allow memory to be freed
+    if (global.gc) {
+      global.gc();
+    }
+    await new Promise(resolve => setTimeout(resolve, 50));
     
     // Also run the consolidated admin-master seeder for master DB parts
     await runMasterSeeder();

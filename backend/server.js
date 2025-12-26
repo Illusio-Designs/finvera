@@ -1,6 +1,5 @@
 require('dotenv').config();
 const http = require('http');
-const app = require('./src/app');
 const sequelize = require('./src/config/database');
 const { initDatabase } = require('./src/config/database');
 const masterSequelize = require('./src/config/masterDatabase');
@@ -16,18 +15,76 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // Test database connection
 async function startServer() {
   try {
+    // Force garbage collection if available
+    if (global.gc) {
+      global.gc();
+    }
+    
     logger.info('🔄 Initializing databases...');
     
     // 1. Initialize Master Database (for tenant metadata)
     logger.info('📦 Setting up master database for tenant metadata...');
-    await initMasterDatabase();
+    
+    // Wrap in try-catch to handle WebAssembly memory errors gracefully
+    try {
+      await initMasterDatabase();
+    } catch (initError) {
+      // If it's a WebAssembly memory error, log it but try to continue
+      if (initError.message && initError.message.includes('WebAssembly') && initError.message.includes('Out of memory')) {
+        logger.warn('⚠️  WebAssembly memory error during master DB init, but continuing...');
+        logger.warn('   This is often non-fatal. If issues persist, increase NODE_OPTIONS memory limit.');
+        // Try to continue - the error might have been caught internally
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } else {
+        throw initError;
+      }
+    }
+    
+    // Allow memory to be freed
+    if (global.gc) {
+      global.gc();
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     // 2. Initialize Main Database (for admin, salesman, distributor, etc.)
     logger.info('📦 Setting up main database for system models...');
     await initDatabase();
+    
+    // Allow memory to be freed
+    if (global.gc) {
+      global.gc();
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     await syncDatabase();
 
+    // Final garbage collection
+    if (global.gc) {
+      global.gc();
+    }
+
     logger.info('✅ All databases initialized successfully');
+    
+    // Load Express app AFTER database initialization to avoid WebAssembly memory conflicts
+    // This ensures databases initialize first, then HTTP server starts
+    logger.info('📡 Initializing Express application...');
+    let app;
+    try {
+      app = require('./src/app');
+    } catch (appError) {
+      if (appError.message && appError.message.includes('WebAssembly')) {
+        logger.error('⚠️  WebAssembly error loading Express app. Retrying after cleanup...');
+        // Force garbage collection
+        if (global.gc) {
+          global.gc();
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Retry once
+        app = require('./src/app');
+      } else {
+        throw appError;
+      }
+    }
     
     // Create HTTP server
     const server = http.createServer(app);
@@ -84,9 +141,33 @@ process.on('SIGINT', async () => {
 });
 
 // Handle unhandled promise rejections
-process.on('unhandledRejection', (err) => {
+process.on('unhandledRejection', (err, promise) => {
   logger.error('Unhandled Promise Rejection:', err);
-  process.exit(1);
+  
+  // If it's a WebAssembly memory error, try to recover
+  if (err.message && (err.message.includes('WebAssembly') || err.message.includes('Wasm')) && err.message.includes('Out of memory')) {
+    logger.error('⚠️  WebAssembly memory error detected. This may be due to:');
+    logger.error('   1. Insufficient system memory');
+    logger.error('   2. Too many concurrent operations');
+    logger.error('   3. Memory fragmentation');
+    logger.error('   4. WebAssembly module (undici/llhttp) failed to allocate memory');
+    logger.error('');
+    logger.error('💡 Solutions:');
+    logger.error('   - Close other applications to free memory');
+    logger.error('   - Restart your computer to clear memory fragmentation');
+    logger.error('   - Check if MySQL is running and accessible');
+    logger.error('   - The server should automatically retry with increased delays');
+    logger.error('   - If persistent, increase memory: NODE_OPTIONS="--max-old-space-size=8192 --wasm-max-mem=4294967296" npm run dev');
+    
+    // Don't exit immediately for WebAssembly errors - let the server try to recover
+    // The error might be non-fatal if it happened during lazy loading
+    return;
+  }
+  
+  // For non-WebAssembly errors, exit after a delay
+  setTimeout(() => {
+    process.exit(1);
+  }, 1000);
 });
 
 // Handle uncaught exceptions

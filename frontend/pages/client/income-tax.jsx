@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import ClientLayout from '../../components/layouts/ClientLayout';
@@ -66,11 +66,7 @@ export default function IncomeTaxPage() {
   const [form16File, setForm16File] = useState(null);
   const [form16Result, setForm16Result] = useState(null);
 
-  useEffect(() => {
-    fetchCompanyData();
-  }, [user]);
-
-  const fetchCompanyData = async () => {
+  const fetchCompanyData = useCallback(async () => {
     try {
       if (!user?.company_id) return;
       
@@ -87,7 +83,11 @@ export default function IncomeTaxPage() {
     } catch (error) {
       console.error('Failed to fetch company data:', error);
     }
-  };
+  }, [user?.company_id]);
+
+  useEffect(() => {
+    fetchCompanyData();
+  }, [fetchCompanyData]);
 
   const handleTaxInputChange = (e) => {
     const { name, value } = e.target;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import ClientLayout from '../../components/layouts/ClientLayout';
@@ -47,19 +47,28 @@ export default function LoanPage() {
   const [eligibility, setEligibility] = useState(null);
   const [bankStatementStatus, setBankStatementStatus] = useState(null);
 
-  useEffect(() => {
-    fetchCompanyData();
-    checkConsent();
-    // Generate customer ID from user ID or company ID
-    if (user?.id || user?.company_id) {
-      setFormData(prev => ({
-        ...prev,
-        customer_id: user?.id || user?.company_id || '',
-      }));
+  const fetchCompanyData = useCallback(async () => {
+    try {
+      if (!user?.company_id) return;
+      
+      const response = await companyAPI.list();
+      const companies = response.data?.data || response.data || [];
+      const currentCompany = companies.find(c => c.id === user.company_id);
+      
+      if (currentCompany) {
+        setCompanyData(currentCompany);
+        setCompanyName(currentCompany.company_name || '');
+        setFormData(prev => ({
+          ...prev,
+          pan: currentCompany.pan || '',
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch company data:', error);
     }
-  }, [user, router]);
+  }, [user?.company_id]);
 
-  const checkConsent = async () => {
+  const checkConsent = useCallback(async () => {
     try {
       // First check backend for consent
       const response = await finboxAPI.getConsent();
@@ -96,28 +105,19 @@ export default function LoanPage() {
         router.push('/client/dashboard');
       }
     }
-  };
+  }, [user?.id, user?.company_id, router]);
 
-  const fetchCompanyData = async () => {
-    try {
-      if (!user?.company_id) return;
-      
-      const response = await companyAPI.list();
-      const companies = response.data?.data || response.data || [];
-      const currentCompany = companies.find(c => c.id === user.company_id);
-      
-      if (currentCompany) {
-        setCompanyData(currentCompany);
-        setCompanyName(currentCompany.company_name || '');
-        setFormData(prev => ({
-          ...prev,
-          pan: currentCompany.pan || '',
-        }));
-      }
-    } catch (error) {
-      console.error('Failed to fetch company data:', error);
+  useEffect(() => {
+    fetchCompanyData();
+    checkConsent();
+    // Generate customer ID from user ID or company ID
+    if (user?.id || user?.company_id) {
+      setFormData(prev => ({
+        ...prev,
+        customer_id: user?.id || user?.company_id || '',
+      }));
     }
-  };
+  }, [user, router, fetchCompanyData, checkConsent]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

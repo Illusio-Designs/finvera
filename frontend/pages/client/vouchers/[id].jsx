@@ -295,7 +295,7 @@ export default function VoucherDetail() {
       console.error('PDF generation error:', error);
       toast.error('Failed to generate PDF. Using print dialog instead.', { id: 'pdf-generate' });
       // Fallback to print dialog
-      handlePrint();
+    handlePrint();
     }
   };
 

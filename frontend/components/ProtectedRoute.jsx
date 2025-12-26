@@ -112,7 +112,7 @@ export default function ProtectedRoute({ children, portalType = null }) {
     }
 
     setHasChecked(true);
-  }, [loading, isAuthenticated, user, router.pathname, portalType, hasChecked, mounted, hasToken, hasUserCookie]);
+  }, [loading, isAuthenticated, user, router, portalType, hasChecked, mounted, hasToken, hasUserCookie]);
 
   // Don't render until mounted to avoid hydration mismatch
   if (!mounted) {

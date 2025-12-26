@@ -20,8 +20,13 @@ async function syncDatabase() {
 
     // Sync models with alter: true (will alter existing tables to match models)
     // This is safer than force: true which drops tables
+    // Use alter: false in production to avoid memory issues during startup
     try {
-    await sequelize.sync({ alter: true });
+      const syncOptions = process.env.NODE_ENV === 'production' 
+        ? { alter: false } // Skip alter in production to save memory
+        : { alter: true };
+      
+      await sequelize.sync(syncOptions);
     } catch (syncError) {
       // Handle specific MySQL errors that shouldn't block startup
       if (syncError.original && syncError.original.code === 'ER_TOO_MANY_KEYS') {

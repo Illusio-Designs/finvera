@@ -1,305 +1,312 @@
-# Finvera - Multi-Tenant Accounting SaaS
+<div align="center">
 
-Complete full-stack accounting SaaS application designed for Indian businesses with GST compliance, TDS management, and sales/distribution management.
+# 💼 Finvera
 
-## Technology Stack
+### Multi-Tenant Accounting SaaS Platform
+
+**Complete full-stack accounting solution designed for Indian businesses with GST compliance, TDS management, and sales/distribution management.**
+
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15.5-blue.svg)](https://nextjs.org/)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0+-orange.svg)](https://www.mysql.com/)
+[![Redis](https://img.shields.io/badge/Redis-Latest-red.svg)](https://redis.io/)
+[![License](https://img.shields.io/badge/License-ISC-blue.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/Status-Production%20Ready-success.svg)]()
+
+[Features](#-features) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [License](#-license)
+
+---
+
+</div>
+
+## 📋 Table of Contents
+
+- [Overview](#-overview)
+- [✨ Features](#-features)
+- [🛠️ Technology Stack](#️-technology-stack)
+- [🚀 Quick Start](#-quick-start)
+- [📁 Project Structure](#-project-structure)
+- [⚙️ Configuration](#️-configuration)
+- [🔐 Security](#-security)
+- [📡 API Documentation](#-api-documentation)
+- [💻 Development](#-development)
+- [🖥️ Desktop Application](#️-desktop-application)
+- [🚢 Deployment](#-deployment)
+- [📄 License](#-license)
+
+---
+
+## 🎯 Overview
+
+**Finvera** is a comprehensive, multi-tenant accounting SaaS platform built specifically for Indian businesses. It provides complete financial management with built-in GST compliance, TDS management, and advanced sales/distribution tracking.
+
+### Key Highlights
+
+- 🏢 **Multi-Tenant Architecture** - Complete data isolation per tenant
+- 📊 **Full Accounting Suite** - Double-entry bookkeeping, vouchers, reports
+- 🇮🇳 **GST Compliance** - E-Invoice, GSTR-1, GSTR-3B generation
+- 💰 **TDS Management** - Automatic calculation and Form 16A generation
+- 📈 **Sales & Distribution** - Distributor/salesman management with commissions
+- 🔔 **Real-Time Notifications** - WebSocket-powered instant updates
+- 🖥️ **Desktop App** - Native macOS and Windows applications
+- 🔒 **Enterprise Security** - End-to-end encryption, RBAC, audit trails
+
+---
+
+## ✨ Features
+
+### 🔐 Authentication & Security
+- ✅ JWT-based authentication with Redis sessions
+- ✅ Google OAuth 2.0 sign-up/login
+- ✅ Role-based access control (RBAC)
+- ✅ Database password encryption (AES-256-CBC)
+- ✅ API payload encryption (optional)
+- ✅ Audit trail logging
+- ✅ Rate limiting & security headers
+
+### 📊 Accounting & Finance
+- ✅ **Chart of Accounts** - Hierarchical account groups
+- ✅ **Ledger Management** - Complete ledger system
+- ✅ **Voucher System** - All voucher types (Sales, Purchase, Payment, Receipt, Journal, etc.)
+- ✅ **Double-Entry Bookkeeping** - Automatic debit/credit balancing
+- ✅ **Bill-Wise Tracking** - Advanced bill allocation system
+- ✅ **Financial Reports** - Trial Balance, Balance Sheet, P&L Statement
+
+### 🇮🇳 GST Compliance
+- ✅ **GSTIN Management** - Multiple GSTIN support
+- ✅ **GST Rate Master** - Configurable tax rates
+- ✅ **Automatic GST Calculation** - CGST, SGST, IGST, Cess
+- ✅ **GSTR-1 Generation** - Export-ready JSON format
+- ✅ **GSTR-3B Generation** - Monthly return preparation
+- ✅ **E-Invoice Integration** - IRN generation with QR code
+- ✅ **E-Way Bill** - Transportation document management
+
+### 💼 TDS Management
+- ✅ **TDS Calculation** - Automatic TDS computation
+- ✅ **TDS Return Preparation** - Quarterly returns
+- ✅ **Form 16A Generation** - TDS certificates
+
+### 📦 Sales & Distribution
+- ✅ **Distributor Management** - Complete distributor lifecycle
+- ✅ **Salesman Management** - Sales team tracking
+- ✅ **Referral System** - Referral codes and rewards
+- ✅ **Commission Calculation** - Automated commission processing
+- ✅ **Payout Management** - Commission payout tracking
+- ✅ **Target Management** - Sales target setting and tracking
+
+### 🔔 Notification System
+- ✅ **Real-Time WebSocket** - Instant notifications
+- ✅ **Email Notifications** - Template-based emails
+- ✅ **Desktop Notifications** - Browser notifications
+- ✅ **Sound Alerts** - Unique sounds per notification type
+- ✅ **Notification Preferences** - User-customizable settings
+- ✅ **Notification Management UI** - Complete notification center
+
+### 🎨 Invoice Templates
+- ✅ **Multiple Templates** - Professional invoice designs
+- ✅ **Template Selection** - Tenant-configurable templates
+- ✅ **PDF Generation** - Client-side PDF export
+- ✅ **Print Size Options** - A4, Letter, Custom sizes
+- ✅ **Company Logo** - Logo integration
+- ✅ **Digital Signature** - DSC certificate support
+
+### 🖥️ Desktop Application
+- ✅ **Native Apps** - macOS and Windows
+- ✅ **Auto-Updater** - Automatic update mechanism
+- ✅ **Code Signing Ready** - Production-ready signing
+- ✅ **Universal Binaries** - macOS Intel + Apple Silicon
+
+---
+
+## 🛠️ Technology Stack
 
 ### Backend
-- **Runtime**: Node.js (v18+)
-- **Framework**: Express.js
-- **ORM**: Sequelize
-- **Database**: MySQL 8.0+
-- **File Upload**: Multer
-- **Session/Cache**: Redis
-- **Authentication**: JWT + Redis sessions
-- **WebSocket**: Socket.IO (v4.7.2) - Real-time notifications
-- **QR Code**: qrcode
-- **HTTP Client**: axios
+| Category | Technology |
+|----------|-----------|
+| **Runtime** | Node.js (v18+) |
+| **Framework** | Express.js |
+| **ORM** | Sequelize |
+| **Database** | MySQL 8.0+ |
+| **Cache/Session** | Redis |
+| **File Upload** | Multer |
+| **WebSocket** | Socket.IO (v4.7.2) |
+| **Authentication** | JWT + Redis Sessions |
+| **QR Code** | qrcode |
+| **HTTP Client** | axios |
 
 ### Frontend
-- **Framework**: Next.js
-- **UI**: React components
-- **State Management**: React Context API
-- **WebSocket**: Socket.IO client for real-time updates
-- **Desktop App**: Electron (macOS and Windows)
+| Category | Technology |
+|----------|-----------|
+| **Framework** | Next.js 15.5 |
+| **UI Library** | React |
+| **State Management** | React Context API |
+| **WebSocket Client** | Socket.IO Client |
+| **Desktop App** | Electron |
+| **PDF Generation** | jsPDF + html2canvas |
 
-## Project Structure
+---
 
-```
-finvera/
-├── backend/              # Express.js backend API
-│   ├── src/
-│   │   ├── config/       # Configuration files
-│   │   ├── models/       # Sequelize models (32+ models)
-│   │   ├── migrations/   # Database migrations
-│   │   ├── seeders/      # Database seeders
-│   │   ├── middleware/    # Express middleware
-│   │   ├── controllers/  # Route controllers
-│   │   ├── services/     # Business logic services
-│   │   ├── websocket/    # WebSocket server
-│   │   ├── routes/       # API routes
-│   │   ├── utils/        # Utility functions
-│   │   └── validators/   # Request validators
-│   ├── uploads/          # File uploads directory
-│   └── server.js         # Application entry point
-└── frontend/             # Next.js frontend
-    ├── pages/            # Next.js pages
-    ├── components/       # React components
-    ├── lib/              # Utilities, API client, encryption
-    ├── contexts/         # React contexts
-    ├── electron/         # Electron main process and preload scripts
-    ├── styles/           # Global styles
-    └── dist/             # Electron build output (gitignored)
-```
+## 🚀 Quick Start
 
-## Setup Instructions
+### Prerequisites
+
+- Node.js 18+ and npm
+- MySQL 8.0+
+- Redis (for sessions and caching)
+- Git
 
 ### Backend Setup
 
-1. **Install Dependencies**
    ```bash
-   cd backend
+# Clone repository
+git clone https://github.com/Illusio-Designs/finvera.git
+cd finvera/backend
+
+# Install dependencies
    npm install
-   ```
 
-2. **Environment Configuration**
-   ```bash
+# Configure environment
    cp .env.example .env
-   ```
-   Update `.env` with your:
-   - Database credentials (DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, etc.)
-   - Redis configuration
-   - JWT secrets (JWT_SECRET, JWT_REFRESH_SECRET)
-   - **ENCRYPTION_KEY** - For database password encryption (32+ characters)
-   - **PAYLOAD_ENCRYPTION_KEY** - For API payload encryption (must match frontend)
-   - Other optional settings (email, Razorpay, etc.)
+# Edit .env with your configuration
 
-3. **Database Setup**
-   ```bash
-   # Run migrations
+# Setup database
    npm run migrate
-
-   # Seed initial data
    npm run seed
-   ```
 
-4. **Start Server**
-   ```bash
-   # Development
+# Start development server
    npm run dev
-
-   # Production
-   npm start
    ```
 
 ### Frontend Setup
 
-1. **Install Dependencies**
    ```bash
-   cd frontend
+# Navigate to frontend
+cd ../frontend
+
+# Install dependencies
    npm install
-   ```
 
-2. **Environment Configuration**
-   ```bash
+# Configure environment
    cp .env.example .env
-   ```
-   Update `.env` with:
-   - `NEXT_PUBLIC_API_URL` - Backend API URL (e.g., http://localhost:3000/api)
-   - `NEXT_PUBLIC_PAYLOAD_ENCRYPTION_KEY` - For API payload encryption (must match backend)
+# Edit .env with your configuration
 
-3. **Run Development Server**
-   ```bash
+# Start development server
    npm run dev
    ```
 
-4. **Build for Production**
-   ```bash
-   npm run build
-   npm start
-   ```
+Visit `http://localhost:3001` to see the application.
 
-## Features
+---
 
-### Core Features
-- Multi-tenancy with complete data isolation
-- JWT authentication with Redis sessions
-- **Google OAuth 2.0 Sign-Up/Login** - Seamless authentication with Google accounts
-- Role-based access control (RBAC)
-- File upload with Multer
-- Input sanitization and security
-- Audit trail logging
-- Rate limiting
+## 📁 Project Structure
 
-### Admin Panel
-- Platform dashboard (MRR, ARR, churn metrics)
-- Distributor management
-- Salesman management
-- Referral system
-- Commission calculation and payout
-- Pricing/subscription management
-
-### Accounting
-- Chart of Accounts (hierarchical groups)
-- Ledger management
-- Voucher system (all types)
-- Double-entry bookkeeping
-- Bill-wise tracking
-- Financial reports (Trial Balance, Balance Sheet, P&L)
-
-### GST Compliance
-- GSTIN management
-- GST rate master
-- Automatic GST calculation
-- GSTR-1 generation
-- GSTR-3B generation
-- E-Invoice integration (IRN, QR code)
-
-### TDS Management
-- TDS calculation
-- TDS return preparation
-- TDS certificate (Form 16A)
-
-### Notification System
-- Real-time WebSocket notifications
-- User notification preferences
-- Email notifications with templates
-- Sound alerts (unique per notification type)
-- Desktop browser notifications
-- Notification management UI
-
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - Register tenant
-- `POST /api/auth/login` - Login
-- `POST /api/auth/refresh` - Refresh token
-- `GET /api/auth/google` - Initiate Google OAuth sign-up/login
-- `GET /api/auth/google/callback` - Google OAuth callback handler
-
-### Accounting
-- `POST /api/accounting/invoices/sales` - Create sales invoice
-- `POST /api/accounting/invoices/purchase` - Create purchase invoice
-- `POST /api/accounting/payments` - Create payment voucher
-- `POST /api/accounting/receipts` - Create receipt voucher
-- `GET /api/reports/trial-balance` - Trial balance
-- `GET /api/reports/balance-sheet` - Balance sheet
-
-### GST
-- `POST /api/gst/returns/gstr1` - Generate GSTR-1
-- `POST /api/gst/returns/gstr3b` - Generate GSTR-3B
-- `POST /api/einvoice/generate` - Generate e-invoice IRN
-
-### TDS
-- `POST /api/tds/calculate` - Calculate TDS
-- `GET /api/tds/certificate/:id` - Generate Form 16A
-
-### Notifications
-- `GET /api/notifications` - Get user notifications
-- `GET /api/notifications/unread-count` - Get unread count
-- `PUT /api/notifications/:id/read` - Mark as read
-- `PUT /api/notifications/read-all` - Mark all as read
-- `DELETE /api/notifications/:id` - Delete notification
-- `GET /api/notifications/preferences` - Get user preferences
-- `PUT /api/notifications/preferences` - Update preferences
-
-## Database Models
-
-### Core (14 models)
-Tenant, User, Distributor, Salesman, SubscriptionPlan, ReferralCode, ReferralReward, Commission, Payout, Lead, LeadActivity, Target, Notification, NotificationPreference
-
-### Accounting (7 models)
-AccountGroup, Ledger, VoucherType, Voucher, VoucherItem, VoucherLedgerEntry, BillWiseDetail, BillAllocation
-
-### GST & Compliance (5 models)
-GSTIN, GSTRate, GSTRReturn, EInvoice, TDSDetail
-
-### System (1 model)
-AuditLog
-
-**Total: 32+ models**
-
-## Security Features
-
-- JWT token-based authentication
-- Redis session management
-- Password hashing with bcrypt
-- **Database password encryption** (AES-256-CBC) - All tenant/company database passwords encrypted at rest
-- **API payload encryption** (Optional CryptoJS AES) - End-to-end encryption for sensitive API requests/responses
-- Data encryption for sensitive fields (PAN, Aadhaar, bank details)
-- Role-based access control
-- Tenant data isolation
-- Input validation and sanitization
-- Rate limiting
-- Helmet.js security headers
-- Audit trail
-
-### Encryption
-
-The application uses two separate encryption systems:
-
-1. **Database Password Encryption** (Automatic)
-   - Encrypts database passwords before storing in database
-   - Uses AES-256-CBC encryption
-   - Key: `ENCRYPTION_KEY` environment variable
-   - Always active - all DB passwords are encrypted
-
-2. **API Payload Encryption** (Optional)
-   - Encrypts API request/response payloads for additional security
-   - Uses CryptoJS AES encryption
-   - Keys: `PAYLOAD_ENCRYPTION_KEY` (backend) and `NEXT_PUBLIC_PAYLOAD_ENCRYPTION_KEY` (frontend)
-   - Activated when client sends encrypted data or requests encrypted response
-
-For detailed encryption information, see the Encryption section above.
-
-### Testing Encryption
-
-```bash
-# Backend - Test encryption functionality
-cd backend
-node src/utils/testEncryption.js
+```
+finvera/
+├── 📂 backend/                    # Express.js Backend API
+│   ├── 📂 src/
+│   │   ├── 📂 config/             # Configuration files
+│   │   ├── 📂 models/             # Sequelize models (32+ models)
+│   │   ├── 📂 migrations/         # Database migrations
+│   │   ├── 📂 seeders/           # Database seeders
+│   │   ├── 📂 middleware/        # Express middleware
+│   │   ├── 📂 controllers/       # Route controllers
+│   │   ├── 📂 services/          # Business logic services
+│   │   ├── 📂 websocket/         # WebSocket server
+│   │   ├── 📂 routes/           # API routes
+│   │   ├── 📂 utils/            # Utility functions
+│   │   └── 📂 validators/       # Request validators
+│   ├── 📂 uploads/              # File uploads directory
+│   └── 📄 server.js             # Application entry point
+│
+└── 📂 frontend/                  # Next.js Frontend
+    ├── 📂 pages/                # Next.js pages
+    ├── 📂 components/           # React components
+    ├── 📂 lib/                 # Utilities, API client, encryption
+    ├── 📂 contexts/            # React contexts
+    ├── 📂 electron/           # Electron main process
+    ├── 📂 styles/             # Global styles
+    └── 📂 dist/              # Electron build output
 ```
 
-## Performance Optimizations
+---
 
-- Database indexes on frequently queried fields
-- Redis caching utilities
-- Connection pooling
-- Query optimization
-- Lazy loading for large datasets
+## ⚙️ Configuration
 
-## Environment Variables
+### Backend Environment Variables
 
-### Backend (.env)
+#### Required Variables
 
-**Required:**
-- Database configuration (DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, MASTER_DB_NAME)
-- Redis configuration (REDIS_HOST, REDIS_PORT, REDIS_PASSWORD)
-- JWT secrets (JWT_SECRET, JWT_REFRESH_SECRET)
-- **ENCRYPTION_KEY** - For database password encryption (32+ characters, keep secret)
-- **PAYLOAD_ENCRYPTION_KEY** - For API payload encryption (must match frontend)
+```env
+# Database
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=finvera_db
+MASTER_DB_NAME=finvera_master
 
-**Optional:**
-- File upload settings (UPLOAD_DIR, MAX_FILE_SIZE)
-- E-Invoice API credentials (E_INVOICE_API_URL, E_INVOICE_API_KEY)
-- Email/SMTP settings (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS)
-- Razorpay credentials (RAZORPAY_KEY_ID, RAZORPAY_SECRET_KEY, RAZORPAY_WEBHOOK_SECRET)
-- **Google OAuth** (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_CALLBACK_URL, SESSION_SECRET)
-  - Enable Google sign-up/login functionality
-  - Requires Google Cloud Console configuration
-  - See [Google OAuth Setup Guide](/GOOGLE_SIGNUP_IMPLEMENTATION.md)
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
 
-### Frontend (.env)
+# JWT
+JWT_SECRET=your-jwt-secret-key
+JWT_REFRESH_SECRET=your-refresh-secret-key
 
-**Required:**
-- **NEXT_PUBLIC_API_URL** - Backend API URL
-- **NEXT_PUBLIC_PAYLOAD_ENCRYPTION_KEY** - For API payload encryption (must match backend)
+# Encryption
+ENCRYPTION_KEY=your-32-character-secret-key-for-db-encryption
+PAYLOAD_ENCRYPTION_KEY=your-very-strong-secret-key-at-least-32-chars
+```
 
-**Optional:**
-- NEXT_PUBLIC_WS_URL - WebSocket URL (defaults to API URL)
-- NEXT_PUBLIC_APP_NAME - Application name
+#### Optional Variables
 
-### Encryption Keys Setup
+```env
+# File Upload
+UPLOAD_DIR=./uploads
+MAX_FILE_SIZE=10485760
+
+# E-Invoice API
+E_INVOICE_API_URL=https://api.example.com
+E_INVOICE_API_KEY=your-api-key
+
+# Email/SMTP
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-password
+
+# Razorpay
+RAZORPAY_KEY_ID=your-key-id
+RAZORPAY_SECRET_KEY=your-secret-key
+RAZORPAY_WEBHOOK_SECRET=your-webhook-secret
+
+# Google OAuth
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_CALLBACK_URL=http://localhost:3000/api/auth/google/callback
+SESSION_SECRET=your-session-secret
+```
+
+### Frontend Environment Variables
+
+#### Required Variables
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3000/api
+NEXT_PUBLIC_PAYLOAD_ENCRYPTION_KEY=your-very-strong-secret-key-at-least-32-chars
+```
+
+#### Optional Variables
+
+```env
+NEXT_PUBLIC_WS_URL=ws://localhost:3000
+NEXT_PUBLIC_APP_NAME=Finvera
+```
+
+### 🔑 Encryption Keys Setup
+
+**Important:** The encryption keys must be configured correctly for security.
 
 ```bash
 # Backend .env
@@ -310,36 +317,175 @@ PAYLOAD_ENCRYPTION_KEY=your-very-strong-secret-key-at-least-32-characters-long
 NEXT_PUBLIC_PAYLOAD_ENCRYPTION_KEY=your-very-strong-secret-key-at-least-32-characters-long
 ```
 
-**Important:**
+**⚠️ Security Notes:**
 - `ENCRYPTION_KEY` - Used for database password encryption (backend only)
-- `PAYLOAD_ENCRYPTION_KEY` and `NEXT_PUBLIC_PAYLOAD_ENCRYPTION_KEY` must match
+- `PAYLOAD_ENCRYPTION_KEY` and `NEXT_PUBLIC_PAYLOAD_ENCRYPTION_KEY` **must match**
 - Never commit `.env` files to version control
 - Use strong, random keys in production
 - Rotate keys carefully (requires re-encrypting data)
 
-## Development
+---
 
-### Backend
+## 🔐 Security
+
+### Security Features
+
+- 🔒 **JWT Authentication** - Secure token-based authentication
+- 🔐 **Redis Sessions** - Scalable session management
+- 🛡️ **Password Hashing** - bcrypt with salt rounds
+- 🔑 **Database Password Encryption** - AES-256-CBC encryption at rest
+- 📦 **API Payload Encryption** - Optional end-to-end encryption
+- 🔐 **Data Encryption** - Sensitive fields (PAN, Aadhaar, bank details)
+- 👥 **Role-Based Access Control** - Granular permissions
+- 🏢 **Tenant Data Isolation** - Complete multi-tenant security
+- ✅ **Input Validation** - Comprehensive sanitization
+- 🚦 **Rate Limiting** - DDoS protection
+- 🛡️ **Security Headers** - Helmet.js integration
+- 📝 **Audit Trail** - Complete activity logging
+
+### Encryption Systems
+
+The application uses two separate encryption systems:
+
+#### 1. Database Password Encryption (Automatic)
+- **Purpose:** Encrypts database passwords before storing
+- **Algorithm:** AES-256-CBC
+- **Key:** `ENCRYPTION_KEY` environment variable
+- **Status:** Always active - all DB passwords are encrypted
+
+#### 2. API Payload Encryption (Optional)
+- **Purpose:** Encrypts API request/response payloads
+- **Algorithm:** CryptoJS AES encryption
+- **Keys:** `PAYLOAD_ENCRYPTION_KEY` (backend) and `NEXT_PUBLIC_PAYLOAD_ENCRYPTION_KEY` (frontend)
+- **Status:** Activated when client sends encrypted data
+
+### Testing Encryption
+
+```bash
+# Test encryption functionality
+cd backend
+node src/utils/testEncryption.js
+```
+
+---
+
+## 📡 API Documentation
+
+### Authentication Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/auth/register` | Register new tenant |
+| `POST` | `/api/auth/login` | User login |
+| `POST` | `/api/auth/refresh` | Refresh access token |
+| `GET` | `/api/auth/google` | Initiate Google OAuth |
+| `GET` | `/api/auth/google/callback` | Google OAuth callback |
+
+### Accounting Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/accounting/invoices/sales` | Create sales invoice |
+| `POST` | `/api/accounting/invoices/purchase` | Create purchase invoice |
+| `POST` | `/api/accounting/payments` | Create payment voucher |
+| `POST` | `/api/accounting/receipts` | Create receipt voucher |
+| `GET` | `/api/reports/trial-balance` | Get trial balance |
+| `GET` | `/api/reports/balance-sheet` | Get balance sheet |
+| `GET` | `/api/reports/profit-loss` | Get P&L statement |
+
+### GST Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/gst/returns/gstr1` | Generate GSTR-1 |
+| `POST` | `/api/gst/returns/gstr3b` | Generate GSTR-3B |
+| `POST` | `/api/einvoice/generate` | Generate e-invoice IRN |
+| `GET` | `/api/ewaybill/generate` | Generate e-way bill |
+
+### TDS Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/tds/calculate` | Calculate TDS |
+| `GET` | `/api/tds/certificate/:id` | Generate Form 16A |
+
+### Notification Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/notifications` | Get user notifications |
+| `GET` | `/api/notifications/unread-count` | Get unread count |
+| `PUT` | `/api/notifications/:id/read` | Mark as read |
+| `PUT` | `/api/notifications/read-all` | Mark all as read |
+| `DELETE` | `/api/notifications/:id` | Delete notification |
+| `GET` | `/api/notifications/preferences` | Get preferences |
+| `PUT` | `/api/notifications/preferences` | Update preferences |
+
+### Company Management
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/companies/:id/upload-logo` | Upload company logo |
+| `POST` | `/api/companies/:id/upload-signature` | Upload signature |
+| `POST` | `/api/companies/:id/upload-dsc-certificate` | Upload DSC certificate |
+| `PUT` | `/api/companies/:id/dsc-config` | Update DSC configuration |
+
+---
+
+## 💻 Development
+
+### Backend Development
+
 ```bash
 cd backend
-npm run dev          # Development mode with auto-reload
-npm run migrate      # Run migrations
-npm run migrate:undo # Undo last migration
-npm run seed         # Run seeders
+
+# Development mode with auto-reload
+npm run dev
+
+# Run database migrations
+npm run migrate
+
+# Undo last migration
+npm run migrate:undo
+
+# Run seeders
+npm run seed
+
+# Production mode
+npm start
 ```
 
-### Frontend
+### Frontend Development
+
 ```bash
 cd frontend
-npm run dev    # Development server
-npm run build  # Build for production
-npm start      # Production server
-npm run lint   # Run ESLint
+
+# Development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Production server
+npm start
+
+# Run ESLint
+npm run lint
 ```
 
-## Desktop Application (Electron)
+### Health Checks
 
-Finvera is available as a desktop application for macOS and Windows using Electron.
+```bash
+# Backend health check
+curl http://localhost:3000/health
+curl http://localhost:3000/api/health
+```
+
+---
+
+## 🖥️ Desktop Application
+
+Finvera is available as a native desktop application for **macOS** and **Windows** using Electron.
 
 ### Development
 
@@ -366,37 +512,29 @@ npm run electron:build:win
 npm run electron:build:all
 ```
 
+### Build Outputs
+
 Build outputs are in the `frontend/dist/` directory:
+
 - **macOS**: DMG installer and ZIP archive (universal binary - Intel + Apple Silicon)
 - **Windows**: NSIS installer (.exe) and portable executable
 
-For detailed setup instructions, see the Desktop Application (Electron) section above.
-
 ### Electron Features
 
-- Native desktop application
-- Auto-updater support (configured)
-- Code signing ready (macOS and Windows)
-- Universal macOS binaries (x64 + arm64)
-- Windows installer and portable versions
-- Secure preload scripts
-- DevTools in development mode
+- ✅ Native desktop application
+- ✅ Auto-updater support (configured)
+- ✅ Code signing ready (macOS and Windows)
+- ✅ Universal macOS binaries (x64 + arm64)
+- ✅ Windows installer and portable versions
+- ✅ Secure preload scripts
+- ✅ DevTools in development mode
 
-## Testing
+---
 
-```bash
-# Backend health check
-curl http://localhost:3000/health
-curl http://localhost:3000/api/health
+## 🚢 Deployment
 
-# Test encryption (backend)
-cd backend
-node src/utils/testEncryption.js
-```
+### Backend Deployment
 
-## Production Deployment
-
-### Backend
 1. Set `NODE_ENV=production` in `.env`
 2. Update all secrets:
    - `JWT_SECRET` and `JWT_REFRESH_SECRET`
@@ -409,7 +547,8 @@ node src/utils/testEncryption.js
 7. Configure backup strategy
 8. Setup monitoring and logging
 
-### Frontend
+### Frontend Deployment
+
 1. Set `NODE_ENV=production` in `.env`
 2. Set `NEXT_PUBLIC_API_URL` to production backend URL
 3. Set `NEXT_PUBLIC_PAYLOAD_ENCRYPTION_KEY` (must match backend)
@@ -419,7 +558,8 @@ node src/utils/testEncryption.js
    npm start
    ```
 
-### Desktop Application (Electron)
+### Desktop Application Deployment
+
 1. Set `NEXT_PUBLIC_API_URL` in `.env` to production backend URL
 2. Set `NEXT_PUBLIC_PAYLOAD_ENCRYPTION_KEY` (must match backend)
 3. Build for distribution:
@@ -430,22 +570,50 @@ node src/utils/testEncryption.js
 5. Test installers on clean systems
 6. Distribute DMG (macOS) or EXE (Windows) files
 
-## License
+---
 
-ISC
+## 📊 Database Models
 
-### Buy License
+### Core Models (14)
+- Tenant, User, Distributor, Salesman
+- SubscriptionPlan, ReferralCode, ReferralReward
+- Commission, Payout, Lead, LeadActivity
+- Target, Notification, NotificationPreference
+
+### Accounting Models (8)
+- AccountGroup, Ledger, VoucherType, Voucher
+- VoucherItem, VoucherLedgerEntry
+- BillWiseDetail, BillAllocation
+
+### GST & Compliance Models (5)
+- GSTIN, GSTRate, GSTRReturn
+- EInvoice, TDSDetail
+
+### System Models (1)
+- AuditLog
+
+**Total: 32+ models**
+
+---
+
+## 📄 License
+
+### ISC License
+
+This project is licensed under the ISC License.
+
+### Commercial License
 
 For commercial use or extended licensing options, please contact us to purchase a license.
 
 **Contact Information:**
-- Email: info@illusiodesigns.agency
-- Website: https://illusiodesigns.agency
-- Phone: 7600046416
+- 📧 Email: [info@illusiodesigns.agency](mailto:info@illusiodesigns.agency)
+- 🌐 Website: [https://illusiodesigns.agency](https://illusiodesigns.agency)
+- 📞 Phone: 7600046416
 
-### Legal Notice
+### ⚠️ Legal Notice
 
-**⚠️ WARNING: Unauthorized Use Prohibited**
+**WARNING: Unauthorized Use Prohibited**
 
 This software is protected by copyright and licensing laws. Any use of this software without a valid license is strictly prohibited and constitutes a violation of intellectual property rights.
 
@@ -456,13 +624,23 @@ This software is protected by copyright and licensing laws. Any use of this soft
 
 **To avoid legal action, please:**
 1. Purchase an appropriate license before using this software
-2. Contact us at info@illusiodesigns.agency for licensing inquiries
+2. Contact us at [info@illusiodesigns.agency](mailto:info@illusiodesigns.agency) for licensing inquiries
 3. Ensure all team members and users are properly licensed
 
 By using this software, you acknowledge that you have read, understood, and agree to comply with all licensing terms and conditions.
 
 ---
 
+<div align="center">
 
-**Status**: ✅ Production Ready - All features implemented and tested!
+### 🎉 Status: Production Ready
 
+**All features implemented and tested!**
+
+---
+
+**Made with ❤️ by [Illusio Designs](https://illusiodesigns.agency)**
+
+[⬆ Back to Top](#-finvera)
+
+</div>

@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getProfileImageUrl } from '../../lib/imageUtils';
 import toast, { Toaster } from 'react-hot-toast';
 import FormInput from '../../components/forms/FormInput';
+import FormPhoneInput from '../../components/forms/FormPhoneInput';
 import Button from '../../components/ui/Button';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { FiUser, FiMail, FiPhone, FiCamera, FiSave, FiX } from 'react-icons/fi';
@@ -326,6 +327,7 @@ export default function ClientProfile() {
               <div className="relative">
                 <div className="h-32 w-32 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-lg">
                   {imagePreview && !imageError ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={imagePreview}
                       alt="Profile"
@@ -424,15 +426,14 @@ export default function ClientProfile() {
                 placeholder="Enter your email address"
               />
 
-              <FormInput
+              <FormPhoneInput
                 name="phone"
                 label="Phone Number"
-                type="tel"
                 value={formData.phone}
                 onChange={handleInputChange}
                 error={errors.phone}
                 touched={true}
-                placeholder="Enter your phone number"
+                defaultCountry="IN"
               />
             </div>
 
