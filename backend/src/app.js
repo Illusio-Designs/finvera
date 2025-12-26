@@ -11,6 +11,9 @@ const { decryptRequest, encryptResponse } = require('./middleware/payloadEncrypt
 
 const app = express();
 
+// Trust proxy - required for rate limiting behind reverse proxy/load balancer
+app.set('trust proxy', true);
+
 // CORS configuration
 const corsOptions = {
   origin: function (origin, callback) {

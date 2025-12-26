@@ -109,55 +109,74 @@ class TenantProvisioningService {
    * @param {string} plainPassword - Plain text database password
    */
   async provisionDatabase(tenant, plainPassword) {
+    if (!process.env.DB_USER || !process.env.DB_PASSWORD) {
+      throw new Error('DB_USER and DB_PASSWORD environment variables must be set');
+    }
+
+    // Use DB_USER and DB_PASSWORD directly from .env for root connection
     const rootConnection = new Sequelize('', process.env.DB_USER, process.env.DB_PASSWORD, {
-      host: tenant.db_host,
-      port: tenant.db_port,
+      host: tenant.db_host || process.env.DB_HOST || 'localhost',
+      port: tenant.db_port || parseInt(process.env.DB_PORT) || 3306,
       dialect: 'mysql',
       logging: false,
     });
 
+    // Use DB_USER and DB_PASSWORD directly from .env for granting privileges
+    const mainDbUser = process.env.DB_USER;
+    const mainDbPassword = process.env.DB_PASSWORD;
+    const escapedPassword = mainDbPassword.replace(/\\/g, '\\\\').replace(/'/g, "''");
+
     try {
+      await rootConnection.authenticate();
+      logger.info(`[PROVISION] Creating database: ${tenant.db_name}`);
+      
       // Create database
       await rootConnection.query(`CREATE DATABASE IF NOT EXISTS \`${tenant.db_name}\``);
-      logger.info(`Database created: ${tenant.db_name}`);
-
-      // Create database user (if using separate credentials per tenant)
-      if (process.env.USE_SEPARATE_DB_USERS === 'true') {
-        await rootConnection.query(
-          `CREATE USER IF NOT EXISTS '${tenant.db_user}'@'%' IDENTIFIED BY '${plainPassword}'`,
-        );
-        await rootConnection.query(
-          `GRANT ALL PRIVILEGES ON \`${tenant.db_name}\`.* TO '${tenant.db_user}'@'%'`,
-        );
-        await rootConnection.query('FLUSH PRIVILEGES');
-        logger.info(`Database user created: ${tenant.db_user}`);
+      
+      // Ensure user exists for '%'
+      const [usersPercent] = await rootConnection.query(
+        `SELECT User, Host FROM mysql.user WHERE User = '${mainDbUser}' AND Host = '%'`
+      );
+      if (usersPercent.length === 0) {
+        await rootConnection.query(`CREATE USER '${mainDbUser}'@'%' IDENTIFIED BY '${escapedPassword}'`);
+      } else {
+        await rootConnection.query(`ALTER USER '${mainDbUser}'@'%' IDENTIFIED BY '${escapedPassword}'`);
       }
-
+      
+      // Ensure user exists for 'localhost'
+      const [usersLocalhost] = await rootConnection.query(
+        `SELECT User, Host FROM mysql.user WHERE User = '${mainDbUser}' AND Host = 'localhost'`
+      );
+      if (usersLocalhost.length === 0) {
+        await rootConnection.query(`CREATE USER '${mainDbUser}'@'localhost' IDENTIFIED BY '${escapedPassword}'`);
+      } else {
+        await rootConnection.query(`ALTER USER '${mainDbUser}'@'localhost' IDENTIFIED BY '${escapedPassword}'`);
+      }
+      
+      // Grant privileges
+      await rootConnection.query(`GRANT ALL PRIVILEGES ON \`${tenant.db_name}\`.* TO '${mainDbUser}'@'%'`);
+      await rootConnection.query(`GRANT ALL PRIVILEGES ON \`${tenant.db_name}\`.* TO '${mainDbUser}'@'localhost'`);
+      await rootConnection.query('FLUSH PRIVILEGES');
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
       await rootConnection.close();
 
-      // Initialize database schema
+      // Initialize schema
       await this.initializeTenantSchema(tenant, plainPassword);
-
-      // Mark as provisioned
+      
       await tenant.update({
         db_provisioned: true,
         db_provisioned_at: new Date(),
       });
 
-      logger.info(`Database provisioned successfully for tenant: ${tenant.id}`);
+      logger.info(`[PROVISION] Database ${tenant.db_name} provisioned successfully. Privileges granted to ${mainDbUser}`);
     } catch (error) {
-      logger.error(`Failed to provision database for tenant ${tenant.id}:`, error);
-      
-      // Cleanup on failure
+      logger.error(`[PROVISION] Failed: ${error.message}`);
       try {
         await rootConnection.query(`DROP DATABASE IF EXISTS \`${tenant.db_name}\``);
-        if (process.env.USE_SEPARATE_DB_USERS === 'true') {
-          await rootConnection.query(`DROP USER IF EXISTS '${tenant.db_user}'@'%'`);
-        }
       } catch (cleanupError) {
-        logger.error('Cleanup failed:', cleanupError);
+        logger.error('Cleanup failed:', cleanupError.message);
       }
-      
       await rootConnection.close();
       throw error;
     }
@@ -169,25 +188,25 @@ class TenantProvisioningService {
    * @param {string} plainPassword - Plain text database password
    */
   async initializeTenantSchema(tenant, plainPassword) {
-    const tenantConnection = await tenantConnectionManager.getConnection({
-      id: tenant.id,
-      db_name: tenant.db_name,
-      db_host: tenant.db_host,
-      db_port: tenant.db_port,
-      db_user: process.env.USE_SEPARATE_DB_USERS === 'true' ? tenant.db_user : process.env.DB_USER,
-      db_password: process.env.USE_SEPARATE_DB_USERS === 'true' ? plainPassword : process.env.DB_PASSWORD,
-    });
+    if (!process.env.DB_USER || !process.env.DB_PASSWORD) {
+      throw new Error('DB_USER and DB_PASSWORD environment variables must be set');
+    }
 
     try {
-      // Run migrations for tenant database
-      await this.runTenantMigrations(tenantConnection);
-      
-      // Seed default data
-      await this.seedDefaultData(tenantConnection, tenant);
+      const tenantConnection = await tenantConnectionManager.getConnection({
+        id: tenant.id,
+        db_name: tenant.db_name,
+        db_host: tenant.db_host,
+        db_port: tenant.db_port,
+        db_user: process.env.DB_USER,
+        db_password: process.env.DB_PASSWORD,
+      });
 
-      logger.info(`Schema initialized for tenant: ${tenant.id}`);
+      await this.runTenantMigrations(tenantConnection);
+      await this.seedDefaultData(tenantConnection, tenant);
+      logger.info(`[SCHEMA] Schema initialized for ${tenant.db_name}`);
     } catch (error) {
-      logger.error(`Failed to initialize schema for tenant ${tenant.id}:`, error);
+      logger.error(`[SCHEMA] Failed: ${error.message}`);
       throw error;
     }
   }
@@ -542,11 +561,12 @@ class TenantProvisioningService {
     const sanitized = subdomain.toLowerCase().replace(/[^a-z0-9]/g, '_');
     const timestamp = Date.now().toString();
     // MySQL database name limit is 64 characters
-    // Format: finvera_<name>_<timestamp>
-    // Calculate max length for name part: 64 - 8 (finvera_) - 1 (_) - 13 (timestamp) - 1 (safety) = 41
-    const maxNameLength = 41;
+    // Format: informative_<name>_<timestamp>
+    // Calculate max length for name part: 64 - 12 (informative_) - 1 (_) - 13 (timestamp) - 1 (safety) = 37
+    const prefix = 'informative_';
+    const maxNameLength = 37;
     const truncatedName = sanitized.substring(0, maxNameLength);
-    const dbName = `finvera_${truncatedName}_${timestamp}`;
+    const dbName = `${prefix}${truncatedName}_${timestamp}`;
     // Final check to ensure it's within 64 chars
     return dbName.substring(0, 64);
   }
