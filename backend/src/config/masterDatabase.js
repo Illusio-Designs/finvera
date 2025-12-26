@@ -76,12 +76,23 @@ if (process.env.MYSQL_URL) {
 async function initMasterDatabase() {
   try {
     // Connect without database name to create it
-    const rootConnection = new Sequelize('', process.env.DB_USER || 'root', process.env.DB_PASSWORD || '', {
-      host: process.env.DB_HOST || 'localhost',
-      port: process.env.DB_PORT || 3306,
-      dialect: 'mysql',
-      logging: false,
-    });
+    let rootConnection;
+    if (process.env.MYSQL_URL) {
+      // Use MYSQL_URL but without database name
+      const url = new URL(process.env.MYSQL_URL);
+      url.pathname = '/';
+      rootConnection = new Sequelize(url.toString(), {
+        dialect: 'mysql',
+        logging: false,
+      });
+    } else {
+      rootConnection = new Sequelize('', process.env.DB_USER || 'root', process.env.DB_PASSWORD || '', {
+        host: process.env.DB_HOST || 'localhost',
+        port: process.env.DB_PORT || 3306,
+        dialect: 'mysql',
+        logging: false,
+      });
+    }
 
     // Create master database if it doesn't exist
     await rootConnection.query(`CREATE DATABASE IF NOT EXISTS \`${masterDbName}\``);
