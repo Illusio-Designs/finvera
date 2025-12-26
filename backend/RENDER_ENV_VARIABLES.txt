@@ -1,38 +1,19 @@
-# ============================================
-# RENDER ENVIRONMENT VARIABLES
-# Copy and paste these into Render Dashboard
-# ============================================
 
-# ============================================
-# DATABASE CONFIGURATION
-# ============================================
-# Option 1: Use Render's DATABASE_URL (if using Render MySQL)
-# DATABASE_URL will be auto-provided - just reference it in your code
-# Or use individual variables below
-
-# Option 2: Individual Database Variables (from Render MySQL service)
-# After creating MySQL database in Render, go to database → Connect
-# Copy these values:
 DB_HOST=<from-render-mysql-connect-info>
 DB_PORT=3306
 DB_USER=<from-render-mysql-connect-info>
 DB_PASSWORD=<from-render-mysql-connect-info>
 DB_NAME=<from-render-mysql-connect-info>
 
-# Master Database Name
 MASTER_DB_NAME=informative_finvera_master
 
-# ============================================
 # APPLICATION CONFIGURATION
-# ============================================
 NODE_ENV=production
 # PORT is automatically set by Render - don't set it manually
 APP_NAME=Finvera
 LOG_LEVEL=info
 
-# ============================================
 # DOMAIN CONFIGURATION
-# ============================================
 # Update these with your Render URL after deployment
 MAIN_DOMAIN=https://finvera.solutions
 API_DOMAIN=https://your-app-name.onrender.com
@@ -47,32 +28,24 @@ JWT_EXPIRES_IN=24h
 JWT_REFRESH_EXPIRES_IN=7d
 SESSION_SECRET=Devils@2609$
 
-# ============================================
 # GOOGLE OAUTH
-# ============================================
 GOOGLE_CLIENT_ID=1065810673450-6mntdfquhqtdjj6hvamkkc6ahekiknng.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=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
 # Update this with your Render URL after deployment
 GOOGLE_CALLBACK_URL=https://your-app-name.onrender.com/api/auth/google/callback
 
-# ============================================
 # RAZORPAY (if using)
-# ============================================
 RAZORPAY_KEY_ID=
 RAZORPAY_KEY_SECRET=
 RAZORPAY_WEBHOOK_SECRET=
 # Update this with your Render URL after deployment
 # RAZORPAY_WEBHOOK_URL=https://your-app-name.onrender.com/api/razorpay/webhook
 
-# ============================================
 # EMAIL CONFIGURATION
-# ============================================
 EMAIL_ENABLED=false
 EMAIL_FROM=noreply@finvera.solutions
 
-# ============================================
 # REDIS CONFIGURATION
-# ============================================
 # Option 1: Disable Redis (if not using)
 REDIS_ENABLED=false
 
@@ -82,22 +55,16 @@ REDIS_ENABLED=false
 # REDIS_PORT=6379
 # REDIS_PASSWORD=Devils@2609
 
-# ============================================
 # FILE UPLOAD CONFIGURATION
-# ============================================
 UPLOAD_DIR=./uploads
 MAX_FILE_SIZE=10485760
 MAX_DSC_CERTIFICATE_SIZE=5242880
 
-# ============================================
 # MULTI-TENANT CONFIGURATION
-# ============================================
 USE_SEPARATE_DB_USERS=false
 MAX_TENANT_CONNECTIONS=50
 
-# ============================================
 # IMPORTANT NOTES
-# ============================================
 # 1. PORT is automatically set by Render - DO NOT set it manually
 # 2. After deployment, update API_DOMAIN and GOOGLE_CALLBACK_URL with your Render URL
 # 3. Render URL format: https://your-app-name.onrender.com
