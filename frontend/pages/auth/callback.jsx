@@ -35,10 +35,13 @@ export default function AuthCallback() {
           return;
         }
 
-        // Store tokens in cookies
+        // Store tokens in cookies with cross-subdomain support
+        const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
         const cookieOptions = { 
           expires: 7,
-          sameSite: 'lax'
+          sameSite: 'lax',
+          domain: `.${mainDomain}`, // Leading dot allows all subdomains
+          secure: true, // HTTPS only
         };
         
         Cookies.set('token', token, cookieOptions);
@@ -69,11 +72,14 @@ export default function AuthCallback() {
               full_name: userData.full_name || userData.name || userData.email?.split('@')[0] || 'User',
             };
 
-            // Store user data in cookie
+            // Store user data in cookie (reuse cookieOptions with domain)
             Cookies.set('user', JSON.stringify(normalizedUser), cookieOptions);
             if (normalizedUser.company_id) {
               Cookies.set('companyId', normalizedUser.company_id, cookieOptions);
             }
+            
+            console.log('✓ Cookies set with domain:', `.${mainDomain}`);
+            console.log('✓ User data stored:', normalizedUser.email);
 
             // Update auth context
             updateUser(normalizedUser);
