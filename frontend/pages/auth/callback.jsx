@@ -85,21 +85,46 @@ export default function AuthCallback() {
             // Check if user needs to create a company
             if (needsCompany === 'true' || !normalizedUser.company_id) {
               toast.success('Welcome! Please create your company to continue.');
+              
+              // Check if we need to redirect to a different subdomain
+              const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
+              const currentHost = window.location.hostname;
+              const targetHost = `client.${mainDomain}`;
+              
               setTimeout(() => {
-                router.replace('/client/companies');
+                // If we're on the main domain and need to go to client subdomain
+                if (currentHost === mainDomain && targetHost !== currentHost) {
+                  // Redirect to client subdomain
+                  window.location.href = `${window.location.protocol}//${targetHost}/client/companies`;
+                } else {
+                  // Stay on current domain
+                  router.replace('/client/companies');
+                }
               }, 500);
               return;
             }
 
+            // Get target subdomain based on role
+            const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
+            const currentHost = window.location.hostname;
+            let targetHost = currentHost;
+            
             if (canAccessAdminPortal(role)) {
               redirectPath = getDefaultRedirect(role, normalizedUser.id);
+              targetHost = `admin.${mainDomain}`;
             } else if (canAccessClientPortal(role)) {
               redirectPath = getDefaultRedirect(role, normalizedUser.id);
+              targetHost = `client.${mainDomain}`;
             }
 
             toast.success('Login successful!');
             setTimeout(() => {
-              router.replace(redirectPath);
+              // If we need to redirect to a different subdomain
+              if (targetHost !== currentHost && targetHost.includes('.')) {
+                window.location.href = `${window.location.protocol}//${targetHost}${redirectPath}`;
+              } else {
+                router.replace(redirectPath);
+              }
             }, 500);
           } else {
             throw new Error('Failed to fetch user profile');
