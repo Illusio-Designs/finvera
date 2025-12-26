@@ -317,23 +317,25 @@ module.exports = {
       // Determine frontend URL based on user type
       const mainDomain = process.env.MAIN_DOMAIN || process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
       const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-      let frontendUrl = process.env.FRONTEND_URL;
+      let frontendUrl;
       
-      if (!frontendUrl) {
-        // Determine frontend URL based on role
-        if (['super_admin', 'admin'].includes(user.role)) {
-          frontendUrl = process.env.NODE_ENV === 'production' 
-            ? `${protocol}://admin.${mainDomain}`
-            : 'http://admin.localhost:3001';
-        } else if (user.tenant_id) {
-          frontendUrl = process.env.NODE_ENV === 'production'
-            ? `${protocol}://client.${mainDomain}`
-            : 'http://client.localhost:3001';
-        } else {
-          frontendUrl = process.env.NODE_ENV === 'production'
+      // Always use role-based subdomain redirect for better user experience
+      // This ensures users land on the correct portal (client or admin)
+      if (['super_admin', 'admin'].includes(user.role)) {
+        frontendUrl = process.env.NODE_ENV === 'production' 
+          ? `${protocol}://admin.${mainDomain}`
+          : 'http://admin.localhost:3001';
+      } else if (user.tenant_id || ['tenant_admin', 'user', 'accountant'].includes(user.role)) {
+        frontendUrl = process.env.NODE_ENV === 'production'
+          ? `${protocol}://client.${mainDomain}`
+          : 'http://client.localhost:3001';
+      } else {
+        // Fallback to main domain or FRONTEND_URL if explicitly set
+        frontendUrl = process.env.FRONTEND_URL || (
+          process.env.NODE_ENV === 'production'
             ? `${protocol}://${mainDomain}`
-            : 'http://localhost:3001';
-        }
+            : 'http://localhost:3001'
+        );
       }
 
       // Build redirect URL based on whether user needs company creation
