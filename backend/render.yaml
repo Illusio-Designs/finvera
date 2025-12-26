@@ -3,14 +3,18 @@ services:
     name: finvera-backend
     env: node
     plan: free
-    buildCommand: npm install
+    rootDir: backend
+    buildCommand: npm install --production
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 3000
-      # Add other environment variables in Render dashboard
+        value: 10000
+      # Database variables (use Render's DATABASE_URL or individual vars)
+      # DATABASE_URL will be auto-provided if you add MySQL database
+      # Or use: DB_HOST, DB_USER, DB_PASSWORD, DB_NAME from database service
+      # Add all other environment variables in Render dashboard
 
 databases:
   - name: finvera-mysql
