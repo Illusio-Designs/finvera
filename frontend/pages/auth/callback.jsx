@@ -51,7 +51,7 @@ export default function AuthCallback() {
 
         // Fetch user profile to get full user data
         try {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'}/auth/profile`, {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://finvera.illusiodesigns.agency/api'}/auth/profile`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',

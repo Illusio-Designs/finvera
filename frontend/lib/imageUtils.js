@@ -13,7 +13,7 @@ export const getUploadsBaseUrl = () => {
   }
   
   // Fallback to API URL without /api
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://finvera.illusiodesigns.agency/api';
   return apiUrl.replace('/api', '');
 };
 
