@@ -109,59 +109,109 @@ class TenantProvisioningService {
    * @param {string} plainPassword - Plain text database password
    */
   async provisionDatabase(tenant, plainPassword) {
-    if (!process.env.DB_USER || !process.env.DB_PASSWORD) {
+    // Get database credentials from environment
+    // DB_USER on server is 'informative_finvera' (already exists, created by default)
+    const dbUser = process.env.DB_USER || 'informative_finvera';
+    const dbPassword = process.env.DB_PASSWORD;
+    
+    // Use root/admin user for database creation (needs CREATE DATABASE privilege)
+    // If DB_ROOT_USER is not set, try using DB_USER (informative_finvera) - it might have CREATE privilege
+    const rootUser = process.env.DB_ROOT_USER || dbUser;
+    const rootPassword = process.env.DB_ROOT_PASSWORD || dbPassword;
+    
+    if (!dbUser || !dbPassword) {
       throw new Error('DB_USER and DB_PASSWORD environment variables must be set');
     }
 
-    // Use DB_USER and DB_PASSWORD directly from .env for root connection
-    const rootConnection = new Sequelize('', process.env.DB_USER, process.env.DB_PASSWORD, {
+    logger.info(`[PROVISION] Using user for database creation: ${rootUser}`);
+    logger.info(`[PROVISION] Will grant privileges to: ${dbUser} for tenant connections`);
+    logger.info(`[PROVISION] Root user source: ${process.env.DB_ROOT_USER ? 'DB_ROOT_USER env var' : 'DB_USER (fallback)'}`);
+
+    // Use root/admin user for database creation (has CREATE DATABASE privilege)
+    const rootConnection = new Sequelize('', rootUser, rootPassword, {
       host: tenant.db_host || process.env.DB_HOST || 'localhost',
       port: tenant.db_port || parseInt(process.env.DB_PORT) || 3306,
       dialect: 'mysql',
       logging: false,
     });
 
-    // Use DB_USER and DB_PASSWORD directly from .env for granting privileges
-    const mainDbUser = process.env.DB_USER;
-    const mainDbPassword = process.env.DB_PASSWORD;
-    const escapedPassword = mainDbPassword.replace(/\\/g, '\\\\').replace(/'/g, "''");
-
     try {
+      logger.info(`[PROVISION] Attempting to authenticate with user: ${rootUser}...`);
       await rootConnection.authenticate();
-      logger.info(`[PROVISION] Creating database: ${tenant.db_name}`);
+      logger.info(`[PROVISION] ✓ Authentication successful with ${rootUser}`);
       
+      logger.info(`[PROVISION] Creating database: ${tenant.db_name}...`);
       // Create database
-      await rootConnection.query(`CREATE DATABASE IF NOT EXISTS \`${tenant.db_name}\``);
-      
-      // Ensure user exists for '%'
-      const [usersPercent] = await rootConnection.query(
-        `SELECT User, Host FROM mysql.user WHERE User = '${mainDbUser}' AND Host = '%'`
-      );
-      if (usersPercent.length === 0) {
-        await rootConnection.query(`CREATE USER '${mainDbUser}'@'%' IDENTIFIED BY '${escapedPassword}'`);
-      } else {
-        await rootConnection.query(`ALTER USER '${mainDbUser}'@'%' IDENTIFIED BY '${escapedPassword}'`);
+      try {
+        await rootConnection.query(`CREATE DATABASE IF NOT EXISTS \`${tenant.db_name}\``);
+        logger.info(`[PROVISION] ✓ Database created: ${tenant.db_name}`);
+      } catch (createDbError) {
+        if (createDbError.original && createDbError.original.code === 'ER_DBACCESS_DENIED_ERROR') {
+          logger.error(`[PROVISION] ✗ CREATE DATABASE failed: User '${rootUser}' does not have CREATE DATABASE privilege`);
+          logger.error(`[PROVISION] SOLUTION: Run the following SQL commands as MySQL root/admin:`);
+          logger.error(`[PROVISION] GRANT CREATE DATABASE ON *.* TO '${rootUser}'@'localhost';`);
+          logger.error(`[PROVISION] GRANT CREATE DATABASE ON *.* TO '${rootUser}'@'%';`);
+          logger.error(`[PROVISION] FLUSH PRIVILEGES;`);
+          throw new Error(`User '${rootUser}' does not have CREATE DATABASE privilege. Please grant it using: GRANT CREATE DATABASE ON *.* TO '${rootUser}'@'localhost'; GRANT CREATE DATABASE ON *.* TO '${rootUser}'@'%'; FLUSH PRIVILEGES;`);
+        }
+        throw createDbError;
       }
       
-      // Ensure user exists for 'localhost'
-      const [usersLocalhost] = await rootConnection.query(
-        `SELECT User, Host FROM mysql.user WHERE User = '${mainDbUser}' AND Host = 'localhost'`
-      );
-      if (usersLocalhost.length === 0) {
-        await rootConnection.query(`CREATE USER '${mainDbUser}'@'localhost' IDENTIFIED BY '${escapedPassword}'`);
-      } else {
-        await rootConnection.query(`ALTER USER '${mainDbUser}'@'localhost' IDENTIFIED BY '${escapedPassword}'`);
-      }
+      // Grant privileges to existing informative_finvera user
+      logger.info(`[PROVISION] Granting privileges to ${dbUser}@'%' on ${tenant.db_name}...`);
+      await rootConnection.query(`GRANT ALL PRIVILEGES ON \`${tenant.db_name}\`.* TO '${dbUser}'@'%'`);
+      logger.info(`[PROVISION] ✓ Privileges granted to ${dbUser}@'%'`);
       
-      // Grant privileges
-      await rootConnection.query(`GRANT ALL PRIVILEGES ON \`${tenant.db_name}\`.* TO '${mainDbUser}'@'%'`);
-      await rootConnection.query(`GRANT ALL PRIVILEGES ON \`${tenant.db_name}\`.* TO '${mainDbUser}'@'localhost'`);
+      logger.info(`[PROVISION] Granting privileges to ${dbUser}@'localhost' on ${tenant.db_name}...`);
+      await rootConnection.query(`GRANT ALL PRIVILEGES ON \`${tenant.db_name}\`.* TO '${dbUser}'@'localhost'`);
+      logger.info(`[PROVISION] ✓ Privileges granted to ${dbUser}@'localhost'`);
+      
+      logger.info(`[PROVISION] Flushing privileges...`);
       await rootConnection.query('FLUSH PRIVILEGES');
+      logger.info(`[PROVISION] ✓ Privileges flushed`);
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Verify privileges were granted
+      logger.info(`[PROVISION] Verifying privileges...`);
+      try {
+        const [grants] = await rootConnection.query(
+          `SELECT * FROM mysql.db WHERE User = '${dbUser}' AND Db = '${tenant.db_name.replace(/_/g, '\\_')}'`
+        );
+        logger.info(`[PROVISION] Found ${grants.length} privilege grant(s) for ${dbUser} on ${tenant.db_name}`);
+        if (grants.length === 0) {
+          logger.error(`[PROVISION] ⚠️  WARNING: No privileges found in mysql.db table!`);
+        } else {
+          grants.forEach(grant => {
+            logger.info(`[PROVISION] Grant: User=${grant.User}, Host=${grant.Host}, Db=${grant.Db}`);
+          });
+        }
+      } catch (verifyError) {
+        logger.warn(`[PROVISION] Could not verify privileges: ${verifyError.message}`);
+      }
+      
+      // Test connection with informative_finvera before closing root connection
+      logger.info(`[PROVISION] Testing connection with ${dbUser}...`);
+      try {
+        const testConnection = new Sequelize(tenant.db_name, dbUser, dbPassword, {
+          host: tenant.db_host || process.env.DB_HOST || 'localhost',
+          port: tenant.db_port || parseInt(process.env.DB_PORT) || 3306,
+          dialect: 'mysql',
+          logging: false,
+        });
+        await testConnection.authenticate();
+        logger.info(`[PROVISION] ✓ Connection test successful with ${dbUser}`);
+        await testConnection.close();
+      } catch (testError) {
+        logger.error(`[PROVISION] ✗ Connection test FAILED with ${dbUser}: ${testError.message}`);
+        logger.error(`[PROVISION] Error code: ${testError.code || 'N/A'}`);
+        logger.error(`[PROVISION] Error errno: ${testError.errno || 'N/A'}`);
+        throw new Error(`Connection test failed: ${testError.message}. User ${dbUser} cannot access database ${tenant.db_name}`);
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 2000));
       await rootConnection.close();
+      logger.info(`[PROVISION] Connection closed`);
 
-      // Initialize schema
+      // Initialize schema using informative_finvera
       await this.initializeTenantSchema(tenant, plainPassword);
       
       await tenant.update({
@@ -169,16 +219,70 @@ class TenantProvisioningService {
         db_provisioned_at: new Date(),
       });
 
-      logger.info(`[PROVISION] Database ${tenant.db_name} provisioned successfully. Privileges granted to ${mainDbUser}`);
+      logger.info(`[PROVISION] Database ${tenant.db_name} provisioned successfully. Privileges granted to ${dbUser}`);
     } catch (error) {
-      logger.error(`[PROVISION] Failed: ${error.message}`);
+      logger.error(`[PROVISION] ==========================================`);
+      logger.error(`[PROVISION] PROVISIONING FAILED`);
+      logger.error(`[PROVISION] ==========================================`);
+      logger.error(`[PROVISION] Error message: ${error.message}`);
+      logger.error(`[PROVISION] Error code: ${error.code || 'N/A'}`);
+      logger.error(`[PROVISION] Error errno: ${error.errno || 'N/A'}`);
+      logger.error(`[PROVISION] Error SQL: ${error.sql || 'N/A'}`);
+      logger.error(`[PROVISION] Error SQL State: ${error.sqlState || 'N/A'}`);
+      
+      if (error.original) {
+        logger.error(`[PROVISION] Original error message: ${error.original.message || 'N/A'}`);
+        logger.error(`[PROVISION] Original error code: ${error.original.code || 'N/A'}`);
+        logger.error(`[PROVISION] Original error errno: ${error.original.errno || 'N/A'}`);
+        logger.error(`[PROVISION] Original error SQL: ${error.original.sql || 'N/A'}`);
+        logger.error(`[PROVISION] Original error SQL State: ${error.original.sqlState || 'N/A'}`);
+      }
+      
+      logger.error(`[PROVISION] Database: ${tenant.db_name}`);
+      logger.error(`[PROVISION] Root user used: ${rootUser}`);
+      logger.error(`[PROVISION] Tenant user: ${dbUser}`);
+      logger.error(`[PROVISION] Host: ${tenant.db_host || process.env.DB_HOST || 'localhost'}`);
+      
+      // Provide helpful error message based on error type
+      if (error.original && error.original.code === 'ER_ACCESS_DENIED_ERROR') {
+        logger.error(`[PROVISION] ⚠️  AUTHENTICATION FAILED`);
+        logger.error(`[PROVISION] The user '${rootUser}' cannot authenticate.`);
+        logger.error(`[PROVISION] Please check:`);
+        logger.error(`[PROVISION] 1. DB_ROOT_USER and DB_ROOT_PASSWORD are set correctly`);
+        logger.error(`[PROVISION] 2. The root user exists and password is correct`);
+        logger.error(`[PROVISION] 3. Or grant CREATE DATABASE privilege to '${dbUser}' user`);
+      } else if (error.original && error.original.code === 'ER_DBACCESS_DENIED_ERROR') {
+        logger.error(`[PROVISION] ⚠️  CREATE DATABASE PRIVILEGE MISSING`);
+        logger.error(`[PROVISION] The user '${rootUser}' cannot create databases.`);
+        logger.error(`[PROVISION] Please grant CREATE DATABASE privilege to '${rootUser}'`);
+        logger.error(`[PROVISION] Or set DB_ROOT_USER to a user with CREATE DATABASE privilege`);
+      }
+      
+      logger.error(`[PROVISION] ==========================================`);
+      
+      // Cleanup
       try {
         await rootConnection.query(`DROP DATABASE IF EXISTS \`${tenant.db_name}\``);
+        logger.info(`[PROVISION] Cleaned up database: ${tenant.db_name}`);
       } catch (cleanupError) {
-        logger.error('Cleanup failed:', cleanupError.message);
+        logger.error(`[PROVISION] Cleanup failed: ${cleanupError.message}`);
       }
-      await rootConnection.close();
-      throw error;
+      
+      try {
+        await rootConnection.close();
+      } catch (closeError) {
+        logger.error(`[PROVISION] Failed to close connection: ${closeError.message}`);
+      }
+      
+      // Create enhanced error with all details
+      const enhancedError = new Error(error.message);
+      enhancedError.code = error.code;
+      enhancedError.errno = error.errno;
+      enhancedError.sql = error.sql;
+      enhancedError.sqlState = error.sqlState;
+      enhancedError.original = error.original;
+      enhancedError.stack = error.stack;
+      throw enhancedError;
     }
   }
 
@@ -188,8 +292,10 @@ class TenantProvisioningService {
    * @param {string} plainPassword - Plain text database password
    */
   async initializeTenantSchema(tenant, plainPassword) {
-    if (!process.env.DB_USER || !process.env.DB_PASSWORD) {
-      throw new Error('DB_USER and DB_PASSWORD environment variables must be set');
+    const dbPassword = process.env.DB_PASSWORD;
+    
+    if (!dbPassword) {
+      throw new Error('DB_PASSWORD environment variable must be set');
     }
 
     try {
@@ -198,16 +304,35 @@ class TenantProvisioningService {
         db_name: tenant.db_name,
         db_host: tenant.db_host,
         db_port: tenant.db_port,
-        db_user: process.env.DB_USER,
-        db_password: process.env.DB_PASSWORD,
+        db_user: 'informative_finvera',
+        db_password: dbPassword,
       });
 
       await this.runTenantMigrations(tenantConnection);
       await this.seedDefaultData(tenantConnection, tenant);
       logger.info(`[SCHEMA] Schema initialized for ${tenant.db_name}`);
     } catch (error) {
-      logger.error(`[SCHEMA] Failed: ${error.message}`);
-      throw error;
+      logger.error(`[SCHEMA] ==========================================`);
+      logger.error(`[SCHEMA] SCHEMA INITIALIZATION FAILED`);
+      logger.error(`[SCHEMA] ==========================================`);
+      logger.error(`[SCHEMA] Error message: ${error.message}`);
+      logger.error(`[SCHEMA] Error code: ${error.code || 'N/A'}`);
+      logger.error(`[SCHEMA] Error errno: ${error.errno || 'N/A'}`);
+      logger.error(`[SCHEMA] Error SQL: ${error.sql || 'N/A'}`);
+      logger.error(`[SCHEMA] Error SQL State: ${error.sqlState || 'N/A'}`);
+      logger.error(`[SCHEMA] Database: ${tenant.db_name}`);
+      logger.error(`[SCHEMA] User: ${dbUser}`);
+      logger.error(`[SCHEMA] ==========================================`);
+      
+      // Create enhanced error with all details
+      const enhancedError = new Error(error.message);
+      enhancedError.code = error.code;
+      enhancedError.errno = error.errno;
+      enhancedError.sql = error.sql;
+      enhancedError.sqlState = error.sqlState;
+      enhancedError.original = error.original;
+      enhancedError.stack = error.stack;
+      throw enhancedError;
     }
   }
 
