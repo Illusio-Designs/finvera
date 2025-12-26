@@ -62,11 +62,12 @@ if (process.env.MYSQL_URL) {
       idle: 10000,
       evict: 1000,
     },
-    dialectOptions: {
+      dialectOptions: {
       connectTimeout: 60000,
     },
   },
-);
+  );
+}
 
 /**
  * Initialize master database
