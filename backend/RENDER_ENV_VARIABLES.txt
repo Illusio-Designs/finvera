@@ -39,9 +39,6 @@ API_DOMAIN=https://your-app-name.onrender.com
 FRONTEND_URL=https://finvera.solutions
 CORS_ORIGIN=https://finvera.solutions,https://www.finvera.solutions,https://client.finvera.solutions,https://admin.finvera.solutions
 
-# ============================================
-# ENCRYPTION & SECURITY
-# ============================================
 ENCRYPTION_KEY=Devils@2609$
 PAYLOAD_ENCRYPTION_KEY=Devils@2609$
 JWT_SECRET=Devils@2609$
