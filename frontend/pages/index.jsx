@@ -135,7 +135,7 @@ export default function LandingPage() {
         <WebsiteHeader />
 
         {/* Hero Section */}
-        <section className="relative bg-gradient-to-br from-primary-50 via-white to-primary-100 py-24 md:py-32 lg:py-40 overflow-hidden">
+        <section className="relative bg-gradient-to-br from-primary-50 via-white to-primary-100 pt-36 pb-14 overflow-hidden">
           <div className="absolute inset-0 opacity-5">
             <div className="absolute top-0 left-0 w-96 h-96 bg-primary-600 rounded-full blur-3xl"></div>
             <div className="absolute bottom-0 right-0 w-96 h-96 bg-primary-800 rounded-full blur-3xl"></div>
@@ -161,13 +161,13 @@ export default function LandingPage() {
                 </span>
               </div>
 
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-gray-900 mb-6 leading-tight">
-                Create <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-primary-800">GST Invoices</span> for free in 10 seconds ⚡
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6 leading-tight">
+                Create <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-primary-800">GST Invoices</span> for<br /><span className="block mt-4">free in 10 seconds ⚡</span>
               </h1>
-              <p className="text-xl md:text-2xl text-gray-600 mb-4 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-lg md:text-xl text-gray-600 mb-4 max-w-3xl mx-auto leading-relaxed">
                 Customize templates, share bills on WhatsApp, collect payments!
               </p>
-              <p className="text-lg text-gray-500 mb-8 max-w-2xl mx-auto">
+              <p className="text-base text-gray-500 mb-8 max-w-2xl mx-auto">
                 Fast, Simple, Compliant • No training needed
               </p>
               
