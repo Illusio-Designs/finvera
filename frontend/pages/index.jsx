@@ -386,15 +386,19 @@ export default function LandingPage() {
                     ))}
                   </ul>
                 </div>
-                <div className="bg-gradient-to-br from-primary-50 to-white p-12 rounded-2xl shadow-xl border border-primary-100">
-                  <FiPackage className="text-8xl text-primary-300 mx-auto" />
+                <div className="bg-gradient-to-br from-primary-50 to-white aspect-square rounded-2xl shadow-xl border border-primary-100 flex items-center justify-center">
+                  <div className="w-32 h-32 bg-primary-100 rounded-xl flex items-center justify-center">
+                    <FiPackage className="text-5xl text-primary-600" />
+                  </div>
                 </div>
               </div>
 
               {/* Payment Tracking */}
               <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
-                <div className="order-2 md:order-1 bg-gradient-to-br from-primary-50 to-white p-12 rounded-2xl shadow-xl border border-primary-100">
-                  <FiDollarSign className="text-8xl text-primary-300 mx-auto" />
+                <div className="order-2 md:order-1 bg-gradient-to-br from-primary-50 to-white aspect-square rounded-2xl shadow-xl border border-primary-100 flex items-center justify-center">
+                  <div className="w-32 h-32 bg-primary-100 rounded-xl flex items-center justify-center">
+                    <FiDollarSign className="text-5xl text-primary-600" />
+                  </div>
                 </div>
                 <div className="order-1 md:order-2">
                   <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
@@ -432,8 +436,10 @@ export default function LandingPage() {
                     ))}
                   </ul>
                 </div>
-                <div className="bg-gradient-to-br from-primary-50 to-white p-12 rounded-2xl shadow-xl border border-primary-100">
-                  <FiShare2 className="text-8xl text-primary-300 mx-auto" />
+                <div className="bg-gradient-to-br from-primary-50 to-white aspect-square rounded-2xl shadow-xl border border-primary-100 flex items-center justify-center">
+                  <div className="w-32 h-32 bg-primary-100 rounded-xl flex items-center justify-center">
+                    <FiShare2 className="text-5xl text-primary-600" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -507,32 +513,37 @@ export default function LandingPage() {
         </section>
 
         {/* Security Section */}
-        <section className="py-24 bg-gradient-to-br from-primary-50 via-white to-primary-100">
-          <div className="container mx-auto px-6">
+        <section className="py-24 bg-gradient-to-br from-primary-50 via-white 
+        to-primary-100">
+          <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-6xl mx-auto text-center">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
                 Invisible security. Unbreakable trust.
               </h2>
-              <p className="text-[1.2rem] text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-[1.2rem] text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
                 Your data stays private. Always encrypted.
               </p>
-              <div className="bg-white p-12 rounded-2xl shadow-xl border border-primary-100">
-                <div className="flex items-center justify-center gap-8 flex-wrap">
-                  <div className="text-center">
-                    <FiShield className="text-6xl text-primary-600 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Bank-Level Security</h3>
-                    <p className="text-gray-600">256-bit encryption</p>
+              <div className="grid md:grid-cols-3 gap-8">
+                <div className="bg-white p-8 rounded-xl border border-gray-200 text-center">
+                  <div className="w-16 h-16 bg-primary-50 rounded-lg flex items-center justify-center mx-auto mb-5">
+                    <FiShield className="text-2xl text-primary-600" />
                   </div>
-                  <div className="text-center">
-                    <FiRefreshCw className="text-6xl text-primary-600 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Auto Backup</h3>
-                    <p className="text-gray-600">Daily automated backups</p>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Bank-Level Security</h3>
+                  <p className="text-[1.2rem] text-gray-600">256-bit encryption</p>
+                </div>
+                <div className="bg-white p-8 rounded-xl border border-gray-200 text-center">
+                  <div className="w-16 h-16 bg-primary-50 rounded-lg flex items-center justify-center mx-auto mb-5">
+                    <FiRefreshCw className="text-2xl text-primary-600" />
                   </div>
-                  <div className="text-center">
-                    <FiShield className="text-6xl text-primary-600 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Compliance</h3>
-                    <p className="text-gray-600">GDPR & Data Protection</p>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Auto Backup</h3>
+                  <p className="text-[1.2rem] text-gray-600">Daily automated backups</p>
+                </div>
+                <div className="bg-white p-8 rounded-xl border border-gray-200 text-center">
+                  <div className="w-16 h-16 bg-primary-50 rounded-lg flex items-center justify-center mx-auto mb-5">
+                    <FiShield className="text-2xl text-primary-600" />
                   </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Compliance</h3>
+                  <p className="text-[1.2rem] text-gray-600">GDPR & Data Protection</p>
                 </div>
               </div>
             </div>
@@ -541,17 +552,17 @@ export default function LandingPage() {
 
         {/* Partnerships Section */}
         <section className="py-24 bg-white">
-          <div className="container mx-auto px-6">
+          <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
                 Partnered with
               </h2>
             </div>
-            <div className="grid md:grid-cols-4 lg:grid-cols-7 gap-8 max-w-7xl mx-auto items-center">
+            <div className="grid md:grid-cols-4 lg:grid-cols-7 gap-5 max-w-7xl mx-auto items-center">
               {['Tally', 'Sandbox API', 'FinBox', 'GST Portal', 'E-Invoice Portal', 'E-Way Bill Portal', 'Payment Gateways'].map((partner) => (
-                <div key={partner} className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl shadow-md hover:shadow-lg transition border border-gray-200 text-center">
-                  <div className="h-16 flex items-center justify-center mb-3">
-                    <span className="text-2xl font-bold text-gray-400">{partner}</span>
+                <div key={partner} className="bg-white p-5 rounded-xl border border-gray-200 hover:border-primary-200 hover:shadow-sm transition text-center">
+                  <div className="h-14 flex items-center justify-center">
+                    <span className="text-base font-medium text-gray-600">{partner}</span>
                   </div>
                 </div>
               ))}
@@ -559,7 +570,7 @@ export default function LandingPage() {
             <div className="text-center mt-12">
               <Link
                 href="/integrations"
-                className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-semibold text-lg"
+                className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-normal text-base"
               >
                 View All Integrations
                 <FiArrowRight />
@@ -614,59 +625,59 @@ export default function LandingPage() {
 
         {/* Why Choose Us Section */}
         <section className="py-24 bg-white">
-          <div className="container mx-auto px-6">
+          <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-6xl mx-auto">
-              <div className="text-center mb-20">
-                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+              <div className="text-center mb-16">
+                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
                   Why Choose Finvera?
                 </h2>
                 <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                   Trusted by businesses for reliable accounting solutions
                 </p>
               </div>
-              <div className="grid md:grid-cols-2 gap-10">
-                <div className="flex items-start space-x-6 p-6 rounded-xl hover:bg-primary-50 transition">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="flex items-start gap-5 p-6 rounded-xl border border-gray-200 hover:border-primary-200 hover:bg-primary-50/50 transition">
                   <div className="flex-shrink-0">
-                    <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg">
-                      <FiShield className="text-white text-2xl" />
+                    <div className="w-14 h-14 bg-primary-50 rounded-lg flex items-center justify-center">
+                      <FiShield className="text-primary-600 text-xl" />
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Secure & Reliable</h3>
-                    <p className="text-gray-600 text-lg leading-relaxed">Your data is encrypted and secure. We follow industry best practices for data protection and compliance.</p>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Secure & Reliable</h3>
+                    <p className="text-[1.2rem] text-gray-600 leading-relaxed">Your data is encrypted and secure. We follow industry best practices for data protection and compliance.</p>
                   </div>
                 </div>
-                <div className="flex items-start space-x-6 p-6 rounded-xl hover:bg-primary-50 transition">
+                <div className="flex items-start gap-5 p-6 rounded-xl border border-gray-200 hover:border-primary-200 hover:bg-primary-50/50 transition">
                   <div className="flex-shrink-0">
-                    <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg">
-                      <FiZap className="text-white text-2xl" />
+                    <div className="w-14 h-14 bg-primary-50 rounded-lg flex items-center justify-center">
+                      <FiZap className="text-primary-600 text-xl" />
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Fast & Efficient</h3>
-                    <p className="text-gray-600 text-lg leading-relaxed">Automate repetitive tasks and save time. Focus on growing your business instead of managing paperwork.</p>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Fast & Efficient</h3>
+                    <p className="text-[1.2rem] text-gray-600 leading-relaxed">Automate repetitive tasks and save time. Focus on growing your business instead of managing paperwork.</p>
                   </div>
                 </div>
-                <div className="flex items-start space-x-6 p-6 rounded-xl hover:bg-primary-50 transition">
+                <div className="flex items-start gap-5 p-6 rounded-xl border border-gray-200 hover:border-primary-200 hover:bg-primary-50/50 transition">
                   <div className="flex-shrink-0">
-                    <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg">
-                      <FiSmartphone className="text-white text-2xl" />
+                    <div className="w-14 h-14 bg-primary-50 rounded-lg flex items-center justify-center">
+                      <FiSmartphone className="text-primary-600 text-xl" />
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Easy to Use</h3>
-                    <p className="text-gray-600 text-lg leading-relaxed">Intuitive interface designed for users of all technical levels. No training required.</p>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Easy to Use</h3>
+                    <p className="text-[1.2rem] text-gray-600 leading-relaxed">Intuitive interface designed for users of all technical levels. No training required.</p>
                   </div>
                 </div>
-                <div className="flex items-start space-x-6 p-6 rounded-xl hover:bg-primary-50 transition">
+                <div className="flex items-start gap-5 p-6 rounded-xl border border-gray-200 hover:border-primary-200 hover:bg-primary-50/50 transition">
                   <div className="flex-shrink-0">
-                    <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg">
-                      <FiAward className="text-white text-2xl" />
+                    <div className="w-14 h-14 bg-primary-50 rounded-lg flex items-center justify-center">
+                      <FiAward className="text-primary-600 text-xl" />
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Comprehensive</h3>
-                    <p className="text-gray-600 text-lg leading-relaxed">All-in-one solution for accounting, GST, invoicing, and reporting. Everything you need in one platform.</p>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Comprehensive</h3>
+                    <p className="text-[1.2rem] text-gray-600 leading-relaxed">All-in-one solution for accounting, GST, invoicing, and reporting. Everything you need in one platform.</p>
                   </div>
                 </div>
               </div>
@@ -675,10 +686,10 @@ export default function LandingPage() {
         </section>
 
         {/* How It Works Section */}
-        <section className="py-24 bg-gradient-to-br from-primary-50 via-white to-primary-100">
-          <div className="container mx-auto px-6">
-            <div className="text-center mb-20">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+        <section className="py-24 bg-white">
+          <div className="container mx-auto px-8 md:px-12 lg:px-20">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
                 How It Works
               </h2>
               <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
@@ -686,27 +697,27 @@ export default function LandingPage() {
               </p>
             </div>
             <div className="max-w-5xl mx-auto">
-              <div className="grid md:grid-cols-3 gap-10">
-                <div className="text-center group">
-                  <div className="w-24 h-24 bg-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl group-hover:scale-110 transition-transform">
-                    <span className="text-white text-4xl font-bold">1</span>
+              <div className="grid md:grid-cols-3 gap-8">
+                <div className="text-center">
+                  <div className="w-20 h-20 bg-primary-50 rounded-xl flex items-center justify-center mx-auto mb-5">
+                    <span className="text-primary-600 text-3xl font-bold">1</span>
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">Sign Up</h3>
-                  <p className="text-gray-600 text-lg leading-relaxed">Create your account in seconds. No credit card required for free trial.</p>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">Sign Up</h3>
+                  <p className="text-[1.2rem] text-gray-600 leading-relaxed">Create your account in seconds. No credit card required for free trial.</p>
                 </div>
-                <div className="text-center group">
-                  <div className="w-24 h-24 bg-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl group-hover:scale-110 transition-transform">
-                    <span className="text-white text-4xl font-bold">2</span>
+                <div className="text-center">
+                  <div className="w-20 h-20 bg-primary-50 rounded-xl flex items-center justify-center mx-auto mb-5">
+                    <span className="text-primary-600 text-3xl font-bold">2</span>
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">Setup Your Business</h3>
-                  <p className="text-gray-600 text-lg leading-relaxed">Add your company details and configure your preferences in minutes.</p>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">Setup Your Business</h3>
+                  <p className="text-[1.2rem] text-gray-600 leading-relaxed">Add your company details and configure your preferences in minutes.</p>
                 </div>
-                <div className="text-center group">
-                  <div className="w-24 h-24 bg-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl group-hover:scale-110 transition-transform">
-                    <span className="text-white text-4xl font-bold">3</span>
+                <div className="text-center">
+                  <div className="w-20 h-20 bg-primary-50 rounded-xl flex items-center justify-center mx-auto mb-5">
+                    <span className="text-primary-600 text-3xl font-bold">3</span>
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">Start Managing</h3>
-                  <p className="text-gray-600 text-lg leading-relaxed">Begin managing your accounts, invoices, and compliance right away.</p>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">Start Managing</h3>
+                  <p className="text-[1.2rem] text-gray-600 leading-relaxed">Begin managing your accounts, invoices, and compliance right away.</p>
                 </div>
               </div>
             </div>
@@ -809,10 +820,10 @@ export default function LandingPage() {
         </section>
 
         {/* Pricing Section */}
-        <section id="pricing" className="py-24 bg-gradient-to-br from-primary-50 via-white to-primary-100">
-          <div className="container mx-auto px-6">
-            <div className="text-center mb-20">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+        <section id="pricing" className="py-24 bg-white">
+          <div className="container mx-auto px-8 md:px-12 lg:px-20">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
                 Simple, Transparent Pricing
               </h2>
               <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
@@ -825,10 +836,11 @@ export default function LandingPage() {
                 <p className="mt-4 text-gray-600">Loading pricing plans...</p>
               </div>
             ) : plans.length > 0 ? (
-              <div className={`grid ${plans.length === 1 ? 'md:grid-cols-1' : plans.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-8 max-w-6xl mx-auto`}>
-                {plans.map((plan, index) => {
+              (() => {
+                const popularPlan = plans.find(plan => plan.is_featured);
+                const otherPlans = plans.filter(plan => !plan.is_featured);
+                const renderPlanCard = (plan, index, isPopular = false, customClasses = '') => {
                   const Icon = getPlanIcon(plan.plan_name);
-                  const isPopular = plan.is_featured;
                   const originalPrice = plan.base_price;
                   const discountedPrice = plan.discounted_price;
                   const price = discountedPrice || originalPrice;
@@ -844,13 +856,13 @@ export default function LandingPage() {
                       key={plan.id || index}
                       className={`relative ${
                         isPopular
-                          ? 'bg-primary-600 p-8 rounded-2xl shadow-2xl border-2 border-primary-700 transform scale-105'
-                          : 'bg-white p-8 rounded-2xl shadow-xl border-2 border-gray-200 hover:border-primary-300'
-                      } transition hover:shadow-2xl`}
+                          ? 'bg-primary-600 p-8 rounded-xl border-2 border-primary-500'
+                          : 'bg-white p-8 rounded-xl border border-gray-200 hover:border-primary-200'
+                      } transition ${customClasses}`}
                     >
                       {isPopular && (
-                        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-                          <span className="bg-primary-700 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg">
+                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                          <span className="bg-primary-500 text-white text-xs font-medium px-3 py-1 rounded-full">
                             MOST POPULAR
                           </span>
                         </div>
@@ -858,10 +870,10 @@ export default function LandingPage() {
                       
                       {/* Plan Header */}
                       <div className="text-center mb-6">
-                        <div className={`w-16 h-16 ${isPopular ? 'bg-white' : 'bg-primary-600'} rounded-xl flex items-center justify-center mx-auto mb-4`}>
-                          <Icon className={`${isPopular ? 'text-primary-600' : 'text-white'} text-2xl`} />
+                        <div className={`w-14 h-14 ${isPopular ? 'bg-white' : 'bg-primary-50'} rounded-lg flex items-center justify-center mx-auto mb-4`}>
+                          <Icon className={`${isPopular ? 'text-primary-600' : 'text-primary-600'} text-xl`} />
                         </div>
-                        <h3 className={`text-2xl font-bold mb-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
+                        <h3 className={`text-xl font-bold mb-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
                           {plan.plan_name}
                         </h3>
                         {plan.description && (
@@ -875,49 +887,49 @@ export default function LandingPage() {
                       <div className="mb-6 text-center">
                         {hasDiscount && (
                           <div className="mb-2">
-                            <span className={`text-lg line-through ${isPopular ? 'text-primary-200' : 'text-gray-400'}`}>
+                            <span className={`text-base line-through ${isPopular ? 'text-primary-200' : 'text-gray-400'}`}>
                               {formatPrice(originalPrice, plan.currency)}
                             </span>
-                            <span className={`ml-2 text-sm font-semibold ${isPopular ? 'text-white' : 'text-green-600'} bg-green-100 px-2 py-1 rounded`}>
+                            <span className={`ml-2 text-xs font-medium ${isPopular ? 'text-primary-700 bg-white' : 'text-green-600 bg-green-50'} px-2 py-0.5 rounded`}>
                               Save {formatPrice(originalPrice - discountedPrice, plan.currency)}
                             </span>
                           </div>
                         )}
                         <div>
-                          <span className={`text-4xl font-extrabold ${isPopular ? 'text-white' : 'text-gray-900'}`}>
+                          <span className={`text-3xl font-extrabold ${isPopular ? 'text-white' : 'text-gray-900'}`}>
                             {formatPrice(price, plan.currency)}
                           </span>
                           {billingPeriod && (
-                            <span className={`text-base ml-2 ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>
+                            <span className={`text-sm ml-2 ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>
                               {billingPeriod}
                             </span>
                           )}
                         </div>
                         {plan.trial_days > 0 && (
-                          <p className={`text-sm mt-2 ${isPopular ? 'text-primary-100' : 'text-gray-500'}`}>
+                          <p className={`text-xs mt-2 ${isPopular ? 'text-primary-100' : 'text-gray-500'}`}>
                             {plan.trial_days} days free trial
                           </p>
                         )}
                       </div>
 
                       {/* Plan Limits */}
-                      <div className={`mb-6 p-4 rounded-lg ${isPopular ? 'bg-primary-700' : 'bg-gray-50'}`}>
+                      <div className={`mb-6 p-4 rounded-lg ${isPopular ? 'bg-primary-500/20' : 'bg-gray-50'}`}>
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           <div>
-                            <span className={`font-semibold ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Users:</span>
+                            <span className={`font-medium ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Users:</span>
                             <span className={`ml-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
                               {plan.max_users === -1 ? 'Unlimited' : plan.max_users}
                             </span>
                           </div>
                           <div>
-                            <span className={`font-semibold ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Invoices:</span>
+                            <span className={`font-medium ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Invoices:</span>
                             <span className={`ml-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
                               {plan.max_invoices_per_month === -1 ? 'Unlimited' : plan.max_invoices_per_month}/mo
                             </span>
                           </div>
                           {plan.max_companies && (
                             <div>
-                              <span className={`font-semibold ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Companies:</span>
+                              <span className={`font-medium ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Companies:</span>
                               <span className={`ml-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
                                 {plan.max_companies === -1 ? 'Unlimited' : plan.max_companies}
                               </span>
@@ -925,7 +937,7 @@ export default function LandingPage() {
                           )}
                           {plan.storage_limit_gb && (
                             <div>
-                              <span className={`font-semibold ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Storage:</span>
+                              <span className={`font-medium ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Storage:</span>
                               <span className={`ml-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
                                 {plan.storage_limit_gb === -1 ? 'Unlimited' : `${plan.storage_limit_gb} GB`}
                               </span>
@@ -937,13 +949,13 @@ export default function LandingPage() {
                       {/* Features */}
                       {features.length > 0 && (
                         <div className="mb-6">
-                          <h4 className={`text-xs font-semibold uppercase tracking-wide mb-3 ${isPopular ? 'text-primary-200' : 'text-gray-500'}`}>
+                          <h4 className={`text-xs font-medium uppercase tracking-wide mb-3 ${isPopular ? 'text-primary-200' : 'text-gray-500'}`}>
                             Features Included
                           </h4>
                           <ul className="space-y-2 max-h-64 overflow-y-auto">
                             {features.map((feature, featureIndex) => (
                               <li key={featureIndex} className={`flex items-start text-sm ${isPopular ? 'text-white' : 'text-gray-700'}`}>
-                                <FiCheck className={`mr-2 mt-0.5 flex-shrink-0 ${isPopular ? 'text-primary-200' : 'text-green-600'}`} />
+                                <FiCheck className={`mr-2 mt-0.5 flex-shrink-0 ${isPopular ? 'text-primary-200' : 'text-primary-600'}`} />
                                 <span>{typeof feature === 'string' ? feature : feature.name || feature}</span>
                               </li>
                             ))}
@@ -956,9 +968,9 @@ export default function LandingPage() {
                         href={!hasCustomPrice ? getClientRegisterUrl() : '#contact'}
                         target={!hasCustomPrice ? '_blank' : undefined}
                         rel={!hasCustomPrice ? 'noopener noreferrer' : undefined}
-                        className={`block w-full text-center py-3 rounded-xl hover:opacity-90 transition font-normal text-base shadow-lg ${
+                        className={`block w-full text-center py-3 rounded-lg hover:opacity-90 transition font-normal text-base ${
                           isPopular
-                            ? 'bg-white text-primary-600 hover:bg-gray-100'
+                            ? 'bg-white text-primary-600 hover:bg-gray-50'
                             : !hasCustomPrice
                             ? 'bg-primary-600 text-white hover:bg-primary-700'
                             : 'bg-gray-900 text-white hover:bg-gray-800'
@@ -968,8 +980,47 @@ export default function LandingPage() {
                       </a>
                     </div>
                   );
-                })}
-              </div>
+                };
+
+                return (
+                  <div className="max-w-6xl mx-auto">
+                    {/* Top Row: Left, Popular (Center), Right */}
+                    <div className="grid md:grid-cols-3 gap-6 mb-6">
+                      {otherPlans.length > 0 && (
+                        <div className="md:mt-[50%]">
+                          {renderPlanCard(otherPlans[0], 0)}
+                        </div>
+                      )}
+                      {popularPlan && (
+                        <div>
+                          {renderPlanCard(popularPlan, 'popular', true)}
+                        </div>
+                      )}
+                      {otherPlans.length > 1 && (
+                        <div className="md:mt-[50%]">
+                          {renderPlanCard(otherPlans[1], 1)}
+                        </div>
+                      )}
+                    </div>
+                    {/* Bottom Row: Center (4th card) */}
+                    {otherPlans.length > 2 && (
+                      <div className="flex justify-center md:-mt-48">
+                        <div className="w-full md:w-1/3">
+                          {renderPlanCard(otherPlans[2], 2)}
+                        </div>
+                      </div>
+                    )}
+                    {/* If more than 4 plans, show remaining in a grid */}
+                    {otherPlans.length > 3 && (
+                      <div className="grid md:grid-cols-3 gap-6 mt-6">
+                        {otherPlans.slice(3).map((plan, index) => 
+                          renderPlanCard(plan, index + 3)
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()
             ) : (
               <div className="text-center py-12">
                 <p className="text-gray-600 text-lg">No pricing plans available at the moment. Please check back later.</p>
