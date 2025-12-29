@@ -291,10 +291,10 @@ export default function FeaturesPage() {
         <WebsiteHeader />
 
         {/* Hero Section */}
-        <section className="bg-gradient-to-br from-primary-50 to-white py-20">
+        <section className="bg-gradient-to-br from-primary-50 to-white pt-40 pb-12">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 mb-6">
+              <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
                 Powerful Features
               </h1>
               <p className="text-xl text-gray-600 leading-relaxed">
@@ -309,7 +309,7 @@ export default function FeaturesPage() {
         <section className="py-24 bg-white">
           <div className="container mx-auto px-6">
             <div className="text-center mb-20">
-              <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Core Features
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
@@ -347,7 +347,7 @@ export default function FeaturesPage() {
         <section className="py-24 bg-gradient-to-br from-primary-50 via-white to-primary-100">
           <div className="container mx-auto px-6">
             <div className="text-center mb-20">
-              <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Additional Benefits
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
@@ -375,7 +375,7 @@ export default function FeaturesPage() {
         <section className="py-24 bg-white">
           <div className="container mx-auto px-6">
             <div className="text-center mb-20">
-              <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Mind-blowing convenience
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
@@ -415,7 +415,7 @@ export default function FeaturesPage() {
         <section className="py-24 bg-primary-600">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-6">
                 Ready to Get Started?
               </h2>
               <p className="text-xl text-primary-100 mb-8">

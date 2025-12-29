@@ -217,7 +217,7 @@ export default function LandingPage() {
         <section id="features" className="py-24 bg-white">
           <div className="container mx-auto px-6">
             <div className="text-center mb-20">
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Powerful Features
               </h2>
               <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
@@ -292,7 +292,7 @@ export default function LandingPage() {
         <section className="py-24 bg-white">
           <div className="container mx-auto px-6">
             <div className="text-center mb-20">
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Awesome Templates
               </h2>
               <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
@@ -325,7 +325,7 @@ export default function LandingPage() {
         <section className="py-24 bg-gradient-to-br from-primary-50 via-white to-primary-100">
           <div className="container mx-auto px-6">
             <div className="text-center mb-20">
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Perfect for Your Business
               </h2>
               <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
@@ -371,7 +371,7 @@ export default function LandingPage() {
               {/* Inventory Management */}
               <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
                 <div>
-                  <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+                  <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                     Inventory so simple, it feels like magic
                   </h2>
                   <p className="text-xl text-gray-600 mb-6 leading-relaxed">
@@ -397,7 +397,7 @@ export default function LandingPage() {
                   <FiDollarSign className="text-8xl text-primary-300 mx-auto" />
                 </div>
                 <div className="order-1 md:order-2">
-                  <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+                  <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                     Record payments effortlessly
                   </h2>
                   <p className="text-xl text-gray-600 mb-6 leading-relaxed">
@@ -417,7 +417,7 @@ export default function LandingPage() {
               {/* WhatsApp/Email Sharing */}
               <div className="grid md:grid-cols-2 gap-12 items-center">
                 <div>
-                  <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+                  <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                     Share anywhere. Get paid faster.
                   </h2>
                   <p className="text-xl text-gray-600 mb-6 leading-relaxed">
@@ -444,7 +444,7 @@ export default function LandingPage() {
         <section className="py-24 bg-gradient-to-br from-primary-50 via-white to-primary-100">
           <div className="container mx-auto px-6">
             <div className="max-w-6xl mx-auto text-center">
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 E-way Bills
               </h2>
               <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
@@ -470,7 +470,7 @@ export default function LandingPage() {
         <section className="py-24 bg-white">
           <div className="container mx-auto px-6">
             <div className="text-center mb-20">
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Mind-blowing convenience
               </h2>
               <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
@@ -510,7 +510,7 @@ export default function LandingPage() {
         <section className="py-24 bg-gradient-to-br from-primary-50 via-white to-primary-100">
           <div className="container mx-auto px-6">
             <div className="max-w-6xl mx-auto text-center">
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Invisible security. Unbreakable trust.
               </h2>
               <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
@@ -543,7 +543,7 @@ export default function LandingPage() {
         <section className="py-24 bg-white">
           <div className="container mx-auto px-6">
             <div className="text-center mb-12">
-              <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Partnered with
               </h2>
             </div>
@@ -572,7 +572,7 @@ export default function LandingPage() {
         <section className="py-24 bg-gradient-to-br from-primary-50 via-white to-primary-100">
           <div className="container mx-auto px-6">
             <div className="text-center mb-20">
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Our Services
               </h2>
               <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
@@ -617,7 +617,7 @@ export default function LandingPage() {
           <div className="container mx-auto px-6">
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-20">
-                <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6">
+                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                   Why Choose Finvera?
                 </h2>
                 <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
@@ -678,7 +678,7 @@ export default function LandingPage() {
         <section className="py-24 bg-gradient-to-br from-primary-50 via-white to-primary-100">
           <div className="container mx-auto px-6">
             <div className="text-center mb-20">
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 How It Works
               </h2>
               <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
@@ -717,7 +717,7 @@ export default function LandingPage() {
         <section className="py-24 bg-white">
           <div className="container mx-auto px-6">
             <div className="text-center mb-20">
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 What Our Clients Say
               </h2>
               <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
@@ -812,7 +812,7 @@ export default function LandingPage() {
         <section id="pricing" className="py-24 bg-gradient-to-br from-primary-50 via-white to-primary-100">
           <div className="container mx-auto px-6">
             <div className="text-center mb-20">
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Simple, Transparent Pricing
               </h2>
               <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
@@ -986,7 +986,7 @@ export default function LandingPage() {
           </div>
           <div className="container mx-auto px-6 relative z-10">
             <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-6">
                 Ready to Get Started?
               </h2>
               <p className="text-xl md:text-2xl text-primary-100 mb-12">
@@ -1017,7 +1017,7 @@ export default function LandingPage() {
           <div className="container mx-auto px-6">
             <div className="max-w-5xl mx-auto">
               <div className="text-center mb-16">
-                <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6">
+                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                   Get in Touch
                 </h2>
                 <p className="text-xl md:text-2xl text-gray-600">

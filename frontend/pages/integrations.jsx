@@ -113,10 +113,10 @@ export default function IntegrationsPage() {
         <WebsiteHeader />
 
         {/* Hero Section */}
-        <section className="bg-gradient-to-br from-primary-50 to-white py-20">
+        <section className="bg-gradient-to-br from-primary-50 to-white pt-40 pb-12">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 mb-6">
+              <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
                 Integrations
               </h1>
               <p className="text-xl text-gray-600 leading-relaxed">
@@ -138,7 +138,7 @@ export default function IntegrationsPage() {
                       <div className="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center">
                         <Icon className="text-white text-xl" />
                       </div>
-                      <h2 className="text-3xl font-extrabold text-gray-900">{category.category}</h2>
+                      <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900">{category.category}</h2>
                     </div>
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {category.integrations.map((integration) => (
@@ -182,7 +182,7 @@ export default function IntegrationsPage() {
         <section className="py-20 bg-gradient-to-br from-primary-50 via-white to-primary-100">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Developer API
               </h2>
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
@@ -225,7 +225,7 @@ export default function IntegrationsPage() {
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto">
               <div className="bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl shadow-xl border border-primary-100">
-                <h2 className="text-3xl font-extrabold text-gray-900 mb-4 text-center">
+                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 text-center">
                   Need a Different Integration?
                 </h2>
                 <p className="text-gray-600 mb-8 text-center">
@@ -272,7 +272,7 @@ export default function IntegrationsPage() {
         <section className="py-20 bg-primary-600">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-6">
                 Ready to Integrate?
               </h2>
               <p className="text-xl text-primary-100 mb-8">
