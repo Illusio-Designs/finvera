@@ -38,7 +38,7 @@ class Error extends Component {
           <div className="space-y-4">
             <Link
               href="/"
-              className="inline-block bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition font-semibold"
+              className="inline-block bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition font-normal"
             >
               Go Home
             </Link>

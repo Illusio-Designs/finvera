@@ -32,14 +32,14 @@ export default function ContactPage() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
                 <a
                   href="#request-demo"
-                  className="inline-flex items-center justify-center gap-2 bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition font-semibold"
+                  className="inline-flex items-center justify-center gap-2 bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition font-normal"
                 >
                   <FiVideo className="text-xl" />
                   Request a Demo
                 </a>
                 <a
                   href="#schedule-call"
-                  className="inline-flex items-center justify-center gap-2 bg-white text-primary-600 px-6 py-3 rounded-lg hover:bg-gray-50 transition font-semibold border-2 border-primary-600"
+                  className="inline-flex items-center justify-center gap-2 bg-white text-primary-600 px-6 py-3 rounded-lg hover:bg-gray-50 transition font-normal border-2 border-primary-600"
                 >
                   <FiCalendar className="text-xl" />
                   Schedule a Call
@@ -146,7 +146,7 @@ export default function ContactPage() {
                       </div>
                       <button
                         type="submit"
-                        className="w-full bg-primary-600 text-white py-4 rounded-xl hover:bg-primary-700 transition font-semibold text-lg shadow-lg"
+                        className="w-full bg-primary-600 text-white py-4 rounded-xl hover:bg-primary-700 transition font-normal text-lg shadow-lg"
                       >
                         Request Demo
                       </button>
@@ -192,7 +192,7 @@ export default function ContactPage() {
                       </div>
                       <button
                         type="submit"
-                        className="w-full bg-primary-600 text-white py-4 rounded-xl hover:bg-primary-700 transition font-semibold text-lg shadow-lg"
+                        className="w-full bg-primary-600 text-white py-4 rounded-xl hover:bg-primary-700 transition font-normal text-lg shadow-lg"
                       >
                         Schedule Call
                       </button>
@@ -237,7 +237,7 @@ export default function ContactPage() {
                     </div>
                     <button
                       type="submit"
-                      className="w-full bg-primary-600 text-white py-4 rounded-xl hover:bg-primary-700 transition font-semibold text-lg shadow-lg flex items-center justify-center gap-2"
+                      className="w-full bg-primary-600 text-white py-4 rounded-xl hover:bg-primary-700 transition font-normal text-lg shadow-lg flex items-center justify-center gap-2"
                     >
                       <FiSend className="text-xl" />
                       Send Message

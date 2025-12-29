@@ -5,7 +5,7 @@ import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
 import { pricingAPI } from '../lib/api';
-import { FiCheck, FiX, FiZap, FiBriefcase, FiAward } from 'react-icons/fi';
+import { FiCheck, FiX, FiZap, FiBriefcase, FiAward, FiArrowRight } from 'react-icons/fi';
 
 export default function PricingPage() {
   const [clientRegisterUrl, setClientRegisterUrl] = useState('');
@@ -296,7 +296,7 @@ export default function PricingPage() {
                         href={!hasCustomPrice ? `${getClientRegisterUrl()}?plan_id=${plan.id}&billing_cycle=${billingCycle}` : '/contact'}
                         target={!hasCustomPrice ? '_blank' : undefined}
                         rel={!hasCustomPrice ? 'noopener noreferrer' : undefined}
-                        className={`block w-full text-center py-4 rounded-lg font-semibold text-lg transition ${
+                        className={`block w-full text-center py-4 rounded-lg font-normal text-lg transition ${
                           isPopular
                             ? 'bg-white text-primary-600 hover:bg-gray-100'
                             : 'bg-primary-600 text-white hover:bg-primary-700'
@@ -377,21 +377,28 @@ export default function PricingPage() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-24 bg-primary-600">
+        <section className="py-24 bg-gradient-to-br from-gray-50 via-white to-primary-50">
           <div className="container mx-auto px-6">
-            <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-6">
-                Still have questions?
-              </h2>
-              <p className="text-xl text-primary-100 mb-8">
-                Our team is here to help you choose the right plan for your business
-              </p>
-              <Link
-                href="/contact"
-                className="inline-block bg-white text-primary-600 px-8 py-4 rounded-lg hover:bg-primary-50 transition font-semibold text-lg"
-              >
-                Contact Sales Team
-              </Link>
+            <div className="max-w-5xl mx-auto">
+              <div className="relative bg-white rounded-3xl p-10 md:p-16 text-center border-2 border-primary-200 shadow-2xl overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-primary-100 rounded-full blur-3xl opacity-50 -mr-32 -mt-32"></div>
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary-100 rounded-full blur-3xl opacity-50 -ml-32 -mb-32"></div>
+                <div className="relative z-10">
+                  <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+                    Still have questions?
+                  </h2>
+                  <p className="text-xl text-gray-600 mb-8">
+                    Our team is here to help you choose the right plan for your business
+                  </p>
+                  <Link
+                    href="/contact"
+                    className="inline-flex items-center justify-center gap-2 bg-primary-600 text-white px-8 py-4 rounded-lg hover:bg-primary-700 transition font-normal text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
+                  >
+                    Contact Sales Team
+                    <FiArrowRight />
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </section>

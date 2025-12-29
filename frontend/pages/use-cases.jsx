@@ -245,7 +245,7 @@ export default function UseCasesPage() {
                           </p>
                           <a
                             href="/register"
-                            className="inline-flex items-center gap-2 bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition font-semibold"
+                            className="inline-flex items-center gap-2 bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition font-normal"
                           >
                             Start Free Trial
                             <FiArrowRight />
@@ -261,29 +261,35 @@ export default function UseCasesPage() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-20 bg-primary-600">
+        <section className="py-20 bg-gradient-to-br from-gray-50 via-white to-primary-50">
           <div className="container mx-auto px-6">
-            <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-6">
-                Not Sure Which Plan Fits You?
-              </h2>
-              <p className="text-xl text-primary-100 mb-8">
-                Our team can help you choose the perfect solution for your business
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  href="/contact"
-                  className="bg-white text-primary-600 px-8 py-4 rounded-lg hover:bg-primary-50 transition font-semibold text-lg inline-flex items-center justify-center gap-2"
-                >
-                  Contact Sales
-                  <FiArrowRight />
-                </Link>
-                <Link
-                  href="/pricing"
-                  className="bg-transparent border-2 border-white text-white px-8 py-4 rounded-lg hover:bg-white hover:text-primary-600 transition font-semibold text-lg"
-                >
-                  View Pricing
-                </Link>
+            <div className="max-w-5xl mx-auto">
+              <div className="relative bg-white rounded-3xl p-10 md:p-16 text-center border-2 border-primary-200 shadow-2xl overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-primary-100 rounded-full blur-3xl opacity-50 -mr-32 -mt-32"></div>
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary-100 rounded-full blur-3xl opacity-50 -ml-32 -mb-32"></div>
+                <div className="relative z-10">
+                  <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+                    Not Sure Which Plan Fits You?
+                  </h2>
+                  <p className="text-xl text-gray-600 mb-8">
+                    Our team can help you choose the perfect solution for your business
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <Link
+                      href="/contact"
+                      className="bg-primary-600 text-white px-8 py-4 rounded-lg hover:bg-primary-700 transition font-normal text-lg inline-flex items-center justify-center gap-2 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
+                    >
+                      Contact Sales
+                      <FiArrowRight />
+                    </Link>
+                    <Link
+                      href="/pricing"
+                      className="bg-white text-primary-600 px-8 py-4 rounded-lg hover:bg-primary-50 transition font-normal text-lg border-2 border-primary-600 shadow-lg hover:shadow-xl"
+                    >
+                      View Pricing
+                    </Link>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
