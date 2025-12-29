@@ -4,24 +4,24 @@ import Image from 'next/image';
 export default function WebsiteFooter() {
   return (
     <footer className="bg-primary-800 text-white">
-      <div className="container mx-auto px-6 py-12">
+      <div className="container mx-auto px-8 md:px-12 lg:px-20 pt-12 pb-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="col-span-1 md:col-span-2">
-            <div className="mb-4">
+            <div className="mb-8">
               <Image 
                 src="/Finallogo.png" 
                 alt="Finvera" 
                 width={3464}
                 height={889}
-                className="h-10 w-auto object-contain brightness-0 invert"
+                className="h-12 w-auto object-contain brightness-0 invert"
               />
             </div>
-            <p className="text-primary-200 mb-4 max-w-md">
+            <p className="text-primary-200 mb-8 max-w-md">
               Your Trustable Accounting Partner. Complete accounting solution with GST filing, 
               e-invoicing, and comprehensive financial management for your business.
             </p>
-            <div className="flex space-x-4">
+            <div className="flex space-x-4 mt-6">
               <a href="#" className="text-primary-200 hover:text-white transition">
                 <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -45,38 +45,32 @@ export default function WebsiteFooter() {
             <h3 className="text-white font-semibold mb-6 text-lg">Quick Links</h3>
             <ul className="space-y-3">
               <li>
-                <Link href="/#features" className="text-primary-200 hover:text-white transition flex items-center gap-2">
-                  <span className="w-1 h-1 bg-primary-200 rounded-full"></span>
+                <Link href="/#features" className="text-primary-200 hover:text-white transition">
                   Features
                 </Link>
               </li>
               <li>
-                <Link href="/invoice-templates" className="text-primary-200 hover:text-white transition flex items-center gap-2">
-                  <span className="w-1 h-1 bg-primary-200 rounded-full"></span>
+                <Link href="/invoice-templates" className="text-primary-200 hover:text-white transition">
                   Invoice Templates
                 </Link>
               </li>
               <li>
-                <Link href="/use-cases" className="text-primary-200 hover:text-white transition flex items-center gap-2">
-                  <span className="w-1 h-1 bg-primary-200 rounded-full"></span>
+                <Link href="/use-cases" className="text-primary-200 hover:text-white transition">
                   Use Cases
                 </Link>
               </li>
               <li>
-                <Link href="/integrations" className="text-primary-200 hover:text-white transition flex items-center gap-2">
-                  <span className="w-1 h-1 bg-primary-200 rounded-full"></span>
+                <Link href="/integrations" className="text-primary-200 hover:text-white transition">
                   Integrations
                 </Link>
               </li>
               <li>
-                <Link href="/#pricing" className="text-primary-200 hover:text-white transition flex items-center gap-2">
-                  <span className="w-1 h-1 bg-primary-200 rounded-full"></span>
+                <Link href="/#pricing" className="text-primary-200 hover:text-white transition">
                   Pricing
                 </Link>
               </li>
               <li>
-                <Link href="/about" className="text-primary-200 hover:text-white transition flex items-center gap-2">
-                  <span className="w-1 h-1 bg-primary-200 rounded-full"></span>
+                <Link href="/about" className="text-primary-200 hover:text-white transition">
                   About Us
                 </Link>
               </li>
@@ -88,32 +82,27 @@ export default function WebsiteFooter() {
             <h3 className="text-white font-semibold mb-6 text-lg">Support</h3>
             <ul className="space-y-3">
               <li>
-                <Link href="/help" className="text-primary-200 hover:text-white transition flex items-center gap-2">
-                  <span className="w-1 h-1 bg-primary-200 rounded-full"></span>
+                <Link href="/help" className="text-primary-200 hover:text-white transition">
                   Help Center
                 </Link>
               </li>
               <li>
-                <Link href="/docs" className="text-primary-200 hover:text-white transition flex items-center gap-2">
-                  <span className="w-1 h-1 bg-primary-200 rounded-full"></span>
+                <Link href="/docs" className="text-primary-200 hover:text-white transition">
                   Documentation
                 </Link>
               </li>
               <li>
-                <Link href="/#contact" className="text-primary-200 hover:text-white transition flex items-center gap-2">
-                  <span className="w-1 h-1 bg-primary-200 rounded-full"></span>
+                <Link href="/#contact" className="text-primary-200 hover:text-white transition">
                   Contact
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className="text-primary-200 hover:text-white transition flex items-center gap-2">
-                  <span className="w-1 h-1 bg-primary-200 rounded-full"></span>
+                <Link href="/privacy" className="text-primary-200 hover:text-white transition">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="/terms" className="text-primary-200 hover:text-white transition flex items-center gap-2">
-                  <span className="w-1 h-1 bg-primary-200 rounded-full"></span>
+                <Link href="/terms" className="text-primary-200 hover:text-white transition">
                   Terms of Service
                 </Link>
               </li>
