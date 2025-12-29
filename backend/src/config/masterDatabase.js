@@ -1,4 +1,7 @@
-require('dotenv').config();
+// Load .env only if not in production (Railway sets env vars directly)
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 const { Sequelize } = require('sequelize');
 const logger = require('../utils/logger');
 
@@ -10,13 +13,16 @@ const logger = require('../utils/logger');
  */
 const masterDbName = process.env.MASTER_DB_NAME || 'finvera_master';
 
-const masterSequelize = new Sequelize(
-  masterDbName,
-  process.env.DB_USER || 'root',
-  process.env.DB_PASSWORD || '',
-  {
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 3306,
+// Support MYSQL_URL (Railway), DATABASE_URL (Render), or individual variables
+let masterSequelize;
+if (process.env.MYSQL_URL || process.env.DATABASE_URL) {
+  // Use connection string (Railway uses MYSQL_URL, Render uses DATABASE_URL)
+  const connectionUrl = process.env.MYSQL_URL || process.env.DATABASE_URL;
+  logger.info(`[DB CONFIG] Using connection string (${process.env.MYSQL_URL ? 'MYSQL_URL' : 'DATABASE_URL'}) for master database`);
+  // Parse URL and replace database name with master database name
+  const url = new URL(connectionUrl);
+  url.pathname = `/${masterDbName}`;
+  masterSequelize = new Sequelize(url.toString(), {
     dialect: 'mysql',
     logging: process.env.NODE_ENV === 'development' ? (msg) => logger.debug(msg) : false,
     pool: {
@@ -29,8 +35,40 @@ const masterSequelize = new Sequelize(
     dialectOptions: {
       connectTimeout: 60000,
     },
+  });
+} else {
+  // Fallback to individual variables
+  const dbHost = process.env.DB_HOST || 'localhost';
+  const dbPort = process.env.DB_PORT || 3306;
+  const dbUser = process.env.DB_USER || 'root';
+  logger.info(`[DB CONFIG] Master DB Connection: host=${dbHost}, port=${dbPort}, user=${dbUser}, database=${masterDbName}`);
+  if (!process.env.DB_HOST || dbHost === 'localhost') {
+    logger.warn(`[DB CONFIG] ⚠️  DB_HOST is 'localhost'. This will fail on Railway.`);
+    logger.warn(`[DB CONFIG] Please set MYSQL_URL=\${{MySQL.MYSQL_URL}} in Railway environment variables.`);
+  }
+  
+  masterSequelize = new Sequelize(
+    masterDbName,
+    dbUser,
+    process.env.DB_PASSWORD || '',
+    {
+      host: dbHost,
+      port: parseInt(dbPort),
+    dialect: 'mysql',
+    logging: process.env.NODE_ENV === 'development' ? (msg) => logger.debug(msg) : false,
+    pool: {
+      max: 3,
+      min: 0,
+      acquire: 30000,
+      idle: 10000,
+      evict: 1000,
+    },
+      dialectOptions: {
+      connectTimeout: 60000,
+    },
   },
-);
+  );
+}
 
 /**
  * Initialize master database
@@ -38,16 +76,42 @@ const masterSequelize = new Sequelize(
  */
 async function initMasterDatabase() {
   try {
+    logger.info(`[INIT] Starting master database initialization for: ${masterDbName}`);
+    
     // Connect without database name to create it
-    const rootConnection = new Sequelize('', process.env.DB_USER || 'root', process.env.DB_PASSWORD || '', {
-      host: process.env.DB_HOST || 'localhost',
-      port: process.env.DB_PORT || 3306,
-      dialect: 'mysql',
-      logging: false,
-    });
+    let rootConnection;
+    if (process.env.MYSQL_URL || process.env.DATABASE_URL) {
+      const connectionUrl = process.env.MYSQL_URL || process.env.DATABASE_URL;
+      logger.info(`[INIT] Using connection string (${process.env.MYSQL_URL ? 'MYSQL_URL' : 'DATABASE_URL'}) for database creation`);
+      // Use connection string but without database name
+      const url = new URL(connectionUrl);
+      url.pathname = '/';
+      rootConnection = new Sequelize(url.toString(), {
+        dialect: 'mysql',
+        logging: false,
+      });
+      logger.info(`[INIT] Attempting to connect to MySQL server...`);
+      await rootConnection.authenticate();
+      logger.info(`[INIT] ✓ Connected to MySQL server`);
+    } else {
+      const dbHost = process.env.DB_HOST || 'localhost';
+      const dbUser = process.env.DB_USER || 'root';
+      logger.info(`[INIT] Using individual DB variables: host=${dbHost}, user=${dbUser}`);
+      rootConnection = new Sequelize('', dbUser, process.env.DB_PASSWORD || '', {
+        host: dbHost,
+        port: process.env.DB_PORT || 3306,
+        dialect: 'mysql',
+        logging: false,
+      });
+      logger.info(`[INIT] Attempting to connect to MySQL server at ${dbHost}...`);
+      await rootConnection.authenticate();
+      logger.info(`[INIT] ✓ Connected to MySQL server`);
+    }
 
     // Create master database if it doesn't exist
+    logger.info(`[INIT] Creating database: ${masterDbName}`);
     await rootConnection.query(`CREATE DATABASE IF NOT EXISTS \`${masterDbName}\``);
+    logger.info(`[INIT] ✓ Database ${masterDbName} ready`);
     await rootConnection.close();
     
     logger.info(`Master database '${masterDbName}' ready`);

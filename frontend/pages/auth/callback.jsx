@@ -35,10 +35,13 @@ export default function AuthCallback() {
           return;
         }
 
-        // Store tokens in cookies
+        // Store tokens in cookies with cross-subdomain support
+        const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
         const cookieOptions = { 
           expires: 7,
-          sameSite: 'lax'
+          sameSite: 'lax',
+          domain: `.${mainDomain}`, // Leading dot allows all subdomains
+          secure: true, // HTTPS only
         };
         
         Cookies.set('token', token, cookieOptions);
@@ -69,11 +72,14 @@ export default function AuthCallback() {
               full_name: userData.full_name || userData.name || userData.email?.split('@')[0] || 'User',
             };
 
-            // Store user data in cookie
+            // Store user data in cookie (reuse cookieOptions with domain)
             Cookies.set('user', JSON.stringify(normalizedUser), cookieOptions);
             if (normalizedUser.company_id) {
               Cookies.set('companyId', normalizedUser.company_id, cookieOptions);
             }
+            
+            console.log('✓ Cookies set with domain:', `.${mainDomain}`);
+            console.log('✓ User data stored:', normalizedUser.email);
 
             // Update auth context
             updateUser(normalizedUser);
@@ -82,52 +88,45 @@ export default function AuthCallback() {
             const role = normalizedUser.role;
             let redirectPath = '/';
 
+            // Get subdomain info
+            const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
+            const currentHost = window.location.hostname;
+            
             // Check if user needs to create a company
             if (needsCompany === 'true' || !normalizedUser.company_id) {
               toast.success('Welcome! Please create your company to continue.');
               
+              // Always redirect to client subdomain for company creation
+              const targetUrl = `${window.location.protocol}//client.${mainDomain}/client/companies`;
+              console.log('No company - Redirecting to:', targetUrl);
+              
               setTimeout(() => {
-                // Always redirect to client subdomain for company creation
-                const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
-                const currentHost = window.location.hostname;
-                
-                // Check if we're NOT already on client subdomain
-                if (!currentHost.startsWith('client.')) {
-                  // Redirect to client subdomain
-                  const targetUrl = `${window.location.protocol}//client.${mainDomain}/client/companies`;
-                  console.log('Redirecting to:', targetUrl);
-                  window.location.href = targetUrl;
-                } else {
-                  // Already on client subdomain, use router
-                  router.replace('/client/companies');
-                }
+                window.location.href = targetUrl;
               }, 500);
               return;
             }
 
-            // Get target subdomain based on role
-            const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
-            const currentHost = window.location.hostname;
-            
+            // User has company - redirect based on role
             if (canAccessAdminPortal(role)) {
+              // Admin users go to admin subdomain
               redirectPath = getDefaultRedirect(role, normalizedUser.id);
-              // Redirect to admin subdomain
               const targetUrl = `${window.location.protocol}//admin.${mainDomain}${redirectPath}`;
-              console.log('Redirecting admin to:', targetUrl);
+              console.log('Admin with company - Redirecting to:', targetUrl);
               toast.success('Login successful!');
               setTimeout(() => {
                 window.location.href = targetUrl;
               }, 500);
             } else if (canAccessClientPortal(role)) {
+              // Client users go to client subdomain dashboard
               redirectPath = getDefaultRedirect(role, normalizedUser.id);
-              // Redirect to client subdomain
               const targetUrl = `${window.location.protocol}//client.${mainDomain}${redirectPath}`;
-              console.log('Redirecting client to:', targetUrl);
+              console.log('Client with company - Redirecting to:', targetUrl);
               toast.success('Login successful!');
               setTimeout(() => {
                 window.location.href = targetUrl;
               }, 500);
             } else {
+              // Fallback - stay on current domain
               toast.success('Login successful!');
               setTimeout(() => {
                 router.replace(redirectPath);

@@ -163,12 +163,44 @@ module.exports = {
         await company.reload();
       } catch (provisionError) {
         logger.error('Database provisioning failed during company creation:', provisionError);
+        logger.error('Full error details:', {
+          message: provisionError.message,
+          code: provisionError.code,
+          errno: provisionError.errno,
+          sql: provisionError.sql,
+          sqlState: provisionError.sqlState,
+          stack: provisionError.stack,
+          original: provisionError.original ? {
+            message: provisionError.original.message,
+            code: provisionError.original.code,
+            errno: provisionError.original.errno,
+            sql: provisionError.original.sql,
+            sqlState: provisionError.original.sqlState,
+          } : null,
+        });
+        
         // Delete the company record if database provisioning fails
         await company.destroy();
+        
+        // Return detailed error information
         return res.status(500).json({
           success: false,
           message: 'Failed to create company: Database provisioning failed. Please try again.',
           error: provisionError.message,
+          errorDetails: {
+            code: provisionError.code || 'N/A',
+            errno: provisionError.errno || 'N/A',
+            sql: provisionError.sql || 'N/A',
+            sqlState: provisionError.sqlState || 'N/A',
+            original: provisionError.original ? {
+              message: provisionError.original.message,
+              code: provisionError.original.code,
+              errno: provisionError.original.errno,
+              sql: provisionError.original.sql,
+              sqlState: provisionError.original.sqlState,
+            } : null,
+          },
+          stack: process.env.NODE_ENV === 'development' ? provisionError.stack : undefined,
         });
       }
 
