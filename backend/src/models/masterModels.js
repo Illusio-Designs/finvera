@@ -453,6 +453,11 @@ async function syncMasterModels() {
     if (syncError.original && syncError.original.code === 'ER_TOO_MANY_KEYS') {
       const logger = require('../utils/logger');
       logger.warn('⚠️  tenant_master table has too many indexes (MySQL limit: 64)');
+    } else if (syncError.original && syncError.original.code === 'ER_TOO_BIG_ROWSIZE') {
+      const logger = require('../utils/logger');
+      logger.warn('⚠️  tenant_master table row size too large. Skipping alter sync.');
+      logger.warn('   This usually means the table already exists with the correct structure.');
+      logger.warn('   If you need to add columns, do it manually via migration.');
       logger.warn('   This is usually safe to ignore if the table already exists.');
       logger.warn('   The table structure is correct, just too many indexes.');
       // Continue with other models
