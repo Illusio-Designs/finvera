@@ -153,10 +153,10 @@ export default function UseCasesPage() {
         <WebsiteHeader />
 
         {/* Hero Section */}
-        <section className="bg-gradient-to-br from-primary-50 to-white py-20">
+        <section className="bg-gradient-to-br from-primary-50 to-white pt-40 pb-12">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 mb-6">
+              <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
                 Perfect for Your Business
               </h1>
               <p className="text-xl text-gray-600 leading-relaxed">
@@ -187,7 +187,7 @@ export default function UseCasesPage() {
                           <Icon className="text-white text-2xl" />
                         </div>
                         <div>
-                          <h2 className="text-4xl font-extrabold text-gray-900">{useCase.name}</h2>
+                          <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900">{useCase.name}</h2>
                           <p className="text-lg text-gray-600">{useCase.description}</p>
                         </div>
                       </div>
@@ -264,7 +264,7 @@ export default function UseCasesPage() {
         <section className="py-20 bg-primary-600">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-6">
                 Not Sure Which Plan Fits You?
               </h2>
               <p className="text-xl text-primary-100 mb-8">

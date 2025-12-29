@@ -17,7 +17,7 @@ export default function PrivacyPage() {
         <section className="bg-gradient-to-br from-primary-50 to-white py-20">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto">
-              <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 mb-6">Privacy Policy</h1>
+              <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">Privacy Policy</h1>
               <p className="text-lg text-gray-600 mb-8">Last updated: {new Date().toLocaleDateString()}</p>
 
               <div className="bg-white p-10 rounded-2xl shadow-xl space-y-8">

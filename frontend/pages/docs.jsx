@@ -55,10 +55,10 @@ export default function DocsPage() {
         <WebsiteHeader />
 
         {/* Hero Section */}
-        <section className="bg-gradient-to-br from-primary-50 to-white py-20">
+        <section className="bg-gradient-to-br from-primary-50 to-white pt-40 pb-12">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 mb-6">
+              <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
                 Documentation
               </h1>
               <p className="text-xl text-gray-600 leading-relaxed">
@@ -116,7 +116,7 @@ export default function DocsPage() {
         <section className="py-20 bg-white">
           <div className="container mx-auto px-6">
             <div className="text-center mb-12">
-              <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Video Tutorials
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
@@ -151,7 +151,7 @@ export default function DocsPage() {
         <section className="py-20 bg-gradient-to-br from-primary-50 to-white">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-4xl font-extrabold text-gray-900 mb-8 text-center">Quick Start Guide</h2>
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-8 text-center">Quick Start Guide</h2>
               <div className="bg-white p-10 rounded-2xl shadow-xl">
                 <ol className="space-y-6">
                   <li className="flex items-start">

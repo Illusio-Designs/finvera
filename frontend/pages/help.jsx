@@ -47,10 +47,10 @@ export default function HelpPage() {
         <WebsiteHeader />
 
         {/* Hero Section */}
-        <section className="bg-gradient-to-br from-primary-50 to-white py-20">
+        <section className="bg-gradient-to-br from-primary-50 to-white pt-40 pb-12">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 mb-6">
+              <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
                 How can we help?
               </h1>
               <div className="relative max-w-2xl mx-auto">
@@ -95,7 +95,7 @@ export default function HelpPage() {
 
             {/* FAQ Section */}
             <div id="faq" className="max-w-4xl mx-auto">
-              <h2 className="text-4xl font-extrabold text-gray-900 mb-12 text-center">Frequently Asked Questions</h2>
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-12 text-center">Frequently Asked Questions</h2>
               <div className="mb-8">
                 <div className="flex flex-wrap gap-3 justify-center">
                   {['Getting Started', 'Billing', 'GST & Compliance', 'Account Management', 'Technical Support'].map((category) => (

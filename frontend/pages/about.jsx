@@ -16,10 +16,10 @@ export default function AboutPage() {
         <WebsiteHeader />
 
         {/* Hero Section */}
-        <section className="bg-gradient-to-br from-primary-50 to-white py-20">
+        <section className="bg-gradient-to-br from-primary-50 to-white pt-40 pb-12">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 mb-6">
+              <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
                 About Finvera
               </h1>
               <p className="text-xl text-gray-600 leading-relaxed">
@@ -36,7 +36,7 @@ export default function AboutPage() {
             <div className="max-w-6xl mx-auto">
               <div className="grid md:grid-cols-2 gap-12 items-center">
                 <div>
-                  <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+                  <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                     Our Mission
                   </h2>
                   <p className="text-lg text-gray-600 leading-relaxed mb-4">
@@ -80,7 +80,7 @@ export default function AboutPage() {
         <section className="py-20 bg-gradient-to-br from-primary-50 to-white">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Why We Started
               </h2>
               <p className="text-xl text-gray-600 leading-relaxed">
@@ -96,7 +96,7 @@ export default function AboutPage() {
         <section className="py-20 bg-gradient-to-br from-primary-50 via-white to-primary-100">
           <div className="container mx-auto px-6">
             <div className="text-center mb-12">
-              <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Partnered with
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
@@ -120,7 +120,7 @@ export default function AboutPage() {
           <div className="container mx-auto px-6">
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-12">
-                <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                   Security & Trust
                 </h2>
                 <p className="text-xl text-gray-600 max-w-3xl mx-auto">

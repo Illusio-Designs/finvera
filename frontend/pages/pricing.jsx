@@ -86,7 +86,7 @@ export default function PricingPage() {
         <WebsiteHeader />
 
         {/* Hero Section */}
-        <section className="bg-gradient-to-br from-primary-50 to-white py-20">
+        <section className="bg-gradient-to-br from-primary-50 to-white pt-40 pb-12">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto text-center">
               <div className="mb-6">
@@ -94,7 +94,7 @@ export default function PricingPage() {
                   ✓ Free Trial Available • No Credit Card Required
                 </span>
               </div>
-              <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 mb-6">
+              <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
                 Simple, Transparent Pricing
               </h1>
               <p className="text-xl text-gray-600 leading-relaxed mb-4">
@@ -332,7 +332,7 @@ export default function PricingPage() {
         <section className="py-24 bg-gradient-to-br from-primary-50 via-white to-primary-100">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-4xl font-extrabold text-gray-900 mb-12 text-center">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-12 text-center">
                 Frequently Asked Questions
               </h2>
               <div className="space-y-6">
@@ -380,7 +380,7 @@ export default function PricingPage() {
         <section className="py-24 bg-primary-600">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-6">
                 Still have questions?
               </h2>
               <p className="text-xl text-primary-100 mb-8">
