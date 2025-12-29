@@ -61,7 +61,7 @@ export default function DocsPage() {
               <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
                 Documentation
               </h1>
-              <p className="text-xl text-gray-600 leading-relaxed">
+              <p className="text-base text-gray-600 leading-relaxed">
                 Complete guides, tutorials, and API documentation to help you get the most out of Finvera.
               </p>
             </div>
@@ -119,7 +119,7 @@ export default function DocsPage() {
               <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Video Tutorials
               </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-base text-gray-600 max-w-3xl mx-auto">
                 Learn Finvera with step-by-step video guides
               </p>
             </div>

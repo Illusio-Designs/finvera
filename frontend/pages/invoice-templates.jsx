@@ -55,7 +55,7 @@ export default function InvoiceTemplatesPage() {
               <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
                 Awesome Templates
               </h1>
-              <p className="text-xl text-gray-600 leading-relaxed">
+              <p className="text-base text-gray-600 leading-relaxed">
                 Tailor made, professional, and hand crafted templates for your business to stand out.
               </p>
             </div>
@@ -94,7 +94,7 @@ export default function InvoiceTemplatesPage() {
               <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Print Size Options
               </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-base text-gray-600 max-w-3xl mx-auto">
                 Choose from multiple size options to match your printing needs
               </p>
             </div>
@@ -126,7 +126,7 @@ export default function InvoiceTemplatesPage() {
                 <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                   Customize Your Templates
                 </h2>
-                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                <p className="text-base text-gray-600 max-w-3xl mx-auto">
                   Make your invoices truly yours with extensive customization options
                 </p>
               </div>
@@ -158,7 +158,7 @@ export default function InvoiceTemplatesPage() {
                   <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                     Ready to Create Professional Invoices?
                   </h2>
-                  <p className="text-xl text-gray-600 mb-8">
+                  <p className="text-base text-gray-600 mb-8">
                     Start using our templates today and create invoices in 10 seconds
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">

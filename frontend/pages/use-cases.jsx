@@ -159,7 +159,7 @@ export default function UseCasesPage() {
               <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
                 Perfect for Your Business
               </h1>
-              <p className="text-xl text-gray-600 leading-relaxed">
+              <p className="text-base text-gray-600 leading-relaxed">
                 Quick invoicing for retailers, distributors, startups, freelancers, and service providers using Finvera invoicing app.
               </p>
             </div>
@@ -188,7 +188,7 @@ export default function UseCasesPage() {
                         </div>
                         <div>
                           <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900">{useCase.name}</h2>
-                          <p className="text-lg text-gray-600">{useCase.description}</p>
+                          <p className="text-base text-gray-600">{useCase.description}</p>
                         </div>
                       </div>
 
@@ -271,7 +271,7 @@ export default function UseCasesPage() {
                   <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                     Not Sure Which Plan Fits You?
                   </h2>
-                  <p className="text-xl text-gray-600 mb-8">
+                  <p className="text-base text-gray-600 mb-8">
                     Our team can help you choose the perfect solution for your business
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">

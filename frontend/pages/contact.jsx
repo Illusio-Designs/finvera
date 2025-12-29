@@ -26,7 +26,7 @@ export default function ContactPage() {
               <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
                 Contact Us
               </h1>
-              <p className="text-xl text-gray-600 leading-relaxed">
+              <p className="text-[1.2rem] text-gray-600 leading-relaxed">
                 Have questions? We&apos;d love to hear from you. Get in touch with our team.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
@@ -56,7 +56,7 @@ export default function ContactPage() {
               <div className="grid md:grid-cols-2 gap-12 items-start">
                 <div>
                   <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-8">Get in Touch</h2>
-                  <p className="text-lg text-gray-600 mb-8 leading-relaxed">
+                  <p className="text-[1.2rem] text-gray-600 mb-8 leading-relaxed">
                     Whether you have a question about features, pricing, or anything else, our team is ready to answer all your questions.
                   </p>
                   <div className="space-y-6">

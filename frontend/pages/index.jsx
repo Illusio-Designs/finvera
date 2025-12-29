@@ -164,7 +164,7 @@ export default function LandingPage() {
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6 leading-tight">
                 Create <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-primary-800">GST Invoices</span> for<br /><span className="block mt-4">free in 10 seconds ⚡</span>
               </h1>
-              <p className="text-lg md:text-xl text-gray-600 mb-4 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-[1.2rem] text-gray-600 mb-4 max-w-3xl mx-auto leading-relaxed">
                 Customize templates, share bills on WhatsApp, collect payments!
               </p>
               <p className="text-base text-gray-500 mb-8 max-w-2xl mx-auto">
@@ -215,72 +215,72 @@ export default function LandingPage() {
 
         {/* Features Section */}
         <section id="features" className="py-24 bg-white">
-          <div className="container mx-auto px-6">
-            <div className="text-center mb-20">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+          <div className="container mx-auto px-8 md:px-12 lg:px-20">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">
                 Powerful Features
               </h2>
-              <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-[1.2rem] text-gray-600 max-w-2xl mx-auto">
                 Everything you need to manage your accounting and compliance in one place
               </p>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-              <div className="group bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl shadow-lg hover:shadow-2xl transition-all border border-primary-100 hover:border-primary-300 transform hover:-translate-y-2">
-                <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <FiBarChart2 className="text-white text-2xl" />
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+              <div className="group bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-sm hover:shadow-md transition-all border border-primary-100 hover:border-primary-200">
+                <div className="w-14 h-14 bg-primary-600 rounded-lg flex items-center justify-center mb-5">
+                  <FiBarChart2 className="text-white text-xl" />
                 </div>
-                <h3 className="text-2xl font-bold mb-4 text-gray-900">GST Filing</h3>
-                <p className="text-gray-600 leading-relaxed text-lg">
+                <h3 className="text-xl font-bold mb-3 text-gray-900">GST Filing</h3>
+                <p className="text-[1.2rem] text-gray-600 leading-relaxed">
                   Automated GST return filing with GSTR-1 and GSTR-3B support. Stay compliant with ease and save time.
                 </p>
               </div>
 
-              <div className="group bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl shadow-lg hover:shadow-2xl transition-all border border-primary-100 hover:border-primary-300 transform hover:-translate-y-2">
-                <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <FiFileText className="text-white text-2xl" />
+              <div className="group bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-sm hover:shadow-md transition-all border border-primary-100 hover:border-primary-200">
+                <div className="w-14 h-14 bg-primary-600 rounded-lg flex items-center justify-center mb-5">
+                  <FiFileText className="text-white text-xl" />
                 </div>
-                <h3 className="text-2xl font-bold mb-4 text-gray-900">E-Invoicing</h3>
-                <p className="text-gray-600 leading-relaxed text-lg">
+                <h3 className="text-xl font-bold mb-3 text-gray-900">E-Invoicing</h3>
+                <p className="text-[1.2rem] text-gray-600 leading-relaxed">
                   Generate and manage e-invoices with IRN and QR code generation. Fully compliant with government regulations.
                 </p>
               </div>
 
-              <div className="group bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl shadow-lg hover:shadow-2xl transition-all border border-primary-100 hover:border-primary-300 transform hover:-translate-y-2">
-                <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <FiDollarSign className="text-white text-2xl" />
+              <div className="group bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-sm hover:shadow-md transition-all border border-primary-100 hover:border-primary-200">
+                <div className="w-14 h-14 bg-primary-600 rounded-lg flex items-center justify-center mb-5">
+                  <FiDollarSign className="text-white text-xl" />
                 </div>
-                <h3 className="text-2xl font-bold mb-4 text-gray-900">Complete Accounting</h3>
-                <p className="text-gray-600 leading-relaxed text-lg">
+                <h3 className="text-xl font-bold mb-3 text-gray-900">Complete Accounting</h3>
+                <p className="text-[1.2rem] text-gray-600 leading-relaxed">
                   Full accounting with ledgers, vouchers, and financial reports. Manage all your transactions efficiently.
                 </p>
               </div>
 
-              <div className="group bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl shadow-lg hover:shadow-2xl transition-all border border-primary-100 hover:border-primary-300 transform hover:-translate-y-2">
-                <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <FiTrendingUp className="text-white text-2xl" />
+              <div className="group bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-sm hover:shadow-md transition-all border border-primary-100 hover:border-primary-200">
+                <div className="w-14 h-14 bg-primary-600 rounded-lg flex items-center justify-center mb-5">
+                  <FiTrendingUp className="text-white text-xl" />
                 </div>
-                <h3 className="text-2xl font-bold mb-4 text-gray-900">Financial Reports</h3>
-                <p className="text-gray-600 leading-relaxed text-lg">
+                <h3 className="text-xl font-bold mb-3 text-gray-900">Financial Reports</h3>
+                <p className="text-[1.2rem] text-gray-600 leading-relaxed">
                   Balance sheet, P&L, trial balance, and custom reports. Get insights into your business performance.
                 </p>
               </div>
 
-              <div className="group bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl shadow-lg hover:shadow-2xl transition-all border border-primary-100 hover:border-primary-300 transform hover:-translate-y-2">
-                <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <FiUsers className="text-white text-2xl" />
+              <div className="group bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-sm hover:shadow-md transition-all border border-primary-100 hover:border-primary-200">
+                <div className="w-14 h-14 bg-primary-600 rounded-lg flex items-center justify-center mb-5">
+                  <FiUsers className="text-white text-xl" />
                 </div>
-                <h3 className="text-2xl font-bold mb-4 text-gray-900">User Management</h3>
-                <p className="text-gray-600 leading-relaxed text-lg">
+                <h3 className="text-xl font-bold mb-3 text-gray-900">User Management</h3>
+                <p className="text-[1.2rem] text-gray-600 leading-relaxed">
                   Manage multiple users with role-based access control. Secure and organized user management for your team.
                 </p>
               </div>
 
-              <div className="group bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl shadow-lg hover:shadow-2xl transition-all border border-primary-100 hover:border-primary-300 transform hover:-translate-y-2">
-                <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <FiTarget className="text-white text-2xl" />
+              <div className="group bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-sm hover:shadow-md transition-all border border-primary-100 hover:border-primary-200">
+                <div className="w-14 h-14 bg-primary-600 rounded-lg flex items-center justify-center mb-5">
+                  <FiTarget className="text-white text-xl" />
                 </div>
-                <h3 className="text-2xl font-bold mb-4 text-gray-900">Referral System</h3>
-                <p className="text-gray-600 leading-relaxed text-lg">
+                <h3 className="text-xl font-bold mb-3 text-gray-900">Referral System</h3>
+                <p className="text-[1.2rem] text-gray-600 leading-relaxed">
                   Earn commissions through our distributor and salesman network. Grow your business with referrals.
                 </p>
               </div>
@@ -295,24 +295,24 @@ export default function LandingPage() {
               <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Awesome Templates
               </h2>
-              <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 Tailor made, professional, and hand crafted templates for your business to stand out.
               </p>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-7xl mx-auto">
               {['Modern', 'Classic', 'Service', 'Compact', 'Vintage', 'Evergreen', 'Legend', 'GenZ'].map((template) => (
-                <div key={template} className="group bg-gradient-to-br from-primary-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all border border-primary-100 hover:border-primary-300 transform hover:-translate-y-2 cursor-pointer">
-                  <div className="aspect-[3/4] bg-white rounded-lg shadow-md mb-4 flex items-center justify-center border-2 border-gray-100 group-hover:border-primary-300 transition">
-                    <FiFileText className="text-6xl text-primary-200 group-hover:text-primary-400 transition" />
+                <div key={template} className="group bg-gradient-to-br from-primary-50 to-white p-5 rounded-xl shadow-sm hover:shadow-md transition-all border border-primary-100 hover:border-primary-200 cursor-pointer">
+                  <div className="aspect-[4/3] bg-white rounded-lg mb-3 flex items-center justify-center border border-gray-200">
+                    <FiFileText className="text-4xl text-primary-200" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 text-center">{template}</h3>
+                  <h3 className="text-base font-bold text-gray-900 text-center">{template}</h3>
                 </div>
               ))}
             </div>
             <div className="text-center mt-12">
               <Link
                 href="/invoice-templates"
-                className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-semibold text-lg"
+                className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-normal text-base"
               >
                 View All Templates
                 <FiArrowRight />
@@ -328,7 +328,7 @@ export default function LandingPage() {
               <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Perfect for Your Business
               </h2>
-              <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 Quick invoicing for retailers, distributors, startups, freelancers, and service providers
               </p>
             </div>
@@ -374,7 +374,7 @@ export default function LandingPage() {
                   <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                     Inventory so simple, it feels like magic
                   </h2>
-                  <p className="text-xl text-gray-600 mb-6 leading-relaxed">
+                  <p className="text-gray-600 mb-6 leading-relaxed">
                     Add items, track stock, and manage everything in seconds. No training needed. It&apos;s that easy.
                   </p>
                   <ul className="space-y-3">
@@ -400,7 +400,7 @@ export default function LandingPage() {
                   <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                     Record payments effortlessly
                   </h2>
-                  <p className="text-xl text-gray-600 mb-6 leading-relaxed">
+                  <p className="text-gray-600 mb-6 leading-relaxed">
                     Track every payment, every time — without lifting a finger. While others make it complicated, we make it simple.
                   </p>
                   <ul className="space-y-3">
@@ -420,7 +420,7 @@ export default function LandingPage() {
                   <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                     Share anywhere. Get paid faster.
                   </h2>
-                  <p className="text-xl text-gray-600 mb-6 leading-relaxed">
+                  <p className="text-gray-600 mb-6 leading-relaxed">
                     Send invoices instantly via WhatsApp, email, or SMS. And with smart auto-reminders, you don&apos;t have to chase anyone.
                   </p>
                   <ul className="space-y-3">
@@ -450,7 +450,7 @@ export default function LandingPage() {
               <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
                 Create in seconds, anywhere
               </h3>
-              <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-[1.2rem] text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
                 Generate e-way bills <strong>instantly from your phone</strong> — no delays, no errors. <strong>AI-filled and portal-ready</strong>, even when you&apos;re on the move.
               </p>
               <a
@@ -473,7 +473,7 @@ export default function LandingPage() {
               <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Mind-blowing convenience
               </h2>
-              <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 Finvera is built to make your life easier. We&apos;re always doing things for you to experience ultimate convenience.
               </p>
             </div>
@@ -513,7 +513,7 @@ export default function LandingPage() {
               <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Invisible security. Unbreakable trust.
               </h2>
-              <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-[1.2rem] text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
                 Your data stays private. Always encrypted.
               </p>
               <div className="bg-white p-12 rounded-2xl shadow-xl border border-primary-100">
@@ -575,7 +575,7 @@ export default function LandingPage() {
               <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Our Services
               </h2>
-              <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 Comprehensive accounting solutions tailored for your business needs
               </p>
             </div>
@@ -620,7 +620,7 @@ export default function LandingPage() {
                 <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                   Why Choose Finvera?
                 </h2>
-                <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
+                <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                   Trusted by businesses for reliable accounting solutions
                 </p>
               </div>
@@ -681,7 +681,7 @@ export default function LandingPage() {
               <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 How It Works
               </h2>
-              <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 Get started in minutes with our simple process
               </p>
             </div>
@@ -720,7 +720,7 @@ export default function LandingPage() {
               <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 What Our Clients Say
               </h2>
-              <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 Trusted by businesses across industries
               </p>
             </div>
@@ -815,7 +815,7 @@ export default function LandingPage() {
               <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Simple, Transparent Pricing
               </h2>
-              <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 Choose the plan that fits your business needs
               </p>
             </div>

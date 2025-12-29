@@ -22,7 +22,7 @@ export default function AboutPage() {
               <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
                 About Finvera
               </h1>
-              <p className="text-xl text-gray-600 leading-relaxed">
+              <p className="text-[1.2rem] text-gray-600 leading-relaxed">
                 Your Trustable Accounting Partner. We&apos;re dedicated to providing comprehensive accounting solutions 
                 that help businesses manage their finances efficiently and stay compliant.
               </p>
@@ -39,12 +39,12 @@ export default function AboutPage() {
                   <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                     Our Mission
                   </h2>
-                  <p className="text-lg text-gray-600 leading-relaxed mb-4">
+                  <p className="text-[1.2rem] text-gray-600 leading-relaxed mb-4">
                     At Finvera, our mission is to simplify accounting and financial management for businesses of all sizes. 
                     We believe that every business deserves access to professional-grade accounting tools that are both 
                     powerful and easy to use.
                   </p>
-                  <p className="text-lg text-gray-600 leading-relaxed">
+                  <p className="text-[1.2rem] text-gray-600 leading-relaxed">
                     We&apos;re committed to helping businesses stay compliant with tax regulations, manage their finances 
                     efficiently, and make informed decisions based on accurate financial data.
                   </p>
@@ -99,7 +99,7 @@ export default function AboutPage() {
               <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Partnered with
               </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 Trusted integrations and partnerships for seamless business operations
               </p>
             </div>
@@ -123,7 +123,7 @@ export default function AboutPage() {
                 <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                   Security & Trust
                 </h2>
-                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                   Your data security is our top priority
                 </p>
               </div>
