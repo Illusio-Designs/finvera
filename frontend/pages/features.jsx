@@ -297,7 +297,7 @@ export default function FeaturesPage() {
               <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
                 Powerful Features
               </h1>
-              <p className="text-xl text-gray-600 leading-relaxed">
+              <p className="text-[1.2rem] text-gray-600 leading-relaxed">
                 Everything you need to manage your accounting and compliance in one place. 
                 Built for businesses of all sizes.
               </p>
@@ -312,7 +312,7 @@ export default function FeaturesPage() {
               <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Core Features
               </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 Comprehensive tools designed to streamline your accounting and compliance processes
               </p>
             </div>
@@ -350,7 +350,7 @@ export default function FeaturesPage() {
               <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Additional Benefits
               </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 More reasons why thousands of businesses trust Finvera
               </p>
             </div>
@@ -378,7 +378,7 @@ export default function FeaturesPage() {
               <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Mind-blowing convenience
               </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 Finvera is built to make your life easier. We&apos;re always doing things for you to experience ultimate convenience.
               </p>
             </div>
@@ -422,7 +422,7 @@ export default function FeaturesPage() {
                   <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                     Ready to Get Started?
                   </h2>
-                  <p className="text-xl text-gray-600 mb-8">
+                  <p className="text-[1.2rem] text-gray-600 mb-8">
                     Join thousands of businesses using Finvera to streamline their accounting
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">

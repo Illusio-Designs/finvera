@@ -119,7 +119,7 @@ export default function IntegrationsPage() {
               <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
                 Integrations
               </h1>
-              <p className="text-xl text-gray-600 leading-relaxed">
+              <p className="text-[1.2rem] text-gray-600 leading-relaxed">
                 Connect Finvera with your favorite tools and services. Seamless integrations for a complete business solution.
               </p>
             </div>
@@ -185,7 +185,7 @@ export default function IntegrationsPage() {
               <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                 Developer API
               </h2>
-              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+              <p className="text-[1.2rem] text-gray-600 mb-8 leading-relaxed">
                 Build custom integrations with our comprehensive API. Connect Finvera with your existing systems.
               </p>
               <div className="bg-white p-10 rounded-2xl shadow-xl border border-primary-100">
@@ -279,7 +279,7 @@ export default function IntegrationsPage() {
                   <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                     Ready to Integrate?
                   </h2>
-                  <p className="text-xl text-gray-600 mb-8">
+                  <p className="text-base text-gray-600 mb-8">
                     Start using Finvera with your favorite tools today
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">

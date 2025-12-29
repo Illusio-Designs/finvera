@@ -97,7 +97,7 @@ export default function PricingPage() {
               <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
                 Simple, Transparent Pricing
               </h1>
-              <p className="text-xl text-gray-600 leading-relaxed mb-4">
+              <p className="text-[1.2rem] text-gray-600 leading-relaxed mb-4">
                 Choose the perfect plan for your business. All plans include a free trial. 
                 <span className="block mt-2 font-semibold text-primary-700">Cancel anytime. No hidden fees.</span>
               </p>
@@ -387,7 +387,7 @@ export default function PricingPage() {
                   <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                     Still have questions?
                   </h2>
-                  <p className="text-xl text-gray-600 mb-8">
+                  <p className="text-[1.2rem] text-gray-600 mb-8">
                     Our team is here to help you choose the right plan for your business
                   </p>
                   <Link
