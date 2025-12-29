@@ -27,8 +27,8 @@ export default function WebsiteHeader() {
   };
 
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-50">
-      <nav className="container mx-auto px-6 py-4">
+    <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
+      <nav className="container mx-auto px-8 md:px-12 lg:px-20 py-4">
         <div className="flex justify-between items-center">
           {/* Logo */}
           <Link href="/" className="flex items-center">
@@ -38,7 +38,7 @@ export default function WebsiteHeader() {
                 alt="Finvera" 
                 width={3464}
                 height={889}
-                className="h-10 w-auto object-contain max-w-[180px]"
+                className="h-12 w-auto object-contain max-w-[180px]"
                 priority
               />
             </div>
