@@ -176,14 +176,14 @@ export default function LandingPage() {
                   href={getClientRegisterUrl()}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group bg-primary-600 text-white px-10 py-4 rounded-xl text-lg font-semibold hover:bg-primary-700 transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1 flex items-center gap-2"
+                  className="group bg-primary-600 text-white px-10 py-4 rounded-xl text-lg font-normal hover:bg-primary-700 transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1 flex items-center gap-2"
                 >
                   Sign up for free
                   <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
                 </a>
                 <a
                   href="#features"
-                  className="bg-white text-primary-600 px-10 py-4 rounded-xl text-lg font-semibold hover:bg-gray-50 transition-all shadow-xl border-2 border-primary-600 hover:border-primary-700"
+                  className="bg-white text-primary-600 px-10 py-4 rounded-xl text-lg font-normal hover:bg-gray-50 transition-all shadow-xl border-2 border-primary-600 hover:border-primary-700"
                 >
                   Learn More
                 </a>
@@ -457,7 +457,7 @@ export default function LandingPage() {
                 href={getClientRegisterUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-primary-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-primary-700 transition shadow-lg"
+                className="inline-flex items-center gap-2 bg-primary-600 text-white px-8 py-4 rounded-xl text-lg font-normal hover:bg-primary-700 transition shadow-lg"
               >
                 Try for Free
                 <FiArrowRight />
@@ -956,7 +956,7 @@ export default function LandingPage() {
                         href={!hasCustomPrice ? getClientRegisterUrl() : '#contact'}
                         target={!hasCustomPrice ? '_blank' : undefined}
                         rel={!hasCustomPrice ? 'noopener noreferrer' : undefined}
-                        className={`block w-full text-center py-3 rounded-xl hover:opacity-90 transition font-semibold text-base shadow-lg ${
+                        className={`block w-full text-center py-3 rounded-xl hover:opacity-90 transition font-normal text-base shadow-lg ${
                           isPopular
                             ? 'bg-white text-primary-600 hover:bg-gray-100'
                             : !hasCustomPrice
@@ -979,34 +979,37 @@ export default function LandingPage() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-24 bg-gradient-to-r from-primary-600 to-primary-800 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
-            <div className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
-          </div>
-          <div className="container mx-auto px-6 relative z-10">
-            <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-6">
-                Ready to Get Started?
-              </h2>
-              <p className="text-xl md:text-2xl text-primary-100 mb-12">
-                Join thousands of businesses using Finvera for their accounting needs
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <a
-                  href={getClientRegisterUrl()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-white text-primary-600 px-10 py-4 rounded-xl text-lg font-semibold hover:bg-gray-100 transition shadow-xl"
-                >
-                  Start Free Trial
-                </a>
-                <a
-                  href="#contact"
-                  className="bg-transparent text-white px-10 py-4 rounded-xl text-lg font-semibold hover:bg-primary-700 transition border-2 border-white"
-                >
-                  Contact Us
-                </a>
+        <section className="py-24 bg-gradient-to-br from-gray-50 via-white to-primary-50">
+          <div className="container mx-auto px-6">
+            <div className="max-w-5xl mx-auto">
+              <div className="relative bg-white rounded-3xl p-10 md:p-16 text-center border-2 border-primary-200 shadow-2xl overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-primary-100 rounded-full blur-3xl opacity-50 -mr-32 -mt-32"></div>
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary-100 rounded-full blur-3xl opacity-50 -ml-32 -mb-32"></div>
+                <div className="relative z-10">
+                  <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+                    Ready to Get Started?
+                  </h2>
+                  <p className="text-xl md:text-2xl text-gray-600 mb-12">
+                    Join thousands of businesses using Finvera for their accounting needs
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a
+                      href={getClientRegisterUrl()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-primary-600 text-white px-10 py-4 rounded-xl text-lg font-normal hover:bg-primary-500 transition shadow-xl hover:shadow-2xl transform hover:-translate-y-1 inline-flex items-center justify-center gap-2"
+                    >
+                      Start Free Trial
+                      <FiArrowRight />
+                    </a>
+                    <a
+                      href="#contact"
+                      className="bg-white text-primary-600 px-10 py-4 rounded-xl text-lg font-normal hover:bg-primary-50 transition border-2 border-primary-500 shadow-lg hover:shadow-xl"
+                    >
+                      Contact Us
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1077,7 +1080,7 @@ export default function LandingPage() {
                     ></textarea>
                     <button
                       type="submit"
-                      className="w-full bg-primary-600 text-white py-4 rounded-xl hover:bg-primary-700 transition font-semibold text-lg shadow-lg"
+                      className="w-full bg-primary-600 text-white py-4 rounded-xl hover:bg-primary-700 transition font-normal text-lg shadow-lg"
                     >
                       Send Message
                     </button>
