@@ -35,14 +35,14 @@ export default function FeaturesPage() {
   const mainFeatures = [
     {
       icon: FiBarChart2,
-      title: 'GST Filing',
-      description: 'Automated GST return filing with GSTR-1 and GSTR-3B support. Stay compliant with ease and save time.',
+      title: 'GST Filing & Reports',
+      description: 'Complete GST solution with automated filing, JSON export, and comprehensive reporting. Stay compliant with ease.',
       details: [
-        'Automated GSTR-1 and GSTR-3B filing',
-        'Real-time validation and error checking',
-        'Auto-population from invoices',
-        'E-way bill integration',
-        'Compliance tracking and reminders'
+        'Automated GSTR-1, GSTR-3B filing with validation',
+        'GSTR JSON export (GSTR-1, 3B, 2A, 9)',
+        'GSTR-2A import and reconciliation',
+        'Tax liability and input tax credit reports',
+        'Portal-ready format with auto-population'
       ]
     },
     {
@@ -91,18 +91,6 @@ export default function FeaturesPage() {
         'Team collaboration tools',
         'Activity tracking and audit logs',
         'Secure user authentication'
-      ]
-    },
-    {
-      icon: FiTarget,
-      title: 'Referral System',
-      description: 'Earn commissions through our distributor and salesman network. Grow your business with referrals.',
-      details: [
-        'Commission tracking',
-        'Performance analytics',
-        'Automated payouts',
-        'Referral link generation',
-        'Multi-level commission structure'
       ]
     },
     {
@@ -194,32 +182,6 @@ export default function FeaturesPage() {
         'Color scheme customization',
         'Font selection',
         'Template builder'
-      ]
-    },
-    {
-      icon: FiDownload,
-      title: 'GSTR JSON Export',
-      description: 'Advanced GST reporting. Export GSTR data in JSON format for easy filing.',
-      details: [
-        'GSTR-1 JSON export',
-        'GSTR-3B JSON export',
-        'GSTR-2A import',
-        'GSTR-9 export',
-        'JSON validation',
-        'Portal-ready format'
-      ]
-    },
-    {
-      icon: FiBarChart2,
-      title: 'Advanced GST Reports',
-      description: 'Comprehensive reporting features. Get detailed insights into your GST compliance.',
-      details: [
-        'GSTR-1 reports',
-        'GSTR-3B reports',
-        'GSTR-2A reconciliation',
-        'GSTR-9 annual return',
-        'Tax liability reports',
-        'Input tax credit reports'
       ]
     },
     {
@@ -387,8 +349,7 @@ export default function FeaturesPage() {
                 { name: 'E-way Bills', icon: FiFileText },
                 { name: 'E-invoices', icon: FiFileText },
                 { name: 'Custom Columns & Headers', icon: FiSettings },
-                { name: 'GSTR JSON', icon: FiDownload },
-                { name: 'Advanced GST Reports', icon: FiBarChart2 },
+                { name: 'GST Filing & Reports', icon: FiBarChart2 },
                 { name: 'Bulk Uploads', icon: FiUpload },
                 { name: 'Export Invoices', icon: FiDownload },
                 { name: 'Tally Sync', icon: FiDatabase },
