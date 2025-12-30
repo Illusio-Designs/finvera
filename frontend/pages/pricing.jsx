@@ -5,13 +5,14 @@ import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
 import { pricingAPI } from '../lib/api';
-import { FiCheck, FiX, FiZap, FiBriefcase, FiAward, FiArrowRight } from 'react-icons/fi';
+import { FiCheck, FiX, FiZap, FiBriefcase, FiAward, FiArrowRight, FiPlus, FiMinus } from 'react-icons/fi';
 
 export default function PricingPage() {
   const [clientRegisterUrl, setClientRegisterUrl] = useState('');
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' or 'yearly'
+  const [openFaqIndex, setOpenFaqIndex] = useState(null);
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -106,34 +107,36 @@ export default function PricingPage() {
         </section>
 
         {/* Billing Cycle Toggle */}
-        <section className="py-8 bg-white border-b">
-          <div className="container mx-auto px-6">
+        <section className="py-10 bg-gradient-to-br from-gray-50 to-white border-b border-gray-100">
+          <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-md mx-auto">
-              <div className="flex items-center justify-center gap-4">
-                <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-gray-900' : 'text-gray-500'}`}>
-                  Monthly
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
-                  className={`relative inline-flex h-8 w-16 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                    billingCycle === 'yearly' ? 'bg-primary-600' : 'bg-gray-300'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
-                      billingCycle === 'yearly' ? 'translate-x-9' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-                <span className={`text-sm font-medium ${billingCycle === 'yearly' ? 'text-gray-900' : 'text-gray-500'}`}>
-                  Yearly
-                </span>
-                {billingCycle === 'yearly' && (
-                  <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded">
-                    Save up to 20%
+              <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
+                <div className="flex items-center justify-center gap-4">
+                  <span className={`text-base font-semibold transition-colors ${billingCycle === 'monthly' ? 'text-gray-900' : 'text-gray-400'}`}>
+                    Monthly
                   </span>
-                )}
+                  <button
+                    type="button"
+                    onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
+                    className={`relative inline-flex h-9 w-16 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 px-1 ${
+                      billingCycle === 'yearly' ? 'bg-primary-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-7 w-7 transform rounded-full bg-white shadow-md transition-transform ${
+                        billingCycle === 'yearly' ? 'translate-x-7' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                  <span className={`text-base font-semibold transition-colors ${billingCycle === 'yearly' ? 'text-gray-900' : 'text-gray-400'}`}>
+                    Yearly
+                  </span>
+                  {billingCycle === 'yearly' && (
+                    <span className="ml-2 px-3 py-1.5 bg-green-100 text-green-700 text-xs font-bold rounded-full shadow-sm">
+                      Save up to 20%
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -141,17 +144,18 @@ export default function PricingPage() {
 
         {/* Pricing Cards */}
         <section className="py-24 bg-white">
-          <div className="container mx-auto px-6">
+          <div className="container mx-auto px-8 md:px-12 lg:px-20">
             {loading ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
                 <p className="mt-4 text-gray-600">Loading pricing plans...</p>
               </div>
             ) : plans.length > 0 ? (
-              <div className={`grid ${plans.length === 1 ? 'md:grid-cols-1' : plans.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-8 max-w-7xl mx-auto`}>
-                {plans.map((plan, index) => {
+              (() => {
+                const popularPlan = plans.find(plan => plan.is_featured);
+                const otherPlans = plans.filter(plan => !plan.is_featured);
+                const renderPlanCard = (plan, index, isPopular = false, customClasses = '') => {
                   const Icon = getPlanIcon(plan.plan_name);
-                  const isPopular = plan.is_featured;
                   
                   // Calculate prices based on billing cycle
                   let monthlyPrice = parseFloat(plan.base_price || 0);
@@ -172,26 +176,26 @@ export default function PricingPage() {
                   return (
                     <div
                       key={plan.id || index}
-                      className={`relative bg-gradient-to-br from-white to-primary-50 p-8 rounded-2xl shadow-xl border-2 transition-all transform hover:-translate-y-2 hover:shadow-2xl ${
+                      className={`relative ${
                         isPopular
-                          ? 'border-primary-600 scale-105 bg-gradient-to-br from-primary-600 to-primary-700'
-                          : 'border-gray-200 hover:border-primary-300'
-                      }`}
+                          ? 'bg-primary-600 p-8 rounded-xl border-2 border-primary-500'
+                          : 'bg-white p-8 rounded-xl border border-gray-200 hover:border-primary-200'
+                      } transition ${customClasses}`}
                     >
                       {isPopular && (
-                        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-                          <span className="bg-primary-700 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg">
-                            Most Popular
+                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                          <span className="bg-primary-500 text-white text-xs font-medium px-3 py-1 rounded-full">
+                            MOST POPULAR
                           </span>
                         </div>
                       )}
                       
                       {/* Plan Header */}
                       <div className="text-center mb-6">
-                        <div className={`w-16 h-16 ${isPopular ? 'bg-white' : 'bg-primary-600'} rounded-xl flex items-center justify-center mx-auto mb-4`}>
-                          <Icon className={`${isPopular ? 'text-primary-600' : 'text-white'} text-2xl`} />
+                        <div className={`w-14 h-14 ${isPopular ? 'bg-white' : 'bg-primary-50'} rounded-lg flex items-center justify-center mx-auto mb-4`}>
+                          <Icon className={`${isPopular ? 'text-primary-600' : 'text-primary-600'} text-xl`} />
                         </div>
-                        <h3 className={`text-3xl font-extrabold mb-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
+                        <h3 className={`text-xl font-bold mb-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
                           {plan.plan_name}
                         </h3>
                         {plan.description && (
@@ -205,20 +209,20 @@ export default function PricingPage() {
                       <div className="mb-6 text-center">
                         {hasDiscount && (
                           <div className="mb-2">
-                            <span className={`text-lg line-through ${isPopular ? 'text-primary-200' : 'text-gray-400'}`}>
+                            <span className={`text-base line-through ${isPopular ? 'text-primary-200' : 'text-gray-400'}`}>
                               {formatPrice(originalYearlyPrice, plan.currency)}
                             </span>
-                            <span className={`ml-2 text-xs font-semibold ${isPopular ? 'text-white' : 'text-green-600'} bg-green-100 px-2 py-1 rounded`}>
+                            <span className={`ml-2 text-xs font-medium ${isPopular ? 'text-primary-700 bg-white' : 'text-green-600 bg-green-50'} px-2 py-0.5 rounded`}>
                               Save {formatPrice(yearlySavings, plan.currency)} ({yearlySavingsPercent}%)
                             </span>
                           </div>
                         )}
                         <div>
-                          <span className={`text-5xl font-extrabold ${isPopular ? 'text-white' : 'text-gray-900'}`}>
+                          <span className={`text-3xl font-extrabold ${isPopular ? 'text-white' : 'text-gray-900'}`}>
                             {formatPrice(currentPrice, plan.currency)}
                           </span>
                           {billingPeriod && (
-                            <span className={`text-xl ml-2 ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>
+                            <span className={`text-sm ml-2 ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>
                               {billingPeriod}
                             </span>
                           )}
@@ -229,35 +233,30 @@ export default function PricingPage() {
                           </p>
                         )}
                         {plan.trial_days > 0 && (
-                          <p className={`text-sm mt-2 ${isPopular ? 'text-primary-100' : 'text-gray-500'}`}>
-                            <span className="inline-block bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold">
-                              {plan.trial_days} days free trial
-                            </span>
+                          <p className={`text-xs mt-2 ${isPopular ? 'text-primary-100' : 'text-gray-500'}`}>
+                            {plan.trial_days} days free trial
                           </p>
                         )}
                       </div>
 
                       {/* Plan Limits */}
-                      <div className={`mb-6 p-4 rounded-lg ${isPopular ? 'bg-primary-800' : 'bg-gray-50'}`}>
-                        <h4 className={`text-xs font-semibold uppercase tracking-wide mb-3 ${isPopular ? 'text-primary-200' : 'text-gray-500'}`}>
-                          Plan Limits
-                        </h4>
+                      <div className={`mb-6 p-4 rounded-lg ${isPopular ? 'bg-primary-500/20' : 'bg-gray-50'}`}>
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           <div>
-                            <span className={`font-semibold ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Users:</span>
+                            <span className={`font-medium ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Users:</span>
                             <span className={`ml-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
                               {plan.max_users === -1 ? 'Unlimited' : plan.max_users}
                             </span>
                           </div>
                           <div>
-                            <span className={`font-semibold ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Invoices:</span>
+                            <span className={`font-medium ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Invoices:</span>
                             <span className={`ml-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
                               {plan.max_invoices_per_month === -1 ? 'Unlimited' : plan.max_invoices_per_month}/mo
                             </span>
                           </div>
                           {plan.max_companies && (
                             <div>
-                              <span className={`font-semibold ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Companies:</span>
+                              <span className={`font-medium ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Companies:</span>
                               <span className={`ml-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
                                 {plan.max_companies === -1 ? 'Unlimited' : plan.max_companies}
                               </span>
@@ -265,7 +264,7 @@ export default function PricingPage() {
                           )}
                           {plan.storage_limit_gb && (
                             <div>
-                              <span className={`font-semibold ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Storage:</span>
+                              <span className={`font-medium ${isPopular ? 'text-primary-200' : 'text-gray-600'}`}>Storage:</span>
                               <span className={`ml-2 ${isPopular ? 'text-white' : 'text-gray-900'}`}>
                                 {plan.storage_limit_gb === -1 ? 'Unlimited' : `${plan.storage_limit_gb} GB`}
                               </span>
@@ -277,13 +276,13 @@ export default function PricingPage() {
                       {/* Features */}
                       {features.length > 0 && (
                         <div className="mb-6">
-                          <h4 className={`text-sm font-semibold uppercase tracking-wide mb-3 ${isPopular ? 'text-primary-200' : 'text-gray-900'}`}>
+                          <h4 className={`text-xs font-medium uppercase tracking-wide mb-3 ${isPopular ? 'text-primary-200' : 'text-gray-500'}`}>
                             Features Included
                           </h4>
-                          <ul className="space-y-2 max-h-80 overflow-y-auto pr-2">
+                          <ul className="space-y-2 max-h-64 overflow-y-auto">
                             {features.map((feature, featureIndex) => (
                               <li key={featureIndex} className={`flex items-start text-sm ${isPopular ? 'text-white' : 'text-gray-700'}`}>
-                                <FiCheck className={`mr-2 mt-0.5 flex-shrink-0 ${isPopular ? 'text-primary-200' : 'text-green-600'}`} />
+                                <FiCheck className={`mr-2 mt-0.5 flex-shrink-0 ${isPopular ? 'text-primary-200' : 'text-primary-600'}`} />
                                 <span>{typeof feature === 'string' ? feature : feature.name || feature}</span>
                               </li>
                             ))}
@@ -296,18 +295,59 @@ export default function PricingPage() {
                         href={!hasCustomPrice ? `${getClientRegisterUrl()}?plan_id=${plan.id}&billing_cycle=${billingCycle}` : '/contact'}
                         target={!hasCustomPrice ? '_blank' : undefined}
                         rel={!hasCustomPrice ? 'noopener noreferrer' : undefined}
-                        className={`block w-full text-center py-4 rounded-lg font-normal text-lg transition ${
+                        className={`block w-full text-center py-3 rounded-lg hover:opacity-90 transition font-normal text-base ${
                           isPopular
-                            ? 'bg-white text-primary-600 hover:bg-gray-100'
-                            : 'bg-primary-600 text-white hover:bg-primary-700'
-                        } shadow-lg`}
+                            ? 'bg-white text-primary-600 hover:bg-gray-50'
+                            : !hasCustomPrice
+                            ? 'bg-primary-600 text-white hover:bg-primary-700'
+                            : 'bg-gray-900 text-white hover:bg-gray-800'
+                        }`}
                       >
                         {!hasCustomPrice ? 'Get Started' : 'Contact Sales'}
                       </a>
                     </div>
                   );
-                })}
-              </div>
+                };
+
+                return (
+                  <div className="max-w-6xl mx-auto">
+                    {/* Top Row: Left, Popular (Center), Right */}
+                    <div className="grid md:grid-cols-3 gap-6 mb-6">
+                      {otherPlans.length > 0 && (
+                        <div className="md:mt-[50%]">
+                          {renderPlanCard(otherPlans[0], 0)}
+                        </div>
+                      )}
+                      {popularPlan && (
+                        <div>
+                          {renderPlanCard(popularPlan, 'popular', true)}
+                        </div>
+                      )}
+                      {otherPlans.length > 1 && (
+                        <div className="md:mt-[50%]">
+                          {renderPlanCard(otherPlans[1], 1)}
+                        </div>
+                      )}
+                    </div>
+                    {/* Bottom Row: Center (4th card) */}
+                    {otherPlans.length > 2 && (
+                      <div className="flex justify-center md:-mt-48">
+                        <div className="w-full md:w-1/3">
+                          {renderPlanCard(otherPlans[2], 2)}
+                        </div>
+                      </div>
+                    )}
+                    {/* If more than 4 plans, show remaining in a grid */}
+                    {otherPlans.length > 3 && (
+                      <div className="grid md:grid-cols-3 gap-6 mt-6">
+                        {otherPlans.slice(3).map((plan, index) => 
+                          renderPlanCard(plan, index + 3)
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()
             ) : (
               <div className="text-center py-12">
                 <p className="text-gray-600 text-lg">No pricing plans available at the moment. Please check back later.</p>
@@ -317,60 +357,75 @@ export default function PricingPage() {
         </section>
 
         {/* Free Trial Emphasis */}
-        <section className="py-12 bg-green-50 border-y border-green-200">
-          <div className="container mx-auto px-6">
+        <section className="py-12 bg-gradient-to-r from-green-50 via-emerald-50 to-green-50 border-y border-green-200">
+          <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-4xl mx-auto text-center">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Start Your Free Trial Today</h3>
-              <p className="text-gray-600">
-                No credit card required • Full access to all features • Cancel anytime
-              </p>
+              <div className="bg-white rounded-2xl p-8 shadow-lg border border-green-200">
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">Start Your Free Trial Today</h3>
+                <p className="text-[1.2rem] text-gray-600">
+                  No credit card required • Full access to all features • Cancel anytime
+                </p>
+              </div>
             </div>
           </div>
         </section>
 
         {/* FAQ Section */}
         <section className="py-24 bg-gradient-to-br from-primary-50 via-white to-primary-100">
-          <div className="container mx-auto px-6">
+          <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-12 text-center">
-                Frequently Asked Questions
-              </h2>
-              <div className="space-y-6">
-                <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100">
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">
-                    Can I change my plan later?
-                  </h3>
-                  <p className="text-gray-600">
-                    Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately, 
-                    and we&apos;ll prorate any charges.
-                  </p>
-                </div>
-                <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100">
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">
-                    Is there a setup fee?
-                  </h3>
-                  <p className="text-gray-600">
-                    No setup fees. All plans include a 14-day free trial, so you can try everything risk-free.
-                  </p>
-                </div>
-                <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100">
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">
-                    What payment methods do you accept?
-                  </h3>
-                  <p className="text-gray-600">
-                    We accept all major credit cards, debit cards, UPI, and bank transfers. 
-                    Enterprise customers can also pay via invoice.
-                  </p>
-                </div>
-                <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100">
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">
-                    Can I cancel anytime?
-                  </h3>
-                  <p className="text-gray-600">
-                    Yes, you can cancel your subscription at any time. You&apos;ll continue to have access 
-                    until the end of your billing period.
-                  </p>
-                </div>
+              <div className="text-center mb-16">
+                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
+                  Frequently Asked Questions
+                </h2>
+                <p className="text-[1.2rem] text-gray-600 max-w-2xl mx-auto">
+                  Everything you need to know about our pricing and plans
+                </p>
+              </div>
+              <div className="space-y-4">
+                {[
+                  {
+                    question: 'Can I change my plan later?',
+                    answer: 'Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and we\'ll prorate any charges.'
+                  },
+                  {
+                    question: 'Is there a setup fee?',
+                    answer: 'No setup fees. All plans include a 14-day free trial, so you can try everything risk-free.'
+                  },
+                  {
+                    question: 'What payment methods do you accept?',
+                    answer: 'We accept all major credit cards, debit cards, UPI, and bank transfers. Enterprise customers can also pay via invoice.'
+                  },
+                  {
+                    question: 'Can I cancel anytime?',
+                    answer: 'Yes, you can cancel your subscription at any time. You\'ll continue to have access until the end of your billing period.'
+                  }
+                ].map((faq, index) => (
+                  <div key={index} className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    <button
+                      onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)}
+                      className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition"
+                    >
+                      <h3 className="text-lg font-bold text-gray-900 text-left pr-4">
+                        {faq.question}
+                      </h3>
+                      <div className="flex-shrink-0">
+                        {openFaqIndex === index ? (
+                          <FiMinus className="text-primary-600 text-2xl" />
+                        ) : (
+                          <FiPlus className="text-primary-600 text-2xl" />
+                        )}
+                      </div>
+                    </button>
+                    {openFaqIndex === index && (
+                      <div className="px-6 pb-6">
+                        <p className="text-[1.2rem] text-gray-600 leading-relaxed">
+                          {faq.answer}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
