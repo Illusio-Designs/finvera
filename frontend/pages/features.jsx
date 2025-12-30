@@ -252,37 +252,24 @@ export default function FeaturesPage() {
       <div className="min-h-screen bg-white">
         <WebsiteHeader />
 
-        {/* Hero Section */}
-        <section className="bg-gradient-to-br from-primary-50 to-white pt-40 pb-12">
-          <div className="container mx-auto px-8 md:px-12 lg:px-20">
-            <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
-                Powerful Features
-              </h1>
-              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
-                Everything you need to manage your accounting and compliance in one place. 
-                Built for businesses of all sizes.
-              </p>
-            </div>
-          </div>
-        </section>
 
         {/* Main Features Section */}
-        <section className="py-24 bg-white">
+        <section className="py-24 pt-40 bg-white">
           <div className="container mx-auto px-6">
             <div className="text-center mb-20">
               <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
-                Core Features
+              Powerful Features
               </h2>
               <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
-                Comprehensive tools designed to streamline your accounting and compliance processes
+              Everything you need to manage your accounting and compliance in one place. 
+              Built for businesses of all sizes.
               </p>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
               {mainFeatures.map((feature, index) => {
                 const Icon = feature.icon;
                 return (
-                  <div key={index} className="group bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl shadow-lg hover:shadow-2xl transition-all border border-primary-100 hover:border-primary-300 transform hover:-translate-y-2">
+                  <div key={index} className="group bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl shadow-lg hover:shadow-2xl transition-all border border-primary-100 hover:border-primary-300">
                     <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                       <Icon className="text-white text-2xl" />
                     </div>
@@ -326,45 +313,6 @@ export default function FeaturesPage() {
                     </div>
                     <h4 className="text-xl font-bold text-gray-900 mb-2">{feature.title}</h4>
                     <p className="text-gray-600">{feature.description}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* Mind-blowing Convenience Section */}
-        <section className="py-24 bg-white">
-          <div className="container mx-auto px-6">
-            <div className="text-center mb-20">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
-                Mind-blowing convenience
-              </h2>
-              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
-                Finvera is built to make your life easier. We&apos;re always doing things for you to experience ultimate convenience.
-              </p>
-            </div>
-            <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-6 max-w-7xl mx-auto">
-              {[
-                { name: 'E-way Bills', icon: FiFileText },
-                { name: 'E-invoices', icon: FiFileText },
-                { name: 'Custom Columns & Headers', icon: FiSettings },
-                { name: 'GST Filing & Reports', icon: FiBarChart2 },
-                { name: 'Bulk Uploads', icon: FiUpload },
-                { name: 'Export Invoices', icon: FiDownload },
-                { name: 'Tally Sync', icon: FiDatabase },
-                { name: 'Manage Batches & Expiry', icon: FiPackage },
-                { name: 'Print Options', icon: FiPrinter },
-                { name: 'WhatsApp Sharing', icon: FiShare2 },
-                { name: 'Auto Reminders', icon: FiRefreshCw },
-              ].map((feature) => {
-                const Icon = feature.icon;
-                return (
-                  <div key={feature.name} className="bg-gradient-to-br from-primary-50 to-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all border border-primary-100 hover:border-primary-300 text-center">
-                    <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center mx-auto mb-3">
-                      <Icon className="text-white text-xl" />
-                    </div>
-                    <h4 className="text-sm font-bold text-gray-900">{feature.name}</h4>
                   </div>
                 );
               })}
