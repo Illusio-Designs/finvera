@@ -48,9 +48,9 @@ export default function HelpPage() {
 
         {/* Hero Section */}
         <section className="bg-gradient-to-br from-primary-50 to-white pt-40 pb-12">
-          <div className="container mx-auto px-6">
+          <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+              <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
                 How can we help?
               </h1>
               <div className="relative max-w-2xl mx-auto">

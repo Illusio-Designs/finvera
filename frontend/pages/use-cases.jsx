@@ -154,12 +154,12 @@ export default function UseCasesPage() {
 
         {/* Hero Section */}
         <section className="bg-gradient-to-br from-primary-50 to-white pt-40 pb-12">
-          <div className="container mx-auto px-6">
+          <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+              <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
                 Perfect for Your Business
               </h1>
-              <p className="text-base text-gray-600 leading-relaxed">
+              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 Quick invoicing for retailers, distributors, startups, freelancers, and service providers using Finvera invoicing app.
               </p>
             </div>

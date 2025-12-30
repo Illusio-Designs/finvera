@@ -50,12 +50,12 @@ export default function InvoiceTemplatesPage() {
 
         {/* Hero Section */}
         <section className="bg-gradient-to-br from-primary-50 to-white pt-40 pb-12">
-          <div className="container mx-auto px-6">
+          <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+              <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
                 Awesome Templates
               </h1>
-              <p className="text-base text-gray-600 leading-relaxed">
+              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 Tailor made, professional, and hand crafted templates for your business to stand out.
               </p>
             </div>
@@ -71,7 +71,7 @@ export default function InvoiceTemplatesPage() {
                   key={template.name}
                   className="group bg-gradient-to-br from-primary-50 to-white p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all border border-primary-100 hover:border-primary-300 transform hover:-translate-y-2 cursor-pointer"
                 >
-                  <div className="aspect-[3/4] bg-white rounded-lg shadow-md mb-4 flex items-center justify-center border-2 border-gray-100 group-hover:border-primary-300 transition">
+                  <div className="aspect-[4/3] bg-white rounded-lg shadow-md mb-4 flex items-center justify-center border-2 border-gray-100 group-hover:border-primary-300 transition">
                     <FiFileText className="text-6xl text-primary-200 group-hover:text-primary-400 transition" />
                   </div>
                   <div className="flex items-center justify-between mb-2">
