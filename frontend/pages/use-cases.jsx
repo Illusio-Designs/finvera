@@ -167,88 +167,102 @@ export default function UseCasesPage() {
         </section>
 
         {/* Use Cases */}
-        <section className="py-20 bg-white">
-          <div className="container mx-auto px-6">
-            <div className="max-w-7xl mx-auto space-y-24">
+        <section className="py-8 bg-white">
+          <div className="container mx-auto px-8 md:px-12 lg:px-20">
+            <div className="max-w-7xl mx-auto space-y-6">
               {useCases.map((useCase, index) => {
                 const Icon = useCase.icon;
-                const isEven = index % 2 === 0;
                 
                 return (
                   <div
                     key={useCase.name}
-                    className={`grid md:grid-cols-2 gap-12 items-center ${
-                      isEven ? '' : 'md:flex-row-reverse'
-                    }`}
+                    className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
                   >
-                    <div className={isEven ? '' : 'md:order-2'}>
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center">
-                          <Icon className="text-white text-2xl" />
-                        </div>
+                    <div className="flex flex-col lg:flex-row">
+                      {/* Left Side - Dark Blue Column */}
+                      <div className="bg-primary-600 p-6 flex flex-col justify-between lg:w-64 flex-shrink-0">
                         <div>
-                          <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900">{useCase.name}</h2>
-                          <p className="text-base text-gray-600">{useCase.description}</p>
+                          <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mb-4 backdrop-blur-sm">
+                            <Icon className="text-white text-xl" />
+                          </div>
+                          <h2 className="text-2xl font-extrabold text-white mb-2">{useCase.name}</h2>
+                          <p className="text-primary-100 text-sm leading-relaxed mb-4">{useCase.description}</p>
+                        </div>
+                        <div className="pt-4 border-t border-white/20">
+                          <p className="text-xs text-primary-100 mb-1">Recommended Plan</p>
+                          <p className="text-white font-semibold text-sm mb-4">{useCase.pricing}</p>
+                          <a
+                            href="/register"
+                            className="w-full inline-flex items-center justify-center gap-2 bg-white text-primary-600 px-4 py-2 rounded-lg hover:bg-primary-50 transition font-semibold text-sm shadow-md"
+                          >
+                            Start Free Trial
+                            <FiArrowRight className="text-sm" />
+                          </a>
                         </div>
                       </div>
 
-                      <div className="mb-6">
-                        <h3 className="text-xl font-bold text-gray-900 mb-4">Pain Points We Solve</h3>
-                        <ul className="space-y-2">
-                          {useCase.painPoints.map((point) => (
-                            <li key={point} className="flex items-start gap-3 text-gray-700">
-                              <span className="text-red-500 mt-1">•</span>
-                              <span>{point}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                      {/* Right Side - Four Cards in Row */}
+                      <div className="flex-1 flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-gray-200">
+                        {/* Pain Points Card */}
+                        <div className="flex-1 bg-white p-5 min-w-0">
+                          <h3 className="text-xs font-bold text-red-600 mb-3 uppercase tracking-wider">
+                            Pain Points We Solve
+                          </h3>
+                          <ul className="space-y-2">
+                            {useCase.painPoints.map((point) => (
+                              <li key={point} className="flex items-start gap-2 text-gray-700 text-sm leading-relaxed">
+                                <span className="text-red-500 mt-1 text-xs font-bold flex-shrink-0">•</span>
+                                <span>{point}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
 
-                      <div className="mb-6">
-                        <h3 className="text-xl font-bold text-gray-900 mb-4">Key Features</h3>
-                        <ul className="space-y-2">
-                          {useCase.features.map((feature) => (
-                            <li key={feature} className="flex items-start gap-3 text-gray-700">
-                              <FiCheck className="text-primary-600 text-xl mt-1 flex-shrink-0" />
-                              <span>{feature}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                        {/* Features Card */}
+                        <div className="flex-1 bg-white p-5 border-l-4 border-green-500 min-w-0">
+                          <h3 className="text-xs font-bold text-green-600 mb-3 uppercase tracking-wider">
+                            Key Features
+                          </h3>
+                          <ul className="space-y-2">
+                            {useCase.features.map((feature) => (
+                              <li key={feature} className="flex items-start gap-2 text-gray-700 text-sm leading-relaxed">
+                                <FiCheck className="text-green-600 text-sm mt-0.5 flex-shrink-0" />
+                                <span>{feature}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
 
-                      <div className="bg-primary-50 p-6 rounded-xl mb-6">
-                        <h3 className="text-xl font-bold text-gray-900 mb-3">Benefits</h3>
-                        <ul className="space-y-2">
-                          {useCase.benefits.map((benefit) => (
-                            <li key={benefit} className="flex items-start gap-3 text-gray-700">
-                              <FiTrendingUp className="text-green-600 text-xl mt-1 flex-shrink-0" />
-                              <span>{benefit}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                        {/* Benefits Card */}
+                        <div className="flex-1 bg-white p-5 border-l-4 border-green-500 min-w-0">
+                          <h3 className="text-xs font-bold text-green-600 mb-3 uppercase tracking-wider">
+                            Benefits
+                          </h3>
+                          <ul className="space-y-2">
+                            {useCase.benefits.map((benefit) => (
+                              <li key={benefit} className="flex items-start gap-2 text-gray-700 text-sm leading-relaxed">
+                                <FiTrendingUp className="text-green-600 text-sm mt-0.5 flex-shrink-0" />
+                                <span>{benefit}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
 
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-sm text-gray-600">
-                          <strong className="text-gray-900">Recommended Plan:</strong> {useCase.pricing}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className={isEven ? '' : 'md:order-1'}>
-                      <div className="bg-gradient-to-br from-primary-50 to-white p-12 rounded-2xl shadow-xl border border-primary-100">
-                        <Icon className="text-8xl text-primary-300 mx-auto mb-6" />
-                        <div className="text-center">
-                          <h3 className="text-2xl font-bold text-gray-900 mb-4">Get Started Today</h3>
-                          <p className="text-gray-600 mb-6">
+                        {/* Get Started Card */}
+                        <div className="flex-1 bg-white p-5 min-w-0 flex flex-col justify-center">
+                          <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center mb-3">
+                            <Icon className="text-white text-lg" />
+                          </div>
+                          <h3 className="text-sm font-bold text-gray-900 mb-2">Get Started Today</h3>
+                          <p className="text-gray-600 text-xs mb-4 leading-relaxed">
                             Start managing your {useCase.name.toLowerCase()} business with Finvera
                           </p>
                           <a
                             href="/register"
-                            className="inline-flex items-center gap-2 bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition font-normal"
+                            className="w-full inline-flex items-center justify-center gap-2 bg-primary-600 text-white px-4 py-2.5 rounded-lg hover:bg-primary-700 transition font-normal text-sm shadow-md hover:shadow-lg"
                           >
                             Start Free Trial
-                            <FiArrowRight />
+                            <FiArrowRight className="text-sm" />
                           </a>
                         </div>
                       </div>
@@ -261,30 +275,30 @@ export default function UseCasesPage() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-20 bg-gradient-to-br from-gray-50 via-white to-primary-50">
-          <div className="container mx-auto px-6">
+        <section className="py-16 bg-gradient-to-br from-gray-50 via-white to-primary-50">
+          <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-5xl mx-auto">
-              <div className="relative bg-white rounded-3xl p-10 md:p-16 text-center border-2 border-primary-200 shadow-2xl overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary-100 rounded-full blur-3xl opacity-50 -mr-32 -mt-32"></div>
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary-100 rounded-full blur-3xl opacity-50 -ml-32 -mb-32"></div>
+              <div className="relative bg-white rounded-2xl p-10 md:p-12 text-center border border-primary-200 shadow-lg overflow-hidden">
+                <div className="absolute top-0 right-0 w-48 h-48 bg-primary-100 rounded-full blur-3xl opacity-40 -mr-24 -mt-24"></div>
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary-100 rounded-full blur-3xl opacity-40 -ml-24 -mb-24"></div>
                 <div className="relative z-10">
-                  <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+                  <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
                     Not Sure Which Plan Fits You?
                   </h2>
-                  <p className="text-base text-gray-600 mb-8">
+                  <p className="text-[1.2rem] text-gray-600 mb-8 max-w-2xl mx-auto">
                     Our team can help you choose the perfect solution for your business
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <Link
                       href="/contact"
-                      className="bg-primary-600 text-white px-8 py-4 rounded-lg hover:bg-primary-700 transition font-normal text-lg inline-flex items-center justify-center gap-2 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
+                      className="bg-primary-600 text-white px-8 py-4 rounded-xl hover:bg-primary-700 transition font-normal text-lg inline-flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
                     >
                       Contact Sales
                       <FiArrowRight />
                     </Link>
                     <Link
                       href="/pricing"
-                      className="bg-white text-primary-600 px-8 py-4 rounded-lg hover:bg-primary-50 transition font-normal text-lg border-2 border-primary-600 shadow-lg hover:shadow-xl"
+                      className="bg-white text-primary-600 px-8 py-4 rounded-xl hover:bg-primary-50 transition font-normal text-lg border-2 border-primary-600 shadow-lg hover:shadow-xl"
                     >
                       View Pricing
                     </Link>
