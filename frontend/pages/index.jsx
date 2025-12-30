@@ -1068,70 +1068,74 @@ export default function LandingPage() {
 
         {/* Contact Section */}
         <section id="contact" className="py-24 bg-white">
-          <div className="container mx-auto px-6">
-            <div className="max-w-5xl mx-auto">
+          <div className="container mx-auto px-8 md:px-12 lg:px-20">
+            <div className="max-w-6xl mx-auto">
               <div className="text-center mb-16">
-                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
                   Get in Touch
                 </h2>
-                <p className="text-xl md:text-2xl text-gray-600">
+                <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                   Have questions? We&apos;d love to hear from you
                 </p>
               </div>
               <div className="grid md:grid-cols-2 gap-12">
-                <div>
-                  <h3 className="text-3xl font-bold text-gray-900 mb-8">Contact Information</h3>
+                <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-2xl shadow-lg border border-primary-100">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-8">Contact Information</h3>
                   <div className="space-y-6">
-                    <div className="flex items-start space-x-4">
-                      <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <FiMail className="text-primary-600 text-xl" />
+                    <div className="flex items-start space-x-4 group">
+                      <div className="w-14 h-14 bg-primary-600 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-primary-700 transition">
+                        <FiMail className="text-white text-xl" />
                       </div>
                       <div>
-                        <div className="font-bold text-gray-900 text-lg mb-1">Email</div>
-                        <div className="text-gray-600 text-lg">support@finvera.com</div>
+                        <div className="font-semibold text-gray-700 text-lg mb-1">Email</div>
+                        <a href="mailto:support@finvera.com" className="text-gray-600 text-lg hover:text-primary-600 transition">
+                          support@finvera.com
+                        </a>
                       </div>
                     </div>
-                    <div className="flex items-start space-x-4">
-                      <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <FiPhone className="text-primary-600 text-xl" />
+                    <div className="flex items-start space-x-4 group">
+                      <div className="w-14 h-14 bg-primary-600 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-primary-700 transition">
+                        <FiPhone className="text-white text-xl" />
                       </div>
                       <div>
-                        <div className="font-bold text-gray-900 text-lg mb-1">Phone</div>
-                        <div className="text-gray-600 text-lg">+91 84900 9684</div>
+                        <div className="font-semibold text-gray-700 text-lg mb-1">Phone</div>
+                        <a href="tel:+91849009684" className="text-gray-600 text-lg hover:text-primary-600 transition">
+                          +91 84900 9684
+                        </a>
                       </div>
                     </div>
-                    <div className="flex items-start space-x-4">
-                      <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <FiMapPin className="text-primary-600 text-xl" />
+                    <div className="flex items-start space-x-4 group">
+                      <div className="w-14 h-14 bg-primary-600 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-primary-700 transition">
+                        <FiMapPin className="text-white text-xl" />
                       </div>
                       <div>
-                        <div className="font-bold text-gray-900 text-lg mb-1">Address</div>
-                        <div className="text-gray-600 text-lg">212, 2nd floor, Runway Heights, Ayodhya Chowk, Rajkot - 360001</div>
+                        <div className="font-semibold text-gray-700 text-lg mb-1">Address</div>
+                        <div className="text-gray-600 text-lg leading-relaxed">212, 2nd floor, Runway Heights, Ayodhya Chowk, Rajkot - 360001</div>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl shadow-xl border border-primary-100">
-                  <h3 className="text-3xl font-bold text-gray-900 mb-6">Send us a Message</h3>
+                <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-2xl shadow-lg border border-primary-100">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-6">Send us a Message</h3>
                   <form className="space-y-5">
                     <input
                       type="text"
                       placeholder="Your Name"
-                      className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-lg"
+                      className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-primary-600 text-lg transition"
                     />
                     <input
                       type="email"
                       placeholder="Your Email"
-                      className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-lg"
+                      className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-primary-600 text-lg transition"
                     />
                     <textarea
                       placeholder="Your Message"
                       rows="5"
-                      className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-lg"
+                      className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-primary-600 text-lg transition resize-none"
                     ></textarea>
                     <button
                       type="submit"
-                      className="w-full bg-primary-600 text-white py-4 rounded-xl hover:bg-primary-700 transition font-normal text-lg shadow-lg"
+                      className="w-full bg-primary-600 text-white py-4 rounded-xl hover:bg-primary-700 transition font-normal text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                     >
                       Send Message
                     </button>
