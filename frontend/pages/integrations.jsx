@@ -113,7 +113,7 @@ export default function IntegrationsPage() {
         <WebsiteHeader />
 
         {/* Hero Section */}
-        <section className="bg-gradient-to-br from-primary-50 to-white pt-40 pb-12">
+        <section className="pt-40 pb-12 bg-white">
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-4xl mx-auto text-center">
               <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
@@ -127,28 +127,28 @@ export default function IntegrationsPage() {
         </section>
 
         {/* Integrations by Category */}
-        <section className="py-20 bg-white">
-          <div className="container mx-auto px-6">
-            <div className="max-w-7xl mx-auto space-y-16">
+        <section className="py-16 bg-white">
+          <div className="container mx-auto px-8 md:px-12 lg:px-20">
+            <div className="max-w-7xl mx-auto space-y-12">
               {integrations.map((category) => {
                 const Icon = category.icon;
                 return (
                   <div key={category.category}>
-                    <div className="flex items-center gap-4 mb-8">
-                      <div className="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center">
-                        <Icon className="text-white text-xl" />
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
+                        <Icon className="text-white text-lg" />
                       </div>
-                      <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900">{category.category}</h2>
+                      <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900">{category.category}</h2>
                     </div>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
                       {category.integrations.map((integration) => (
                         <div
                           key={integration.name}
-                          className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all border border-primary-100 hover:border-primary-300"
+                          className="bg-white p-6 rounded-lg border border-gray-200 hover:border-primary-300 transition"
                         >
-                          <div className="flex items-start justify-between mb-4">
-                            <h3 className="text-xl font-bold text-gray-900">{integration.name}</h3>
-                            <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                          <div className="flex items-start justify-between mb-3">
+                            <h3 className="text-lg font-bold text-gray-900">{integration.name}</h3>
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded ${
                               integration.status === 'Active'
                                 ? 'bg-green-100 text-green-700'
                                 : 'bg-yellow-100 text-yellow-700'
@@ -158,11 +158,11 @@ export default function IntegrationsPage() {
                           </div>
                           <p className="text-gray-600 mb-4 text-sm">{integration.description}</p>
                           <div>
-                            <h4 className="text-sm font-semibold text-gray-900 mb-2">Features:</h4>
-                            <ul className="space-y-1">
+                            <h4 className="text-xs font-semibold text-gray-900 mb-2 uppercase tracking-wide">Features</h4>
+                            <ul className="space-y-1.5">
                               {integration.features.map((feature) => (
                                 <li key={feature} className="flex items-start gap-2 text-sm text-gray-700">
-                                  <FiCheck className="text-primary-600 text-sm mt-0.5 flex-shrink-0" />
+                                  <FiCheck className="text-primary-600 text-xs mt-0.5 flex-shrink-0" />
                                   <span>{feature}</span>
                                 </li>
                               ))}
@@ -188,10 +188,14 @@ export default function IntegrationsPage() {
               <p className="text-[1.2rem] text-gray-600 mb-8 leading-relaxed">
                 Build custom integrations with our comprehensive API. Connect Finvera with your existing systems.
               </p>
-              <div className="bg-white p-10 rounded-2xl shadow-xl border border-primary-100">
-                <FiSettings className="text-6xl text-primary-300 mx-auto mb-6" />
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">API Features</h3>
-                <div className="grid md:grid-cols-2 gap-4 text-left">
+              <div className="bg-white p-8 rounded-lg border border-gray-200">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
+                    <FiSettings className="text-white text-lg" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">API Features</h3>
+                </div>
+                <div className="grid md:grid-cols-2 gap-3 mb-6">
                   {[
                     'RESTful API',
                     'Webhook support',
@@ -200,19 +204,19 @@ export default function IntegrationsPage() {
                     'Comprehensive documentation',
                     'SDK support',
                   ].map((feature) => (
-                    <div key={feature} className="flex items-center gap-3">
-                      <FiCheck className="text-primary-600 text-xl flex-shrink-0" />
-                      <span className="text-gray-700">{feature}</span>
+                    <div key={feature} className="flex items-center gap-2">
+                      <FiCheck className="text-primary-600 text-sm flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">{feature}</span>
                     </div>
                   ))}
                 </div>
-                <div className="mt-8">
+                <div className="text-center">
                   <Link
                     href="/docs"
-                    className="inline-flex items-center gap-2 bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition font-normal"
+                    className="inline-flex items-center gap-2 bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition font-normal text-sm"
                   >
                     View API Documentation
-                    <FiArrowRight />
+                    <FiArrowRight className="text-sm" />
                   </Link>
                 </div>
               </div>
@@ -221,22 +225,24 @@ export default function IntegrationsPage() {
         </section>
 
         {/* Integration Request */}
-        <section className="py-20 bg-white">
-          <div className="container mx-auto px-6">
-            <div className="max-w-4xl mx-auto">
-              <div className="bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl shadow-xl border border-primary-100">
-                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 text-center">
-                  Need a Different Integration?
-                </h2>
-                <p className="text-gray-600 mb-8 text-center">
-                  We&apos;re always adding new integrations. Let us know what you need and we&apos;ll consider it for our roadmap.
-                </p>
+        <section className="py-16 bg-white">
+          <div className="container mx-auto px-8 md:px-12 lg:px-20">
+            <div className="max-w-2xl mx-auto">
+              <div className="bg-white p-8 rounded-lg border border-gray-200">
+                <div className="text-center mb-6">
+                  <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">
+                    Need a Different Integration?
+                  </h2>
+                  <p className="text-gray-600 text-sm">
+                    We&apos;re always adding new integrations. Let us know what you need and we&apos;ll consider it for our roadmap.
+                  </p>
+                </div>
                 <form className="space-y-4">
                   <div>
                     <input
                       type="text"
                       placeholder="Integration Name"
-                      className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-lg"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-sm"
                       required
                     />
                   </div>
@@ -244,7 +250,7 @@ export default function IntegrationsPage() {
                     <textarea
                       placeholder="Tell us about the integration you need..."
                       rows="4"
-                      className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-lg"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-sm"
                       required
                     ></textarea>
                   </div>
@@ -252,13 +258,13 @@ export default function IntegrationsPage() {
                     <input
                       type="email"
                       placeholder="Your Email"
-                      className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-lg"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-sm"
                       required
                     />
                   </div>
                   <button
                     type="submit"
-                    className="w-full bg-primary-600 text-white py-4 rounded-xl hover:bg-primary-700 transition font-normal text-lg shadow-lg"
+                    className="w-full bg-primary-600 text-white py-3 rounded-lg hover:bg-primary-700 transition font-normal text-sm"
                   >
                     Request Integration
                   </button>
