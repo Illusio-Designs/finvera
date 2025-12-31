@@ -14,24 +14,21 @@ ssh -i your-key.pem ec2-user@34.235.152.48
 ssh -i your-key.pem ubuntu@34.235.152.48
 ```
 
-### Step 2: Run Deployment
+### Step 2: Set Environment Variables
+Get your credentials from `.env` file or AWS Console:
+```bash
+export AWS_ACCESS_KEY_ID="your-access-key"
+export AWS_SECRET_ACCESS_KEY="your-secret-key"
+export RDS_PASSWORD="your-rds-password"
+```
+
+### Step 3: Run Deployment
 ```bash
 # Clone repository
 git clone https://github.com/Illusio-Designs/finvera.git
 cd finvera/backend
 
-# Set environment variables first (get from .env or AWS Console)
-export RDS_PASSWORD="your-rds-password"
-export AWS_ACCESS_KEY_ID="your-access-key"
-export AWS_SECRET_ACCESS_KEY="your-secret-key"
-
-# Run deployment script with all configuration
-# Set AWS credentials first (get from .env file or AWS Console):
-export AWS_ACCESS_KEY_ID="your-access-key-here"
-export AWS_SECRET_ACCESS_KEY="your-secret-key-here"
-export RDS_PASSWORD="your-rds-password-here"
-
-# Then run deployment:
+# Run deployment script
 RDS_ENDPOINT="finvera-mysql-db.cefq60scawxf.us-east-1.rds.amazonaws.com" \
 RDS_USER="finvera_admin" \
 RDS_PASSWORD="${RDS_PASSWORD}" \
@@ -46,7 +43,7 @@ FRONTEND_URL="https://client.finvera.solutions" \
 ./deploy.sh
 ```
 
-### Step 3: Verify Deployment
+### Step 4: Verify Deployment
 ```bash
 # Check PM2 status
 pm2 status
