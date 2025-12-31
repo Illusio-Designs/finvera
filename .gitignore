@@ -1,1 +1,3 @@
 *.pem
+.rds-password
+.env.backup
