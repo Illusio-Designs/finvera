@@ -111,31 +111,31 @@ export default function PricingPage() {
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-md mx-auto">
               <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
-                <div className="flex items-center justify-center gap-4">
+              <div className="flex items-center justify-center gap-4">
                   <span className={`text-base font-semibold transition-colors ${billingCycle === 'monthly' ? 'text-gray-900' : 'text-gray-400'}`}>
-                    Monthly
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
+                  Monthly
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
                     className={`relative inline-flex h-9 w-16 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 px-1 ${
-                      billingCycle === 'yearly' ? 'bg-primary-600' : 'bg-gray-300'
-                    }`}
-                  >
-                    <span
+                    billingCycle === 'yearly' ? 'bg-primary-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
                       className={`inline-block h-7 w-7 transform rounded-full bg-white shadow-md transition-transform ${
                         billingCycle === 'yearly' ? 'translate-x-7' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
+                    }`}
+                  />
+                </button>
                   <span className={`text-base font-semibold transition-colors ${billingCycle === 'yearly' ? 'text-gray-900' : 'text-gray-400'}`}>
-                    Yearly
-                  </span>
-                  {billingCycle === 'yearly' && (
+                  Yearly
+                </span>
+                {billingCycle === 'yearly' && (
                     <span className="ml-2 px-3 py-1.5 bg-green-100 text-green-700 text-xs font-bold rounded-full shadow-sm">
-                      Save up to 20%
-                    </span>
-                  )}
+                    Save up to 20%
+                  </span>
+                )}
                 </div>
               </div>
             </div>
@@ -234,7 +234,7 @@ export default function PricingPage() {
                         )}
                         {plan.trial_days > 0 && (
                           <p className={`text-xs mt-2 ${isPopular ? 'text-primary-100' : 'text-gray-500'}`}>
-                            {plan.trial_days} days free trial
+                              {plan.trial_days} days free trial
                           </p>
                         )}
                       </div>
@@ -345,7 +345,7 @@ export default function PricingPage() {
                         )}
                       </div>
                     )}
-                  </div>
+              </div>
                 );
               })()
             ) : (
@@ -363,8 +363,8 @@ export default function PricingPage() {
               <div className="bg-white rounded-2xl p-8 shadow-lg border border-green-200">
                 <h3 className="text-2xl font-bold text-gray-900 mb-3">Start Your Free Trial Today</h3>
                 <p className="text-[1.2rem] text-gray-600">
-                  No credit card required • Full access to all features • Cancel anytime
-                </p>
+                No credit card required • Full access to all features • Cancel anytime
+              </p>
               </div>
             </div>
           </div>
@@ -376,12 +376,12 @@ export default function PricingPage() {
             <div className="max-w-4xl mx-auto">
               <div className="text-center mb-16">
                 <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
-                  Frequently Asked Questions
-                </h2>
+                Frequently Asked Questions
+              </h2>
                 <p className="text-[1.2rem] text-gray-600 max-w-2xl mx-auto">
                   Everything you need to know about our pricing and plans
-                </p>
-              </div>
+                  </p>
+                </div>
               <div className="space-y-4">
                 {[
                   {
@@ -408,23 +408,23 @@ export default function PricingPage() {
                     >
                       <h3 className="text-lg font-bold text-gray-900 text-left pr-4">
                         {faq.question}
-                      </h3>
+                  </h3>
                       <div className="flex-shrink-0">
                         {openFaqIndex === index ? (
                           <FiMinus className="text-primary-600 text-2xl" />
                         ) : (
                           <FiPlus className="text-primary-600 text-2xl" />
                         )}
-                      </div>
+                </div>
                     </button>
                     {openFaqIndex === index && (
                       <div className="px-6 pb-6">
                         <p className="text-[1.2rem] text-gray-600 leading-relaxed">
                           {faq.answer}
-                        </p>
-                      </div>
+                  </p>
+                </div>
                     )}
-                  </div>
+                </div>
                 ))}
               </div>
             </div>

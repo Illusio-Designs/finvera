@@ -1,8 +1,9 @@
 import Head from 'next/head';
+import Link from 'next/link';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
-import { FiTarget, FiUsers, FiAward, FiTrendingUp, FiShield, FiLink, FiCheck } from 'react-icons/fi';
+import { FiTarget, FiUsers, FiAward, FiTrendingUp, FiShield, FiLink, FiCheck, FiArrowRight } from 'react-icons/fi';
 
 export default function AboutPage() {
   return (
@@ -93,21 +94,21 @@ export default function AboutPage() {
         </section>
 
         {/* Partnerships Section */}
-        <section className="py-20 bg-gradient-to-br from-primary-50 via-white to-primary-100">
-          <div className="container mx-auto px-6">
+        <section className="py-24 bg-white">
+          <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
                 Partnered with
               </h2>
               <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 Trusted integrations and partnerships for seamless business operations
               </p>
             </div>
-            <div className="grid md:grid-cols-4 lg:grid-cols-7 gap-6 max-w-7xl mx-auto">
+            <div className="grid md:grid-cols-4 lg:grid-cols-7 gap-5 max-w-7xl mx-auto items-center">
               {['Tally', 'Sandbox API', 'FinBox', 'GST Portal', 'E-Invoice Portal', 'E-Way Bill Portal', 'Payment Gateways'].map((partner) => (
-                <div key={partner} className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition border border-gray-200 text-center">
-                  <div className="h-16 flex items-center justify-center mb-3">
-                    <span className="text-xl font-bold text-gray-400">{partner}</span>
+                <div key={partner} className="bg-white p-5 rounded-xl border border-gray-200 hover:border-primary-200 hover:shadow-sm transition text-center">
+                  <div className="h-14 flex items-center justify-center">
+                    <span className="text-base font-medium text-gray-600">{partner}</span>
                   </div>
                 </div>
               ))}
