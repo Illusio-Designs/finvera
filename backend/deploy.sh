@@ -1,297 +1,619 @@
 #!/bin/bash
+# =================================
+# Finvera Backend - AWS EC2 Deployment Script
+# Complete deployment script for AWS EC2 instances
+# Supports both Ubuntu and Amazon Linux
+# =================================
 
-###############################################################################
-# Finvera Backend - Complete Deployment Script
-# This script: Tests connection → Creates build dir → Uploads → Verifies
-###############################################################################
+set -e  # Exit on error
 
-set -e
-
-# Colors
+# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
-NC='\033[0m'
+NC='\033[0m' # No Color
 
-# Configuration
-FTP_SERVER="ftp.illusiodesigns.agency"
-FTP_USER="finvera@illusiodesigns.agency"
-FTP_PASS="Rishi@1995"
-REMOTE_BUILD_DIR="build"
-# Removed LOCAL_STAGING - using direct upload now
+# =================================
+# CONFIGURATION
+# =================================
+# These can be overridden by environment variables
+# Usage: RDS_ENDPOINT="your-endpoint" ./deploy.sh
 
-echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║                                                            ║${NC}"
-echo -e "${CYAN}║          Finvera Backend - Complete Deployment            ║${NC}"
-echo -e "${CYAN}║                                                            ║${NC}"
-echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
-echo ""
+# AWS RDS Configuration
+RDS_ENDPOINT="${RDS_ENDPOINT:-finvera-mysql-db.cefq60scawxf.us-east-1.rds.amazonaws.com}"
+RDS_USER="${RDS_USER:-finvera_admin}"
+RDS_PASSWORD="${RDS_PASSWORD:-}"
+RDS_DB="${RDS_DB:-finvera_db}"
+RDS_PORT="${RDS_PORT:-3306}"
 
-# No cleanup needed - direct upload
+# AWS S3 Configuration (Optional)
+AWS_REGION="${AWS_REGION:-us-east-1}"
+AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID:-}"
+AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY:-}"
+S3_BUCKET="${S3_BUCKET:-finvera-backend-storage}"
 
-echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}Configuration:${NC}"
-echo -e "${GREEN}✓${NC} FTP Server: $FTP_SERVER"
-echo -e "${GREEN}✓${NC} FTP User: $FTP_USER"
-echo -e "${GREEN}✓${NC} Remote Build Directory: /$REMOTE_BUILD_DIR"
-echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
-echo ""
+# Application Configuration
+APP_DIR="${APP_DIR:-/opt/finvera-backend}"
+GIT_REPO="${GIT_REPO:-https://github.com/Illusio-Designs/finvera.git}"
+GIT_BRANCH="${GIT_BRANCH:-main}"
+NODE_VERSION="${NODE_VERSION:-20}"
 
-# ============================================================================
-# STEP 1: TEST FTP CONNECTION
-# ============================================================================
-echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║  STEP 1: Testing FTP Connection                           ║${NC}"
-echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
-echo ""
+# Domain Configuration
+MAIN_DOMAIN="${MAIN_DOMAIN:-finvera.solutions}"
+API_DOMAIN="${API_DOMAIN:-api.finvera.solutions}"
+FRONTEND_URL="${FRONTEND_URL:-https://client.finvera.solutions}"
 
-echo -e "${YELLOW}Testing connection to $FTP_SERVER...${NC}"
+# Security Keys (Generate these with: openssl rand -hex 32)
+ENCRYPTION_KEY="${ENCRYPTION_KEY:-}"
+PAYLOAD_ENCRYPTION_KEY="${PAYLOAD_ENCRYPTION_KEY:-}"
+JWT_SECRET="${JWT_SECRET:-}"
+JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-}"
+SESSION_SECRET="${SESSION_SECRET:-}"
 
-FTP_TEST=$(lftp -c "
-set ftp:ssl-allow yes;
-set ssl:verify-certificate no;
-set net:timeout 30;
-open -u '$FTP_USER','$FTP_PASS' '$FTP_SERVER';
-pwd;
-bye;
-" 2>&1)
-
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✓${NC} FTP Connection successful!"
-    echo -e "${GREEN}✓${NC} Connected to: $FTP_SERVER"
-    echo -e "${GREEN}✓${NC} User: $FTP_USER"
-    echo -e "${GREEN}✓${NC} Current directory: $FTP_TEST"
+# Detect OS
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS=$ID
+    OS_VERSION=$VERSION_ID
+elif type lsb_release >/dev/null 2>&1; then
+    OS=$(lsb_release -si | tr '[:upper:]' '[:lower:]')
 else
-    echo -e "${RED}✗${NC} FTP Connection failed!"
-    echo -e "${RED}Error:${NC} $FTP_TEST"
+    OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+fi
+
+# =================================
+# HELPER FUNCTIONS
+# =================================
+
+print_header() {
+    echo ""
+    echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║  $1${NC}"
+    echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+}
+
+print_step() {
+    echo -e "${BLUE}▶${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}✓${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}✗${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠${NC} $1"
+}
+
+check_root() {
+    if [ "$EUID" -eq 0 ]; then
+        print_error "Please do not run this script as root. It will use sudo when needed."
+        exit 1
+    fi
+}
+
+# =================================
+# MAIN DEPLOYMENT SCRIPT
+# =================================
+
+print_header "Finvera Backend - AWS EC2 Deployment"
+echo -e "${BLUE}OS Detected:${NC} $OS $OS_VERSION"
+echo -e "${BLUE}Node.js Version:${NC} $NODE_VERSION"
+echo -e "${BLUE}App Directory:${NC} $APP_DIR"
+echo ""
+
+check_root
+
+# =================================
+# STEP 1: UPDATE SYSTEM
+# =================================
+print_header "STEP 1: Updating System Packages"
+
+print_step "Updating package lists..."
+if [ "$OS" = "ubuntu" ] || [ "$OS" = "debian" ]; then
+    sudo apt-get update -y
+    PKG_MANAGER="apt-get"
+    INSTALL_CMD="sudo apt-get install -y"
+elif [ "$OS" = "amzn" ] || [ "$OS" = "amazon" ]; then
+    sudo yum update -y
+    PKG_MANAGER="yum"
+    INSTALL_CMD="sudo yum install -y"
+else
+    print_error "Unsupported OS: $OS"
     exit 1
 fi
-echo ""
+print_success "System updated"
 
-# ============================================================================
-# STEP 2: VALIDATE SOURCE FILES
-# ============================================================================
-echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║  STEP 2: Validating Source Files                          ║${NC}"
-echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
-echo ""
+# =================================
+# STEP 2: INSTALL NODE.JS
+# =================================
+print_header "STEP 2: Installing Node.js $NODE_VERSION"
 
-# Validate source
-if [ ! -f "server.js" ] || [ ! -f "package.json" ]; then
-    echo -e "${RED}✗${NC} Essential files not found (server.js, package.json)"
+if command -v node &> /dev/null; then
+    CURRENT_NODE_VERSION=$(node --version | cut -d'v' -f2 | cut -d'.' -f1)
+    if [ "$CURRENT_NODE_VERSION" -ge "$NODE_VERSION" ]; then
+        print_success "Node.js already installed: $(node --version)"
+    else
+        print_warning "Node.js version is older, updating..."
+        if [ "$OS" = "ubuntu" ] || [ "$OS" = "debian" ]; then
+            sudo apt-get remove -y nodejs npm 2>/dev/null || true
+        fi
+    fi
+fi
+
+if ! command -v node &> /dev/null || [ "$CURRENT_NODE_VERSION" -lt "$NODE_VERSION" ]; then
+    print_step "Installing Node.js $NODE_VERSION..."
+    if [ "$OS" = "ubuntu" ] || [ "$OS" = "debian" ]; then
+        curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+    elif [ "$OS" = "amzn" ] || [ "$OS" = "amazon" ]; then
+        curl -fsSL https://rpm.nodesource.com/setup_${NODE_VERSION}.x | sudo bash -
+        sudo yum install -y nodejs
+    fi
+    print_success "Node.js installed: $(node --version)"
+    print_success "npm installed: $(npm --version)"
+fi
+
+# =================================
+# STEP 3: INSTALL SYSTEM DEPENDENCIES
+# =================================
+print_header "STEP 3: Installing System Dependencies"
+
+print_step "Installing Git, Nginx, MySQL Client..."
+$INSTALL_CMD git nginx mysql-client
+
+# Install Redis if not present
+if ! command -v redis-server &> /dev/null; then
+    print_step "Installing Redis..."
+    if [ "$OS" = "ubuntu" ] || [ "$OS" = "debian" ]; then
+        $INSTALL_CMD redis-server
+    elif [ "$OS" = "amzn" ] || [ "$OS" = "amazon" ]; then
+        $INSTALL_CMD redis
+    fi
+    print_success "Redis installed"
+else
+    print_success "Redis already installed"
+fi
+
+# =================================
+# STEP 4: INSTALL NPM GLOBAL PACKAGES
+# =================================
+print_header "STEP 4: Installing Global NPM Packages"
+
+print_step "Installing PM2..."
+if ! command -v pm2 &> /dev/null; then
+    sudo npm install -g pm2
+    print_success "PM2 installed: $(pm2 --version)"
+else
+    print_success "PM2 already installed: $(pm2 --version)"
+fi
+
+print_step "Installing Sequelize CLI..."
+if ! command -v sequelize &> /dev/null; then
+    sudo npm install -g sequelize-cli
+    print_success "Sequelize CLI installed"
+else
+    print_success "Sequelize CLI already installed"
+fi
+
+# =================================
+# STEP 5: SETUP APPLICATION DIRECTORY
+# =================================
+print_header "STEP 5: Setting Up Application Directory"
+
+print_step "Creating application directory: $APP_DIR"
+sudo mkdir -p $APP_DIR
+sudo chown -R $USER:$USER $APP_DIR
+cd $APP_DIR
+print_success "Directory created and permissions set"
+
+# =================================
+# STEP 6: CLONE/UPDATE REPOSITORY
+# =================================
+print_header "STEP 6: Cloning/Updating Repository"
+
+if [ -d ".git" ]; then
+    print_step "Repository exists, pulling latest changes..."
+    git fetch origin
+    git checkout $GIT_BRANCH
+    git pull origin $GIT_BRANCH
+    print_success "Repository updated"
+else
+    print_step "Cloning repository..."
+    git clone $GIT_REPO /tmp/finvera-temp
+    cp -r /tmp/finvera-temp/backend/* .
+    cp -r /tmp/finvera-temp/backend/.* . 2>/dev/null || true
+    rm -rf /tmp/finvera-temp
+    git checkout $GIT_BRANCH 2>/dev/null || true
+    print_success "Repository cloned"
+fi
+
+# =================================
+# STEP 7: INSTALL NODE.JS DEPENDENCIES
+# =================================
+print_header "STEP 7: Installing Node.js Dependencies"
+
+print_step "Cleaning old dependencies..."
+rm -rf node_modules package-lock.json
+
+print_step "Installing production dependencies..."
+npm install --production
+print_success "Dependencies installed"
+
+# =================================
+# STEP 8: CREATE .ENV FILE
+# =================================
+print_header "STEP 8: Creating Environment Configuration"
+
+# Check if .env already exists
+if [ -f ".env" ]; then
+    print_warning ".env file already exists. Backing up to .env.backup"
+    cp .env .env.backup
+fi
+
+# Prompt for RDS password if not set
+if [ -z "$RDS_PASSWORD" ]; then
+    echo -e "${YELLOW}Enter RDS database password:${NC}"
+    read -s RDS_PASSWORD
+    echo ""
+fi
+
+# Generate secrets if not provided
+if [ -z "$ENCRYPTION_KEY" ]; then
+    ENCRYPTION_KEY=$(openssl rand -hex 32)
+    print_success "Generated ENCRYPTION_KEY"
+fi
+
+if [ -z "$PAYLOAD_ENCRYPTION_KEY" ]; then
+    PAYLOAD_ENCRYPTION_KEY=$(openssl rand -base64 48)
+    print_success "Generated PAYLOAD_ENCRYPTION_KEY"
+fi
+
+if [ -z "$JWT_SECRET" ]; then
+    JWT_SECRET=$(openssl rand -base64 64)
+    print_success "Generated JWT_SECRET"
+fi
+
+if [ -z "$JWT_REFRESH_SECRET" ]; then
+    JWT_REFRESH_SECRET=$(openssl rand -base64 64)
+    print_success "Generated JWT_REFRESH_SECRET"
+fi
+
+if [ -z "$SESSION_SECRET" ]; then
+    SESSION_SECRET=$(openssl rand -base64 64)
+    print_success "Generated SESSION_SECRET"
+fi
+
+print_step "Creating .env file..."
+cat > .env <<ENVEOF
+# =================================
+# APPLICATION CONFIGURATION
+# =================================
+NODE_ENV=production
+PORT=3000
+HOST=0.0.0.0
+APP_NAME=Finvera
+LOG_LEVEL=info
+
+# =================================
+# DOMAIN CONFIGURATION
+# =================================
+MAIN_DOMAIN=$MAIN_DOMAIN
+API_DOMAIN=$API_DOMAIN
+FRONTEND_URL=$FRONTEND_URL
+CORS_ORIGIN=https://$MAIN_DOMAIN,https://www.$MAIN_DOMAIN,https://client.$MAIN_DOMAIN,https://admin.$MAIN_DOMAIN
+
+# =================================
+# DATABASE CONFIGURATION (RDS MySQL)
+# =================================
+DB_HOST=$RDS_ENDPOINT
+DB_PORT=$RDS_PORT
+DB_USER=$RDS_USER
+DB_PASSWORD=$RDS_PASSWORD
+DB_NAME=$RDS_DB
+MASTER_DB_NAME=finvera_master
+USE_SEPARATE_DB_USERS=false
+DB_ROOT_USER=$RDS_USER
+DB_ROOT_PASSWORD=$RDS_PASSWORD
+
+# =================================
+# AWS CONFIGURATION
+# =================================
+AWS_REGION=$AWS_REGION
+ENVEOF
+
+# Add S3 configuration if provided
+if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ]; then
+    cat >> .env <<ENVEOF
+AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+S3_BUCKET=$S3_BUCKET
+USE_S3_FOR_UPLOADS=true
+ENVEOF
+    print_success "S3 configuration added"
+else
+    cat >> .env <<ENVEOF
+# S3 Configuration (optional)
+# AWS_ACCESS_KEY_ID=
+# AWS_SECRET_ACCESS_KEY=
+# S3_BUCKET=
+USE_S3_FOR_UPLOADS=false
+ENVEOF
+    print_warning "S3 credentials not provided, using local storage"
+fi
+
+cat >> .env <<ENVEOF
+
+# =================================
+# SECURITY KEYS
+# =================================
+ENCRYPTION_KEY=$ENCRYPTION_KEY
+PAYLOAD_ENCRYPTION_KEY=$PAYLOAD_ENCRYPTION_KEY
+JWT_SECRET=$JWT_SECRET
+JWT_REFRESH_SECRET=$JWT_REFRESH_SECRET
+JWT_EXPIRES_IN=24h
+JWT_REFRESH_EXPIRES_IN=7d
+SESSION_SECRET=$SESSION_SECRET
+
+# =================================
+# REDIS CONFIGURATION
+# =================================
+REDIS_ENABLED=true
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+
+# =================================
+# EMAIL CONFIGURATION
+# =================================
+EMAIL_ENABLED=false
+EMAIL_FROM=noreply@$MAIN_DOMAIN
+
+# =================================
+# FILE UPLOAD CONFIGURATION
+# =================================
+UPLOAD_DIR=./uploads
+MAX_FILE_SIZE=10485760
+MAX_DSC_CERTIFICATE_SIZE=5242880
+
+# =================================
+# TENANT CONFIGURATION
+# =================================
+MAX_TENANT_CONNECTIONS=50
+ENVEOF
+
+print_success ".env file created"
+chmod 600 .env  # Secure the .env file
+
+# =================================
+# STEP 9: TEST DATABASE CONNECTION
+# =================================
+print_header "STEP 9: Testing Database Connection"
+
+print_step "Testing connection to RDS: $RDS_ENDPOINT"
+export MYSQL_PWD="$RDS_PASSWORD"
+if mysql -h $RDS_ENDPOINT -u $RDS_USER -P $RDS_PORT -e "SELECT 1" 2>/dev/null; then
+    print_success "Database connection successful"
+else
+    print_error "Database connection failed. Please check:"
+    echo "  - RDS endpoint: $RDS_ENDPOINT"
+    echo "  - Username: $RDS_USER"
+    echo "  - Security group allows MySQL (port 3306) from this EC2 instance"
+    unset MYSQL_PWD
     exit 1
 fi
-echo -e "${GREEN}✓${NC} Source directory validated"
+unset MYSQL_PWD
 
-# Count files that will be uploaded (excluding unwanted files)
-LOCAL_FILE_COUNT=$(find . -type f \
-  ! -path "./node_modules/*" \
-  ! -path "./.git/*" \
-  ! -path "./uploads/*" \
-  ! -path "./staging/*" \
-  ! -path "./build/*" \
-  ! -path "./deploy-package/*" \
-  ! -path "./.vscode/*" \
-  ! -path "./.idea/*" \
-  ! -path "./.cursor/*" \
-  ! -name "package-lock.json" \
-  ! -name ".env*" \
-  ! -name "*.log" \
-  ! -name ".ftpconfig" \
-  ! -name "BUILD.zip" \
-  ! -name "PRODUCTION-READY.tar.gz" \
-  ! -name "finvera-backend.tar.gz" \
-  ! -name "deploy*.sh" \
-  ! -name "deploy*.log" \
-  ! -name "deploy*.txt" \
-  ! -name "setup-server.sh" \
-  ! -name "test-ftp.sh" \
-  ! -name "*.md" \
-  2>/dev/null | wc -l)
+# =================================
+# STEP 10: RUN DATABASE MIGRATIONS
+# =================================
+print_header "STEP 10: Running Database Migrations"
 
-echo -e "${GREEN}✓${NC} Files to upload: ${CYAN}$LOCAL_FILE_COUNT${NC}"
-echo ""
-
-# ============================================================================
-# STEP 3: CREATE BUILD DIRECTORY ON SERVER
-# ============================================================================
-echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║  STEP 3: Creating Build Directory on Server               ║${NC}"
-echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
-echo ""
-
-echo -e "${YELLOW}Creating /$REMOTE_BUILD_DIR on server...${NC}"
-
-CREATE_RESULT=$(lftp -c "
-set ftp:ssl-allow yes;
-set ssl:verify-certificate no;
-set net:timeout 30;
-open -u '$FTP_USER','$FTP_PASS' '$FTP_SERVER';
-mkdir -p $REMOTE_BUILD_DIR;
-cd $REMOTE_BUILD_DIR;
-pwd;
-bye;
-" 2>&1)
-
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✓${NC} Build directory created: /$REMOTE_BUILD_DIR"
-    echo -e "${GREEN}✓${NC} Remote path: $CREATE_RESULT"
+print_step "Running migrations..."
+if npm run migrate 2>/dev/null; then
+    print_success "Migrations completed"
 else
-    echo -e "${RED}✗${NC} Failed to create build directory"
-    echo -e "${RED}Error:${NC} $CREATE_RESULT"
-    exit 1
+    print_warning "Migrations failed or skipped (this may be normal if already migrated)"
 fi
-echo ""
 
-# ============================================================================
-# STEP 4: UPLOAD FILES TO SERVER
-# ============================================================================
-echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║  STEP 4: Uploading Files to Server                        ║${NC}"
-echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
-echo ""
+# =================================
+# STEP 11: CREATE REQUIRED DIRECTORIES
+# =================================
+print_header "STEP 11: Creating Required Directories"
 
-echo -e "${YELLOW}Uploading $LOCAL_FILE_COUNT files to /$REMOTE_BUILD_DIR...${NC}"
-echo -e "${YELLOW}This may take several minutes...${NC}"
-echo ""
+print_step "Creating uploads and logs directories..."
+mkdir -p uploads logs
+chmod 755 uploads logs
+print_success "Directories created"
 
-# Show progress
-echo -e "${BLUE}Upload Progress:${NC}"
+# =================================
+# STEP 12: SETUP PM2
+# =================================
+print_header "STEP 12: Setting Up PM2 Process Manager"
 
-lftp -c "
-set ftp:ssl-allow yes;
-set ssl:verify-certificate no;
-set net:timeout 120;
-set net:max-retries 3;
-set net:reconnect-interval-base 5;
-open -u '$FTP_USER','$FTP_PASS' '$FTP_SERVER';
-cd $REMOTE_BUILD_DIR;
-mirror --reverse --delete --verbose --parallel=3 \
-  --exclude-glob .DS_Store \
-  --exclude-glob Thumbs.db \
-  --exclude-glob 'node_modules/**' \
-  --exclude-glob '.git/**' \
-  --exclude-glob 'uploads/**' \
-  --exclude-glob 'staging/**' \
-  --exclude-glob 'build/**' \
-  --exclude-glob 'deploy-package/**' \
-  --exclude-glob '.vscode/**' \
-  --exclude-glob '.idea/**' \
-  --exclude-glob '.cursor/**' \
-  --exclude-glob 'package-lock.json' \
-  --exclude-glob '.env*' \
-  --exclude-glob '*.log' \
-  --exclude-glob '.ftpconfig' \
-  --exclude-glob 'BUILD.zip' \
-  --exclude-glob 'PRODUCTION-READY.tar.gz' \
-  --exclude-glob 'finvera-backend.tar.gz' \
-  --exclude-glob 'deploy*.sh' \
-  --exclude-glob 'deploy*.log' \
-  --exclude-glob 'deploy*.txt' \
-  --exclude-glob 'setup-server.sh' \
-  --exclude-glob 'test-ftp.sh' \
-  --exclude-glob '*.md' \
-  . .;
-bye;
-"
+print_step "Creating PM2 ecosystem configuration..."
+cat > ecosystem.config.js <<PM2EOF
+module.exports = {
+  apps: [{
+    name: 'finvera-backend',
+    script: './server.js',
+    instances: 1,
+    exec_mode: 'fork',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3000
+    },
+    error_file: './logs/pm2-error.log',
+    out_file: './logs/pm2-out.log',
+    log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+    merge_logs: true,
+    autorestart: true,
+    max_memory_restart: '500M',
+    watch: false,
+    node_args: '--max-old-space-size=4096 --expose-gc'
+  }]
+};
+PM2EOF
+print_success "PM2 configuration created"
 
-UPLOAD_STATUS=$?
+# =================================
+# STEP 13: START APPLICATION
+# =================================
+print_header "STEP 13: Starting Application"
 
-echo ""
-if [ $UPLOAD_STATUS -eq 0 ]; then
-    echo -e "${GREEN}✓${NC} Upload completed successfully!"
-else
-    echo -e "${RED}✗${NC} Upload failed with status: $UPLOAD_STATUS"
-    exit 1
+print_step "Stopping existing instance (if any)..."
+pm2 delete finvera-backend 2>/dev/null || true
+
+print_step "Starting application with PM2..."
+pm2 start ecosystem.config.js
+pm2 save
+print_success "Application started"
+
+print_step "Setting up PM2 startup script..."
+STARTUP_CMD=$(pm2 startup systemd -u $USER --hp $HOME | tail -1)
+if [ -n "$STARTUP_CMD" ]; then
+    print_warning "Run this command to enable auto-start on reboot:"
+    echo -e "${YELLOW}  $STARTUP_CMD${NC}"
 fi
-echo ""
 
-# ============================================================================
-# STEP 5: VERIFY FILES ON SERVER
-# ============================================================================
-echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║  STEP 5: Verifying Files on Server                        ║${NC}"
-echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
-echo ""
+# =================================
+# STEP 14: CONFIGURE NGINX
+# =================================
+print_header "STEP 14: Configuring Nginx Reverse Proxy"
 
-echo -e "${YELLOW}Counting files on server...${NC}"
-
-REMOTE_FILE_COUNT=$(lftp -c "
-set ftp:ssl-allow yes;
-set ssl:verify-certificate no;
-open -u '$FTP_USER','$FTP_PASS' '$FTP_SERVER';
-cd $REMOTE_BUILD_DIR;
-find . -type f | wc -l;
-bye;
-" 2>&1 | tail -1)
-
-echo -e "${BLUE}Local files:${NC}  ${CYAN}$LOCAL_FILE_COUNT${NC}"
-echo -e "${BLUE}Remote files:${NC} ${CYAN}$REMOTE_FILE_COUNT${NC}"
-echo ""
-
-# Verify key files exist
-echo -e "${YELLOW}Verifying key files on server...${NC}"
-
-KEY_FILES_CHECK=$(lftp -c "
-set ftp:ssl-allow yes;
-set ssl:verify-certificate no;
-open -u '$FTP_USER','$FTP_PASS' '$FTP_SERVER';
-cd $REMOTE_BUILD_DIR;
-cls -1 | head -20;
-bye;
-" 2>&1)
-
-# Check for essential files
-if echo "$KEY_FILES_CHECK" | grep -q "server.js"; then
-    echo -e "${GREEN}✓${NC} server.js found"
+print_step "Creating Nginx configuration..."
+if [ "$OS" = "ubuntu" ] || [ "$OS" = "debian" ]; then
+    NGINX_SITES_DIR="/etc/nginx/sites-available"
+    NGINX_ENABLED_DIR="/etc/nginx/sites-enabled"
 else
-    echo -e "${RED}✗${NC} server.js NOT found"
+    NGINX_SITES_DIR="/etc/nginx/conf.d"
+    NGINX_ENABLED_DIR="/etc/nginx/conf.d"
+fi
+
+sudo tee $NGINX_SITES_DIR/finvera-backend > /dev/null <<NGINXEOF
+server {
+    listen 80;
+    server_name $API_DOMAIN;
+
+    client_max_body_size 10M;
+
+    # Increase timeouts for long-running requests
+    proxy_read_timeout 300s;
+    proxy_connect_timeout 300s;
+    proxy_send_timeout 300s;
+
+    # API routes
+    location /api {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+    }
+
+    # WebSocket support
+    location /socket.io {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
+    # Health check
+    location /health {
+        proxy_pass http://localhost:3000;
+        access_log off;
+    }
+
+    # Root location
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+NGINXEOF
+
+# Enable site (Ubuntu/Debian only)
+if [ "$OS" = "ubuntu" ] || [ "$OS" = "debian" ]; then
+    sudo ln -sf $NGINX_SITES_DIR/finvera-backend $NGINX_ENABLED_DIR/finvera-backend
+    sudo rm -f $NGINX_ENABLED_DIR/default
+fi
+
+print_step "Testing Nginx configuration..."
+if sudo nginx -t; then
+    print_success "Nginx configuration valid"
+    print_step "Restarting Nginx..."
+    sudo systemctl restart nginx
+    sudo systemctl enable nginx
+    print_success "Nginx restarted and enabled"
+else
+    print_error "Nginx configuration test failed"
     exit 1
 fi
 
-if echo "$KEY_FILES_CHECK" | grep -q "package.json"; then
-    echo -e "${GREEN}✓${NC} package.json found"
+# =================================
+# STEP 15: CONFIGURE FIREWALL
+# =================================
+print_header "STEP 15: Configuring Firewall"
+
+print_step "Configuring firewall rules..."
+if command -v ufw &> /dev/null; then
+    sudo ufw --force enable
+    sudo ufw allow 22/tcp
+    sudo ufw allow 80/tcp
+    sudo ufw allow 443/tcp
+    print_success "UFW firewall configured"
+elif command -v firewall-cmd &> /dev/null; then
+    sudo firewall-cmd --permanent --add-service=http
+    sudo firewall-cmd --permanent --add-service=https
+    sudo firewall-cmd --permanent --add-port=3000/tcp
+    sudo firewall-cmd --reload
+    print_success "Firewalld configured"
 else
-    echo -e "${RED}✗${NC} package.json NOT found"
-    exit 1
+    print_warning "No firewall detected. Please configure security groups in AWS."
 fi
 
-if echo "$KEY_FILES_CHECK" | grep -q "src"; then
-    echo -e "${GREEN}✓${NC} src/ directory found"
+# =================================
+# STEP 16: VERIFICATION
+# =================================
+print_header "STEP 16: Verifying Deployment"
+
+print_step "Checking PM2 status..."
+pm2 status
+
+print_step "Testing application health endpoint..."
+sleep 3  # Give the app time to start
+if curl -f http://localhost:3000/health > /dev/null 2>&1; then
+    print_success "Application is responding"
 else
-    echo -e "${RED}✗${NC} src/ directory NOT found"
-    exit 1
+    print_warning "Health check failed. Check logs: pm2 logs finvera-backend"
 fi
 
-if echo "$KEY_FILES_CHECK" | grep -q "config"; then
-    echo -e "${GREEN}✓${NC} config/ directory found"
-else
-    echo -e "${RED}✗${NC} config/ directory NOT found"
-    exit 1
-fi
-
+# =================================
+# DEPLOYMENT COMPLETE
+# =================================
 echo ""
-
-# Compare counts (allow small difference due to hidden files)
-DIFF=$((LOCAL_FILE_COUNT - REMOTE_FILE_COUNT))
-DIFF=${DIFF#-}  # absolute value
-
-if [ $DIFF -lt 5 ]; then
-    echo -e "${GREEN}✓${NC} File count matches (difference: $DIFF files)"
-    VERIFICATION_STATUS="SUCCESS"
-else
-    echo -e "${YELLOW}⚠${NC} File count difference: $DIFF files"
-    echo -e "${YELLOW}⚠${NC} This may be normal (hidden files, etc.)"
-    VERIFICATION_STATUS="WARNING"
-fi
-
-echo ""
-
-# ============================================================================
-# STEP 6: FINAL SUCCESS
-# ============================================================================
 echo -e "${GREEN}╔════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║                                                            ║${NC}"
 echo -e "${GREEN}║              🎉 DEPLOYMENT SUCCESSFUL! 🎉                  ║${NC}"
@@ -303,54 +625,34 @@ echo -e "${BLUE}╔════════════════════�
 echo -e "${BLUE}║  DEPLOYMENT SUMMARY                                        ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""
-echo -e "${GREEN}✓${NC} FTP Connection: ${GREEN}Successful${NC}"
-echo -e "${GREEN}✓${NC} Build Directory: ${CYAN}/$REMOTE_BUILD_DIR${NC}"
-echo -e "${GREEN}✓${NC} Files Uploaded: ${CYAN}$LOCAL_FILE_COUNT${NC}"
-echo -e "${GREEN}✓${NC} Files on Server: ${CYAN}$REMOTE_FILE_COUNT${NC}"
-echo -e "${GREEN}✓${NC} Verification: ${GREEN}$VERIFICATION_STATUS${NC}"
+echo -e "${GREEN}✓${NC} Application Directory: ${CYAN}$APP_DIR${NC}"
+echo -e "${GREEN}✓${NC} Database: ${CYAN}$RDS_ENDPOINT${NC}"
+echo -e "${GREEN}✓${NC} Domain: ${CYAN}$API_DOMAIN${NC}"
+echo -e "${GREEN}✓${NC} Node.js: ${CYAN}$(node --version)${NC}"
+echo -e "${GREEN}✓${NC} PM2: ${CYAN}$(pm2 --version)${NC}"
 echo ""
-echo -e "${BLUE}Server Details:${NC}"
-echo -e "  • Host: ${CYAN}$FTP_SERVER${NC}"
-echo -e "  • Location: ${CYAN}/$REMOTE_BUILD_DIR${NC}"
-echo -e "  • Files: ${CYAN}$REMOTE_FILE_COUNT files${NC}"
-echo ""
+
 echo -e "${YELLOW}═══════════════════════════════════════════════════════════${NC}"
-echo -e "${YELLOW}Next Steps on Server:${NC}"
+echo -e "${YELLOW}Useful Commands:${NC}"
 echo -e "${YELLOW}═══════════════════════════════════════════════════════════${NC}"
 echo ""
-echo -e "${BLUE}1. SSH into server:${NC}"
-echo -e "   ${GREEN}ssh $FTP_USER${NC}"
+echo -e "${BLUE}View logs:${NC}"
+echo -e "  ${GREEN}pm2 logs finvera-backend${NC}"
 echo ""
-echo -e "${BLUE}2. Navigate to build directory:${NC}"
-echo -e "   ${GREEN}cd ~/$REMOTE_BUILD_DIR${NC}"
+echo -e "${BLUE}Check status:${NC}"
+echo -e "  ${GREEN}pm2 status${NC}"
 echo ""
-echo -e "${BLUE}3. Verify files:${NC}"
-echo -e "   ${GREEN}ls -la${NC}"
-echo -e "   ${GREEN}ls -la src/${NC}"
+echo -e "${BLUE}Restart application:${NC}"
+echo -e "  ${GREEN}pm2 restart finvera-backend${NC}"
 echo ""
-echo -e "${BLUE}4. Create .env file:${NC}"
-echo -e "   ${GREEN}cp .env.example .env${NC}"
-echo -e "   ${GREEN}nano .env${NC}"
+echo -e "${BLUE}Test health endpoint:${NC}"
+echo -e "  ${GREEN}curl http://localhost:3000/health${NC}"
 echo ""
-echo -e "${BLUE}5. Install dependencies:${NC}"
-echo -e "   ${GREEN}npm install --production${NC}"
+echo -e "${BLUE}View Nginx logs:${NC}"
+echo -e "  ${GREEN}sudo tail -f /var/log/nginx/error.log${NC}"
 echo ""
-echo -e "${BLUE}6. Create required directories:${NC}"
-echo -e "   ${GREEN}mkdir -p logs uploads${NC}"
-echo -e "   ${GREEN}chmod 777 logs uploads${NC}"
-echo ""
-echo -e "${BLUE}7. Run database migrations:${NC}"
-echo -e "   ${GREEN}npm run migrate${NC}"
-echo ""
-echo -e "${BLUE}8. Start server:${NC}"
-echo -e "   ${GREEN}pm2 start server.js --name finvera-backend${NC}"
-echo -e "   ${GREEN}pm2 save${NC}"
-echo ""
-echo -e "${BLUE}9. Verify deployment:${NC}"
-echo -e "   ${GREEN}pm2 status${NC}"
-echo -e "   ${GREEN}curl http://localhost:3000/health${NC}"
-echo ""
+
 echo -e "${GREEN}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║  Deployment Complete - Ready for Setup! ✓                 ║${NC}"
+echo -e "${GREEN}║  Deployment Complete! ✓                                   ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""
