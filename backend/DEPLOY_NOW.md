@@ -26,6 +26,12 @@ export AWS_ACCESS_KEY_ID="your-access-key"
 export AWS_SECRET_ACCESS_KEY="your-secret-key"
 
 # Run deployment script with all configuration
+# Set AWS credentials first (get from .env file or AWS Console):
+export AWS_ACCESS_KEY_ID="your-access-key-here"
+export AWS_SECRET_ACCESS_KEY="your-secret-key-here"
+export RDS_PASSWORD="your-rds-password-here"
+
+# Then run deployment:
 RDS_ENDPOINT="finvera-mysql-db.cefq60scawxf.us-east-1.rds.amazonaws.com" \
 RDS_USER="finvera_admin" \
 RDS_PASSWORD="${RDS_PASSWORD}" \
