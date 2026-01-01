@@ -449,18 +449,44 @@ async function syncMasterModels() {
   try {
     await models.TenantMaster.sync({ alter: true });
   } catch (syncError) {
+    const logger = require('../utils/logger');
+    
     // Handle MySQL's 64-index limit error
     if (syncError.original && syncError.original.code === 'ER_TOO_MANY_KEYS') {
-      const logger = require('../utils/logger');
       logger.warn('⚠️  tenant_master table has too many indexes (MySQL limit: 64)');
     } else if (syncError.original && syncError.original.code === 'ER_TOO_BIG_ROWSIZE') {
-      const logger = require('../utils/logger');
       logger.warn('⚠️  tenant_master table row size too large. Skipping alter sync.');
       logger.warn('   This usually means the table already exists with the correct structure.');
       logger.warn('   If you need to add columns, do it manually via migration.');
       logger.warn('   This is usually safe to ignore if the table already exists.');
       logger.warn('   The table structure is correct, just too many indexes.');
       // Continue with other models
+    } else if (syncError.original && syncError.original.code === 'ER_BLOB_KEY_WITHOUT_LENGTH') {
+      // Handle TEXT/BLOB column in index error - need to drop index, alter column, recreate index
+      logger.warn('⚠️  TEXT/BLOB column used in index. Attempting to fix...');
+      try {
+        const masterSequelize = require('../config/masterDatabase');
+        // Drop the email index
+        await masterSequelize.query('DROP INDEX idx_tenant_master_email ON tenant_master');
+        logger.info('✓ Dropped email index');
+        
+        // Alter email column from TEXT to VARCHAR(255)
+        await masterSequelize.query('ALTER TABLE tenant_master MODIFY COLUMN email VARCHAR(255) NOT NULL');
+        logger.info('✓ Changed email column to VARCHAR(255)');
+        
+        // Recreate the index
+        await masterSequelize.query('CREATE INDEX idx_tenant_master_email ON tenant_master(email)');
+        logger.info('✓ Recreated email index');
+        
+        logger.info('✅ Successfully fixed email column and index');
+      } catch (fixError) {
+        logger.error('❌ Failed to fix email column:', fixError);
+        // If the column/index doesn't exist, that's okay - table might be new
+        if (fixError.original && fixError.original.code !== 'ER_CANT_DROP_FIELD_OR_KEY') {
+          throw fixError;
+        }
+        logger.warn('⚠️  Index or column may not exist yet. Continuing...');
+      }
     } else {
       throw syncError;
     }

@@ -119,12 +119,12 @@ const TenantMaster = masterSequelize.define(
     pincode: DataTypes.STRING(10),
     phone: DataTypes.STRING(15),
     email: {
-      type: DataTypes.TEXT,
+      type: DataTypes.STRING(255),
       allowNull: false,
       validate: {
         isEmail: true,
       },
-      comment: 'Changed to TEXT to reduce row size',
+      comment: 'Email address (VARCHAR for index compatibility)',
     },
     
     // Status
