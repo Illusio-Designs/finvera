@@ -58,10 +58,10 @@ export default function DocsPage() {
         <section className="bg-gradient-to-br from-primary-50 to-white pt-40 pb-12">
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
+              <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">
                 Documentation
               </h1>
-              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
+              <p className="text-base text-gray-600 max-w-3xl mx-auto">
                 Complete guides, tutorials, and API documentation to help you get the most out of Finvera.
               </p>
             </div>
@@ -69,18 +69,18 @@ export default function DocsPage() {
         </section>
 
         {/* Documentation Sections */}
-        <section className="py-20 bg-white">
+        <section className="py-10 bg-white">
           <div className="container mx-auto px-6">
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
               {docSections.map((section, index) => {
                 const Icon = section.icon;
                 return (
-                  <div key={index} className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition border border-primary-100">
-                    <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mb-6">
-                      <Icon className="text-white text-2xl" />
+                  <div key={index} className="bg-gradient-to-br from-primary-50 to-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition border border-primary-100">
+                    <div className="w-14 h-14 bg-primary-600 rounded-xl flex items-center justify-center mb-4">
+                      <Icon className="text-white text-xl" />
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-3">{section.title}</h3>
-                    <p className="text-gray-600 mb-6">{section.description}</p>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">{section.title}</h3>
+                    <p className="text-gray-600 mb-4 text-sm">{section.description}</p>
                     <ul className="space-y-2">
                       {section.topics.map((topic, topicIndex) => (
                         <li key={topicIndex} className="flex items-center text-gray-700">
@@ -97,15 +97,15 @@ export default function DocsPage() {
         </section>
 
         {/* Search Section */}
-        <section className="py-12 bg-white border-y border-gray-200">
+        <section className="py-6 bg-white border-y border-gray-100">
           <div className="container mx-auto px-6">
             <div className="max-w-2xl mx-auto">
               <div className="relative">
-                <FiSearch className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
+                <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
                 <input
                   type="text"
                   placeholder="Search documentation..."
-                  className="w-full pl-14 pr-5 py-4 rounded-xl border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-lg"
+                  className="w-full pl-12 pr-5 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                 />
               </div>
             </div>
@@ -113,17 +113,17 @@ export default function DocsPage() {
         </section>
 
         {/* Video Tutorials Section */}
-        <section className="py-20 bg-white">
+        <section className="py-10 bg-white">
           <div className="container mx-auto px-6">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+            <div className="text-center mb-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">
                 Video Tutorials
               </h2>
               <p className="text-base text-gray-600 max-w-3xl mx-auto">
                 Learn Finvera with step-by-step video guides
               </p>
             </div>
-            <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+            <div className="grid md:grid-cols-3 gap-6 max-w-7xl mx-auto">
               {[
                 { title: 'Getting Started', desc: 'Learn the basics of Finvera', duration: '5 min' },
                 { title: 'Creating Your First Invoice', desc: 'Step-by-step invoice creation', duration: '8 min' },
@@ -132,15 +132,15 @@ export default function DocsPage() {
                 { title: 'Inventory Management', desc: 'Manage your inventory efficiently', duration: '15 min' },
                 { title: 'Financial Reports', desc: 'Generate and understand reports', duration: '10 min' },
               ].map((tutorial, index) => (
-                <div key={index} className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition border border-primary-100 cursor-pointer">
-                  <div className="aspect-video bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
-                    <FiVideo className="text-4xl text-gray-400" />
+                <div key={index} className="bg-gradient-to-br from-primary-50 to-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition border border-primary-100 cursor-pointer">
+                  <div className="aspect-video bg-gray-200 rounded-lg mb-3 flex items-center justify-center">
+                    <FiVideo className="text-3xl text-gray-400" />
                   </div>
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-xl font-bold text-gray-900">{tutorial.title}</h3>
+                    <h3 className="text-lg font-bold text-gray-900">{tutorial.title}</h3>
                     <span className="text-sm text-gray-500">{tutorial.duration}</span>
                   </div>
-                  <p className="text-gray-600">{tutorial.desc}</p>
+                  <p className="text-gray-600 text-sm">{tutorial.desc}</p>
                 </div>
               ))}
             </div>
@@ -148,38 +148,38 @@ export default function DocsPage() {
         </section>
 
         {/* Quick Start Guide */}
-        <section className="py-20 bg-gradient-to-br from-primary-50 to-white">
+        <section className="py-10 bg-white">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-8 text-center">Quick Start Guide</h2>
-              <div className="bg-white p-10 rounded-2xl shadow-xl">
-                <ol className="space-y-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6 text-center">Quick Start Guide</h2>
+              <div className="bg-white p-8 rounded-2xl shadow-xl">
+                <ol className="space-y-4">
                   <li className="flex items-start">
-                    <span className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold mr-4 flex-shrink-0">1</span>
+                    <span className="w-7 h-7 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold mr-3 flex-shrink-0 text-sm">1</span>
                     <div>
-                      <h4 className="text-xl font-bold text-gray-900 mb-2">Create Your Account</h4>
-                      <p className="text-gray-600">Sign up for a free account and verify your email address.</p>
+                      <h4 className="text-lg font-bold text-gray-900 mb-1">Create Your Account</h4>
+                      <p className="text-gray-600 text-sm">Sign up for a free account and verify your email address.</p>
                     </div>
                   </li>
                   <li className="flex items-start">
-                    <span className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold mr-4 flex-shrink-0">2</span>
+                    <span className="w-7 h-7 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold mr-3 flex-shrink-0 text-sm">2</span>
                     <div>
-                      <h4 className="text-xl font-bold text-gray-900 mb-2">Setup Your Company</h4>
-                      <p className="text-gray-600">Add your company details, GSTIN, and configure your preferences.</p>
+                      <h4 className="text-lg font-bold text-gray-900 mb-1">Setup Your Company</h4>
+                      <p className="text-gray-600 text-sm">Add your company details, GSTIN, and configure your preferences.</p>
                     </div>
                   </li>
                   <li className="flex items-start">
-                    <span className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold mr-4 flex-shrink-0">3</span>
+                    <span className="w-7 h-7 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold mr-3 flex-shrink-0 text-sm">3</span>
                     <div>
-                      <h4 className="text-xl font-bold text-gray-900 mb-2">Add Your Data</h4>
-                      <p className="text-gray-600">Start adding ledgers, creating vouchers, and managing your transactions.</p>
+                      <h4 className="text-lg font-bold text-gray-900 mb-1">Add Your Data</h4>
+                      <p className="text-gray-600 text-sm">Start adding ledgers, creating vouchers, and managing your transactions.</p>
                     </div>
                   </li>
                   <li className="flex items-start">
-                    <span className="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold mr-4 flex-shrink-0">4</span>
+                    <span className="w-7 h-7 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold mr-3 flex-shrink-0 text-sm">4</span>
                     <div>
-                      <h4 className="text-xl font-bold text-gray-900 mb-2">Generate Reports</h4>
-                      <p className="text-gray-600">Create financial reports, file GST returns, and generate e-invoices.</p>
+                      <h4 className="text-lg font-bold text-gray-900 mb-1">Generate Reports</h4>
+                      <p className="text-gray-600 text-sm">Create financial reports, file GST returns, and generate e-invoices.</p>
                     </div>
                   </li>
                 </ol>
