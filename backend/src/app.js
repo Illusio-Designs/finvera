@@ -115,9 +115,9 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Body parsing
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Body parsing - increased limits for Tally XML imports and large file uploads
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
 // Input sanitization
 app.use(sanitizeInput);
