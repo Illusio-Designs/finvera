@@ -11,12 +11,109 @@ const logger = require('../utils/logger');
  */
 class TallyImportService {
   /**
+   * Strip BOM (Byte Order Mark) from string
+   */
+  stripBOM(str) {
+    // UTF-8 BOM: EF BB BF
+    if (str.charCodeAt(0) === 0xFEFF) {
+      return str.slice(1);
+    }
+    // UTF-16 BE BOM: FE FF
+    if (str.charCodeAt(0) === 0xFEFF || (str.length > 1 && str.charCodeAt(0) === 0xFE && str.charCodeAt(1) === 0xFF)) {
+      return str.slice(1);
+    }
+    // UTF-16 LE BOM: FF FE
+    if (str.length > 1 && str.charCodeAt(0) === 0xFF && str.charCodeAt(1) === 0xFE) {
+      return str.slice(2);
+    }
+    return str;
+  }
+
+  /**
+   * Detect and read file with proper encoding
+   */
+  readFileWithEncoding(filePath) {
+    try {
+      // First, try reading as buffer to detect encoding
+      const buffer = fs.readFileSync(filePath);
+      
+      // Check for UTF-8 BOM (EF BB BF)
+      if (buffer.length >= 3 && buffer[0] === 0xEF && buffer[1] === 0xBB && buffer[2] === 0xBF) {
+        logger.info('Detected UTF-8 BOM, stripping...');
+        return buffer.slice(3).toString('utf8');
+      }
+      
+      // Check for UTF-16 LE BOM (FF FE)
+      if (buffer.length >= 2 && buffer[0] === 0xFF && buffer[1] === 0xFE) {
+        logger.info('Detected UTF-16 LE BOM, converting...');
+        return buffer.slice(2).toString('utf16le');
+      }
+      
+      // Check for UTF-16 BE BOM (FE FF)
+      if (buffer.length >= 2 && buffer[0] === 0xFE && buffer[1] === 0xFF) {
+        logger.info('Detected UTF-16 BE BOM, converting...');
+        // Convert UTF-16 BE to UTF-8
+        let utf16String = '';
+        for (let i = 2; i < buffer.length; i += 2) {
+          const byte1 = buffer[i];
+          const byte2 = buffer[i + 1] || 0;
+          const charCode = (byte1 << 8) | byte2;
+          utf16String += String.fromCharCode(charCode);
+        }
+        return Buffer.from(utf16String, 'utf16le').toString('utf8');
+      }
+      
+      // Try UTF-8 first (most common)
+      let xmlData = buffer.toString('utf8');
+      
+      // Strip any remaining BOM characters
+      xmlData = this.stripBOM(xmlData);
+      
+      // Remove any leading whitespace or non-XML characters before first tag
+      xmlData = xmlData.trim();
+      
+      // Ensure it starts with <
+      if (!xmlData.startsWith('<')) {
+        // Find first < character
+        const firstTagIndex = xmlData.indexOf('<');
+        if (firstTagIndex > 0) {
+          logger.warn(`Found ${firstTagIndex} non-XML characters before first tag, removing...`);
+          xmlData = xmlData.slice(firstTagIndex);
+        }
+      }
+      
+      return xmlData;
+    } catch (error) {
+      logger.error('Error reading file with encoding detection:', error);
+      // Fallback to simple UTF-8 read
+      const xmlData = fs.readFileSync(filePath, 'utf8');
+      return this.stripBOM(xmlData.trim());
+    }
+  }
+
+  /**
    * Parse Tally XML file
    */
   async parseTallyXML(filePath) {
     try {
-      const xmlData = fs.readFileSync(filePath, 'utf8');
-      const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
+      // Read file with encoding detection and BOM handling
+      const xmlData = this.readFileWithEncoding(filePath);
+      
+      // Validate that we have valid XML
+      if (!xmlData || !xmlData.trim().startsWith('<')) {
+        throw new Error('File does not appear to be valid XML. File may be empty or corrupted.');
+      }
+      
+      const parser = new xml2js.Parser({ 
+        explicitArray: false, 
+        mergeAttrs: true,
+        trim: true,
+        normalize: true,
+        explicitRoot: false,
+        ignoreAttrs: false,
+        charkey: '_',
+        attrkey: '$'
+      });
       const result = await parser.parseStringPromise(xmlData);
       
       const data = {
@@ -120,6 +217,24 @@ class TallyImportService {
       return data;
     } catch (error) {
       logger.error('Error parsing Tally XML:', error);
+      
+      // Provide more helpful error messages
+      if (error.message.includes('Non-whitespace before first tag')) {
+        throw new Error(
+          'XML file has encoding issues (BOM or invalid characters). ' +
+          'Please ensure the file is saved as UTF-8 without BOM. ' +
+          'Original error: ' + error.message
+        );
+      }
+      
+      if (error.message.includes('Unexpected end')) {
+        throw new Error(
+          'XML file appears to be incomplete or corrupted. ' +
+          'Please verify the file was uploaded completely. ' +
+          'Original error: ' + error.message
+        );
+      }
+      
       throw new Error(`Failed to parse Tally XML: ${error.message}`);
     }
   }
