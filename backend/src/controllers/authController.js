@@ -3,8 +3,25 @@ const path = require('path');
 const fs = require('fs');
 const { signTokens, revokeSession } = require('../utils/jwt');
 const { User } = require('../models');
-const masterModels = require('../models/masterModels');
 const { uploadDir } = require('../config/multer');
+
+// Lazy load masterModels to avoid circular dependency issues
+let masterModels;
+function getMasterModels() {
+  if (!masterModels) {
+    try {
+      masterModels = require('../models/masterModels');
+      if (!masterModels || !masterModels.TenantMaster) {
+        console.error('ERROR: masterModels.TenantMaster is not available');
+        throw new Error('TenantMaster model not loaded');
+      }
+    } catch (error) {
+      console.error('ERROR loading masterModels:', error);
+      throw error;
+    }
+  }
+  return masterModels;
+}
 
 module.exports = {
   async register(req, res, next) {
@@ -20,10 +37,14 @@ module.exports = {
         return res.status(409).json({ message: 'User already exists' });
       }
 
+      // Get masterModels (lazy load to avoid circular dependency issues)
+      const masterModels = getMasterModels();
+      
       // Ensure TenantMaster model is available
       if (!masterModels || !masterModels.TenantMaster) {
-        console.error('TenantMaster model not available in masterModels');
-        return res.status(500).json({ message: 'Server configuration error' });
+        console.error('ERROR: TenantMaster model not available in masterModels');
+        console.error('masterModels keys:', masterModels ? Object.keys(masterModels) : 'masterModels is null/undefined');
+        return res.status(500).json({ message: 'Server configuration error: TenantMaster model not available' });
       }
 
       // Check if tenant already exists with this email
@@ -123,6 +144,7 @@ module.exports = {
       // If user not found, check tenant_master table
       if (!user) {
         console.log(`User not found in users table, checking tenant_master for email: ${email}`);
+        const masterModels = getMasterModels();
         const tenant = await masterModels.TenantMaster.findOne({ where: { email } });
         
         if (tenant) {
@@ -208,6 +230,7 @@ module.exports = {
       // If this is a tenant-side user, require a company selection (or auto-pick if only one)
       let selectedCompany = null;
       if (user.tenant_id && ['tenant_admin', 'user', 'accountant'].includes(user.role)) {
+        const masterModels = getMasterModels();
         const companies = await masterModels.Company.findAll({
           where: { tenant_id: user.tenant_id, is_active: true },
           attributes: ['id', 'company_name', 'db_provisioned'],
@@ -304,6 +327,7 @@ module.exports = {
       let needsCompanyCreation = false;
       
       if (user.tenant_id && ['tenant_admin', 'user', 'accountant'].includes(user.role)) {
+        const masterModels = getMasterModels();
         const companies = await masterModels.Company.findAll({
           where: { tenant_id: user.tenant_id, is_active: true },
         });
@@ -470,6 +494,7 @@ module.exports = {
         return res.status(400).json({ message: 'company_id is required' });
       }
 
+      const masterModels = getMasterModels();
       const company = await masterModels.Company.findOne({
         where: { id: company_id, tenant_id: tenantId, is_active: true },
       });
