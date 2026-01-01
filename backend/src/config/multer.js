@@ -77,11 +77,21 @@ const imageFilter = (req, file, cb) => {
   }
 };
 
-// Configure multer
+// Configure multer - default upload (10MB)
 const upload = multer({
   storage: storage,
   limits: {
     fileSize: parseInt(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024, // 10MB default
+  },
+  fileFilter: fileFilter,
+});
+
+// Configure multer for Tally imports - larger file size limit (50MB)
+// Tally XML files can be very large, especially for companies with extensive transaction history
+const uploadTally = multer({
+  storage: storage,
+  limits: {
+    fileSize: parseInt(process.env.MAX_TALLY_FILE_SIZE) || 50 * 1024 * 1024, // 50MB default for Tally imports
   },
   fileFilter: fileFilter,
 });
@@ -207,6 +217,7 @@ const uploadDSCCertificate = multer({
 
 module.exports = {
   upload,
+  uploadTally, // Separate upload instance for Tally imports with higher file size limit
   uploadProfile,
   uploadCompanyLogo,
   uploadCompanySignature,

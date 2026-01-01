@@ -89,11 +89,11 @@ router.post('/stock-adjustments', stockAdjustmentController.create);
 router.get('/stock-transfers', stockTransferController.list);
 router.post('/stock-transfers', stockTransferController.create);
 
-// Tally Import
+// Tally Import - use uploadTally for larger file size limit (50MB)
 const tallyImportController = require('../controllers/tallyImportController');
-const { upload } = require('../config/multer');
+const { uploadTally } = require('../config/multer');
 router.get('/tally-import/template', tallyImportController.getImportTemplate);
-router.post('/tally-import', upload.single('file'), tallyImportController.importTallyData);
+router.post('/tally-import', uploadTally.single('file'), tallyImportController.importTallyData);
 
 module.exports = router;
 
