@@ -45,7 +45,7 @@ export default function WebsiteFooter() {
             <h3 className="text-white font-semibold mb-6 text-lg">Quick Links</h3>
             <ul className="space-y-3">
               <li>
-                <Link href="/#features" className="text-primary-200 hover:text-white transition">
+                <Link href="/features" className="text-primary-200 hover:text-white transition">
                   Features
                 </Link>
               </li>
