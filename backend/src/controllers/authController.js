@@ -20,6 +20,12 @@ module.exports = {
         return res.status(409).json({ message: 'User already exists' });
       }
 
+      // Ensure TenantMaster model is available
+      if (!masterModels || !masterModels.TenantMaster) {
+        console.error('TenantMaster model not available in masterModels');
+        return res.status(500).json({ message: 'Server configuration error' });
+      }
+
       // Check if tenant already exists with this email
       const existingTenant = await masterModels.TenantMaster.findOne({ where: { email } });
       if (existingTenant) {
