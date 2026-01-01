@@ -157,18 +157,57 @@ class TenantProvisioningService {
         throw createDbError;
       }
       
-      // Grant privileges to existing informative_finvera user
-      logger.info(`[PROVISION] Granting privileges to ${dbUser}@'%' on ${tenant.db_name}...`);
-      await rootConnection.query(`GRANT ALL PRIVILEGES ON \`${tenant.db_name}\`.* TO '${dbUser}'@'%'`);
-      logger.info(`[PROVISION] ✓ Privileges granted to ${dbUser}@'%'`);
+      // Check if this is RDS (AWS RDS doesn't allow GRANT with 'localhost')
+      const dbHost = tenant.db_host || process.env.DB_HOST || 'localhost';
+      const isRDS = dbHost.includes('rds.amazonaws.com') || dbHost.includes('rds.') || process.env.DB_HOST?.includes('rds');
       
-      logger.info(`[PROVISION] Granting privileges to ${dbUser}@'localhost' on ${tenant.db_name}...`);
-      await rootConnection.query(`GRANT ALL PRIVILEGES ON \`${tenant.db_name}\`.* TO '${dbUser}'@'localhost'`);
-      logger.info(`[PROVISION] ✓ Privileges granted to ${dbUser}@'localhost'`);
+      // Grant privileges to existing user
+      // For RDS: Only use '%' (wildcard) - RDS doesn't allow 'localhost' GRANT
+      // For local MySQL: Use both '%' and 'localhost'
+      logger.info(`[PROVISION] Granting privileges to ${dbUser}@'%' on ${tenant.db_name}...`);
+      try {
+        await rootConnection.query(`GRANT ALL PRIVILEGES ON \`${tenant.db_name}\`.* TO '${dbUser}'@'%'`);
+        logger.info(`[PROVISION] ✓ Privileges granted to ${dbUser}@'%'`);
+      } catch (grantError) {
+        // If user doesn't exist, we might need to create it first (but RDS usually has the user)
+        if (grantError.original && grantError.original.code === 'ER_CANT_CREATE_USER_WITH_GRANT') {
+          logger.warn(`[PROVISION] ⚠️  Cannot GRANT to '${dbUser}'@'%': ${grantError.original.message}`);
+          logger.warn(`[PROVISION] This is normal for RDS if the user already has privileges or if GRANT is restricted`);
+          // Continue - the user might already have privileges
+        } else {
+          throw grantError;
+        }
+      }
+      
+      // Only grant to 'localhost' if NOT RDS (RDS doesn't allow this)
+      if (!isRDS) {
+        logger.info(`[PROVISION] Granting privileges to ${dbUser}@'localhost' on ${tenant.db_name}...`);
+        try {
+          await rootConnection.query(`GRANT ALL PRIVILEGES ON \`${tenant.db_name}\`.* TO '${dbUser}'@'localhost'`);
+          logger.info(`[PROVISION] ✓ Privileges granted to ${dbUser}@'localhost'`);
+        } catch (grantError) {
+          if (grantError.original && grantError.original.code === 'ER_CANT_CREATE_USER_WITH_GRANT') {
+            logger.warn(`[PROVISION] ⚠️  Cannot GRANT to '${dbUser}'@'localhost': ${grantError.original.message}`);
+            logger.warn(`[PROVISION] This is normal if the user already has privileges`);
+            // Continue - the user might already have privileges
+          } else {
+            throw grantError;
+          }
+        }
+      } else {
+        logger.info(`[PROVISION] Skipping 'localhost' GRANT (RDS detected: ${dbHost})`);
+        logger.info(`[PROVISION] RDS only requires '%' wildcard for remote connections`);
+      }
       
       logger.info(`[PROVISION] Flushing privileges...`);
-      await rootConnection.query('FLUSH PRIVILEGES');
-      logger.info(`[PROVISION] ✓ Privileges flushed`);
+      try {
+        await rootConnection.query('FLUSH PRIVILEGES');
+        logger.info(`[PROVISION] ✓ Privileges flushed`);
+      } catch (flushError) {
+        // FLUSH PRIVILEGES might not be needed or allowed on RDS
+        logger.warn(`[PROVISION] ⚠️  Could not FLUSH PRIVILEGES: ${flushError.message}`);
+        logger.warn(`[PROVISION] This is normal for RDS - privileges are applied immediately`);
+      }
       
       // Verify privileges were granted
       logger.info(`[PROVISION] Verifying privileges...`);
