@@ -10,13 +10,43 @@ let masterModels;
 function getMasterModels() {
   if (!masterModels) {
     try {
+      // First, ensure master database is initialized
+      const masterSequelize = require('../config/masterDatabase');
+      
+      // Check if database connection is ready
+      if (!masterSequelize) {
+        console.error('ERROR: masterSequelize is not available');
+        throw new Error('Master database connection not initialized');
+      }
+      
+      // Load masterModels
       masterModels = require('../models/masterModels');
-      if (!masterModels || !masterModels.TenantMaster) {
+      
+      // Verify masterModels loaded correctly
+      if (!masterModels) {
+        console.error('ERROR: masterModels module is null or undefined');
+        throw new Error('Master models module failed to load');
+      }
+      
+      // Verify TenantMaster exists
+      if (!masterModels.TenantMaster) {
         console.error('ERROR: masterModels.TenantMaster is not available');
+        console.error('Available models:', Object.keys(masterModels));
         throw new Error('TenantMaster model not loaded');
       }
+      
+      // Verify TenantMaster has the create method
+      if (typeof masterModels.TenantMaster.create !== 'function') {
+        console.error('ERROR: TenantMaster.create is not a function');
+        console.error('TenantMaster type:', typeof masterModels.TenantMaster);
+        console.error('TenantMaster prototype:', masterModels.TenantMaster.constructor?.name);
+        throw new Error('TenantMaster.create method not available');
+      }
+      
+      console.log('[AUTH] MasterModels loaded successfully, TenantMaster available');
     } catch (error) {
       console.error('ERROR loading masterModels:', error);
+      console.error('Error stack:', error.stack);
       throw error;
     }
   }
@@ -38,13 +68,39 @@ module.exports = {
       }
 
       // Get masterModels (lazy load to avoid circular dependency issues)
-      const masterModels = getMasterModels();
+      let masterModels;
+      try {
+        masterModels = getMasterModels();
+      } catch (loadError) {
+        console.error('ERROR: Failed to load masterModels:', loadError);
+        console.error('Error details:', {
+          message: loadError.message,
+          stack: loadError.stack
+        });
+        return res.status(500).json({ 
+          message: 'Server configuration error: Database models not available',
+          error: process.env.NODE_ENV === 'development' ? loadError.message : 'Internal server error'
+        });
+      }
       
       // Ensure TenantMaster model is available
       if (!masterModels || !masterModels.TenantMaster) {
         console.error('ERROR: TenantMaster model not available in masterModels');
         console.error('masterModels keys:', masterModels ? Object.keys(masterModels) : 'masterModels is null/undefined');
+        console.error('masterModels type:', typeof masterModels);
         return res.status(500).json({ message: 'Server configuration error: TenantMaster model not available' });
+      }
+      
+      // Verify database connection is ready
+      const masterSequelize = require('../config/masterDatabase');
+      try {
+        await masterSequelize.authenticate();
+      } catch (dbError) {
+        console.error('ERROR: Master database connection failed:', dbError.message);
+        return res.status(503).json({ 
+          message: 'Database connection unavailable. Please try again later.',
+          error: process.env.NODE_ENV === 'development' ? dbError.message : 'Service temporarily unavailable'
+        });
       }
 
       // Check if tenant already exists with this email
@@ -75,25 +131,61 @@ module.exports = {
       trialEnd.setDate(trialEnd.getDate() + 30);
 
       // Double-check TenantMaster.create is available before calling
-      if (!masterModels.TenantMaster || typeof masterModels.TenantMaster.create !== 'function') {
+      if (!masterModels.TenantMaster) {
+        console.error('ERROR: TenantMaster is null/undefined');
+        console.error('masterModels structure:', {
+          hasTenantMaster: !!masterModels.TenantMaster,
+          availableKeys: Object.keys(masterModels),
+          masterModelsType: typeof masterModels
+        });
+        return res.status(500).json({ message: 'Server configuration error: TenantMaster model is not available' });
+      }
+      
+      if (typeof masterModels.TenantMaster.create !== 'function') {
         console.error('ERROR: TenantMaster.create is not a function');
-        console.error('TenantMaster type:', typeof masterModels.TenantMaster);
-        console.error('TenantMaster keys:', masterModels.TenantMaster ? Object.keys(masterModels.TenantMaster) : 'null/undefined');
+        console.error('TenantMaster details:', {
+          type: typeof masterModels.TenantMaster,
+          constructor: masterModels.TenantMaster.constructor?.name,
+          prototype: Object.getPrototypeOf(masterModels.TenantMaster)?.constructor?.name,
+          availableMethods: Object.getOwnPropertyNames(Object.getPrototypeOf(masterModels.TenantMaster)),
+          isSequelizeModel: masterModels.TenantMaster.constructor?.name === 'Model'
+        });
         return res.status(500).json({ message: 'Server configuration error: TenantMaster.create is not available' });
       }
 
+      // Log successful model access (for debugging)
+      if (process.env.DEBUG_AUTH === 'true') {
+        console.log('[AUTH] TenantMaster model verified, attempting to create tenant...');
+      }
+
       // Create tenant in master database
-      const tenant = await masterModels.TenantMaster.create({
-        email: normalizedEmail,
-        company_name: company_name || normalizedEmail.split('@')[0],
-        subdomain: subdomain,
-        is_trial: true,
-        trial_ends_at: trialEnd,
-        subscription_plan: 'trial',
-        acquisition_category: 'organic',
-        is_active: true,
-        db_provisioned: false,
-      });
+      let tenant;
+      try {
+        tenant = await masterModels.TenantMaster.create({
+          email: normalizedEmail,
+          company_name: company_name || normalizedEmail.split('@')[0],
+          subdomain: subdomain,
+          is_trial: true,
+          trial_ends_at: trialEnd,
+          subscription_plan: 'trial',
+          acquisition_category: 'organic',
+          is_active: true,
+          db_provisioned: false,
+        });
+      } catch (createError) {
+        console.error('ERROR: Failed to create tenant in database:', createError);
+        console.error('Error details:', {
+          message: createError.message,
+          name: createError.name,
+          stack: createError.stack,
+          original: createError.original
+        });
+        return res.status(500).json({ 
+          message: 'Failed to create tenant account',
+          error: process.env.NODE_ENV === 'development' ? createError.message : 'Internal server error'
+        });
+      }
+      
       const password_hash = await bcrypt.hash(password, 10);
       const user = await User.create({
         email: normalizedEmail,
