@@ -45,36 +45,16 @@ app.use(helmet({
 }));
 
 // Rate limiting - more lenient in development
-// Custom keyGenerator to properly handle IP addresses behind proxy
+// Use ipKeyGenerator helper to properly handle IPv6 addresses
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 1000 in dev, 100 in prod
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  // Custom key generator that validates IP properly
-  keyGenerator: (req) => {
-    // Get the real IP address
-    // req.ip is already handled by trust proxy setting
-    // In production with trust proxy = 1, this will be the client IP from X-Forwarded-For
-    // In development, it will be the direct connection IP
-    const ip = req.ip || req.connection.remoteAddress || 'unknown';
-    
-    // Additional validation: ensure IP is valid format
-    // This helps prevent spoofing attempts
-    // Simplified validation: check for basic IP format (IPv4, IPv6, or localhost)
-    const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-    const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
-    const localhostRegex = /^(::1|127\.0\.0\.1)$/;
-    
-    if (ipv4Regex.test(ip) || ipv6Regex.test(ip) || localhostRegex.test(ip)) {
-      return ip;
-    }
-    
-    // Fallback: use a default key if IP is invalid
-    // This prevents bypass attempts with malformed IPs
-    return 'invalid-ip';
-  },
+  // Use the built-in ipKeyGenerator helper which properly handles IPv6
+  // This prevents IPv6 users from bypassing rate limits
+  keyGenerator: rateLimit.ipKeyGenerator,
   skip: (req) => {
     // Skip rate limiting for health check and OPTIONS (preflight) requests
     return req.path === '/health' || req.method === 'OPTIONS';
