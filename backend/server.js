@@ -16,6 +16,7 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 async function startServer() {
   try {
     // Log environment status at startup (without sensitive data)
+    logger.info('🚀 Starting Finvera Backend Server...');
     logger.info('🔍 Environment check:');
     logger.info(`   MYSQL_URL: ${process.env.MYSQL_URL ? 'SET' : 'NOT SET'}`);
     logger.info(`   DATABASE_URL: ${process.env.DATABASE_URL ? 'SET' : 'NOT SET'}`);
@@ -190,39 +191,83 @@ process.on('SIGINT', async () => {
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {
-  logger.error('Unhandled Promise Rejection:', err);
+  console.error('❌ Unhandled Promise Rejection:', err);
+  console.error('Stack:', err.stack);
+  
+  // Try to use logger if available, otherwise use console
+  try {
+    if (logger && logger.error) {
+      logger.error('Unhandled Promise Rejection:', err);
+      logger.error('Stack:', err.stack);
+    }
+  } catch (e) {
+    // Logger might not be initialized yet
+  }
   
   // If it's a WebAssembly memory error, try to recover
-  if (err.message && (err.message.includes('WebAssembly') || err.message.includes('Wasm')) && err.message.includes('Out of memory')) {
-    logger.error('⚠️  WebAssembly memory error detected. This may be due to:');
-    logger.error('   1. Insufficient system memory');
-    logger.error('   2. Too many concurrent operations');
-    logger.error('   3. Memory fragmentation');
-    logger.error('   4. WebAssembly module (undici/llhttp) failed to allocate memory');
-    logger.error('');
-    logger.error('💡 Solutions:');
-    logger.error('   - Close other applications to free memory');
-    logger.error('   - Restart your computer to clear memory fragmentation');
-    logger.error('   - Check if MySQL is running and accessible');
-    logger.error('   - The server should automatically retry with increased delays');
-    logger.error('   - If persistent, increase memory: NODE_OPTIONS="--max-old-space-size=8192 --wasm-max-mem=4294967296" npm run dev');
+  if (err && err.message && (err.message.includes('WebAssembly') || err.message.includes('Wasm')) && err.message.includes('Out of memory')) {
+    console.error('⚠️  WebAssembly memory error detected');
+    try {
+      if (logger && logger.error) {
+        logger.error('⚠️  WebAssembly memory error detected. This may be due to:');
+        logger.error('   1. Insufficient system memory');
+        logger.error('   2. Too many concurrent operations');
+        logger.error('   3. Memory fragmentation');
+        logger.error('   4. WebAssembly module (undici/llhttp) failed to allocate memory');
+      }
+    } catch (e) {}
     
     // Don't exit immediately for WebAssembly errors - let the server try to recover
-    // The error might be non-fatal if it happened during lazy loading
     return;
   }
   
-  // For non-WebAssembly errors, exit after a delay
+  // For other errors, log and exit
+  console.error('Fatal error, exiting...');
   setTimeout(() => {
     process.exit(1);
-  }, 1000);
+  }, 2000);
 });
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
-  logger.error('Uncaught Exception:', err);
-  process.exit(1);
+  console.error('❌ Uncaught Exception:', err);
+  console.error('Stack:', err.stack);
+  
+  try {
+    if (logger && logger.error) {
+      logger.error('Uncaught Exception:', err);
+      logger.error('Stack:', err.stack);
+    }
+  } catch (e) {
+    // Logger might not be initialized yet
+  }
+  
+  // Give time for logs to flush
+  setTimeout(() => {
+    process.exit(1);
+  }, 2000);
 });
 
-// Start the server
-startServer();
+// Start the server with error handling
+startServer().catch((err) => {
+  console.error('❌ Failed to start server:', err);
+  console.error('Error details:', {
+    message: err.message,
+    stack: err.stack,
+    code: err.code,
+  });
+  
+  // Try to use logger if available
+  try {
+    if (logger && logger.error) {
+      logger.error('❌ Failed to start server:', err);
+    }
+  } catch (e) {
+    // Logger might not be available
+  }
+  
+  // Exit after a delay to allow logs to flush
+  setTimeout(() => {
+    process.exit(1);
+  }, 2000);
+});
