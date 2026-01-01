@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const path = require('path');
 const fs = require('fs');
 const { signTokens, revokeSession } = require('../utils/jwt');
-const { User, Tenant } = require('../models');
+const { User } = require('../models');
 const masterModels = require('../models/masterModels');
 const { uploadDir } = require('../config/multer');
 
@@ -19,14 +19,53 @@ module.exports = {
       if (existing) {
         return res.status(409).json({ message: 'User already exists' });
       }
-      const tenant = await Tenant.create({ company_name });
+
+      // Check if tenant already exists with this email
+      const existingTenant = await masterModels.TenantMaster.findOne({ where: { email } });
+      if (existingTenant) {
+        return res.status(409).json({ message: 'Account with this email already exists' });
+      }
+
+      // Generate unique subdomain based on company name or email
+      const normalizedEmail = email.toLowerCase().trim();
+      const baseSubdomain = company_name 
+        ? company_name.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 30)
+        : normalizedEmail.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+      
+      let subdomain = baseSubdomain;
+      let subdomainExists = await masterModels.TenantMaster.findOne({ where: { subdomain } });
+      let counter = 1;
+      
+      // Keep trying until we find a unique subdomain
+      while (subdomainExists) {
+        subdomain = `${baseSubdomain}${counter}`;
+        subdomainExists = await masterModels.TenantMaster.findOne({ where: { subdomain } });
+        counter++;
+      }
+
+      // Set trial period (30 days from now)
+      const trialEnd = new Date();
+      trialEnd.setDate(trialEnd.getDate() + 30);
+
+      // Create tenant in master database
+      const tenant = await masterModels.TenantMaster.create({
+        email: normalizedEmail,
+        company_name: company_name || normalizedEmail.split('@')[0],
+        subdomain: subdomain,
+        is_trial: true,
+        trial_ends_at: trialEnd,
+        subscription_plan: 'trial',
+        acquisition_category: 'organic',
+        is_active: true,
+        db_provisioned: false,
+      });
       const password_hash = await bcrypt.hash(password, 10);
       const user = await User.create({
-        email,
+        email: normalizedEmail,
         password: password_hash, // Use password field as per User model
         tenant_id: tenant.id,
-        role: 'user',
-        name: company_name || email, // Add name field
+        role: 'tenant_admin', // First user for tenant should be admin
+        name: company_name || normalizedEmail.split('@')[0], // Add name field
       });
       const tokens = await signTokens({ id: user.id, tenant_id: tenant.id, role: user.role });
       return res.status(201).json({ 
