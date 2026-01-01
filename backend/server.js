@@ -110,19 +110,25 @@ async function startServer() {
       logger.info(`🚀 Server running on ${HOST}:${PORT} in ${NODE_ENV} mode`);
       logger.info(`📍 API: http://localhost:${PORT}/api`);
       logger.info(`🔌 WebSocket: ws://localhost:${PORT}`);
+      logger.info(`💚 Health: http://localhost:${PORT}/health`);
       logger.info(`📊 Databases:`);
       logger.info(`   - Main DB: ${process.env.DB_NAME || 'finvera_db'} (Admin, Salesman, Distributor, etc.)`);
       logger.info(`   - Master DB: ${process.env.MASTER_DB_NAME || 'finvera_master'} (Tenant metadata only)`);
       logger.info(`   - Tenant DBs: Created dynamically per tenant`);
+      logger.info(`✅ Server started successfully!`);
     }).on('error', (err) => {
       if (err.code === 'EADDRINUSE') {
         logger.error(`❌ Port ${PORT} is already in use. Please:`);
-        logger.error(`   1. Stop the process using port ${PORT}`);
-        logger.error(`   2. Or set a different PORT in your .env file`);
-        logger.error(`   3. On Windows, find the process: netstat -ano | findstr :${PORT}`);
-        logger.error(`   4. Then kill it: taskkill /PID <PID> /F`);
+        logger.error(`   1. Check if PM2 is running: pm2 list`);
+        logger.error(`   2. Stop PM2 process: pm2 stop finvera-backend`);
+        logger.error(`   3. Or find and kill the process:`);
+        logger.error(`      - Linux: lsof -i :${PORT} or netstat -tulpn | grep ${PORT}`);
+        logger.error(`      - Then kill: kill -9 <PID>`);
+        logger.error(`   4. Or set a different PORT in your .env file`);
       } else {
         logger.error('❌ Server failed to start:', err);
+        logger.error('Error code:', err.code);
+        logger.error('Error message:', err.message);
       }
       process.exit(1);
     });
@@ -166,7 +172,7 @@ process.on('SIGTERM', async () => {
   logger.info('SIGTERM signal received: closing HTTP server');
   await sequelize.close();
   await masterSequelize.close();
-  if (redisClient && redisClient.isConnected()) {
+  if (redisClient && redisClient.isConnected && redisClient.isConnected()) {
     await redisClient.quit();
   }
   process.exit(0);
@@ -176,7 +182,7 @@ process.on('SIGINT', async () => {
   logger.info('SIGINT signal received: closing HTTP server');
   await sequelize.close();
   await masterSequelize.close();
-  if (redisClient && redisClient.isConnected()) {
+  if (redisClient && redisClient.isConnected && redisClient.isConnected()) {
     await redisClient.quit();
   }
   process.exit(0);
