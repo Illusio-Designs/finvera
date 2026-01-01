@@ -1,0 +1,4 @@
+*.pem
+.rds-password
+.env.backup
+backend/deploy.sh
