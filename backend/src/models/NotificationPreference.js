@@ -42,6 +42,9 @@ module.exports = (sequelize, DataTypes) => {
     {
       tableName: 'notification_preferences',
       timestamps: true,
+      underscored: true, // Use snake_case for timestamps (created_at, updated_at)
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
       indexes: [{ fields: ['user_id'], unique: true }],
     }
   );
