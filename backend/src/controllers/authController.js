@@ -74,6 +74,14 @@ module.exports = {
       const trialEnd = new Date();
       trialEnd.setDate(trialEnd.getDate() + 30);
 
+      // Double-check TenantMaster.create is available before calling
+      if (!masterModels.TenantMaster || typeof masterModels.TenantMaster.create !== 'function') {
+        console.error('ERROR: TenantMaster.create is not a function');
+        console.error('TenantMaster type:', typeof masterModels.TenantMaster);
+        console.error('TenantMaster keys:', masterModels.TenantMaster ? Object.keys(masterModels.TenantMaster) : 'null/undefined');
+        return res.status(500).json({ message: 'Server configuration error: TenantMaster.create is not available' });
+      }
+
       // Create tenant in master database
       const tenant = await masterModels.TenantMaster.create({
         email: normalizedEmail,
