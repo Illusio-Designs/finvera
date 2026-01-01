@@ -538,15 +538,29 @@ class TenantProvisioningService {
    */
   async createDefaultLedgers(tenantModels, masterModels) {
     try {
+      logger.info('[LEDGER] Starting default ledger creation...');
+      
+      // Verify models are available
+      if (!tenantModels || !tenantModels.Ledger) {
+        throw new Error('Tenant Ledger model is not available');
+      }
+      if (!masterModels || !masterModels.AccountGroup) {
+        throw new Error('Master AccountGroup model is not available');
+      }
+      
       // Get account groups from master DB
+      logger.info('[LEDGER] Fetching account groups from master database...');
       const accountGroups = await masterModels.AccountGroup.findAll({
         where: { is_system: true },
       });
+      
+      logger.info(`[LEDGER] Found ${accountGroups.length} system account groups`);
 
       // Create a map of group codes to IDs
       const groupMap = new Map();
       accountGroups.forEach((group) => {
         groupMap.set(group.group_code, group.id);
+        logger.debug(`[LEDGER] Account group: ${group.group_code} -> ${group.id}`);
       });
 
       // Default ledgers to create
@@ -603,39 +617,69 @@ class TenantProvisioningService {
       ];
 
       // Create each default ledger
+      let createdCount = 0;
+      let skippedCount = 0;
+      
       for (const ledgerData of defaultLedgers) {
-        const groupId = groupMap.get(ledgerData.account_group_code);
-        if (!groupId) {
-          logger.warn(`Account group ${ledgerData.account_group_code} not found, skipping ledger ${ledgerData.ledger_name}`);
-          continue;
-        }
+        try {
+          const groupId = groupMap.get(ledgerData.account_group_code);
+          if (!groupId) {
+            logger.warn(`[LEDGER] Account group '${ledgerData.account_group_code}' not found, skipping ledger '${ledgerData.ledger_name}'`);
+            skippedCount++;
+            continue;
+          }
 
-        // Check if ledger already exists
-        const existing = await tenantModels.Ledger.findOne({
-          where: {
-            ledger_code: ledgerData.ledger_code,
-          },
-        });
-
-        if (!existing) {
-          await tenantModels.Ledger.create({
-            ledger_name: ledgerData.ledger_name,
-            ledger_code: ledgerData.ledger_code,
-            account_group_id: groupId,
-            opening_balance: ledgerData.opening_balance,
-            opening_balance_type: ledgerData.balance_type === 'debit' ? 'Dr' : 'Cr',
-            balance_type: ledgerData.balance_type,
-            currency: 'INR',
-            is_active: true,
+          // Check if ledger already exists
+          const existing = await tenantModels.Ledger.findOne({
+            where: {
+              ledger_code: ledgerData.ledger_code,
+            },
           });
-          logger.info(`Created default ledger: ${ledgerData.ledger_name}`);
+
+          if (!existing) {
+            await tenantModels.Ledger.create({
+              ledger_name: ledgerData.ledger_name,
+              ledger_code: ledgerData.ledger_code,
+              account_group_id: groupId,
+              opening_balance: ledgerData.opening_balance,
+              opening_balance_type: ledgerData.balance_type === 'debit' ? 'Dr' : 'Cr',
+              balance_type: ledgerData.balance_type,
+              currency: 'INR',
+              is_active: true,
+            });
+            logger.info(`[LEDGER] ✓ Created default ledger: ${ledgerData.ledger_name} (${ledgerData.ledger_code})`);
+            createdCount++;
+          } else {
+            logger.info(`[LEDGER] ℹ️  Ledger '${ledgerData.ledger_name}' already exists, skipping`);
+            skippedCount++;
+          }
+        } catch (ledgerError) {
+          logger.error(`[LEDGER] ✗ Failed to create ledger '${ledgerData.ledger_name}':`, ledgerError);
+          logger.error(`[LEDGER] Error details:`, {
+            message: ledgerError.message,
+            stack: ledgerError.stack,
+            ledgerData: ledgerData,
+          });
+          // Continue with next ledger instead of failing completely
         }
       }
 
-      logger.info(`Default ledgers created successfully`);
+      logger.info(`[LEDGER] Default ledger creation completed: ${createdCount} created, ${skippedCount} skipped`);
+      
+      if (createdCount === 0 && skippedCount === 0) {
+        logger.warn(`[LEDGER] ⚠️  No ledgers were created or skipped. This might indicate an issue.`);
+      }
     } catch (error) {
-      logger.error('Error creating default ledgers:', error);
+      logger.error('[LEDGER] ✗ Critical error creating default ledgers:', error);
+      logger.error('[LEDGER] Error details:', {
+        message: error.message,
+        stack: error.stack,
+        tenantModelsAvailable: !!tenantModels,
+        masterModelsAvailable: !!masterModels,
+      });
       // Don't throw - allow tenant creation to continue even if default ledgers fail
+      // But log it prominently so it's noticed
+      logger.error('[LEDGER] ⚠️  WARNING: Default ledgers were not created. Tenant provisioning will continue, but ledgers need to be created manually.');
     }
   }
 
