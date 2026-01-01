@@ -3,11 +3,12 @@ import Link from 'next/link';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
-import { FiSearch, FiBook, FiMessageCircle, FiVideo, FiFileText, FiHelpCircle } from 'react-icons/fi';
+import { FiSearch, FiBook, FiMessageCircle, FiVideo, FiHelpCircle, FiPlus, FiMinus } from 'react-icons/fi';
 import { useState } from 'react';
 
 export default function HelpPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [openFaqIndex, setOpenFaqIndex] = useState(null);
 
   const faqs = [
     {
@@ -47,20 +48,20 @@ export default function HelpPage() {
         <WebsiteHeader />
 
         {/* Hero Section */}
-        <section className="bg-gradient-to-br from-primary-50 to-white pt-40 pb-12">
+        <section className="bg-white pt-40 pb-12">
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-4xl mx-auto text-center">
               <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
                 How can we help?
               </h1>
-              <div className="relative max-w-2xl mx-auto">
-                <FiSearch className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
+              <div className="relative max-w-xl mx-auto">
+                <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
                 <input
                   type="text"
                   placeholder="Search for help..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-14 pr-5 py-4 rounded-xl border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 text-lg"
+                  className="w-full pl-12 pr-5 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                 />
               </div>
             </div>
@@ -68,9 +69,9 @@ export default function HelpPage() {
         </section>
 
         {/* Quick Links */}
-        <section className="py-20 bg-white">
+        <section className="py-16 bg-white">
           <div className="container mx-auto px-6">
-            <div className="grid md:grid-cols-4 gap-6 max-w-6xl mx-auto mb-16">
+            <div className="grid md:grid-cols-4 gap-6 max-w-6xl mx-auto mb-20">
               <Link href="/docs" className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-lg hover:shadow-xl transition border border-primary-100 text-center">
                 <FiBook className="text-primary-600 text-4xl mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Documentation</h3>
@@ -92,10 +93,16 @@ export default function HelpPage() {
                 <p className="text-gray-600">Watch and learn</p>
               </a>
             </div>
+          </div>
+        </section>
 
-            {/* FAQ Section */}
-            <div id="faq" className="max-w-4xl mx-auto">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-12 text-center">Frequently Asked Questions</h2>
+        {/* FAQ Section */}
+        <section id="faq" className="py-24 bg-gradient-to-br from-primary-50 via-white to-primary-100">
+          <div className="container mx-auto px-8 md:px-12 lg:px-20">
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-12 text-center">
+                Frequently Asked Questions
+              </h2>
               <div className="mb-8">
                 <div className="flex flex-wrap gap-3 justify-center">
                   {['Getting Started', 'Billing', 'GST & Compliance', 'Account Management', 'Technical Support'].map((category) => (
@@ -110,9 +117,29 @@ export default function HelpPage() {
               </div>
               <div className="space-y-4">
                 {faqs.map((faq, index) => (
-                  <div key={index} className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-primary-300 transition">
-                    <h3 className="text-xl font-bold text-gray-900 mb-3">{faq.question}</h3>
-                    <p className="text-gray-600 leading-relaxed">{faq.answer}</p>
+                  <div key={index} className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    <button
+                      onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)}
+                      className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition"
+                    >
+                      <h3 className="text-lg font-bold text-gray-900 text-left pr-4">
+                        {faq.question}
+                      </h3>
+                      <div className="flex-shrink-0">
+                        {openFaqIndex === index ? (
+                          <FiMinus className="text-primary-600 text-2xl" />
+                        ) : (
+                          <FiPlus className="text-primary-600 text-2xl" />
+                        )}
+                      </div>
+                    </button>
+                    {openFaqIndex === index && (
+                      <div className="px-6 pb-6">
+                        <p className="text-[1.2rem] text-gray-600 leading-relaxed">
+                          {faq.answer}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
