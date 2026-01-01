@@ -62,9 +62,12 @@ const limiter = rateLimit({
     
     // Additional validation: ensure IP is valid format
     // This helps prevent spoofing attempts
-    const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)|(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|::1|127\.0\.0\.1)$/;
+    // Simplified validation: check for basic IP format (IPv4, IPv6, or localhost)
+    const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+    const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
+    const localhostRegex = /^(::1|127\.0\.0\.1)$/;
     
-    if (ipRegex.test(ip)) {
+    if (ipv4Regex.test(ip) || ipv6Regex.test(ip) || localhostRegex.test(ip)) {
       return ip;
     }
     
