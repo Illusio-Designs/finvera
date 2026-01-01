@@ -332,6 +332,7 @@ class TenantProvisioningService {
    */
   async initializeTenantSchema(tenant, plainPassword) {
     const dbPassword = process.env.DB_PASSWORD;
+    const dbUser = process.env.DB_USER || 'informative_finvera';
     
     if (!dbPassword) {
       throw new Error('DB_PASSWORD environment variable must be set');
@@ -343,7 +344,7 @@ class TenantProvisioningService {
         db_name: tenant.db_name,
         db_host: tenant.db_host,
         db_port: tenant.db_port,
-        db_user: 'informative_finvera',
+        db_user: dbUser,
         db_password: dbPassword,
       });
 
