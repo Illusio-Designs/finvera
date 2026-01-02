@@ -15,6 +15,7 @@ import { useTable } from '../../hooks/useTable';
 import { adminAPI } from '../../lib/api';
 import toast, { Toaster } from 'react-hot-toast';
 import { FiPlus, FiEdit, FiTrash2, FiSave, FiX, FiEye, FiUsers, FiBriefcase, FiMapPin } from 'react-icons/fi';
+import { validateGSTIN } from '../../lib/formatters';
 
 // Indian States for territory selection
 const INDIAN_STATES = [
@@ -44,6 +45,7 @@ export default function DistributorsList() {
     full_name: '',
     distributor_code: '',
     company_name: '',
+    gstin: '',
     commission_rate: '',
     payment_terms: '',
     is_active: true,
@@ -79,6 +81,7 @@ export default function DistributorsList() {
         full_name: user.full_name || '',
         distributor_code: distributor.distributor_code || '',
         company_name: distributor.company_name || '',
+        gstin: distributor.gstin || '',
         commission_rate: distributor.commission_rate || '',
         payment_terms: distributor.payment_terms || '',
         is_active: distributor.is_active !== undefined ? distributor.is_active : true,
@@ -167,6 +170,9 @@ export default function DistributorsList() {
     if (!formData.full_name.trim()) errors.full_name = 'Full name is required';
     // Distributor code is immutable and auto-generated/assigned; don't validate in UI
     if (!formData.company_name.trim()) errors.company_name = 'Company name is required';
+    if (formData.gstin && !validateGSTIN(formData.gstin)) {
+      errors.gstin = 'GSTIN must be 15 alphanumeric characters';
+    }
 
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
@@ -213,6 +219,7 @@ export default function DistributorsList() {
       full_name: '',
       distributor_code: '',
       company_name: '',
+      gstin: '',
       commission_rate: '',
       payment_terms: '',
       is_active: true,
@@ -410,6 +417,22 @@ export default function DistributorsList() {
                     touched={!!formErrors.company_name}
                     required
                     placeholder="ABC Distributors Pvt Ltd"
+                  />
+
+                  <FormInput
+                    name="gstin"
+                    label="GST Number (for invoicing)"
+                    value={formData.gstin}
+                    onChange={(name, value) => {
+                      // Convert to uppercase automatically
+                      const upperValue = value.toUpperCase();
+                      handleChange(name, upperValue);
+                    }}
+                    error={formErrors.gstin}
+                    touched={!!formErrors.gstin}
+                    placeholder="24ABKPZ9119Q1ZL (15 characters)"
+                    maxLength={15}
+                    style={{ textTransform: 'uppercase' }}
                   />
 
                   <FormInput

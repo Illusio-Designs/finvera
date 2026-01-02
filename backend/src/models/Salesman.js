@@ -32,6 +32,11 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false,
       },
+      gstin: {
+        type: DataTypes.STRING(15),
+        allowNull: true,
+        comment: 'GSTIN for invoicing',
+      },
       territory: DataTypes.JSON,
       commission_rate: DataTypes.DECIMAL(5, 2),
       is_active: {

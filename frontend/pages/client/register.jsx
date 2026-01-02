@@ -8,6 +8,7 @@ import FormPasswordInput from '../../components/forms/FormPasswordInput';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import { pricingAPI } from '../../lib/api';
+import { validateGSTIN } from '../../lib/formatters';
 
 export default function ClientRegister() {
   const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ export default function ClientRegister() {
     password: '',
     full_name: '',
     company_name: '',
+    gstin: '',
   });
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState(null);
@@ -58,13 +60,21 @@ export default function ClientRegister() {
     e.preventDefault();
     setLoading(true);
 
+    // Validate GSTIN if provided
+    if (formData.gstin && !validateGSTIN(formData.gstin)) {
+      toast.error('Invalid GSTIN format. GSTIN must be 15 alphanumeric characters.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Backend expects: email, password, company_name
+      // Backend expects: email, password, company_name, full_name, gstin
       const registerData = {
         email: formData.email,
         password: formData.password,
         company_name: formData.company_name,
-        full_name: formData.full_name, // Optional, will be set on user
+        full_name: formData.full_name,
+        gstin: formData.gstin || undefined, // Send only if provided
       };
 
       const result = await register(registerData);
@@ -186,6 +196,21 @@ export default function ClientRegister() {
                 placeholder="ABC Company"
                 value={formData.company_name}
                 onChange={handleChange}
+              />
+
+              <FormInput
+                name="gstin"
+                label="GST Number (for invoicing)"
+                type="text"
+                placeholder="24ABKPZ9119Q1ZL (15 characters)"
+                value={formData.gstin}
+                onChange={(name, value) => {
+                  // Convert to uppercase automatically
+                  const upperValue = value.toUpperCase();
+                  handleChange(name, upperValue);
+                }}
+                maxLength={15}
+                style={{ textTransform: 'uppercase' }}
               />
 
               <FormInput

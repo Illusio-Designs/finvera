@@ -56,7 +56,7 @@ function getMasterModels() {
 module.exports = {
   async register(req, res, next) {
     try {
-      const { email, password, company_name } = req.body;
+      const { email, password, company_name, full_name, gstin } = req.body;
       
       if (!password) {
         return res.status(400).json({ message: 'Password is required for registration' });
@@ -158,6 +158,26 @@ module.exports = {
         console.log('[AUTH] TenantMaster model verified, attempting to create tenant...');
       }
 
+      // Validate GSTIN if provided
+      if (gstin) {
+        const cleanedGST = gstin.replace(/\s/g, '').toUpperCase();
+        if (cleanedGST.length !== 15 || !/^[0-9A-Z]{15}$/.test(cleanedGST)) {
+          return res.status(400).json({ 
+            message: 'Invalid GSTIN format. GSTIN must be 15 alphanumeric characters.',
+            field: 'gstin'
+          });
+        }
+        
+        // Check if GSTIN already exists
+        const existingGSTIN = await masterModels.TenantMaster.findOne({ where: { gstin: cleanedGST } });
+        if (existingGSTIN) {
+          return res.status(409).json({ 
+            message: 'GSTIN already exists. Please use a different GSTIN.',
+            field: 'gstin'
+          });
+        }
+      }
+
       // Create tenant in master database
       let tenant;
       try {
@@ -165,6 +185,7 @@ module.exports = {
           email: normalizedEmail,
           company_name: company_name || normalizedEmail.split('@')[0],
           subdomain: subdomain,
+          gstin: gstin ? gstin.replace(/\s/g, '').toUpperCase() : null,
           is_trial: true,
           trial_ends_at: trialEnd,
           subscription_plan: 'trial',
@@ -192,7 +213,7 @@ module.exports = {
         password: password_hash, // Use password field as per User model
         tenant_id: tenant.id,
         role: 'tenant_admin', // First user for tenant should be admin
-        name: company_name || normalizedEmail.split('@')[0], // Add name field
+        name: full_name || company_name || normalizedEmail.split('@')[0], // Use full_name if provided
       });
       const tokens = await signTokens({ id: user.id, tenant_id: tenant.id, role: user.role });
       return res.status(201).json({ 
