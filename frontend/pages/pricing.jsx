@@ -98,7 +98,7 @@ export default function PricingPage() {
                   ✓ Free Trial Available • No Credit Card Required
                 </span>
               </div>
-              <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
+              <h1 className="text-3xl md:text-4xl font-medium text-gray-900 mb-5">
                 Simple, Transparent Pricing
               </h1>
               <p className="text-base text-gray-600 max-w-3xl mx-auto">
@@ -221,7 +221,7 @@ export default function PricingPage() {
                           </div>
                         )}
                         <div>
-                          <span className={`text-3xl font-extrabold ${isPopular ? 'text-white' : 'text-gray-900'}`}>
+                          <span className={`text-3xl font-bold ${isPopular ? 'text-white' : 'text-gray-900'}`}>
                             {formatPrice(currentPrice, plan.currency)}
                           </span>
                           {billingPeriod && (
@@ -385,7 +385,7 @@ export default function PricingPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-5"
-                  textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                  textClassName="text-3xl md:text-4xl font-medium text-gray-900"
                 >
                   Frequently Asked Questions
                 </ScrollFloat>
@@ -457,7 +457,7 @@ export default function PricingPage() {
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary-100 rounded-full blur-3xl opacity-50 -mr-32 -mt-32"></div>
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary-100 rounded-full blur-3xl opacity-50 -ml-32 -mb-32"></div>
                 <div className="relative z-10">
-                  <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+                  <h2 className="text-3xl md:text-4xl font-medium text-gray-900 mb-6">
                     Still have questions?
                   </h2>
                   <p className="text-base text-gray-600 mb-8">

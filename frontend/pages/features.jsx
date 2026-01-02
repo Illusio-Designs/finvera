@@ -267,7 +267,7 @@ export default function FeaturesPage() {
                 scrollEnd='bottom bottom-=40%'
                 stagger={0.03}
                 containerClassName="mb-6"
-                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                textClassName="text-3xl md:text-4xl font-medium text-gray-900"
               >
                 Powerful Features
               </ScrollFloat>
@@ -331,7 +331,7 @@ export default function FeaturesPage() {
                 scrollEnd='bottom bottom-=40%'
                 stagger={0.03}
                 containerClassName="mb-6"
-                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                textClassName="text-3xl md:text-4xl font-medium text-gray-900"
               >
                 Additional Benefits
               </ScrollFloat>
@@ -375,7 +375,7 @@ export default function FeaturesPage() {
                     scrollEnd='bottom bottom-=40%'
                     stagger={0.03}
                     containerClassName="mb-6"
-                    textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                    textClassName="text-3xl md:text-4xl font-medium text-gray-900"
                   >
                     Ready to Get Started?
                   </ScrollFloat>

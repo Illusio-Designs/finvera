@@ -234,7 +234,7 @@ export default function LandingPage() {
                 scrollEnd='bottom bottom-=40%'
                 stagger={0.03}
                 containerClassName="mb-4"
-                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                textClassName="text-3xl md:text-4xl font-medium text-gray-900"
               >
                 Powerful Features
               </ScrollFloat>
@@ -321,7 +321,7 @@ export default function LandingPage() {
                 scrollEnd='bottom bottom-=40%'
                 stagger={0.03}
                 containerClassName="mb-6"
-                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                textClassName="text-3xl md:text-4xl font-medium text-gray-900"
               >
                 Awesome Templates
               </ScrollFloat>
@@ -367,7 +367,7 @@ export default function LandingPage() {
                 scrollEnd='bottom bottom-=40%'
                 stagger={0.03}
                 containerClassName="mb-6"
-                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                textClassName="text-3xl md:text-4xl font-medium text-gray-900"
               >
                 Perfect for Your Business
               </ScrollFloat>
@@ -425,7 +425,7 @@ export default function LandingPage() {
                     scrollEnd='bottom bottom-=40%'
                     stagger={0.03}
                     containerClassName="mb-6"
-                    textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                    textClassName="text-3xl md:text-4xl font-medium text-gray-900"
                   >
                     Inventory so simple, it feels like magic
                   </ScrollFloat>
@@ -463,7 +463,7 @@ export default function LandingPage() {
                     scrollEnd='bottom bottom-=40%'
                     stagger={0.03}
                     containerClassName="mb-6"
-                    textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                    textClassName="text-3xl md:text-4xl font-medium text-gray-900"
                   >
                     Record payments effortlessly
                   </ScrollFloat>
@@ -491,7 +491,7 @@ export default function LandingPage() {
                     scrollEnd='bottom bottom-=40%'
                     stagger={0.03}
                     containerClassName="mb-6"
-                    textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                    textClassName="text-3xl md:text-4xl font-medium text-gray-900"
                   >
                     Share anywhere. Get paid faster.
                   </ScrollFloat>
@@ -528,7 +528,7 @@ export default function LandingPage() {
                 scrollEnd='bottom bottom-=40%'
                 stagger={0.03}
                 containerClassName="mb-6"
-                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                textClassName="text-3xl md:text-4xl font-medium text-gray-900"
               >
                 E-way Bills
               </ScrollFloat>
@@ -562,7 +562,7 @@ export default function LandingPage() {
                 scrollEnd='bottom bottom-=40%'
                 stagger={0.03}
                 containerClassName="mb-6"
-                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                textClassName="text-3xl md:text-4xl font-medium text-gray-900"
               >
                 Mind-blowing convenience
               </ScrollFloat>
@@ -615,7 +615,7 @@ export default function LandingPage() {
                 scrollEnd='bottom bottom-=40%'
                 stagger={0.03}
                 containerClassName="mb-5"
-                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                textClassName="text-3xl md:text-4xl font-medium text-gray-900"
               >
                 Invisible security. Unbreakable trust.
               </ScrollFloat>
@@ -664,9 +664,9 @@ export default function LandingPage() {
                 scrollEnd='bottom bottom-=40%'
                 stagger={0.03}
                 containerClassName="mb-5"
-                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                textClassName="text-3xl md:text-4xl font-medium text-gray-900"
               >
-                Partnered with
+                Our app is integrated with
               </ScrollFloat>
             </div>
             <div className="grid md:grid-cols-4 lg:grid-cols-7 gap-5 max-w-7xl mx-auto items-center">
@@ -701,7 +701,7 @@ export default function LandingPage() {
                 scrollEnd='bottom bottom-=40%'
                 stagger={0.03}
                 containerClassName="mb-6"
-                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                textClassName="text-3xl md:text-4xl font-medium text-gray-900"
               >
                 Our Services
               </ScrollFloat>
@@ -758,7 +758,7 @@ export default function LandingPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-5"
-                  textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                  textClassName="text-3xl md:text-4xl font-medium text-gray-900"
                 >
                   Why Choose Finvera?
                 </ScrollFloat>
@@ -831,7 +831,7 @@ export default function LandingPage() {
                 scrollEnd='bottom bottom-=40%'
                 stagger={0.03}
                 containerClassName="mb-5"
-                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                textClassName="text-3xl md:text-4xl font-medium text-gray-900"
               >
                 How It Works
               </ScrollFloat>
@@ -882,7 +882,7 @@ export default function LandingPage() {
                 scrollEnd='bottom bottom-=40%'
                 stagger={0.03}
                 containerClassName="mb-6"
-                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                textClassName="text-3xl md:text-4xl font-medium text-gray-900"
               >
                 What Our Clients Say
               </ScrollFloat>
@@ -989,7 +989,7 @@ export default function LandingPage() {
                 scrollEnd='bottom bottom-=40%'
                 stagger={0.03}
                 containerClassName="mb-5"
-                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                textClassName="text-3xl md:text-4xl font-medium text-gray-900"
               >
                 Simple, Transparent Pricing
               </ScrollFloat>
@@ -1063,7 +1063,7 @@ export default function LandingPage() {
                           </div>
                         )}
                         <div>
-                          <span className={`text-3xl font-extrabold ${isPopular ? 'text-white' : 'text-gray-900'}`}>
+                          <span className={`text-3xl font-bold ${isPopular ? 'text-white' : 'text-gray-900'}`}>
                             {formatPrice(price, plan.currency)}
                           </span>
                           {billingPeriod && (
@@ -1211,7 +1211,7 @@ export default function LandingPage() {
                     scrollEnd='bottom bottom-=40%'
                     stagger={0.03}
                     containerClassName="mb-6"
-                    textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                    textClassName="text-3xl md:text-4xl font-medium text-gray-900"
                   >
                     Ready to Get Started?
                   </ScrollFloat>
@@ -1253,7 +1253,7 @@ export default function LandingPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-5"
-                  textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                  textClassName="text-3xl md:text-4xl font-medium text-gray-900"
                 >
                   Get in Touch
                 </ScrollFloat>
