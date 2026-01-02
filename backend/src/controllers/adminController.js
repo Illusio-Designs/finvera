@@ -211,18 +211,51 @@ module.exports = {
           'company_name',
           'subdomain',
           'email',
+          'gstin',
+          'pan',
+          'address',
+          'city',
+          'state',
+          'pincode',
+          'phone',
           'subscription_plan',
+          'referral_code',
           'is_active',
           'is_suspended',
           'db_provisioned',
+          'subscription_start',
+          'subscription_end',
           'createdAt',
           'updatedAt'
         ],
       });
 
+      // Enrich with subscription plan names
+      const planCodes = [...new Set(rows.map(r => r.subscription_plan).filter(Boolean))];
+      const plans = planCodes.length > 0 
+        ? await SubscriptionPlan.findAll({
+            where: { plan_code: { [Op.in]: planCodes }, is_active: true },
+            attributes: ['plan_code', 'plan_name']
+          })
+        : [];
+      
+      const planMap = {};
+      plans.forEach(plan => {
+        planMap[plan.plan_code] = plan.plan_name;
+      });
+
+      // Add plan names to tenant data
+      const enrichedRows = rows.map(row => {
+        const tenantData = row.toJSON();
+        if (tenantData.subscription_plan && planMap[tenantData.subscription_plan]) {
+          tenantData.subscription_plan_name = planMap[tenantData.subscription_plan];
+        }
+        return tenantData;
+      });
+
       res.json({
         success: true,
-        data: rows,
+        data: enrichedRows,
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
@@ -259,10 +292,27 @@ module.exports = {
         logger.warn(`Could not fetch user for tenant ${tenant.id}:`, userError.message);
       }
 
+      // Get subscription plan details if subscription_plan exists
+      let subscriptionPlanDetails = null;
+      if (tenant.subscription_plan) {
+        try {
+          subscriptionPlanDetails = await SubscriptionPlan.findOne({
+            where: { plan_code: tenant.subscription_plan, is_active: true },
+            attributes: ['id', 'plan_code', 'plan_name', 'base_price', 'discounted_price', 'billing_cycle']
+          });
+        } catch (planError) {
+          logger.warn(`Could not fetch subscription plan for tenant ${tenant.id}:`, planError.message);
+        }
+      }
+
       // Convert tenant to plain object and add user info
       const tenantData = tenant.toJSON();
       if (user) {
         tenantData.user = user.toJSON();
+      }
+      if (subscriptionPlanDetails) {
+        tenantData.subscription_plan_details = subscriptionPlanDetails.toJSON();
+        tenantData.subscription_plan_name = subscriptionPlanDetails.plan_name;
       }
 
       res.json({ 
@@ -812,32 +862,119 @@ module.exports = {
         phone,
         email,
         subscription_plan,
+        referral_code,
         is_active,
       } = req.body;
 
-      const tenant = await Tenant.findByPk(id);
+      const tenant = await TenantMaster.findByPk(id);
 
       if (!tenant) {
-        return res.status(404).json({ message: 'Tenant not found' });
+        return res.status(404).json({ 
+          success: false,
+          message: 'Tenant not found' 
+        });
       }
 
-      await tenant.update({
-        company_name,
-        gstin,
-        pan,
-        address,
-        city,
-        state,
-        pincode,
-        phone,
-        email,
-        subscription_plan,
-        is_active,
-      });
+      // Validate subscription plan if provided
+      if (subscription_plan) {
+        const plan = await SubscriptionPlan.findOne({
+          where: { plan_code: subscription_plan, is_active: true }
+        });
+        if (!plan) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid subscription plan'
+          });
+        }
+      }
 
-      res.json({ data: tenant });
+      // Check email uniqueness if email is being changed
+      if (email && email !== tenant.email) {
+        const existingTenant = await TenantMaster.findOne({ where: { email } });
+        if (existingTenant) {
+          return res.status(409).json({ 
+            success: false,
+            message: 'Email already exists. Please use a different email address.',
+            field: 'email'
+          });
+        }
+      }
+
+      // Check GSTIN uniqueness if GSTIN is being changed
+      if (gstin && gstin !== tenant.gstin) {
+        const existingTenant = await TenantMaster.findOne({ where: { gstin } });
+        if (existingTenant) {
+          return res.status(409).json({ 
+            success: false,
+            message: 'GSTIN already exists. Please use a different GSTIN.',
+            field: 'gstin'
+          });
+        }
+      }
+
+      const updateData = {};
+      if (company_name !== undefined) updateData.company_name = company_name;
+      if (gstin !== undefined) updateData.gstin = gstin;
+      if (pan !== undefined) updateData.pan = pan;
+      if (address !== undefined) updateData.address = address;
+      if (city !== undefined) updateData.city = city;
+      if (state !== undefined) updateData.state = state;
+      if (pincode !== undefined) updateData.pincode = pincode;
+      if (phone !== undefined) updateData.phone = phone;
+      if (email !== undefined) updateData.email = email;
+      if (subscription_plan !== undefined) updateData.subscription_plan = subscription_plan;
+      if (referral_code !== undefined) updateData.referral_code = referral_code;
+      if (is_active !== undefined) updateData.is_active = is_active;
+
+      await tenant.update(updateData);
+
+      // Reload to get updated data
+      await tenant.reload();
+
+      // Get subscription plan details if subscription_plan exists
+      let subscriptionPlanDetails = null;
+      if (tenant.subscription_plan) {
+        try {
+          subscriptionPlanDetails = await SubscriptionPlan.findOne({
+            where: { plan_code: tenant.subscription_plan, is_active: true },
+            attributes: ['id', 'plan_code', 'plan_name', 'base_price', 'discounted_price', 'billing_cycle']
+          });
+        } catch (planError) {
+          logger.warn(`Could not fetch subscription plan for tenant ${tenant.id}:`, planError.message);
+        }
+      }
+
+      const tenantData = tenant.toJSON();
+      if (subscriptionPlanDetails) {
+        tenantData.subscription_plan_details = subscriptionPlanDetails.toJSON();
+        tenantData.subscription_plan_name = subscriptionPlanDetails.plan_name;
+      }
+
+      res.json({ 
+        success: true,
+        message: 'Tenant updated successfully',
+        data: tenantData 
+      });
     } catch (error) {
       logger.error('Admin updateTenant error:', error);
+      
+      // Handle specific validation errors
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        const field = error.errors?.[0]?.path || 'unknown';
+        let message = 'A record with this information already exists.';
+        if (field === 'email') {
+          message = 'Email already exists. Please use a different email address.';
+        } else if (field === 'gstin') {
+          message = 'GSTIN already exists. Please use a different GSTIN.';
+        }
+        
+        return res.status(409).json({ 
+          success: false,
+          message,
+          field
+        });
+      }
+      
       next(error);
     }
   },
@@ -845,15 +982,21 @@ module.exports = {
   async deleteTenant(req, res, next) {
     try {
       const { id } = req.params;
-      const tenant = await Tenant.findByPk(id);
+      const tenant = await TenantMaster.findByPk(id);
 
       if (!tenant) {
-        return res.status(404).json({ message: 'Tenant not found' });
+        return res.status(404).json({ 
+          success: false,
+          message: 'Tenant not found' 
+        });
       }
 
       await tenant.destroy();
 
-      res.json({ message: 'Tenant deleted successfully' });
+      res.json({ 
+        success: true,
+        message: 'Tenant deleted successfully' 
+      });
     } catch (error) {
       logger.error('Admin deleteTenant error:', error);
       next(error);

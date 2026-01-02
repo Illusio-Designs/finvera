@@ -280,7 +280,13 @@ export default function TenantsList() {
       key: 'subscription_plan',
       label: 'Plan',
       sortable: true,
-      render: (value) => value || 'N/A',
+      render: (value, row) => {
+        // Show plan name if available, otherwise show plan code, otherwise N/A
+        if (row.subscription_plan_name) {
+          return `${row.subscription_plan_name} (${value})`;
+        }
+        return value || 'N/A';
+      },
     },
     {
       key: 'is_active',
@@ -689,7 +695,11 @@ export default function TenantsList() {
                   <dl className="space-y-4">
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Plan</dt>
-                      <dd className="mt-1 text-sm text-gray-900">{selectedTenant.subscription_plan || 'N/A'}</dd>
+                      <dd className="mt-1 text-sm text-gray-900">
+                        {selectedTenant.subscription_plan_name 
+                          ? `${selectedTenant.subscription_plan_name} (${selectedTenant.subscription_plan})`
+                          : selectedTenant.subscription_plan || 'N/A'}
+                      </dd>
                     </div>
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Referral Code</dt>
