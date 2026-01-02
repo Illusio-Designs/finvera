@@ -65,7 +65,7 @@ export default function WebsiteFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/#pricing" className="text-primary-200 hover:text-white transition">
+                <Link href="/pricing" className="text-primary-200 hover:text-white transition">
                   Pricing
                 </Link>
               </li>
@@ -92,7 +92,7 @@ export default function WebsiteFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/#contact" className="text-primary-200 hover:text-white transition">
+                <Link href="/contact" className="text-primary-200 hover:text-white transition">
                   Contact
                 </Link>
               </li>

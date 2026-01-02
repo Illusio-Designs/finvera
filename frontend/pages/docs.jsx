@@ -2,6 +2,7 @@ import Head from 'next/head';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
+import ScrollFloat from '../components/ui/ScrollFloat';
 import { FiBook, FiFileText, FiCode, FiDatabase, FiSettings, FiShield, FiSearch, FiVideo, FiCheck } from 'react-icons/fi';
 
 export default function DocsPage() {
