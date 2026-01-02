@@ -197,7 +197,7 @@ export default function LandingPage() {
 
               {/* Download App Section - Desktop App Available */}
               <div className="mt-8">
-                <AnimatedText className="text-sm text-gray-600 mb-3">Download Desktop App</AnimatedText>
+                <p className="text-sm text-gray-600 mb-3">Download Desktop App</p>
                 <div className="flex items-center justify-center gap-3">
                   <a
                     href="#"
