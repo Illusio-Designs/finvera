@@ -394,7 +394,12 @@ export default function PricingPage() {
                 </p>
                 </div>
               <AnimatedList
-                items={[
+                className="space-y-4"
+                scrollStart="top bottom-=100px"
+                scrollEnd="bottom top+=100px"
+                stagger={0.1}
+              >
+                {[
                   {
                     question: 'Can I change my plan later?',
                     answer: 'Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and we\'ll prorate any charges.'
@@ -411,40 +416,35 @@ export default function PricingPage() {
                     question: 'Can I cancel anytime?',
                     answer: 'Yes, you can cancel your subscription at any time. You\'ll continue to have access until the end of your billing period.'
                   }
-                ]}
-                onItemSelect={(item, index) => {
-                  setOpenFaqIndex(openFaqIndex === index ? null : index);
-                }}
-                showGradients={true}
-                enableArrowNavigation={true}
-                displayScrollbar={true}
-                renderItem={(faq, index, isSelected) => (
-                  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <button
-                      onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)}
-                      className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition"
-                    >
-                      <h3 className="text-lg font-bold text-gray-900 text-left pr-4">
-                        {faq.question}
-                      </h3>
-                      <div className="flex-shrink-0">
-                        {openFaqIndex === index ? (
-                          <FiMinus className="text-primary-600 text-2xl" />
-                        ) : (
-                          <FiPlus className="text-primary-600 text-2xl" />
-                        )}
-                      </div>
-                    </button>
-                    {openFaqIndex === index && (
-                      <div className="px-6 pb-6">
-                        <p className="text-base text-gray-600 leading-relaxed">
-                          {faq.answer}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              />
+                ].map((faq, index) => (
+                  <li key={index} className="list-none">
+                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                      <button
+                        onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)}
+                        className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition"
+                      >
+                        <h3 className="text-lg font-bold text-gray-900 text-left pr-4">
+                          {faq.question}
+                        </h3>
+                        <div className="flex-shrink-0">
+                          {openFaqIndex === index ? (
+                            <FiMinus className="text-primary-600 text-2xl" />
+                          ) : (
+                            <FiPlus className="text-primary-600 text-2xl" />
+                          )}
+                        </div>
+                      </button>
+                      {openFaqIndex === index && (
+                        <div className="px-6 pb-6">
+                          <p className="text-base text-gray-600 leading-relaxed">
+                            {faq.answer}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </AnimatedList>
             </div>
           </div>
         </section>
