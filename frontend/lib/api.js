@@ -110,6 +110,9 @@ export const authAPI = {
       },
     });
   },
+  forgotPassword: (data) => api.post("/auth/forgot-password", data),
+  resetPassword: (data) => api.post("/auth/reset-password", data),
+  verifyResetToken: (token) => api.get(`/auth/verify-reset-token/${token}`),
 };
 
 // Tenant API (not in backend docs, keeping for backward compatibility)
