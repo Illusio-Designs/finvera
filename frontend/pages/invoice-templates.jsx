@@ -4,6 +4,7 @@ import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
 import ScrollFloat from '../components/ui/ScrollFloat';
+import AnimatedCardGrid from '../components/ui/AnimatedCardGrid';
 import { 
   FiFileText, FiPrinter, FiDownload, FiCheck, FiArrowRight,
   FiSmartphone, FiMonitor, FiSettings
@@ -66,7 +67,11 @@ export default function InvoiceTemplatesPage() {
         {/* Templates Gallery */}
         <section className="py-20 bg-white">
           <div className="container mx-auto px-6">
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
+            <AnimatedCardGrid
+              className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto"
+              stagger={0.08}
+              ease="power3.out"
+            >
               {templates.map((template) => (
                 <div
                   key={template.name}
@@ -84,7 +89,7 @@ export default function InvoiceTemplatesPage() {
                   <p className="text-gray-600 text-sm">{template.description}</p>
                 </div>
               ))}
-            </div>
+            </AnimatedCardGrid>
           </div>
         </section>
 
@@ -107,7 +112,11 @@ export default function InvoiceTemplatesPage() {
                 Choose from multiple size options to match your printing needs
               </p>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+            <AnimatedCardGrid
+              className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto"
+              stagger={0.08}
+              ease="power3.out"
+            >
               {printSizes.map((size) => {
                 const Icon = size.icon;
                 return (
@@ -123,7 +132,7 @@ export default function InvoiceTemplatesPage() {
                   </div>
                 );
               })}
-            </div>
+            </AnimatedCardGrid>
           </div>
         </section>
 
@@ -147,7 +156,11 @@ export default function InvoiceTemplatesPage() {
                   Make your invoices truly yours with extensive customization options
                 </p>
               </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <AnimatedCardGrid
+                className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
+                stagger={0.08}
+                ease="power3.out"
+              >
                 {customizationFeatures.map((feature) => (
                   <div
                     key={feature}
@@ -159,7 +172,7 @@ export default function InvoiceTemplatesPage() {
                     </div>
                   </div>
                 ))}
-              </div>
+              </AnimatedCardGrid>
             </div>
           </div>
         </section>

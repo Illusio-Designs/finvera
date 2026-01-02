@@ -4,6 +4,7 @@ import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
 import ScrollFloat from '../components/ui/ScrollFloat';
+import AnimatedCardGrid from '../components/ui/AnimatedCardGrid';
 import { FiTarget, FiUsers, FiAward, FiTrendingUp, FiShield, FiLink, FiCheck, FiArrowRight } from 'react-icons/fi';
 
 export default function AboutPage() {
@@ -161,7 +162,11 @@ export default function AboutPage() {
                   Your data security is our top priority
                 </p>
               </div>
-              <div className="grid md:grid-cols-3 gap-8">
+              <AnimatedCardGrid
+                className="grid md:grid-cols-3 gap-8"
+                stagger={0.08}
+                ease="power3.out"
+              >
                 <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-lg border border-primary-100 text-center">
                   <FiShield className="text-5xl text-primary-600 mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-gray-900 mb-3">Bank-Level Security</h3>
@@ -177,7 +182,7 @@ export default function AboutPage() {
                   <h3 className="text-xl font-bold text-gray-900 mb-3">Reliability</h3>
                   <p className="text-gray-600">99.9% uptime guarantee with automated backups</p>
                 </div>
-              </div>
+              </AnimatedCardGrid>
             </div>
           </div>
         </section>

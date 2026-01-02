@@ -5,6 +5,7 @@ import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
 import ScrollFloat from '../components/ui/ScrollFloat';
+import AnimatedCardGrid from '../components/ui/AnimatedCardGrid';
 import { pricingAPI, reviewAPI } from '../lib/api';
 import { 
   FiBarChart2, FiFileText, FiDollarSign, FiTrendingUp, 
@@ -233,7 +234,11 @@ export default function LandingPage() {
                 Everything you need to manage your accounting and compliance in one place
               </p>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+            <AnimatedCardGrid
+              className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto"
+              stagger={0.08}
+              ease="power3.out"
+            >
               <div className="group bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-sm hover:shadow-md transition-all border border-primary-100 hover:border-primary-200">
                 <div className="w-14 h-14 bg-primary-600 rounded-lg flex items-center justify-center mb-5">
                   <FiBarChart2 className="text-white text-xl" />
@@ -293,7 +298,7 @@ export default function LandingPage() {
                   Earn commissions through our distributor and salesman network. Grow your business with referrals.
                 </p>
               </div>
-            </div>
+            </AnimatedCardGrid>
           </div>
         </section>
 
@@ -316,7 +321,11 @@ export default function LandingPage() {
                 Tailor made, professional, and hand crafted templates for your business to stand out.
               </p>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-7xl mx-auto">
+            <AnimatedCardGrid
+              className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-7xl mx-auto"
+              stagger={0.08}
+              ease="power3.out"
+            >
               {['Modern', 'Classic', 'Service', 'Compact', 'Vintage', 'Evergreen', 'Legend', 'GenZ'].map((template) => (
                 <div key={template} className="group bg-gradient-to-br from-primary-50 to-white p-5 rounded-xl shadow-sm hover:shadow-md transition-all border border-primary-100 hover:border-primary-200 cursor-pointer">
                   <div className="aspect-[4/3] bg-white rounded-lg mb-3 flex items-center justify-center border border-gray-200">
@@ -325,7 +334,7 @@ export default function LandingPage() {
                   <h3 className="text-base font-bold text-gray-900 text-center">{template}</h3>
                 </div>
               ))}
-            </div>
+            </AnimatedCardGrid>
             <div className="text-center mt-12">
               <Link
                 href="/invoice-templates"
@@ -357,7 +366,11 @@ export default function LandingPage() {
                 Quick invoicing for retailers, distributors, startups, freelancers, and service providers
               </p>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
+            <AnimatedCardGrid
+              className="grid md:grid-cols-2 lg:grid-cols-5 gap-6 max-w-7xl mx-auto"
+              stagger={0.08}
+              ease="power3.out"
+            >
               {[
                 { name: 'Retailers', icon: FiPackage, desc: 'Point of sale billing and inventory management' },
                 { name: 'Distributors', icon: FiLayers, desc: 'Wholesale pricing and stock management' },
@@ -376,7 +389,7 @@ export default function LandingPage() {
                   </div>
                 );
               })}
-            </div>
+            </AnimatedCardGrid>
             <div className="text-center mt-12">
               <Link
                 href="/use-cases"
@@ -548,7 +561,11 @@ export default function LandingPage() {
                 Finvera is built to make your life easier. We&apos;re always doing things for you to experience ultimate convenience.
               </p>
             </div>
-            <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-6 max-w-7xl mx-auto">
+            <AnimatedCardGrid
+              className="grid md:grid-cols-3 lg:grid-cols-6 gap-6 max-w-7xl mx-auto"
+              stagger={0.08}
+              ease="power3.out"
+            >
               {[
                 { name: 'E-way Bills', icon: FiFileText },
                 { name: 'E-invoices', icon: FiFileText },
@@ -573,7 +590,7 @@ export default function LandingPage() {
                   </div>
                 );
               })}
-            </div>
+            </AnimatedCardGrid>
           </div>
         </section>
 
@@ -596,7 +613,11 @@ export default function LandingPage() {
               <p className="text-[1.2rem] text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
                 Your data stays private. Always encrypted.
               </p>
-              <div className="grid md:grid-cols-3 gap-8">
+              <AnimatedCardGrid
+                className="grid md:grid-cols-3 gap-8"
+                stagger={0.08}
+                ease="power3.out"
+              >
                 <div className="bg-white p-8 rounded-xl border border-gray-200 text-center">
                   <div className="w-16 h-16 bg-primary-50 rounded-lg flex items-center justify-center mx-auto mb-5">
                     <FiShield className="text-2xl text-primary-600" />
@@ -618,7 +639,7 @@ export default function LandingPage() {
                   <h3 className="text-lg font-bold text-gray-900 mb-2">Compliance</h3>
                   <p className="text-[1.2rem] text-gray-600">GDPR & Data Protection</p>
                 </div>
-              </div>
+              </AnimatedCardGrid>
             </div>
           </div>
         </section>
@@ -679,7 +700,11 @@ export default function LandingPage() {
                 Comprehensive accounting solutions tailored for your business needs
               </p>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            <AnimatedCardGrid
+              className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto"
+              stagger={0.08}
+              ease="power3.out"
+            >
               <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-100 hover:border-primary-300">
                 <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4">
                   <FiFileText className="text-primary-600 text-xl" />
@@ -708,7 +733,7 @@ export default function LandingPage() {
                 <h4 className="text-xl font-bold text-gray-900 mb-2">Audit Support</h4>
                 <p className="text-gray-600">Prepare for audits with confidence</p>
               </div>
-            </div>
+            </AnimatedCardGrid>
           </div>
         </section>
 
@@ -732,7 +757,11 @@ export default function LandingPage() {
                   Trusted by businesses for reliable accounting solutions
                 </p>
               </div>
-              <div className="grid md:grid-cols-2 gap-6">
+              <AnimatedCardGrid
+                className="grid md:grid-cols-2 gap-6"
+                stagger={0.08}
+                ease="power3.out"
+              >
                 <div className="flex items-start gap-5 p-6 rounded-xl border border-gray-200 hover:border-primary-200 hover:bg-primary-50/50 transition">
                   <div className="flex-shrink-0">
                     <div className="w-14 h-14 bg-primary-50 rounded-lg flex items-center justify-center">
@@ -777,7 +806,7 @@ export default function LandingPage() {
                     <p className="text-[1.2rem] text-gray-600 leading-relaxed">All-in-one solution for accounting, GST, invoicing, and reporting. Everything you need in one platform.</p>
                   </div>
                 </div>
-              </div>
+              </AnimatedCardGrid>
             </div>
           </div>
         </section>
@@ -802,7 +831,11 @@ export default function LandingPage() {
               </p>
             </div>
             <div className="max-w-5xl mx-auto">
-              <div className="grid md:grid-cols-3 gap-8">
+              <AnimatedCardGrid
+                className="grid md:grid-cols-3 gap-8"
+                stagger={0.08}
+                ease="power3.out"
+              >
                 <div className="text-center">
                   <div className="w-20 h-20 bg-primary-50 rounded-xl flex items-center justify-center mx-auto mb-5">
                     <span className="text-primary-600 text-3xl font-bold">1</span>
@@ -824,7 +857,7 @@ export default function LandingPage() {
                   <h3 className="text-xl font-bold text-gray-900 mb-3">Start Managing</h3>
                   <p className="text-[1.2rem] text-gray-600 leading-relaxed">Begin managing your accounts, invoices, and compliance right away.</p>
                 </div>
-              </div>
+              </AnimatedCardGrid>
             </div>
           </div>
         </section>
