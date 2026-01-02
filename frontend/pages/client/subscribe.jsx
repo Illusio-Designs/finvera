@@ -47,7 +47,7 @@ export default function SubscribePage() {
       toast.error('No plan selected');
       router.push('/pricing');
     }
-  }, [router.query, fetchPlan]);
+  }, [router.query, router, fetchPlan]);
 
   const formatPrice = (price, currency = 'INR') => {
     if (!price && price !== 0) return 'Custom';
