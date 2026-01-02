@@ -11,3 +11,10 @@ deploy-temp/
 dist/
 coverage/
 .nyc_output/
+
+# SSH Keys and sensitive files
+*.pem
+*.key
+!finvera-keypair.pem
+id_rsa
+id_rsa.pub
