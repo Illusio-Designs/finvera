@@ -23,6 +23,11 @@ router.get('/profile', authenticate, authController.getProfile);
 router.put('/profile', authenticate, authController.updateProfile);
 router.post('/profile/image', authenticate, uploadProfile.single('profile_image'), authController.uploadProfileImage);
 
+// Password reset routes (no authentication required)
+router.post('/forgot-password', authController.forgotPassword);
+router.get('/verify-reset-token/:token', authController.verifyResetToken);
+router.post('/reset-password', authController.resetPassword);
+
 module.exports = router;
 
 

@@ -860,6 +860,264 @@ module.exports = {
       return next(err);
     }
   },
+
+  async forgotPassword(req, res, next) {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ 
+          success: false,
+          error: 'Email is required' 
+        });
+      }
+
+      // Normalize email
+      const normalizedEmail = email.toLowerCase().trim();
+
+      // Find user in master database
+      let user = await User.findOne({ 
+        where: { 
+          email: normalizedEmail 
+        } 
+      });
+
+      // If not found, try case-insensitive search
+      if (!user) {
+        const { Op } = require('sequelize');
+        user = await User.findOne({ 
+          where: { 
+            email: { [Op.like]: normalizedEmail }
+          } 
+        });
+      }
+
+      // Check if user is a Google OAuth user (no password reset for OAuth users)
+      if (user && user.google_id && !user.password) {
+        return res.status(400).json({
+          success: false,
+          error: 'This account uses Google Sign-In. Please use Google to login.'
+        });
+      }
+
+      // Always return success message (security: don't reveal if email exists)
+      // But only send email if user exists
+      if (user) {
+        const crypto = require('crypto');
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetTokenExpiry = Date.now() + 3600000; // 1 hour from now
+
+        // Store reset token in Redis (or in-memory fallback)
+        const redisClient = require('../config/redis');
+        const tokenKey = `password_reset:${resetToken}`;
+        const tokenData = JSON.stringify({
+          userId: user.id,
+          email: user.email,
+          expiresAt: resetTokenExpiry,
+        });
+
+        // Store in Redis with 1 hour expiry
+        await redisClient.setEx(tokenKey, 3600, tokenData);
+
+        // Send reset email
+        const emailService = require('../services/emailService');
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const resetUrl = `${frontendUrl}/client/reset-password?token=${resetToken}`;
+
+        const emailHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background-color: #4F46E5; color: white; padding: 20px; text-align: center; }
+              .content { background-color: #f9fafb; padding: 20px; margin: 20px 0; border-radius: 5px; }
+              .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 20px; }
+              .button { display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>Password Reset Request</h1>
+              </div>
+              <div class="content">
+                <p>Hello,</p>
+                <p>You requested to reset your password for your Finvera account.</p>
+                <p>Click the button below to reset your password:</p>
+                <div style="text-align: center;">
+                  <a href="${resetUrl}" class="button">Reset Password</a>
+                </div>
+                <p>Or copy and paste this link into your browser:</p>
+                <p style="word-break: break-all; color: #6b7280; font-size: 12px;">${resetUrl}</p>
+                <p><strong>This link will expire in 1 hour.</strong></p>
+                <p>If you didn't request this password reset, please ignore this email.</p>
+              </div>
+              <div class="footer">
+                <p>This is an automated email from ${process.env.APP_NAME || 'Finvera'}</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `;
+
+        const emailText = `
+Password Reset Request
+
+Hello,
+
+You requested to reset your password for your Finvera account.
+
+Click this link to reset your password:
+${resetUrl}
+
+This link will expire in 1 hour.
+
+If you didn't request this password reset, please ignore this email.
+
+---
+This is an automated email from ${process.env.APP_NAME || 'Finvera'}
+        `.trim();
+
+        await emailService.sendEmail({
+          to: user.email,
+          subject: 'Password Reset Request - Finvera',
+          html: emailHtml,
+          text: emailText,
+        });
+      }
+
+      // Always return success (security best practice)
+      return res.json({
+        success: true,
+        message: 'If an account with that email exists, a password reset link has been sent.'
+      });
+    } catch (err) {
+      console.error('Forgot password error:', err);
+      return next(err);
+    }
+  },
+
+  async verifyResetToken(req, res, next) {
+    try {
+      const { token } = req.params;
+
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          error: 'Reset token is required'
+        });
+      }
+
+      // Get token from Redis
+      const redisClient = require('../config/redis');
+      const tokenKey = `password_reset:${token}`;
+      const tokenDataStr = await redisClient.get(tokenKey);
+
+      if (!tokenDataStr) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid or expired reset token'
+        });
+      }
+
+      const tokenData = JSON.parse(tokenDataStr);
+
+      // Check if token is expired
+      if (Date.now() > tokenData.expiresAt) {
+        await redisClient.del(tokenKey);
+        return res.status(400).json({
+          success: false,
+          error: 'Reset token has expired'
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: 'Reset token is valid',
+        data: {
+          email: tokenData.email,
+        }
+      });
+    } catch (err) {
+      console.error('Verify reset token error:', err);
+      return next(err);
+    }
+  },
+
+  async resetPassword(req, res, next) {
+    try {
+      const { token, password } = req.body;
+
+      if (!token || !password) {
+        return res.status(400).json({
+          success: false,
+          error: 'Token and password are required'
+        });
+      }
+
+      // Validate password strength
+      if (password.length < 8) {
+        return res.status(400).json({
+          success: false,
+          error: 'Password must be at least 8 characters long'
+        });
+      }
+
+      // Get token from Redis
+      const redisClient = require('../config/redis');
+      const tokenKey = `password_reset:${token}`;
+      const tokenDataStr = await redisClient.get(tokenKey);
+
+      if (!tokenDataStr) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid or expired reset token'
+        });
+      }
+
+      const tokenData = JSON.parse(tokenDataStr);
+
+      // Check if token is expired
+      if (Date.now() > tokenData.expiresAt) {
+        await redisClient.del(tokenKey);
+        return res.status(400).json({
+          success: false,
+          error: 'Reset token has expired'
+        });
+      }
+
+      // Find user
+      const user = await User.findByPk(tokenData.userId);
+
+      if (!user) {
+        await redisClient.del(tokenKey);
+        return res.status(404).json({
+          success: false,
+          error: 'User not found'
+        });
+      }
+
+      // Hash new password
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      // Update user password
+      await user.update({ password: passwordHash });
+
+      // Delete reset token
+      await redisClient.del(tokenKey);
+
+      return res.json({
+        success: true,
+        message: 'Password has been reset successfully'
+      });
+    } catch (err) {
+      console.error('Reset password error:', err);
+      return next(err);
+    }
+  },
 };
 
 
