@@ -336,7 +336,7 @@ export default function LandingPage() {
             >
               {TEMPLATES.map((template) => (
                 <div key={template.id} className="group bg-gradient-to-br from-primary-50 to-white p-5 rounded-xl shadow-sm hover:shadow-md transition-all border border-primary-100 hover:border-primary-200 cursor-pointer">
-                  <div className="aspect-[4/3] bg-white rounded-lg mb-3 flex items-center justify-center border border-gray-200 overflow-hidden relative">
+                  <div className="aspect-[3/4] bg-white rounded-lg mb-3 flex items-center justify-center border border-gray-200 overflow-hidden relative">
                     {template.previewImage ? (
                       <Image
                         src={template.previewImage}
@@ -669,8 +669,8 @@ export default function LandingPage() {
                 Our app is integrated with
               </ScrollFloat>
             </div>
-            <div className="grid md:grid-cols-4 lg:grid-cols-7 gap-5 max-w-7xl mx-auto items-center">
-              {['Tally', 'Sandbox API', 'FinBox', 'GST Portal', 'E-Invoice Portal', 'E-Way Bill Portal', 'Payment Gateways'].map((partner) => (
+            <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-5 max-w-7xl mx-auto items-center">
+              {['Tally', 'Sandbox API', 'FinBox', 'GST Portal', 'E-Invoice Portal', 'E-Way Bill Portal'].map((partner) => (
                 <div key={partner} className="bg-white p-5 rounded-xl border border-gray-200 hover:border-primary-200 hover:shadow-sm transition text-center">
                   <div className="h-14 flex items-center justify-center">
                     <span className="text-base font-medium text-gray-600">{partner}</span>

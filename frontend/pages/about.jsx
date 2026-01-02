@@ -131,8 +131,8 @@ export default function AboutPage() {
                 Trusted integrations for seamless business operations
               </p>
             </div>
-            <div className="grid md:grid-cols-4 lg:grid-cols-7 gap-5 max-w-7xl mx-auto items-center">
-              {['Tally', 'Sandbox API', 'FinBox', 'GST Portal', 'E-Invoice Portal', 'E-Way Bill Portal', 'Payment Gateways'].map((partner) => (
+            <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-5 max-w-7xl mx-auto items-center">
+              {['Tally', 'Sandbox API', 'FinBox', 'GST Portal', 'E-Invoice Portal', 'E-Way Bill Portal'].map((partner) => (
                 <div key={partner} className="bg-white p-5 rounded-xl border border-gray-200 hover:border-primary-200 hover:shadow-sm transition text-center">
                   <div className="h-14 flex items-center justify-center">
                     <span className="text-base font-medium text-gray-600">{partner}</span>
