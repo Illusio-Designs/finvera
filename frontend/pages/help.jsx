@@ -154,7 +154,7 @@ export default function HelpPage() {
                       <div className="px-6 pb-6">
                         <p className="text-base text-gray-600 leading-relaxed">
                           {faq.answer}
-                        </AnimatedText>
+                        </p>
                       </div>
                     )}
                   </div>

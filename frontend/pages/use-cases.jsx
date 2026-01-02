@@ -164,7 +164,7 @@ export default function UseCasesPage() {
               </h1>
               <p className="text-base text-gray-600 max-w-3xl mx-auto">
                 Quick invoicing for retailers, distributors, startups, freelancers, and service providers using Finvera invoicing app.
-              </AnimatedText>
+              </p>
             </div>
           </div>
         </section>
