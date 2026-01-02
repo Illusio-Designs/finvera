@@ -18,7 +18,7 @@ export default function TermsPage() {
         <section className="bg-gradient-to-br from-primary-50 to-white pt-40 pb-0">
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-4xl mx-auto text-center mb-12">
-              <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">Terms of Service</h1>
+              <h1 className="text-3xl md:text-4xl font-medium text-gray-900 mb-5">Terms of Service</h1>
               <p className="text-base text-gray-600">Last updated: {new Date().toLocaleDateString()}</p>
             </div>
           </div>
@@ -35,7 +35,7 @@ export default function TermsPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-6"
-                  textClassName="text-2xl font-extrabold text-gray-900"
+                  textClassName="text-2xl font-medium text-gray-900"
                 >
                   1. Acceptance of Terms
                 </ScrollFloat>
@@ -53,7 +53,7 @@ export default function TermsPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-6"
-                  textClassName="text-2xl font-extrabold text-gray-900"
+                  textClassName="text-2xl font-medium text-gray-900"
                 >
                   2. Description of Service
                 </ScrollFloat>
@@ -75,7 +75,7 @@ export default function TermsPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-6"
-                  textClassName="text-2xl font-extrabold text-gray-900"
+                  textClassName="text-2xl font-medium text-gray-900"
                 >
                   3. User Accounts
                 </ScrollFloat>
@@ -98,7 +98,7 @@ export default function TermsPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-6"
-                  textClassName="text-2xl font-extrabold text-gray-900"
+                  textClassName="text-2xl font-medium text-gray-900"
                 >
                   4. Subscription and Payment
                 </ScrollFloat>
@@ -116,7 +116,7 @@ export default function TermsPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-6"
-                  textClassName="text-2xl font-extrabold text-gray-900"
+                  textClassName="text-2xl font-medium text-gray-900"
                 >
                   5. User Responsibilities
                 </ScrollFloat>
@@ -142,7 +142,7 @@ export default function TermsPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-6"
-                  textClassName="text-2xl font-extrabold text-gray-900"
+                  textClassName="text-2xl font-medium text-gray-900"
                 >
                   5.1. Third-Party Service Providers
                 </ScrollFloat>
@@ -200,7 +200,7 @@ export default function TermsPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-6"
-                  textClassName="text-2xl font-extrabold text-gray-900"
+                  textClassName="text-2xl font-medium text-gray-900"
                 >
                   6. Intellectual Property
                 </ScrollFloat>
@@ -219,7 +219,7 @@ export default function TermsPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-6"
-                  textClassName="text-2xl font-extrabold text-gray-900"
+                  textClassName="text-2xl font-medium text-gray-900"
                 >
                   7. Limitation of Liability
                 </ScrollFloat>
@@ -252,7 +252,7 @@ export default function TermsPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-6"
-                  textClassName="text-2xl font-extrabold text-gray-900"
+                  textClassName="text-2xl font-medium text-gray-900"
                 >
                   8. Loan Application Terms
                 </ScrollFloat>
@@ -285,7 +285,7 @@ export default function TermsPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-6"
-                  textClassName="text-2xl font-extrabold text-gray-900"
+                  textClassName="text-2xl font-medium text-gray-900"
                 >
                   9. Termination
                 </ScrollFloat>
@@ -308,7 +308,7 @@ export default function TermsPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-6"
-                  textClassName="text-2xl font-extrabold text-gray-900"
+                  textClassName="text-2xl font-medium text-gray-900"
                 >
                   10. Contact Information
                 </ScrollFloat>

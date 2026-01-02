@@ -159,7 +159,7 @@ export default function UseCasesPage() {
         <section className="bg-gradient-to-br from-primary-50 to-white pt-40 pb-12">
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
+              <h1 className="text-3xl md:text-4xl font-medium text-gray-900 mb-5">
                 Perfect for Your Business
               </h1>
               <p className="text-base text-gray-600 max-w-3xl mx-auto">
@@ -300,7 +300,7 @@ export default function UseCasesPage() {
                     scrollEnd='bottom bottom-=40%'
                     stagger={0.03}
                     containerClassName="mb-5"
-                    textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                    textClassName="text-3xl md:text-4xl font-medium text-gray-900"
                   >
                     Not Sure Which Plan Fits You?
                   </ScrollFloat>

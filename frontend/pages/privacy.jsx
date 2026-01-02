@@ -18,7 +18,7 @@ export default function PrivacyPage() {
         <section className="bg-gradient-to-br from-primary-50 to-white pt-40 pb-0">
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-4xl mx-auto text-center mb-12">
-              <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">Privacy Policy</h1>
+              <h1 className="text-3xl md:text-4xl font-medium text-gray-900 mb-5">Privacy Policy</h1>
               <p className="text-base text-gray-600">Last updated: {new Date().toLocaleDateString()}</p>
             </div>
           </div>
@@ -35,7 +35,7 @@ export default function PrivacyPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-6"
-                  textClassName="text-2xl font-extrabold text-gray-900"
+                  textClassName="text-2xl font-medium text-gray-900"
                 >
                   1. Introduction
                 </ScrollFloat>
@@ -54,7 +54,7 @@ export default function PrivacyPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-6"
-                  textClassName="text-2xl font-extrabold text-gray-900"
+                  textClassName="text-2xl font-medium text-gray-900"
                 >
                   2. Information We Collect
                 </ScrollFloat>
@@ -81,7 +81,7 @@ export default function PrivacyPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-6"
-                  textClassName="text-2xl font-extrabold text-gray-900"
+                  textClassName="text-2xl font-medium text-gray-900"
                 >
                   3. How We Use Your Information
                 </ScrollFloat>
@@ -109,7 +109,7 @@ export default function PrivacyPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-6"
-                  textClassName="text-2xl font-extrabold text-gray-900"
+                  textClassName="text-2xl font-medium text-gray-900"
                 >
                   3.1. Third-Party Service Providers
                 </ScrollFloat>
@@ -165,7 +165,7 @@ export default function PrivacyPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-6"
-                  textClassName="text-2xl font-extrabold text-gray-900"
+                  textClassName="text-2xl font-medium text-gray-900"
                 >
                   4. Data Security
                 </ScrollFloat>
@@ -193,7 +193,7 @@ export default function PrivacyPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-6"
-                  textClassName="text-2xl font-extrabold text-gray-900"
+                  textClassName="text-2xl font-medium text-gray-900"
                 >
                   5. Data Retention
                 </ScrollFloat>
@@ -211,7 +211,7 @@ export default function PrivacyPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-6"
-                  textClassName="text-2xl font-extrabold text-gray-900"
+                  textClassName="text-2xl font-medium text-gray-900"
                 >
                   6. Your Rights and Consents
                 </ScrollFloat>
@@ -263,7 +263,7 @@ export default function PrivacyPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-6"
-                  textClassName="text-2xl font-extrabold text-gray-900"
+                  textClassName="text-2xl font-medium text-gray-900"
                 >
                   7. Data Sharing and Third-Party Access
                 </ScrollFloat>
@@ -291,7 +291,7 @@ export default function PrivacyPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-6"
-                  textClassName="text-2xl font-extrabold text-gray-900"
+                  textClassName="text-2xl font-medium text-gray-900"
                 >
                   8. Contact Us
                 </ScrollFloat>

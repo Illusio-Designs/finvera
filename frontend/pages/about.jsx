@@ -23,7 +23,7 @@ export default function AboutPage() {
         <section className="bg-gradient-to-br from-primary-50 to-white pt-40 pb-12">
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
+              <h1 className="text-3xl md:text-4xl font-medium text-gray-900 mb-5">
                 About Finvera
               </h1>
               <p className="text-base text-gray-600 max-w-3xl mx-auto">
@@ -47,7 +47,7 @@ export default function AboutPage() {
                     scrollEnd='bottom bottom-=40%'
                     stagger={0.03}
                     containerClassName="mb-6"
-                    textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                    textClassName="text-3xl md:text-4xl font-medium text-gray-900"
                   >
                     Our Mission
                   </ScrollFloat>
@@ -99,7 +99,7 @@ export default function AboutPage() {
                 scrollEnd='bottom bottom-=40%'
                 stagger={0.03}
                 containerClassName="mb-6"
-                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                textClassName="text-3xl md:text-4xl font-medium text-gray-900"
               >
                 Why We Started
               </ScrollFloat>
@@ -123,7 +123,7 @@ export default function AboutPage() {
                 scrollEnd='bottom bottom-=40%'
                 stagger={0.03}
                 containerClassName="mb-5"
-                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                textClassName="text-3xl md:text-4xl font-medium text-gray-900"
               >
                 Our app is integrated with
               </ScrollFloat>
@@ -155,7 +155,7 @@ export default function AboutPage() {
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
                   containerClassName="mb-6"
-                  textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                  textClassName="text-3xl md:text-4xl font-medium text-gray-900"
                 >
                   Security & Trust
                 </ScrollFloat>
@@ -196,28 +196,28 @@ export default function AboutPage() {
                 <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
                   <FiUsers className="text-white text-2xl" />
                 </div>
-                <div className="text-4xl font-extrabold text-gray-900 mb-2">10K+</div>
+                <div className="text-4xl font-bold text-gray-900 mb-2">10K+</div>
                 <div className="text-base text-gray-600">Active Users</div>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
                   <FiTrendingUp className="text-white text-2xl" />
                 </div>
-                <div className="text-4xl font-extrabold text-gray-900 mb-2">50K+</div>
+                <div className="text-4xl font-bold text-gray-900 mb-2">50K+</div>
                 <div className="text-base text-gray-600">Invoices Generated</div>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
                   <FiAward className="text-white text-2xl" />
                 </div>
-                <div className="text-4xl font-extrabold text-gray-900 mb-2">99.9%</div>
+                <div className="text-4xl font-bold text-gray-900 mb-2">99.9%</div>
                 <div className="text-base text-gray-600">Uptime</div>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
                   <FiTarget className="text-white text-2xl" />
                 </div>
-                <div className="text-4xl font-extrabold text-gray-900 mb-2">24/7</div>
+                <div className="text-4xl font-bold text-gray-900 mb-2">24/7</div>
                 <div className="text-base text-gray-600">Support</div>
               </div>
             </div>

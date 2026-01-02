@@ -59,7 +59,7 @@ export default function DocsPage() {
         <section className="bg-gradient-to-br from-primary-50 to-white pt-40 pb-12">
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">
+              <h1 className="text-3xl md:text-4xl font-medium text-gray-900 mb-3">
                 Documentation
               </h1>
               <p className="text-base text-gray-600 max-w-3xl mx-auto">
@@ -124,7 +124,7 @@ export default function DocsPage() {
                 scrollEnd='bottom bottom-=40%'
                 stagger={0.03}
                 containerClassName="mb-3"
-                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                textClassName="text-3xl md:text-4xl font-medium text-gray-900"
               >
                 Video Tutorials
               </ScrollFloat>
@@ -167,7 +167,7 @@ export default function DocsPage() {
                 scrollEnd='bottom bottom-=40%'
                 stagger={0.03}
                 containerClassName="mb-6 text-center"
-                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                textClassName="text-3xl md:text-4xl font-medium text-gray-900"
               >
                 Quick Start Guide
               </ScrollFloat>

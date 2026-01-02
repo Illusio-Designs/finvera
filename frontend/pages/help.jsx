@@ -54,7 +54,7 @@ export default function HelpPage() {
         <section className="bg-white pt-40 pb-12">
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
+              <h1 className="text-3xl md:text-4xl font-medium text-gray-900 mb-5">
                 How can we help?
               </h1>
               <div className="relative max-w-xl mx-auto">
@@ -110,7 +110,7 @@ export default function HelpPage() {
                 scrollEnd='bottom bottom-=40%'
                 stagger={0.03}
                 containerClassName="mb-12 text-center"
-                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                textClassName="text-3xl md:text-4xl font-medium text-gray-900"
               >
                 Frequently Asked Questions
               </ScrollFloat>
