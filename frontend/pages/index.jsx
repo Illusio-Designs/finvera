@@ -6,7 +6,10 @@ import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
 import ScrollFloat from '../components/ui/ScrollFloat';
 import AnimatedCardGrid from '../components/ui/AnimatedCardGrid';
+import AnimatedText from '../components/ui/AnimatedText';
+import AnimatedList from '../components/ui/AnimatedList';
 import { pricingAPI, reviewAPI } from '../lib/api';
+import { TEMPLATES } from '../lib/invoiceTemplates';
 import { 
   FiBarChart2, FiFileText, FiDollarSign, FiTrendingUp, 
   FiBriefcase, FiTarget, FiCheck, FiZap, FiSmartphone, 
@@ -14,6 +17,7 @@ import {
   FiShield, FiUsers, FiStar, FiPackage, FiRefreshCw,
   FiShare2, FiPrinter, FiDownload, FiLayers, FiSettings, FiUpload
 } from 'react-icons/fi';
+import Image from 'next/image';
 
 export default function LandingPage() {
   const [clientRegisterUrl, setClientRegisterUrl] = useState('');
@@ -166,26 +170,26 @@ export default function LandingPage() {
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6 leading-tight">
                 Create <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-primary-800">GST Invoices</span> for<br /><span className="block mt-4">free in 10 seconds ⚡</span>
               </h1>
-              <p className="text-[1.2rem] text-gray-600 mb-4 max-w-3xl mx-auto leading-relaxed">
+              <AnimatedText className="text-[1.2rem] text-gray-600 mb-4 max-w-3xl mx-auto leading-relaxed">
                 Customize templates, share bills on WhatsApp, collect payments!
-              </p>
-              <p className="text-base text-gray-500 mb-8 max-w-2xl mx-auto">
+              </AnimatedText>
+              <AnimatedText className="text-base text-gray-500 mb-8 max-w-2xl mx-auto">
                 Fast, Simple, Compliant • No training needed
-              </p>
+              </AnimatedText>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
                 <a
                   href={getClientRegisterUrl()}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group bg-primary-600 text-white px-10 py-4 rounded-xl text-lg font-normal hover:bg-primary-700 transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1 flex items-center gap-2"
+                  className="group bg-primary-600 text-white px-6 py-2.5 rounded-xl text-lg font-normal hover:bg-primary-700 transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1 flex items-center gap-2"
                 >
                   Sign up for free
                   <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
                 </a>
                 <a
                   href="#features"
-                  className="bg-white text-primary-600 px-10 py-4 rounded-xl text-lg font-normal hover:bg-gray-50 transition-all shadow-xl border-2 border-primary-600 hover:border-primary-700"
+                  className="bg-white text-primary-600 px-6 py-2.5 rounded-xl text-lg font-normal hover:bg-gray-50 transition-all shadow-xl border-2 border-primary-600 hover:border-primary-700"
                 >
                   Learn More
                 </a>
@@ -193,20 +197,24 @@ export default function LandingPage() {
 
               {/* Download App Section - Desktop App Available */}
               <div className="mt-8">
-                <p className="text-sm text-gray-600 mb-3">Download Desktop App</p>
+                <AnimatedText className="text-sm text-gray-600 mb-3">Download Desktop App</AnimatedText>
                 <div className="flex items-center justify-center gap-3">
                   <a
                     href="#"
-                    className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition text-sm font-medium"
+                    className="flex items-center gap-2 bg-gray-900 text-white px-3 py-2 rounded-lg hover:bg-gray-800 transition text-sm font-medium"
                   >
-                    <FiDownload className="text-lg" />
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 4h8v4h-8v-4z"/>
+                    </svg>
                     Windows
                   </a>
                   <a
                     href="#"
-                    className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition text-sm font-medium"
+                    className="flex items-center gap-2 bg-gray-900 text-white px-3 py-2 rounded-lg hover:bg-gray-800 transition text-sm font-medium"
                   >
-                    <FiDownload className="text-lg" />
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                    </svg>
                     macOS
                   </a>
                 </div>
@@ -230,7 +238,7 @@ export default function LandingPage() {
               >
                 Powerful Features
               </ScrollFloat>
-              <p className="text-[1.2rem] text-gray-600 max-w-2xl mx-auto">
+              <p className="text-base text-gray-600 max-w-2xl mx-auto">
                 Everything you need to manage your accounting and compliance in one place
               </p>
             </div>
@@ -244,9 +252,9 @@ export default function LandingPage() {
                   <FiBarChart2 className="text-white text-xl" />
                 </div>
                 <h3 className="text-xl font-bold mb-3 text-gray-900">GST Filing</h3>
-                <p className="text-[1.2rem] text-gray-600 leading-relaxed">
+                <AnimatedText className="text-base text-gray-600 leading-relaxed">
                   Automated GST return filing with GSTR-1 and GSTR-3B support. Stay compliant with ease and save time.
-                </p>
+                </AnimatedText>
               </div>
 
               <div className="group bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-sm hover:shadow-md transition-all border border-primary-100 hover:border-primary-200">
@@ -254,9 +262,9 @@ export default function LandingPage() {
                   <FiFileText className="text-white text-xl" />
                 </div>
                 <h3 className="text-xl font-bold mb-3 text-gray-900">E-Invoicing</h3>
-                <p className="text-[1.2rem] text-gray-600 leading-relaxed">
+                <AnimatedText className="text-base text-gray-600 leading-relaxed">
                   Generate and manage e-invoices with IRN and QR code generation. Fully compliant with government regulations.
-                </p>
+                </AnimatedText>
               </div>
 
               <div className="group bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-sm hover:shadow-md transition-all border border-primary-100 hover:border-primary-200">
@@ -264,9 +272,9 @@ export default function LandingPage() {
                   <FiDollarSign className="text-white text-xl" />
                 </div>
                 <h3 className="text-xl font-bold mb-3 text-gray-900">Complete Accounting</h3>
-                <p className="text-[1.2rem] text-gray-600 leading-relaxed">
+                <AnimatedText className="text-base text-gray-600 leading-relaxed">
                   Full accounting with ledgers, vouchers, and financial reports. Manage all your transactions efficiently.
-                </p>
+                </AnimatedText>
               </div>
 
               <div className="group bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-sm hover:shadow-md transition-all border border-primary-100 hover:border-primary-200">
@@ -274,9 +282,9 @@ export default function LandingPage() {
                   <FiTrendingUp className="text-white text-xl" />
                 </div>
                 <h3 className="text-xl font-bold mb-3 text-gray-900">Financial Reports</h3>
-                <p className="text-[1.2rem] text-gray-600 leading-relaxed">
+                <AnimatedText className="text-base text-gray-600 leading-relaxed">
                   Balance sheet, P&L, trial balance, and custom reports. Get insights into your business performance.
-                </p>
+                </AnimatedText>
               </div>
 
               <div className="group bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-sm hover:shadow-md transition-all border border-primary-100 hover:border-primary-200">
@@ -284,9 +292,9 @@ export default function LandingPage() {
                   <FiUsers className="text-white text-xl" />
                 </div>
                 <h3 className="text-xl font-bold mb-3 text-gray-900">User Management</h3>
-                <p className="text-[1.2rem] text-gray-600 leading-relaxed">
+                <AnimatedText className="text-base text-gray-600 leading-relaxed">
                   Manage multiple users with role-based access control. Secure and organized user management for your team.
-                </p>
+                </AnimatedText>
               </div>
 
               <div className="group bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-sm hover:shadow-md transition-all border border-primary-100 hover:border-primary-200">
@@ -294,9 +302,9 @@ export default function LandingPage() {
                   <FiTarget className="text-white text-xl" />
                 </div>
                 <h3 className="text-xl font-bold mb-3 text-gray-900">Referral System</h3>
-                <p className="text-[1.2rem] text-gray-600 leading-relaxed">
+                <AnimatedText className="text-base text-gray-600 leading-relaxed">
                   Earn commissions through our distributor and salesman network. Grow your business with referrals.
-                </p>
+                </AnimatedText>
               </div>
             </AnimatedCardGrid>
           </div>
@@ -317,7 +325,7 @@ export default function LandingPage() {
               >
                 Awesome Templates
               </ScrollFloat>
-              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
+              <p className="text-base text-gray-600 max-w-3xl mx-auto">
                 Tailor made, professional, and hand crafted templates for your business to stand out.
               </p>
             </div>
@@ -326,24 +334,25 @@ export default function LandingPage() {
               stagger={0.08}
               ease="power3.out"
             >
-              {['Modern', 'Classic', 'Service', 'Compact', 'Vintage', 'Evergreen', 'Legend', 'GenZ'].map((template) => (
-                <div key={template} className="group bg-gradient-to-br from-primary-50 to-white p-5 rounded-xl shadow-sm hover:shadow-md transition-all border border-primary-100 hover:border-primary-200 cursor-pointer">
-                  <div className="aspect-[4/3] bg-white rounded-lg mb-3 flex items-center justify-center border border-gray-200">
-                    <FiFileText className="text-4xl text-primary-200" />
+              {TEMPLATES.map((template) => (
+                <div key={template.id} className="group bg-gradient-to-br from-primary-50 to-white p-5 rounded-xl shadow-sm hover:shadow-md transition-all border border-primary-100 hover:border-primary-200 cursor-pointer">
+                  <div className="aspect-[4/3] bg-white rounded-lg mb-3 flex items-center justify-center border border-gray-200 overflow-hidden relative">
+                    {template.previewImage ? (
+                      <Image
+                        src={template.previewImage}
+                        alt={template.name}
+                        fill
+                        className="object-contain"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                      />
+                    ) : (
+                      <FiFileText className="text-4xl text-primary-200" />
+                    )}
                   </div>
-                  <h3 className="text-base font-bold text-gray-900 text-center">{template}</h3>
+                  <h3 className="text-base font-bold text-gray-900 text-center">{template.name}</h3>
                 </div>
               ))}
             </AnimatedCardGrid>
-            <div className="text-center mt-12">
-              <Link
-                href="/invoice-templates"
-                className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-normal text-base"
-              >
-                View All Templates
-                <FiArrowRight />
-              </Link>
-            </div>
           </div>
         </section>
 
@@ -362,7 +371,7 @@ export default function LandingPage() {
               >
                 Perfect for Your Business
               </ScrollFloat>
-              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
+              <p className="text-base text-gray-600 max-w-3xl mx-auto">
                 Quick invoicing for retailers, distributors, startups, freelancers, and service providers
               </p>
             </div>
@@ -385,7 +394,7 @@ export default function LandingPage() {
                       <Icon className="text-primary-600 text-2xl" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-900 mb-2">{useCase.name}</h3>
-                    <p className="text-gray-600 text-sm">{useCase.desc}</p>
+                    <AnimatedText className="text-gray-600 text-sm">{useCase.desc}</AnimatedText>
                   </div>
                 );
               })}
@@ -420,17 +429,17 @@ export default function LandingPage() {
                   >
                     Inventory so simple, it feels like magic
                   </ScrollFloat>
-                  <p className="text-gray-600 mb-6 leading-relaxed">
+                  <AnimatedText className="text-gray-600 mb-6 leading-relaxed" delay={0.1}>
                     Add items, track stock, and manage everything in seconds. No training needed. It&apos;s that easy.
-                  </p>
-                  <ul className="space-y-3">
+                  </AnimatedText>
+                  <AnimatedList className="space-y-3" stagger={0.1}>
                     {['Stock In and Stock Out tracking', 'Live inventory status', 'Bulk import from Excel', 'Better sales statistics', 'Maximize profits'].map((feature) => (
                       <li key={feature} className="flex items-start gap-3">
                         <FiCheck className="text-primary-600 text-xl mt-1 flex-shrink-0" />
                         <span className="text-gray-700 text-lg">{feature}</span>
                       </li>
                     ))}
-                  </ul>
+                  </AnimatedList>
                 </div>
                 <div className="bg-gradient-to-br from-primary-50 to-white aspect-square rounded-2xl shadow-xl border border-primary-100 flex items-center justify-center">
                   <div className="w-32 h-32 bg-primary-100 rounded-xl flex items-center justify-center">
@@ -458,17 +467,17 @@ export default function LandingPage() {
                   >
                     Record payments effortlessly
                   </ScrollFloat>
-                  <p className="text-gray-600 mb-6 leading-relaxed">
+                  <AnimatedText className="text-gray-600 mb-6 leading-relaxed" delay={0.1}>
                     Track every payment, every time — without lifting a finger. While others make it complicated, we make it simple.
-                  </p>
-                  <ul className="space-y-3">
+                  </AnimatedText>
+                  <AnimatedList className="space-y-3" stagger={0.1}>
                     {['Automatic payment tracking', 'Payment reminders', 'Outstanding reports', 'Payment history', 'Multiple payment methods'].map((feature) => (
                       <li key={feature} className="flex items-start gap-3">
                         <FiCheck className="text-primary-600 text-xl mt-1 flex-shrink-0" />
                         <span className="text-gray-700 text-lg">{feature}</span>
                       </li>
                     ))}
-                  </ul>
+                  </AnimatedList>
                 </div>
               </div>
 
@@ -486,17 +495,17 @@ export default function LandingPage() {
                   >
                     Share anywhere. Get paid faster.
                   </ScrollFloat>
-                  <p className="text-gray-600 mb-6 leading-relaxed">
+                  <AnimatedText className="text-gray-600 mb-6 leading-relaxed" delay={0.1}>
                     Send invoices instantly via WhatsApp, email, or SMS. And with smart auto-reminders, you don&apos;t have to chase anyone.
-                  </p>
-                  <ul className="space-y-3">
+                  </AnimatedText>
+                  <AnimatedList className="space-y-3" stagger={0.1}>
                     {['WhatsApp sharing', 'Email delivery', 'SMS notifications', 'Auto-reminders', 'Payment tracking'].map((feature) => (
                       <li key={feature} className="flex items-start gap-3">
                         <FiCheck className="text-primary-600 text-xl mt-1 flex-shrink-0" />
                         <span className="text-gray-700 text-lg">{feature}</span>
                       </li>
                     ))}
-                  </ul>
+                  </AnimatedList>
                 </div>
                 <div className="bg-gradient-to-br from-primary-50 to-white aspect-square rounded-2xl shadow-xl border border-primary-100 flex items-center justify-center">
                   <div className="w-32 h-32 bg-primary-100 rounded-xl flex items-center justify-center">
@@ -523,17 +532,17 @@ export default function LandingPage() {
               >
                 E-way Bills
               </ScrollFloat>
-              <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
+              <h3 className="text-2xl font-bold text-gray-800 mb-4">
                 Create in seconds, anywhere
               </h3>
-              <p className="text-[1.2rem] text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-base text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
                 Generate e-way bills <strong>instantly from your phone</strong> — no delays, no errors. <strong>AI-filled and portal-ready</strong>, even when you&apos;re on the move.
               </p>
               <a
                 href={getClientRegisterUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-primary-600 text-white px-8 py-4 rounded-xl text-lg font-normal hover:bg-primary-700 transition shadow-lg"
+                className="inline-flex items-center gap-2 bg-primary-600 text-white px-5 py-2 rounded-xl text-lg font-normal hover:bg-primary-700 transition shadow-lg"
               >
                 Try for Free
                 <FiArrowRight />
@@ -557,7 +566,7 @@ export default function LandingPage() {
               >
                 Mind-blowing convenience
               </ScrollFloat>
-              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
+              <p className="text-base text-gray-600 max-w-3xl mx-auto">
                 Finvera is built to make your life easier. We&apos;re always doing things for you to experience ultimate convenience.
               </p>
             </div>
@@ -623,21 +632,21 @@ export default function LandingPage() {
                     <FiShield className="text-2xl text-primary-600" />
                   </div>
                   <h3 className="text-lg font-bold text-gray-900 mb-2">Bank-Level Security</h3>
-                  <p className="text-[1.2rem] text-gray-600">256-bit encryption</p>
+                  <AnimatedText className="text-base text-gray-600">256-bit encryption</AnimatedText>
                 </div>
                 <div className="bg-white p-8 rounded-xl border border-gray-200 text-center">
                   <div className="w-16 h-16 bg-primary-50 rounded-lg flex items-center justify-center mx-auto mb-5">
                     <FiRefreshCw className="text-2xl text-primary-600" />
                   </div>
                   <h3 className="text-lg font-bold text-gray-900 mb-2">Auto Backup</h3>
-                  <p className="text-[1.2rem] text-gray-600">Daily automated backups</p>
+                  <AnimatedText className="text-base text-gray-600">Daily automated backups</AnimatedText>
                 </div>
                 <div className="bg-white p-8 rounded-xl border border-gray-200 text-center">
                   <div className="w-16 h-16 bg-primary-50 rounded-lg flex items-center justify-center mx-auto mb-5">
                     <FiShield className="text-2xl text-primary-600" />
                   </div>
                   <h3 className="text-lg font-bold text-gray-900 mb-2">Compliance</h3>
-                  <p className="text-[1.2rem] text-gray-600">GDPR & Data Protection</p>
+                  <AnimatedText className="text-base text-gray-600">GDPR & Data Protection</AnimatedText>
                 </div>
               </AnimatedCardGrid>
             </div>
@@ -696,7 +705,7 @@ export default function LandingPage() {
               >
                 Our Services
               </ScrollFloat>
-              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
+              <p className="text-base text-gray-600 max-w-3xl mx-auto">
                 Comprehensive accounting solutions tailored for your business needs
               </p>
             </div>
@@ -710,28 +719,28 @@ export default function LandingPage() {
                   <FiFileText className="text-primary-600 text-xl" />
                 </div>
                 <h4 className="text-xl font-bold text-gray-900 mb-2">Bookkeeping</h4>
-                <p className="text-gray-600">Maintain accurate financial records</p>
+                <AnimatedText className="text-gray-600">Maintain accurate financial records</AnimatedText>
               </div>
               <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-100 hover:border-primary-300">
                 <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4">
                   <FiShield className="text-primary-600 text-xl" />
                 </div>
                 <h4 className="text-xl font-bold text-gray-900 mb-2">Tax Compliance</h4>
-                <p className="text-gray-600">Stay compliant with tax regulations</p>
+                <AnimatedText className="text-gray-600">Stay compliant with tax regulations</AnimatedText>
               </div>
               <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-100 hover:border-primary-300">
                 <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4">
                   <FiTrendingUp className="text-primary-600 text-xl" />
                 </div>
                 <h4 className="text-xl font-bold text-gray-900 mb-2">Financial Analysis</h4>
-                <p className="text-gray-600">Get insights into your business</p>
+                <AnimatedText className="text-gray-600">Get insights into your business</AnimatedText>
               </div>
               <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-100 hover:border-primary-300">
                 <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4">
                   <FiCheck className="text-primary-600 text-xl" />
                 </div>
                 <h4 className="text-xl font-bold text-gray-900 mb-2">Audit Support</h4>
-                <p className="text-gray-600">Prepare for audits with confidence</p>
+                <AnimatedText className="text-gray-600">Prepare for audits with confidence</AnimatedText>
               </div>
             </AnimatedCardGrid>
           </div>
@@ -753,9 +762,9 @@ export default function LandingPage() {
                 >
                   Why Choose Finvera?
                 </ScrollFloat>
-                <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
+                <AnimatedText className="text-base text-gray-600 max-w-3xl mx-auto">
                   Trusted by businesses for reliable accounting solutions
-                </p>
+                </AnimatedText>
               </div>
               <AnimatedCardGrid
                 className="grid md:grid-cols-2 gap-6"
@@ -770,7 +779,7 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-gray-900 mb-2">Secure & Reliable</h3>
-                    <p className="text-[1.2rem] text-gray-600 leading-relaxed">Your data is encrypted and secure. We follow industry best practices for data protection and compliance.</p>
+                    <AnimatedText className="text-base text-gray-600 leading-relaxed">Your data is encrypted and secure. We follow industry best practices for data protection and compliance.</AnimatedText>
                   </div>
                 </div>
                 <div className="flex items-start gap-5 p-6 rounded-xl border border-gray-200 hover:border-primary-200 hover:bg-primary-50/50 transition">
@@ -781,7 +790,7 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-gray-900 mb-2">Fast & Efficient</h3>
-                    <p className="text-[1.2rem] text-gray-600 leading-relaxed">Automate repetitive tasks and save time. Focus on growing your business instead of managing paperwork.</p>
+                    <AnimatedText className="text-base text-gray-600 leading-relaxed">Automate repetitive tasks and save time. Focus on growing your business instead of managing paperwork.</AnimatedText>
                   </div>
                 </div>
                 <div className="flex items-start gap-5 p-6 rounded-xl border border-gray-200 hover:border-primary-200 hover:bg-primary-50/50 transition">
@@ -792,7 +801,7 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-gray-900 mb-2">Easy to Use</h3>
-                    <p className="text-[1.2rem] text-gray-600 leading-relaxed">Intuitive interface designed for users of all technical levels. No training required.</p>
+                    <AnimatedText className="text-base text-gray-600 leading-relaxed">Intuitive interface designed for users of all technical levels. No training required.</AnimatedText>
                   </div>
                 </div>
                 <div className="flex items-start gap-5 p-6 rounded-xl border border-gray-200 hover:border-primary-200 hover:bg-primary-50/50 transition">
@@ -803,7 +812,7 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-gray-900 mb-2">Comprehensive</h3>
-                    <p className="text-[1.2rem] text-gray-600 leading-relaxed">All-in-one solution for accounting, GST, invoicing, and reporting. Everything you need in one platform.</p>
+                    <AnimatedText className="text-base text-gray-600 leading-relaxed">All-in-one solution for accounting, GST, invoicing, and reporting. Everything you need in one platform.</AnimatedText>
                   </div>
                 </div>
               </AnimatedCardGrid>
@@ -826,9 +835,9 @@ export default function LandingPage() {
               >
                 How It Works
               </ScrollFloat>
-              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
+              <AnimatedText className="text-base text-gray-600 max-w-3xl mx-auto">
                 Get started in minutes with our simple process
-              </p>
+              </AnimatedText>
             </div>
             <div className="max-w-5xl mx-auto">
               <AnimatedCardGrid
@@ -841,21 +850,21 @@ export default function LandingPage() {
                     <span className="text-primary-600 text-3xl font-bold">1</span>
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-3">Sign Up</h3>
-                  <p className="text-[1.2rem] text-gray-600 leading-relaxed">Create your account in seconds. No credit card required for free trial.</p>
+                  <AnimatedText className="text-[1.2rem] text-gray-600 leading-relaxed">Create your account in seconds. No credit card required for free trial.</AnimatedText>
                 </div>
                 <div className="text-center">
                   <div className="w-20 h-20 bg-primary-50 rounded-xl flex items-center justify-center mx-auto mb-5">
                     <span className="text-primary-600 text-3xl font-bold">2</span>
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-3">Setup Your Business</h3>
-                  <p className="text-[1.2rem] text-gray-600 leading-relaxed">Add your company details and configure your preferences in minutes.</p>
+                  <AnimatedText className="text-[1.2rem] text-gray-600 leading-relaxed">Add your company details and configure your preferences in minutes.</AnimatedText>
                 </div>
                 <div className="text-center">
                   <div className="w-20 h-20 bg-primary-50 rounded-xl flex items-center justify-center mx-auto mb-5">
                     <span className="text-primary-600 text-3xl font-bold">3</span>
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-3">Start Managing</h3>
-                  <p className="text-[1.2rem] text-gray-600 leading-relaxed">Begin managing your accounts, invoices, and compliance right away.</p>
+                  <AnimatedText className="text-[1.2rem] text-gray-600 leading-relaxed">Begin managing your accounts, invoices, and compliance right away.</AnimatedText>
                 </div>
               </AnimatedCardGrid>
             </div>
@@ -877,14 +886,14 @@ export default function LandingPage() {
               >
                 What Our Clients Say
               </ScrollFloat>
-              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
+              <AnimatedText className="text-base text-gray-600 max-w-3xl mx-auto">
                 Trusted by businesses across industries
-              </p>
+              </AnimatedText>
             </div>
             {reviewsLoading ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-                <p className="mt-4 text-gray-600">Loading reviews...</p>
+                <AnimatedText className="mt-4 text-gray-600">Loading reviews...</AnimatedText>
               </div>
             ) : reviews.length > 0 ? (
               <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
@@ -934,7 +943,11 @@ export default function LandingPage() {
                 ))}
               </div>
             ) : (
-            <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+            <AnimatedCardGrid
+              className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto"
+              stagger={0.08}
+              ease="power3.out"
+            >
                 {/* Fallback testimonials if no reviews available */}
               <div className="bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl border border-primary-100 shadow-lg">
                 <div className="text-primary-600 text-5xl mb-6 font-serif">&quot;</div>
@@ -960,7 +973,7 @@ export default function LandingPage() {
                 <div className="font-bold text-gray-900 text-lg">Amit Patel</div>
                 <div className="text-sm text-gray-600">Partner, ABC Accounting Services</div>
               </div>
-            </div>
+            </AnimatedCardGrid>
             )}
           </div>
         </section>
@@ -980,7 +993,7 @@ export default function LandingPage() {
               >
                 Simple, Transparent Pricing
               </ScrollFloat>
-              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
+              <p className="text-base text-gray-600 max-w-3xl mx-auto">
                 Choose the plan that fits your business needs
               </p>
             </div>
@@ -1210,14 +1223,14 @@ export default function LandingPage() {
                       href={getClientRegisterUrl()}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="bg-primary-600 text-white px-10 py-4 rounded-xl text-lg font-normal hover:bg-primary-500 transition shadow-xl hover:shadow-2xl transform hover:-translate-y-1 inline-flex items-center justify-center gap-2"
+                      className="bg-primary-600 text-white px-6 py-2.5 rounded-xl text-lg font-normal hover:bg-primary-500 transition shadow-xl hover:shadow-2xl transform hover:-translate-y-1 inline-flex items-center justify-center gap-2"
                     >
                       Start Free Trial
                       <FiArrowRight />
                     </a>
                     <a
                       href="#contact"
-                      className="bg-white text-primary-600 px-10 py-4 rounded-xl text-lg font-normal hover:bg-primary-50 transition border-2 border-primary-500 shadow-lg hover:shadow-xl"
+                      className="bg-white text-primary-600 px-6 py-2.5 rounded-xl text-lg font-normal hover:bg-primary-50 transition border-2 border-primary-500 shadow-lg hover:shadow-xl"
                     >
                       Contact Us
                     </a>
@@ -1244,7 +1257,7 @@ export default function LandingPage() {
                 >
                   Get in Touch
                 </ScrollFloat>
-                <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
+                <p className="text-base text-gray-600 max-w-3xl mx-auto">
                   Have questions? We&apos;d love to hear from you
                 </p>
               </div>
@@ -1305,7 +1318,7 @@ export default function LandingPage() {
                     ></textarea>
                     <button
                       type="submit"
-                      className="w-full bg-primary-600 text-white py-4 rounded-xl hover:bg-primary-700 transition font-normal text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                      className="w-full bg-primary-600 text-white py-2.5 rounded-xl hover:bg-primary-700 transition font-normal text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                     >
                       Send Message
                     </button>

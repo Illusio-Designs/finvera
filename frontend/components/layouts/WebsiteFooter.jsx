@@ -50,18 +50,8 @@ export default function WebsiteFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/invoice-templates" className="text-primary-200 hover:text-white transition">
-                  Invoice Templates
-                </Link>
-              </li>
-              <li>
                 <Link href="/use-cases" className="text-primary-200 hover:text-white transition">
                   Use Cases
-                </Link>
-              </li>
-              <li>
-                <Link href="/integrations" className="text-primary-200 hover:text-white transition">
-                  Integrations
                 </Link>
               </li>
               <li>

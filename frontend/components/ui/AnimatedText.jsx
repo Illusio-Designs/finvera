@@ -4,40 +4,37 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const AnimatedList = ({
+const AnimatedText = ({
   children,
   className = '',
   scrollContainerRef,
   scrollStart = 'top bottom-=100px',
   scrollEnd = 'bottom top+=100px',
   ease = 'power2.out',
-  yOffset = 20,
-  duration = 0.6,
-  stagger = 0.1
+  yOffset = 30,
+  duration = 0.8,
+  delay = 0
 }) => {
-  const listRef = useRef(null);
+  const textRef = useRef(null);
 
   useEffect(() => {
-    const list = listRef.current;
-    if (!list) return;
-
-    const items = Array.from(list.children);
-    if (items.length === 0) return;
+    const text = textRef.current;
+    if (!text) return;
 
     const scroller = scrollContainerRef && scrollContainerRef.current ? scrollContainerRef.current : window;
 
     // Set initial state
-    gsap.set(items, { y: yOffset, opacity: 0 });
+    gsap.set(text, { y: yOffset, opacity: 0 });
 
     // Create animation
-    const animation = gsap.to(items, {
+    const animation = gsap.to(text, {
       y: 0,
       opacity: 1,
       duration: duration,
+      delay: delay,
       ease: ease,
-      stagger: stagger,
       scrollTrigger: {
-        trigger: list,
+        trigger: text,
         scroller,
         start: scrollStart,
         end: scrollEnd,
@@ -48,18 +45,19 @@ const AnimatedList = ({
     return () => {
       animation.kill();
       ScrollTrigger.getAll().forEach(trigger => {
-        if (trigger.vars.trigger === list) {
+        if (trigger.vars.trigger === text) {
           trigger.kill();
         }
       });
     };
-  }, [scrollContainerRef, scrollStart, scrollEnd, ease, yOffset, duration, stagger]);
+  }, [scrollContainerRef, scrollStart, scrollEnd, ease, yOffset, duration, delay]);
 
   return (
-    <ul ref={listRef} className={className}>
+    <div ref={textRef} className={className}>
       {children}
-    </ul>
+    </div>
   );
 };
 
-export default AnimatedList;
+export default AnimatedText;
+

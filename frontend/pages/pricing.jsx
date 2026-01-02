@@ -8,6 +8,7 @@ import ScrollFloat from '../components/ui/ScrollFloat';
 import { pricingAPI } from '../lib/api';
 import { FiCheck, FiX, FiZap, FiBriefcase, FiAward, FiArrowRight, FiPlus, FiMinus } from 'react-icons/fi';
 import AnimatedList from '../components/ui/AnimatedList';
+import AnimatedText from '../components/ui/AnimatedText';
 
 export default function PricingPage() {
   const [clientRegisterUrl, setClientRegisterUrl] = useState('');
@@ -100,7 +101,7 @@ export default function PricingPage() {
               <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
                 Simple, Transparent Pricing
               </h1>
-              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
+              <p className="text-base text-gray-600 max-w-3xl mx-auto">
                 Choose the perfect plan for your business. All plans include a free trial. 
                 Cancel anytime. No hidden fees.
               </p>
@@ -297,7 +298,7 @@ export default function PricingPage() {
                         href={!hasCustomPrice ? `${getClientRegisterUrl()}?plan_id=${plan.id}&billing_cycle=${billingCycle}` : '/contact'}
                         target={!hasCustomPrice ? '_blank' : undefined}
                         rel={!hasCustomPrice ? 'noopener noreferrer' : undefined}
-                        className={`block w-full text-center py-3 rounded-lg hover:opacity-90 transition font-normal text-base ${
+                        className={`block w-full text-center py-2 rounded-lg hover:opacity-90 transition font-normal text-base ${
                           isPopular
                             ? 'bg-white text-primary-600 hover:bg-gray-50'
                             : !hasCustomPrice
@@ -364,7 +365,7 @@ export default function PricingPage() {
             <div className="max-w-4xl mx-auto text-center">
               <div className="bg-white rounded-2xl p-8 shadow-lg border border-green-200">
                 <h3 className="text-2xl font-bold text-gray-900 mb-3">Start Your Free Trial Today</h3>
-                <p className="text-[1.2rem] text-gray-600">
+                <p className="text-base text-gray-600">
                 No credit card required • Full access to all features • Cancel anytime
               </p>
               </div>
@@ -388,9 +389,9 @@ export default function PricingPage() {
                 >
                   Frequently Asked Questions
                 </ScrollFloat>
-                <p className="text-[1.2rem] text-gray-600 max-w-2xl mx-auto">
+                <p className="text-base text-gray-600 max-w-2xl mx-auto">
                   Everything you need to know about our pricing and plans
-                  </p>
+                </p>
                 </div>
               <AnimatedList
                 items={[
@@ -436,7 +437,7 @@ export default function PricingPage() {
                     </button>
                     {openFaqIndex === index && (
                       <div className="px-6 pb-6">
-                        <p className="text-[1.2rem] text-gray-600 leading-relaxed">
+                        <p className="text-base text-gray-600 leading-relaxed">
                           {faq.answer}
                         </p>
                       </div>
@@ -459,12 +460,12 @@ export default function PricingPage() {
                   <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
                     Still have questions?
                   </h2>
-                  <p className="text-[1.2rem] text-gray-600 mb-8">
+                  <p className="text-base text-gray-600 mb-8">
                     Our team is here to help you choose the right plan for your business
                   </p>
                   <Link
                     href="/contact"
-                    className="inline-flex items-center justify-center gap-2 bg-primary-600 text-white px-8 py-4 rounded-lg hover:bg-primary-700 transition font-normal text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
+                    className="inline-flex items-center justify-center gap-2 bg-primary-600 text-white px-5 py-2 rounded-lg hover:bg-primary-700 transition font-normal text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
                   >
                     Contact Sales Team
                     <FiArrowRight />
