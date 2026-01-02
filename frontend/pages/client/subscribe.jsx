@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
 import toast, { Toaster } from 'react-hot-toast';
@@ -19,18 +19,7 @@ export default function SubscribePage() {
   const [planLoading, setPlanLoading] = useState(true);
   const [referralCode, setReferralCode] = useState('');
 
-  useEffect(() => {
-    const { plan_id, billing_cycle } = router.query;
-    if (plan_id) {
-      setBillingCycle(billing_cycle || 'monthly');
-      fetchPlan(plan_id);
-    } else {
-      toast.error('No plan selected');
-      router.push('/pricing');
-    }
-  }, [router.query]);
-
-  const fetchPlan = async (planId) => {
+  const fetchPlan = useCallback(async (planId) => {
     try {
       setPlanLoading(true);
       const response = await pricingAPI.get(planId);
@@ -47,7 +36,18 @@ export default function SubscribePage() {
     } finally {
       setPlanLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    const { plan_id, billing_cycle } = router.query;
+    if (plan_id) {
+      setBillingCycle(billing_cycle || 'monthly');
+      fetchPlan(plan_id);
+    } else {
+      toast.error('No plan selected');
+      router.push('/pricing');
+    }
+  }, [router.query, fetchPlan]);
 
   const formatPrice = (price, currency = 'INR') => {
     if (!price && price !== 0) return 'Custom';

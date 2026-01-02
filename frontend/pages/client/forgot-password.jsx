@@ -92,14 +92,14 @@ export default function ForgotPassword() {
             <div className="mt-8 space-y-6">
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <p className="text-sm text-green-800">
-                  We've sent a password reset link to <strong>{email}</strong>. 
+                  We&apos;ve sent a password reset link to <strong>{email}</strong>. 
                   Please check your email and follow the instructions to reset your password.
                 </p>
               </div>
 
               <div className="text-center space-y-2">
                 <p className="text-sm text-gray-600">
-                  Didn't receive the email? Check your spam folder or try again.
+                  Didn&apos;t receive the email? Check your spam folder or try again.
                 </p>
                 <button
                   onClick={() => {
