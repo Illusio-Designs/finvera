@@ -7,6 +7,7 @@ import ScrollFloat from '../components/ui/ScrollFloat';
 import { FiSearch, FiBook, FiMessageCircle, FiVideo, FiHelpCircle, FiPlus, FiMinus } from 'react-icons/fi';
 import { useState } from 'react';
 import AnimatedList from '../components/ui/AnimatedList';
+import AnimatedText from '../components/ui/AnimatedText';
 
 export default function HelpPage() {
   const [searchQuery, setSearchQuery] = useState('');
