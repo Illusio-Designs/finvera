@@ -54,6 +54,7 @@ module.exports = {
         salesman_code: salesmanCodeInput,
         full_name,
         distributor_id,
+        gstin,
         territory,
         commission_rate,
         target_monthly,
@@ -62,6 +63,27 @@ module.exports = {
       } = req.body;
 
       const salesman_code = normalizeOptionalCode(salesmanCodeInput);
+
+      // Validate GSTIN if provided
+      let cleanedGST = null;
+      if (gstin) {
+        cleanedGST = gstin.replace(/\s/g, '').toUpperCase();
+        if (cleanedGST.length !== 15 || !/^[0-9A-Z]{15}$/.test(cleanedGST)) {
+          return res.status(400).json({ 
+            message: 'Invalid GSTIN format. GSTIN must be 15 alphanumeric characters.',
+            field: 'gstin'
+          });
+        }
+        
+        // Check if GSTIN already exists
+        const existingGSTIN = await Salesman.findOne({ where: { gstin: cleanedGST } });
+        if (existingGSTIN) {
+          return res.status(409).json({ 
+            message: 'GSTIN already exists. Please use a different GSTIN.',
+            field: 'gstin'
+          });
+        }
+      }
 
       const tx = await sequelize.transaction();
       try {
@@ -99,6 +121,7 @@ module.exports = {
                 distributor_id,
                 salesman_code: codeToUse,
                 full_name,
+                gstin: cleanedGST,
                 territory: territory || [],
                 commission_rate: parseFloat(commission_rate) || 0,
                 target_monthly: parseFloat(target_monthly) || 0,

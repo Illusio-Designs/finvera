@@ -16,6 +16,7 @@ import { useApi } from '../../hooks/useApi';
 import { adminAPI } from '../../lib/api';
 import toast, { Toaster } from 'react-hot-toast';
 import { FiPlus, FiEdit, FiTrash2, FiSave, FiX, FiEye, FiUsers, FiBriefcase, FiMapPin } from 'react-icons/fi';
+import { validateGSTIN } from '../../lib/formatters';
 
 // Indian States for territory selection
 const INDIAN_STATES = [
@@ -45,6 +46,7 @@ export default function SalesmenList() {
     salesman_code: '',
     full_name: '',
     distributor_id: '',
+    gstin: '',
     commission_rate: '',
     is_active: true,
   });
@@ -86,6 +88,7 @@ export default function SalesmenList() {
         salesman_code: salesman.salesman_code || '',
         full_name: user.full_name || '',
         distributor_id: salesman.distributor_id || '',
+        gstin: salesman.gstin || '',
         commission_rate: salesman.commission_rate || '',
         is_active: salesman.is_active !== undefined ? salesman.is_active : true,
       });
@@ -172,6 +175,9 @@ export default function SalesmenList() {
     if (modalMode === 'edit' && !formData.salesman_code.trim()) {
       errors.salesman_code = 'Salesman code is required';
     }
+    if (formData.gstin && !validateGSTIN(formData.gstin)) {
+      errors.gstin = 'GSTIN must be 15 alphanumeric characters';
+    }
 
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
@@ -218,6 +224,7 @@ export default function SalesmenList() {
       salesman_code: '',
       full_name: '',
       distributor_id: '',
+      gstin: '',
       commission_rate: '',
       is_active: true,
     });
@@ -389,6 +396,22 @@ export default function SalesmenList() {
                     touched={!!formErrors.full_name}
                     required
                     placeholder="John Doe"
+                  />
+
+                  <FormInput
+                    name="gstin"
+                    label="GST Number (for invoicing)"
+                    value={formData.gstin}
+                    onChange={(name, value) => {
+                      // Convert to uppercase automatically
+                      const upperValue = value.toUpperCase();
+                      handleChange(name, upperValue);
+                    }}
+                    error={formErrors.gstin}
+                    touched={!!formErrors.gstin}
+                    placeholder="24ABKPZ9119Q1ZL (15 characters)"
+                    maxLength={15}
+                    style={{ textTransform: 'uppercase' }}
                   />
                 </div>
               </div>

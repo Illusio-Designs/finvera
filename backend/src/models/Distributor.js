@@ -21,6 +21,11 @@ module.exports = (sequelize, DataTypes) => {
         unique: true,
       },
       company_name: DataTypes.STRING,
+      gstin: {
+        type: DataTypes.STRING(15),
+        allowNull: true,
+        comment: 'GSTIN for invoicing',
+      },
       territory: DataTypes.JSON,
       commission_rate: DataTypes.DECIMAL(5, 2),
       payment_terms: DataTypes.STRING,
