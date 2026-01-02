@@ -116,9 +116,17 @@ export default function DocsPage() {
         <section className="py-10 bg-white">
           <div className="container mx-auto px-6">
             <div className="text-center mb-6">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">
+              <ScrollFloat
+                animationDuration={1}
+                ease='back.inOut(2)'
+                scrollStart='center bottom+=50%'
+                scrollEnd='bottom bottom-=40%'
+                stagger={0.03}
+                containerClassName="mb-3"
+                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+              >
                 Video Tutorials
-              </h2>
+              </ScrollFloat>
               <p className="text-base text-gray-600 max-w-3xl mx-auto">
                 Learn Finvera with step-by-step video guides
               </p>
@@ -151,7 +159,17 @@ export default function DocsPage() {
         <section className="py-10 bg-white">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6 text-center">Quick Start Guide</h2>
+              <ScrollFloat
+                animationDuration={1}
+                ease='back.inOut(2)'
+                scrollStart='center bottom+=50%'
+                scrollEnd='bottom bottom-=40%'
+                stagger={0.03}
+                containerClassName="mb-6 text-center"
+                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+              >
+                Quick Start Guide
+              </ScrollFloat>
               <div className="bg-white p-8 rounded-2xl shadow-xl">
                 <ol className="space-y-4">
                   <li className="flex items-start">

@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
+import ScrollFloat from '../components/ui/ScrollFloat';
 import { 
   FiBarChart2, FiFileText, FiDollarSign, FiTrendingUp, 
   FiBriefcase, FiTarget, FiShield, FiZap, FiSmartphone, 
@@ -257,9 +258,17 @@ export default function FeaturesPage() {
         <section className="py-24 pt-40 bg-white">
           <div className="container mx-auto px-6">
             <div className="text-center mb-20">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
-              Powerful Features
-              </h2>
+              <ScrollFloat
+                animationDuration={1}
+                ease='back.inOut(2)'
+                scrollStart='center bottom+=50%'
+                scrollEnd='bottom bottom-=40%'
+                stagger={0.03}
+                containerClassName="mb-6"
+                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+              >
+                Powerful Features
+              </ScrollFloat>
               <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
               Everything you need to manage your accounting and compliance in one place. 
               Built for businesses of all sizes.
@@ -296,9 +305,17 @@ export default function FeaturesPage() {
         <section className="py-24 bg-gradient-to-br from-primary-50 via-white to-primary-100">
           <div className="container mx-auto px-6">
             <div className="text-center mb-20">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+              <ScrollFloat
+                animationDuration={1}
+                ease='back.inOut(2)'
+                scrollStart='center bottom+=50%'
+                scrollEnd='bottom bottom-=40%'
+                stagger={0.03}
+                containerClassName="mb-6"
+                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+              >
                 Additional Benefits
-              </h2>
+              </ScrollFloat>
               <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 More reasons why thousands of businesses trust Finvera
               </p>
@@ -328,9 +345,17 @@ export default function FeaturesPage() {
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary-100 rounded-full blur-3xl opacity-50 -mr-32 -mt-32"></div>
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary-100 rounded-full blur-3xl opacity-50 -ml-32 -mb-32"></div>
                 <div className="relative z-10">
-                  <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+                  <ScrollFloat
+                    animationDuration={1}
+                    ease='back.inOut(2)'
+                    scrollStart='center bottom+=50%'
+                    scrollEnd='bottom bottom-=40%'
+                    stagger={0.03}
+                    containerClassName="mb-6"
+                    textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                  >
                     Ready to Get Started?
-                  </h2>
+                  </ScrollFloat>
                   <p className="text-[1.2rem] text-gray-600 mb-8">
                     Join thousands of businesses using Finvera to streamline their accounting
                   </p>

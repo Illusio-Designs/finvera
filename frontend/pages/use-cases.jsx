@@ -3,6 +3,7 @@ import Link from 'next/link';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
+import ScrollFloat from '../components/ui/ScrollFloat';
 import { 
   FiPackage, FiLayers, FiZap, FiBriefcase, FiSettings,
   FiCheck, FiArrowRight, FiTrendingUp, FiUsers, FiBarChart2
@@ -282,9 +283,17 @@ export default function UseCasesPage() {
                 <div className="absolute top-0 right-0 w-48 h-48 bg-primary-100 rounded-full blur-3xl opacity-40 -mr-24 -mt-24"></div>
                 <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary-100 rounded-full blur-3xl opacity-40 -ml-24 -mb-24"></div>
                 <div className="relative z-10">
-                  <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
+                  <ScrollFloat
+                    animationDuration={1}
+                    ease='back.inOut(2)'
+                    scrollStart='center bottom+=50%'
+                    scrollEnd='bottom bottom-=40%'
+                    stagger={0.03}
+                    containerClassName="mb-5"
+                    textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                  >
                     Not Sure Which Plan Fits You?
-                  </h2>
+                  </ScrollFloat>
                   <p className="text-[1.2rem] text-gray-600 mb-8 max-w-2xl mx-auto">
                     Our team can help you choose the perfect solution for your business
                   </p>

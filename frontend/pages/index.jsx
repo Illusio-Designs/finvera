@@ -4,6 +4,7 @@ import Link from 'next/link';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
+import ScrollFloat from '../components/ui/ScrollFloat';
 import { pricingAPI, reviewAPI } from '../lib/api';
 import { 
   FiBarChart2, FiFileText, FiDollarSign, FiTrendingUp, 
@@ -217,9 +218,17 @@ export default function LandingPage() {
         <section id="features" className="py-24 bg-white">
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">
+              <ScrollFloat
+                animationDuration={1}
+                ease='back.inOut(2)'
+                scrollStart='center bottom+=50%'
+                scrollEnd='bottom bottom-=40%'
+                stagger={0.03}
+                containerClassName="mb-4"
+                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+              >
                 Powerful Features
-              </h2>
+              </ScrollFloat>
               <p className="text-[1.2rem] text-gray-600 max-w-2xl mx-auto">
                 Everything you need to manage your accounting and compliance in one place
               </p>
@@ -292,9 +301,17 @@ export default function LandingPage() {
         <section className="py-24 bg-white">
           <div className="container mx-auto px-6">
             <div className="text-center mb-20">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+              <ScrollFloat
+                animationDuration={1}
+                ease='back.inOut(2)'
+                scrollStart='center bottom+=50%'
+                scrollEnd='bottom bottom-=40%'
+                stagger={0.03}
+                containerClassName="mb-6"
+                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+              >
                 Awesome Templates
-              </h2>
+              </ScrollFloat>
               <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 Tailor made, professional, and hand crafted templates for your business to stand out.
               </p>
@@ -325,9 +342,17 @@ export default function LandingPage() {
         <section className="py-24 bg-gradient-to-br from-primary-50 via-white to-primary-100">
           <div className="container mx-auto px-6">
             <div className="text-center mb-20">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+              <ScrollFloat
+                animationDuration={1}
+                ease='back.inOut(2)'
+                scrollStart='center bottom+=50%'
+                scrollEnd='bottom bottom-=40%'
+                stagger={0.03}
+                containerClassName="mb-6"
+                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+              >
                 Perfect for Your Business
-              </h2>
+              </ScrollFloat>
               <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 Quick invoicing for retailers, distributors, startups, freelancers, and service providers
               </p>
@@ -371,9 +396,17 @@ export default function LandingPage() {
               {/* Inventory Management */}
               <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
                 <div>
-                  <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+                  <ScrollFloat
+                    animationDuration={1}
+                    ease='back.inOut(2)'
+                    scrollStart='center bottom+=50%'
+                    scrollEnd='bottom bottom-=40%'
+                    stagger={0.03}
+                    containerClassName="mb-6"
+                    textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                  >
                     Inventory so simple, it feels like magic
-                  </h2>
+                  </ScrollFloat>
                   <p className="text-gray-600 mb-6 leading-relaxed">
                     Add items, track stock, and manage everything in seconds. No training needed. It&apos;s that easy.
                   </p>
@@ -401,9 +434,17 @@ export default function LandingPage() {
                   </div>
                 </div>
                 <div className="order-1 md:order-2">
-                  <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+                  <ScrollFloat
+                    animationDuration={1}
+                    ease='back.inOut(2)'
+                    scrollStart='center bottom+=50%'
+                    scrollEnd='bottom bottom-=40%'
+                    stagger={0.03}
+                    containerClassName="mb-6"
+                    textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                  >
                     Record payments effortlessly
-                  </h2>
+                  </ScrollFloat>
                   <p className="text-gray-600 mb-6 leading-relaxed">
                     Track every payment, every time — without lifting a finger. While others make it complicated, we make it simple.
                   </p>
@@ -421,9 +462,17 @@ export default function LandingPage() {
               {/* WhatsApp/Email Sharing */}
               <div className="grid md:grid-cols-2 gap-12 items-center">
                 <div>
-                  <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+                  <ScrollFloat
+                    animationDuration={1}
+                    ease='back.inOut(2)'
+                    scrollStart='center bottom+=50%'
+                    scrollEnd='bottom bottom-=40%'
+                    stagger={0.03}
+                    containerClassName="mb-6"
+                    textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                  >
                     Share anywhere. Get paid faster.
-                  </h2>
+                  </ScrollFloat>
                   <p className="text-gray-600 mb-6 leading-relaxed">
                     Send invoices instantly via WhatsApp, email, or SMS. And with smart auto-reminders, you don&apos;t have to chase anyone.
                   </p>
@@ -450,9 +499,17 @@ export default function LandingPage() {
         <section className="py-24 bg-gradient-to-br from-primary-50 via-white to-primary-100">
           <div className="container mx-auto px-6">
             <div className="max-w-6xl mx-auto text-center">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+              <ScrollFloat
+                animationDuration={1}
+                ease='back.inOut(2)'
+                scrollStart='center bottom+=50%'
+                scrollEnd='bottom bottom-=40%'
+                stagger={0.03}
+                containerClassName="mb-6"
+                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+              >
                 E-way Bills
-              </h2>
+              </ScrollFloat>
               <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
                 Create in seconds, anywhere
               </h3>
@@ -476,9 +533,17 @@ export default function LandingPage() {
         <section className="py-24 bg-white">
           <div className="container mx-auto px-6">
             <div className="text-center mb-20">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+              <ScrollFloat
+                animationDuration={1}
+                ease='back.inOut(2)'
+                scrollStart='center bottom+=50%'
+                scrollEnd='bottom bottom-=40%'
+                stagger={0.03}
+                containerClassName="mb-6"
+                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+              >
                 Mind-blowing convenience
-              </h2>
+              </ScrollFloat>
               <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 Finvera is built to make your life easier. We&apos;re always doing things for you to experience ultimate convenience.
               </p>
@@ -517,9 +582,17 @@ export default function LandingPage() {
         to-primary-100">
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-6xl mx-auto text-center">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
+              <ScrollFloat
+                animationDuration={1}
+                ease='back.inOut(2)'
+                scrollStart='center bottom+=50%'
+                scrollEnd='bottom bottom-=40%'
+                stagger={0.03}
+                containerClassName="mb-5"
+                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+              >
                 Invisible security. Unbreakable trust.
-              </h2>
+              </ScrollFloat>
               <p className="text-[1.2rem] text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
                 Your data stays private. Always encrypted.
               </p>
@@ -554,9 +627,17 @@ export default function LandingPage() {
         <section className="py-24 bg-white">
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
+              <ScrollFloat
+                animationDuration={1}
+                ease='back.inOut(2)'
+                scrollStart='center bottom+=50%'
+                scrollEnd='bottom bottom-=40%'
+                stagger={0.03}
+                containerClassName="mb-5"
+                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+              >
                 Partnered with
-              </h2>
+              </ScrollFloat>
             </div>
             <div className="grid md:grid-cols-4 lg:grid-cols-7 gap-5 max-w-7xl mx-auto items-center">
               {['Tally', 'Sandbox API', 'FinBox', 'GST Portal', 'E-Invoice Portal', 'E-Way Bill Portal', 'Payment Gateways'].map((partner) => (
@@ -583,9 +664,17 @@ export default function LandingPage() {
         <section className="py-24 bg-gradient-to-br from-primary-50 via-white to-primary-100">
           <div className="container mx-auto px-6">
             <div className="text-center mb-20">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+              <ScrollFloat
+                animationDuration={1}
+                ease='back.inOut(2)'
+                scrollStart='center bottom+=50%'
+                scrollEnd='bottom bottom-=40%'
+                stagger={0.03}
+                containerClassName="mb-6"
+                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+              >
                 Our Services
-              </h2>
+              </ScrollFloat>
               <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 Comprehensive accounting solutions tailored for your business needs
               </p>
@@ -628,9 +717,17 @@ export default function LandingPage() {
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-16">
-                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
+                <ScrollFloat
+                  animationDuration={1}
+                  ease='back.inOut(2)'
+                  scrollStart='center bottom+=50%'
+                  scrollEnd='bottom bottom-=40%'
+                  stagger={0.03}
+                  containerClassName="mb-5"
+                  textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                >
                   Why Choose Finvera?
-                </h2>
+                </ScrollFloat>
                 <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                   Trusted by businesses for reliable accounting solutions
                 </p>
@@ -689,9 +786,17 @@ export default function LandingPage() {
         <section className="py-24 bg-white">
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
+              <ScrollFloat
+                animationDuration={1}
+                ease='back.inOut(2)'
+                scrollStart='center bottom+=50%'
+                scrollEnd='bottom bottom-=40%'
+                stagger={0.03}
+                containerClassName="mb-5"
+                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+              >
                 How It Works
-              </h2>
+              </ScrollFloat>
               <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 Get started in minutes with our simple process
               </p>
@@ -728,9 +833,17 @@ export default function LandingPage() {
         <section className="py-24 bg-white">
           <div className="container mx-auto px-6">
             <div className="text-center mb-20">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+              <ScrollFloat
+                animationDuration={1}
+                ease='back.inOut(2)'
+                scrollStart='center bottom+=50%'
+                scrollEnd='bottom bottom-=40%'
+                stagger={0.03}
+                containerClassName="mb-6"
+                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+              >
                 What Our Clients Say
-              </h2>
+              </ScrollFloat>
               <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 Trusted by businesses across industries
               </p>
@@ -823,9 +936,17 @@ export default function LandingPage() {
         <section id="pricing" className="py-24 bg-white">
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
+              <ScrollFloat
+                animationDuration={1}
+                ease='back.inOut(2)'
+                scrollStart='center bottom+=50%'
+                scrollEnd='bottom bottom-=40%'
+                stagger={0.03}
+                containerClassName="mb-5"
+                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+              >
                 Simple, Transparent Pricing
-              </h2>
+              </ScrollFloat>
               <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 Choose the plan that fits your business needs
               </p>
@@ -1037,9 +1158,17 @@ export default function LandingPage() {
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary-100 rounded-full blur-3xl opacity-50 -mr-32 -mt-32"></div>
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary-100 rounded-full blur-3xl opacity-50 -ml-32 -mb-32"></div>
                 <div className="relative z-10">
-                  <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+                  <ScrollFloat
+                    animationDuration={1}
+                    ease='back.inOut(2)'
+                    scrollStart='center bottom+=50%'
+                    scrollEnd='bottom bottom-=40%'
+                    stagger={0.03}
+                    containerClassName="mb-6"
+                    textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                  >
                     Ready to Get Started?
-                  </h2>
+                  </ScrollFloat>
                   <p className="text-xl md:text-2xl text-gray-600 mb-12">
                     Join thousands of businesses using Finvera for their accounting needs
                   </p>
@@ -1071,9 +1200,17 @@ export default function LandingPage() {
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-16">
-                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
+                <ScrollFloat
+                  animationDuration={1}
+                  ease='back.inOut(2)'
+                  scrollStart='center bottom+=50%'
+                  scrollEnd='bottom bottom-=40%'
+                  stagger={0.03}
+                  containerClassName="mb-5"
+                  textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                >
                   Get in Touch
-                </h2>
+                </ScrollFloat>
                 <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                   Have questions? We&apos;d love to hear from you
                 </p>

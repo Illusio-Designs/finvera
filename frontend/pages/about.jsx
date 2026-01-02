@@ -3,6 +3,7 @@ import Link from 'next/link';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
+import ScrollFloat from '../components/ui/ScrollFloat';
 import { FiTarget, FiUsers, FiAward, FiTrendingUp, FiShield, FiLink, FiCheck, FiArrowRight } from 'react-icons/fi';
 
 export default function AboutPage() {
@@ -37,9 +38,17 @@ export default function AboutPage() {
             <div className="max-w-6xl mx-auto">
               <div className="grid md:grid-cols-2 gap-12 items-center">
                 <div>
-                  <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+                  <ScrollFloat
+                    animationDuration={1}
+                    ease='back.inOut(2)'
+                    scrollStart='center bottom+=50%'
+                    scrollEnd='bottom bottom-=40%'
+                    stagger={0.03}
+                    containerClassName="mb-6"
+                    textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                  >
                     Our Mission
-                  </h2>
+                  </ScrollFloat>
                   <p className="text-[1.2rem] text-gray-600 leading-relaxed mb-4">
                     At Finvera, our mission is to simplify accounting and financial management for businesses of all sizes. 
                     We believe that every business deserves access to professional-grade accounting tools that are both 
@@ -81,9 +90,17 @@ export default function AboutPage() {
         <section className="py-20 bg-gradient-to-br from-primary-50 to-white">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+              <ScrollFloat
+                animationDuration={1}
+                ease='back.inOut(2)'
+                scrollStart='center bottom+=50%'
+                scrollEnd='bottom bottom-=40%'
+                stagger={0.03}
+                containerClassName="mb-6"
+                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+              >
                 Why We Started
-              </h2>
+              </ScrollFloat>
               <p className="text-xl text-gray-600 leading-relaxed">
                 We recognized that many businesses struggle with complex accounting processes, GST compliance, 
                 and financial reporting. Finvera was created to solve these challenges by providing an 
@@ -97,9 +114,17 @@ export default function AboutPage() {
         <section className="py-24 bg-white">
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
+              <ScrollFloat
+                animationDuration={1}
+                ease='back.inOut(2)'
+                scrollStart='center bottom+=50%'
+                scrollEnd='bottom bottom-=40%'
+                stagger={0.03}
+                containerClassName="mb-5"
+                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+              >
                 Partnered with
-              </h2>
+              </ScrollFloat>
               <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                 Trusted integrations and partnerships for seamless business operations
               </p>
@@ -121,9 +146,17 @@ export default function AboutPage() {
           <div className="container mx-auto px-6">
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+                <ScrollFloat
+                  animationDuration={1}
+                  ease='back.inOut(2)'
+                  scrollStart='center bottom+=50%'
+                  scrollEnd='bottom bottom-=40%'
+                  stagger={0.03}
+                  containerClassName="mb-6"
+                  textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                >
                   Security & Trust
-                </h2>
+                </ScrollFloat>
                 <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
                   Your data security is our top priority
                 </p>
