@@ -3,6 +3,7 @@ import Link from 'next/link';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
+import ScrollFloat from '../components/ui/ScrollFloat';
 import { 
   FiFileText, FiPrinter, FiDownload, FiCheck, FiArrowRight,
   FiSmartphone, FiMonitor, FiSettings
@@ -91,9 +92,17 @@ export default function InvoiceTemplatesPage() {
         <section className="py-20 bg-gradient-to-br from-primary-50 via-white to-primary-100">
           <div className="container mx-auto px-6">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+              <ScrollFloat
+                animationDuration={1}
+                ease='back.inOut(2)'
+                scrollStart='center bottom+=50%'
+                scrollEnd='bottom bottom-=40%'
+                stagger={0.03}
+                containerClassName="mb-6"
+                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+              >
                 Print Size Options
-              </h2>
+              </ScrollFloat>
               <p className="text-base text-gray-600 max-w-3xl mx-auto">
                 Choose from multiple size options to match your printing needs
               </p>
@@ -123,9 +132,17 @@ export default function InvoiceTemplatesPage() {
           <div className="container mx-auto px-6">
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+                <ScrollFloat
+                  animationDuration={1}
+                  ease='back.inOut(2)'
+                  scrollStart='center bottom+=50%'
+                  scrollEnd='bottom bottom-=40%'
+                  stagger={0.03}
+                  containerClassName="mb-6"
+                  textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                >
                   Customize Your Templates
-                </h2>
+                </ScrollFloat>
                 <p className="text-base text-gray-600 max-w-3xl mx-auto">
                   Make your invoices truly yours with extensive customization options
                 </p>
@@ -155,9 +172,17 @@ export default function InvoiceTemplatesPage() {
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary-100 rounded-full blur-3xl opacity-50 -mr-32 -mt-32"></div>
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary-100 rounded-full blur-3xl opacity-50 -ml-32 -mb-32"></div>
                 <div className="relative z-10">
-                  <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+                  <ScrollFloat
+                    animationDuration={1}
+                    ease='back.inOut(2)'
+                    scrollStart='center bottom+=50%'
+                    scrollEnd='bottom bottom-=40%'
+                    stagger={0.03}
+                    containerClassName="mb-6"
+                    textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                  >
                     Ready to Create Professional Invoices?
-                  </h2>
+                  </ScrollFloat>
                   <p className="text-base text-gray-600 mb-8">
                     Start using our templates today and create invoices in 10 seconds
                   </p>

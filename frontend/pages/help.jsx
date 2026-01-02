@@ -3,8 +3,10 @@ import Link from 'next/link';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
+import ScrollFloat from '../components/ui/ScrollFloat';
 import { FiSearch, FiBook, FiMessageCircle, FiVideo, FiHelpCircle, FiPlus, FiMinus } from 'react-icons/fi';
 import { useState } from 'react';
+import AnimatedList from '../components/ui/AnimatedList';
 
 export default function HelpPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -100,9 +102,17 @@ export default function HelpPage() {
         <section id="faq" className="py-24 bg-gradient-to-br from-primary-50 via-white to-primary-100">
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-12 text-center">
+              <ScrollFloat
+                animationDuration={1}
+                ease='back.inOut(2)'
+                scrollStart='center bottom+=50%'
+                scrollEnd='bottom bottom-=40%'
+                stagger={0.03}
+                containerClassName="mb-12 text-center"
+                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+              >
                 Frequently Asked Questions
-              </h2>
+              </ScrollFloat>
               <div className="mb-8">
                 <div className="flex flex-wrap gap-3 justify-center">
                   {['Getting Started', 'Billing', 'GST & Compliance', 'Account Management', 'Technical Support'].map((category) => (
@@ -115,9 +125,16 @@ export default function HelpPage() {
                   ))}
                 </div>
               </div>
-              <div className="space-y-4">
-                {faqs.map((faq, index) => (
-                  <div key={index} className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+              <AnimatedList
+                items={faqs}
+                onItemSelect={(item, index) => {
+                  setOpenFaqIndex(openFaqIndex === index ? null : index);
+                }}
+                showGradients={true}
+                enableArrowNavigation={true}
+                displayScrollbar={true}
+                renderItem={(faq, index, isSelected) => (
+                  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                     <button
                       onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)}
                       className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition"
@@ -141,8 +158,8 @@ export default function HelpPage() {
                       </div>
                     )}
                   </div>
-                ))}
-              </div>
+                )}
+              />
             </div>
           </div>
         </section>

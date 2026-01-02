@@ -4,8 +4,10 @@ import Link from 'next/link';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
+import ScrollFloat from '../components/ui/ScrollFloat';
 import { pricingAPI } from '../lib/api';
 import { FiCheck, FiX, FiZap, FiBriefcase, FiAward, FiArrowRight, FiPlus, FiMinus } from 'react-icons/fi';
+import AnimatedList from '../components/ui/AnimatedList';
 
 export default function PricingPage() {
   const [clientRegisterUrl, setClientRegisterUrl] = useState('');
@@ -375,15 +377,23 @@ export default function PricingPage() {
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
             <div className="max-w-4xl mx-auto">
               <div className="text-center mb-16">
-                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
-                Frequently Asked Questions
-              </h2>
+                <ScrollFloat
+                  animationDuration={1}
+                  ease='back.inOut(2)'
+                  scrollStart='center bottom+=50%'
+                  scrollEnd='bottom bottom-=40%'
+                  stagger={0.03}
+                  containerClassName="mb-5"
+                  textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                >
+                  Frequently Asked Questions
+                </ScrollFloat>
                 <p className="text-[1.2rem] text-gray-600 max-w-2xl mx-auto">
                   Everything you need to know about our pricing and plans
                   </p>
                 </div>
-              <div className="space-y-4">
-                {[
+              <AnimatedList
+                items={[
                   {
                     question: 'Can I change my plan later?',
                     answer: 'Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and we\'ll prorate any charges.'
@@ -400,33 +410,40 @@ export default function PricingPage() {
                     question: 'Can I cancel anytime?',
                     answer: 'Yes, you can cancel your subscription at any time. You\'ll continue to have access until the end of your billing period.'
                   }
-                ].map((faq, index) => (
-                  <div key={index} className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                ]}
+                onItemSelect={(item, index) => {
+                  setOpenFaqIndex(openFaqIndex === index ? null : index);
+                }}
+                showGradients={true}
+                enableArrowNavigation={true}
+                displayScrollbar={true}
+                renderItem={(faq, index, isSelected) => (
+                  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                     <button
                       onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)}
                       className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition"
                     >
                       <h3 className="text-lg font-bold text-gray-900 text-left pr-4">
                         {faq.question}
-                  </h3>
+                      </h3>
                       <div className="flex-shrink-0">
                         {openFaqIndex === index ? (
                           <FiMinus className="text-primary-600 text-2xl" />
                         ) : (
                           <FiPlus className="text-primary-600 text-2xl" />
                         )}
-                </div>
+                      </div>
                     </button>
                     {openFaqIndex === index && (
                       <div className="px-6 pb-6">
                         <p className="text-[1.2rem] text-gray-600 leading-relaxed">
                           {faq.answer}
-                  </p>
-                </div>
+                        </p>
+                      </div>
                     )}
-                </div>
-                ))}
-              </div>
+                  </div>
+                )}
+              />
             </div>
           </div>
         </section>

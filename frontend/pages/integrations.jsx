@@ -3,6 +3,7 @@ import Link from 'next/link';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
+import ScrollFloat from '../components/ui/ScrollFloat';
 import { 
   FiLink, FiCheck, FiArrowRight, FiDatabase, FiShield,
   FiCreditCard, FiFileText, FiBarChart2, FiSettings
@@ -182,9 +183,17 @@ export default function IntegrationsPage() {
         <section className="py-20 bg-gradient-to-br from-primary-50 via-white to-primary-100">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+              <ScrollFloat
+                animationDuration={1}
+                ease='back.inOut(2)'
+                scrollStart='center bottom+=50%'
+                scrollEnd='bottom bottom-=40%'
+                stagger={0.03}
+                containerClassName="mb-6"
+                textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+              >
                 Developer API
-              </h2>
+              </ScrollFloat>
               <p className="text-[1.2rem] text-gray-600 mb-8 leading-relaxed">
                 Build custom integrations with our comprehensive API. Connect Finvera with your existing systems.
               </p>
@@ -230,9 +239,17 @@ export default function IntegrationsPage() {
             <div className="max-w-2xl mx-auto">
               <div className="bg-white p-8 rounded-lg border border-gray-200">
                 <div className="text-center mb-6">
-                  <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">
+                  <ScrollFloat
+                    animationDuration={1}
+                    ease='back.inOut(2)'
+                    scrollStart='center bottom+=50%'
+                    scrollEnd='bottom bottom-=40%'
+                    stagger={0.03}
+                    containerClassName="mb-4"
+                    textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                  >
                     Need a Different Integration?
-                  </h2>
+                  </ScrollFloat>
                   <p className="text-gray-600 text-sm">
                     We&apos;re always adding new integrations. Let us know what you need and we&apos;ll consider it for our roadmap.
                   </p>
@@ -282,9 +299,17 @@ export default function IntegrationsPage() {
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary-100 rounded-full blur-3xl opacity-50 -mr-32 -mt-32"></div>
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary-100 rounded-full blur-3xl opacity-50 -ml-32 -mb-32"></div>
                 <div className="relative z-10">
-                  <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
+                  <ScrollFloat
+                    animationDuration={1}
+                    ease='back.inOut(2)'
+                    scrollStart='center bottom+=50%'
+                    scrollEnd='bottom bottom-=40%'
+                    stagger={0.03}
+                    containerClassName="mb-6"
+                    textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
+                  >
                     Ready to Integrate?
-                  </h2>
+                  </ScrollFloat>
                   <p className="text-base text-gray-600 mb-8">
                     Start using Finvera with your favorite tools today
                   </p>
