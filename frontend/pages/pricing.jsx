@@ -317,7 +317,7 @@ export default function PricingPage() {
                     {/* Top Row: Left, Popular (Center), Right */}
                     <div className="grid md:grid-cols-3 gap-6 mb-6">
                       {otherPlans.length > 0 && (
-                        <div className="md:mt-[50%]">
+                        <div className="">
                           {renderPlanCard(otherPlans[0], 0)}
                         </div>
                       )}
@@ -327,7 +327,7 @@ export default function PricingPage() {
                         </div>
                       )}
                       {otherPlans.length > 1 && (
-                        <div className="md:mt-[50%]">
+                        <div className="">
                           {renderPlanCard(otherPlans[1], 1)}
                         </div>
                       )}
