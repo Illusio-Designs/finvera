@@ -4,6 +4,7 @@ import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
 import ScrollFloat from '../components/ui/ScrollFloat';
+import AnimatedCardGrid from '../components/ui/AnimatedCardGrid';
 import { 
   FiLink, FiCheck, FiArrowRight, FiDatabase, FiShield,
   FiCreditCard, FiFileText, FiBarChart2, FiSettings
@@ -141,7 +142,11 @@ export default function IntegrationsPage() {
                       </div>
                       <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900">{category.category}</h2>
                     </div>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <AnimatedCardGrid
+                      className="grid md:grid-cols-2 lg:grid-cols-3 gap-5"
+                      stagger={0.08}
+                      ease="power3.out"
+                    >
                       {category.integrations.map((integration) => (
                         <div
                           key={integration.name}
@@ -171,7 +176,7 @@ export default function IntegrationsPage() {
                           </div>
                         </div>
                       ))}
-                    </div>
+                    </AnimatedCardGrid>
                   </div>
                 );
               })}

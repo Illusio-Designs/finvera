@@ -4,6 +4,7 @@ import Link from 'next/link';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import ScrollFloat from '../components/ui/ScrollFloat';
+import AnimatedCardGrid from '../components/ui/AnimatedCardGrid';
 import { 
   FiBarChart2, FiFileText, FiDollarSign, FiTrendingUp, 
   FiBriefcase, FiTarget, FiShield, FiZap, FiSmartphone, 
@@ -274,29 +275,46 @@ export default function FeaturesPage() {
               Built for businesses of all sizes.
               </p>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-              {mainFeatures.map((feature, index) => {
-                const Icon = feature.icon;
-                return (
-                  <div key={index} className="group bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl shadow-lg hover:shadow-2xl transition-all border border-primary-100 hover:border-primary-300">
-                    <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                      <Icon className="text-white text-2xl" />
-                    </div>
-                    <h3 className="text-2xl font-bold mb-4 text-gray-900">{feature.title}</h3>
-                    <p className="text-gray-600 leading-relaxed text-lg mb-6">
-                      {feature.description}
-                    </p>
-                    <ul className="space-y-2">
-                      {feature.details.map((detail, detailIndex) => (
-                        <li key={detailIndex} className="flex items-start text-gray-700">
-                          <FiCheck className="text-primary-600 mr-2 mt-1 flex-shrink-0" />
-                          <span className="text-sm">{detail}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })}
+            <div className="max-w-7xl mx-auto space-y-8">
+              {(() => {
+                // Split features into rows of 3 for row-by-row animation
+                const rows = [];
+                for (let i = 0; i < mainFeatures.length; i += 3) {
+                  rows.push(mainFeatures.slice(i, i + 3));
+                }
+                return rows.map((row, rowIndex) => (
+                  <AnimatedCardGrid
+                    key={rowIndex}
+                    className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+                    stagger={0.08}
+                    ease="power3.out"
+                  >
+                    {row.map((feature, index) => {
+                      const Icon = feature.icon;
+                      const globalIndex = rowIndex * 3 + index;
+                      return (
+                        <div key={globalIndex} className="group bg-gradient-to-br from-primary-50 to-white p-10 rounded-2xl shadow-lg hover:shadow-2xl transition-all border border-primary-100 hover:border-primary-300">
+                          <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                            <Icon className="text-white text-2xl" />
+                          </div>
+                          <h3 className="text-2xl font-bold mb-4 text-gray-900">{feature.title}</h3>
+                          <p className="text-gray-600 leading-relaxed text-lg mb-6">
+                            {feature.description}
+                          </p>
+                          <ul className="space-y-2">
+                            {feature.details.map((detail, detailIndex) => (
+                              <li key={detailIndex} className="flex items-start text-gray-700">
+                                <FiCheck className="text-primary-600 mr-2 mt-1 flex-shrink-0" />
+                                <span className="text-sm">{detail}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })}
+                  </AnimatedCardGrid>
+                ));
+              })()}
             </div>
           </div>
         </section>
@@ -320,7 +338,11 @@ export default function FeaturesPage() {
                 More reasons why thousands of businesses trust Finvera
               </p>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            <AnimatedCardGrid
+              className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto"
+              stagger={0.08}
+              ease="power3.out"
+            >
               {additionalFeatures.map((feature, index) => {
                 const Icon = feature.icon;
                 return (
@@ -333,7 +355,7 @@ export default function FeaturesPage() {
                   </div>
                 );
               })}
-            </div>
+            </AnimatedCardGrid>
           </div>
         </section>
 

@@ -4,6 +4,7 @@ import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
 import ScrollFloat from '../components/ui/ScrollFloat';
+import AnimatedCardGrid from '../components/ui/AnimatedCardGrid';
 import { 
   FiPackage, FiLayers, FiZap, FiBriefcase, FiSettings,
   FiCheck, FiArrowRight, FiTrendingUp, FiUsers, FiBarChart2
@@ -175,8 +176,15 @@ export default function UseCasesPage() {
                 const Icon = useCase.icon;
                 
                 return (
-                  <div
+                  <AnimatedCardGrid
                     key={useCase.name}
+                    className="block"
+                    stagger={0}
+                    ease="power2.out"
+                    scrollStart="top bottom-=200px"
+                    duration={1}
+                  >
+                  <div
                     className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
                   >
                     <div className="flex flex-col lg:flex-row">
@@ -269,6 +277,7 @@ export default function UseCasesPage() {
                       </div>
                     </div>
                   </div>
+                  </AnimatedCardGrid>
                 );
               })}
             </div>
