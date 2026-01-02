@@ -678,15 +678,6 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
-            <div className="text-center mt-12">
-              <Link
-                href="/integrations"
-                className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-normal text-base"
-              >
-                View All Integrations
-                <FiArrowRight />
-              </Link>
-            </div>
           </div>
         </section>
 
