@@ -44,6 +44,10 @@ export function middleware(request) {
         url.pathname = '/client/login';
       } else if (url.pathname === '/register') {
         url.pathname = '/client/register';
+      } else if (url.pathname === '/forgot-password') {
+        url.pathname = '/client/forgot-password';
+      } else if (url.pathname === '/reset-password') {
+        url.pathname = '/client/reset-password';
       } else if (url.pathname === '/' || url.pathname === '') {
         url.pathname = '/client/dashboard';
       } else {
