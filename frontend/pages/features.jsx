@@ -5,6 +5,7 @@ import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import ScrollFloat from '../components/ui/ScrollFloat';
 import AnimatedCardGrid from '../components/ui/AnimatedCardGrid';
+import AnimatedText from '../components/ui/AnimatedText';
 import { 
   FiBarChart2, FiFileText, FiDollarSign, FiTrendingUp, 
   FiBriefcase, FiTarget, FiShield, FiZap, FiSmartphone, 
@@ -270,7 +271,7 @@ export default function FeaturesPage() {
               >
                 Powerful Features
               </ScrollFloat>
-              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
+              <p className="text-base text-gray-600 max-w-3xl mx-auto">
               Everything you need to manage your accounting and compliance in one place. 
               Built for businesses of all sizes.
               </p>
@@ -298,7 +299,7 @@ export default function FeaturesPage() {
                             <Icon className="text-white text-2xl" />
                           </div>
                           <h3 className="text-2xl font-bold mb-4 text-gray-900">{feature.title}</h3>
-                          <p className="text-gray-600 leading-relaxed text-lg mb-6">
+                          <p className="text-gray-600 leading-relaxed text-base mb-6">
                             {feature.description}
                           </p>
                           <ul className="space-y-2">
@@ -334,7 +335,7 @@ export default function FeaturesPage() {
               >
                 Additional Benefits
               </ScrollFloat>
-              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
+              <p className="text-base text-gray-600 max-w-3xl mx-auto">
                 More reasons why thousands of businesses trust Finvera
               </p>
             </div>
@@ -351,7 +352,7 @@ export default function FeaturesPage() {
                       <Icon className="text-primary-600 text-xl" />
                     </div>
                     <h4 className="text-xl font-bold text-gray-900 mb-2">{feature.title}</h4>
-                    <p className="text-gray-600">{feature.description}</p>
+                    <p className="text-base text-gray-600">{feature.description}</p>
                   </div>
                 );
               })}
@@ -378,7 +379,7 @@ export default function FeaturesPage() {
                   >
                     Ready to Get Started?
                   </ScrollFloat>
-                  <p className="text-[1.2rem] text-gray-600 mb-8">
+                  <p className="text-base text-gray-600 mb-8">
                     Join thousands of businesses using Finvera to streamline their accounting
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -386,14 +387,14 @@ export default function FeaturesPage() {
                       href={getClientUrl()}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="bg-primary-600 text-white px-8 py-4 rounded-lg hover:bg-primary-700 transition font-normal text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 inline-flex items-center justify-center gap-2"
+                      className="bg-primary-600 text-white px-5 py-2 rounded-lg hover:bg-primary-700 transition font-normal text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 inline-flex items-center justify-center gap-2"
                     >
                       Start Free Trial
                       <FiArrowRight />
                     </a>
                     <Link
                       href="/contact"
-                      className="bg-white text-primary-600 px-8 py-4 rounded-lg hover:bg-primary-50 transition font-normal text-lg border-2 border-primary-600 shadow-lg hover:shadow-xl"
+                      className="bg-white text-primary-600 px-5 py-2 rounded-lg hover:bg-primary-50 transition font-normal text-lg border-2 border-primary-600 shadow-lg hover:shadow-xl"
                     >
                       Contact Sales
                     </Link>

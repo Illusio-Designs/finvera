@@ -77,22 +77,22 @@ export default function HelpPage() {
               <Link href="/docs" className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-lg hover:shadow-xl transition border border-primary-100 text-center">
                 <FiBook className="text-primary-600 text-4xl mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Documentation</h3>
-                <p className="text-gray-600">Complete guides and tutorials</p>
+                <AnimatedText className="text-gray-600">Complete guides and tutorials</AnimatedText>
               </Link>
               <a href="#faq" className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-lg hover:shadow-xl transition border border-primary-100 text-center">
                 <FiHelpCircle className="text-primary-600 text-4xl mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-gray-900 mb-2">FAQs</h3>
-                <p className="text-gray-600">Common questions answered</p>
+                <AnimatedText className="text-gray-600">Common questions answered</AnimatedText>
               </a>
               <Link href="/contact" className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-lg hover:shadow-xl transition border border-primary-100 text-center">
                 <FiMessageCircle className="text-primary-600 text-4xl mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Contact Support</h3>
-                <p className="text-gray-600">Get help from our team</p>
+                <AnimatedText className="text-gray-600">Get help from our team</AnimatedText>
               </Link>
               <a href="#" className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-lg hover:shadow-xl transition border border-primary-100 text-center">
                 <FiVideo className="text-primary-600 text-4xl mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Video Tutorials</h3>
-                <p className="text-gray-600">Watch and learn</p>
+                <AnimatedText className="text-gray-600">Watch and learn</AnimatedText>
               </a>
             </div>
           </div>
@@ -118,7 +118,7 @@ export default function HelpPage() {
                   {['Getting Started', 'Billing', 'GST & Compliance', 'Account Management', 'Technical Support'].map((category) => (
                     <button
                       key={category}
-                      className="px-4 py-2 bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition font-medium text-sm"
+                      className="px-2.5 py-1 bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition font-medium text-sm"
                     >
                       {category}
                     </button>
@@ -152,9 +152,9 @@ export default function HelpPage() {
                     </button>
                     {openFaqIndex === index && (
                       <div className="px-6 pb-6">
-                        <p className="text-[1.2rem] text-gray-600 leading-relaxed">
+                        <p className="text-base text-gray-600 leading-relaxed">
                           {faq.answer}
-                        </p>
+                        </AnimatedText>
                       </div>
                     )}
                   </div>

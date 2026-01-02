@@ -5,6 +5,7 @@ import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
 import ScrollFloat from '../components/ui/ScrollFloat';
 import AnimatedCardGrid from '../components/ui/AnimatedCardGrid';
+import AnimatedText from '../components/ui/AnimatedText';
 import { 
   FiPackage, FiLayers, FiZap, FiBriefcase, FiSettings,
   FiCheck, FiArrowRight, FiTrendingUp, FiUsers, FiBarChart2
@@ -161,9 +162,9 @@ export default function UseCasesPage() {
               <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
                 Perfect for Your Business
               </h1>
-              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
+              <p className="text-base text-gray-600 max-w-3xl mx-auto">
                 Quick invoicing for retailers, distributors, startups, freelancers, and service providers using Finvera invoicing app.
-              </p>
+              </AnimatedText>
             </div>
           </div>
         </section>
@@ -202,7 +203,7 @@ export default function UseCasesPage() {
                           <p className="text-white font-semibold text-sm mb-4">{useCase.pricing}</p>
                           <a
                             href="/register"
-                            className="w-full inline-flex items-center justify-center gap-2 bg-white text-primary-600 px-4 py-2 rounded-lg hover:bg-primary-50 transition font-semibold text-sm shadow-md"
+                            className="w-full inline-flex items-center justify-center gap-2 bg-white text-primary-600 px-2.5 py-1 rounded-lg hover:bg-primary-50 transition font-semibold text-sm shadow-md"
                           >
                             Start Free Trial
                             <FiArrowRight className="text-sm" />
@@ -268,7 +269,7 @@ export default function UseCasesPage() {
                           </p>
                           <a
                             href="/register"
-                            className="w-full inline-flex items-center justify-center gap-2 bg-primary-600 text-white px-4 py-2.5 rounded-lg hover:bg-primary-700 transition font-normal text-sm shadow-md hover:shadow-lg"
+                            className="w-full inline-flex items-center justify-center gap-2 bg-primary-600 text-white px-2.5 py-1.5 rounded-lg hover:bg-primary-700 transition font-normal text-sm shadow-md hover:shadow-lg"
                           >
                             Start Free Trial
                             <FiArrowRight className="text-sm" />
@@ -303,20 +304,20 @@ export default function UseCasesPage() {
                   >
                     Not Sure Which Plan Fits You?
                   </ScrollFloat>
-                  <p className="text-[1.2rem] text-gray-600 mb-8 max-w-2xl mx-auto">
+                  <p className="text-base text-gray-600 mb-8 max-w-2xl mx-auto">
                     Our team can help you choose the perfect solution for your business
-                  </p>
+                  </AnimatedText>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <Link
                       href="/contact"
-                      className="bg-primary-600 text-white px-8 py-4 rounded-xl hover:bg-primary-700 transition font-normal text-lg inline-flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                      className="bg-primary-600 text-white px-5 py-2 rounded-xl hover:bg-primary-700 transition font-normal text-lg inline-flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
                     >
                       Contact Sales
                       <FiArrowRight />
                     </Link>
                     <Link
                       href="/pricing"
-                      className="bg-white text-primary-600 px-8 py-4 rounded-xl hover:bg-primary-50 transition font-normal text-lg border-2 border-primary-600 shadow-lg hover:shadow-xl"
+                      className="bg-white text-primary-600 px-5 py-2 rounded-xl hover:bg-primary-50 transition font-normal text-lg border-2 border-primary-600 shadow-lg hover:shadow-xl"
                     >
                       View Pricing
                     </Link>

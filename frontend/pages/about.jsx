@@ -5,6 +5,7 @@ import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
 import ScrollFloat from '../components/ui/ScrollFloat';
 import AnimatedCardGrid from '../components/ui/AnimatedCardGrid';
+import AnimatedText from '../components/ui/AnimatedText';
 import { FiTarget, FiUsers, FiAward, FiTrendingUp, FiShield, FiLink, FiCheck, FiArrowRight } from 'react-icons/fi';
 
 export default function AboutPage() {
@@ -25,7 +26,7 @@ export default function AboutPage() {
               <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5">
                 About Finvera
               </h1>
-              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
+              <p className="text-base text-gray-600 max-w-3xl mx-auto">
                 Your Trustable Accounting Partner. We&apos;re dedicated to providing comprehensive accounting solutions 
                 that help businesses manage their finances efficiently and stay compliant.
               </p>
@@ -50,12 +51,12 @@ export default function AboutPage() {
                   >
                     Our Mission
                   </ScrollFloat>
-                  <p className="text-[1.2rem] text-gray-600 leading-relaxed mb-4">
+                  <p className="text-base text-gray-600 leading-relaxed mb-4">
                     At Finvera, our mission is to simplify accounting and financial management for businesses of all sizes. 
                     We believe that every business deserves access to professional-grade accounting tools that are both 
                     powerful and easy to use.
                   </p>
-                  <p className="text-[1.2rem] text-gray-600 leading-relaxed">
+                  <p className="text-base text-gray-600 leading-relaxed">
                     We&apos;re committed to helping businesses stay compliant with tax regulations, manage their finances 
                     efficiently, and make informed decisions based on accurate financial data.
                   </p>
@@ -68,7 +69,7 @@ export default function AboutPage() {
                       </div>
                       <div>
                         <h3 className="text-xl font-bold text-gray-900 mb-2">Our Vision</h3>
-                        <p className="text-gray-600">To become the most trusted accounting platform in India</p>
+                        <p className="text-base text-gray-600">To become the most trusted accounting platform in India</p>
                       </div>
                     </div>
                     <div className="flex items-start space-x-4">
@@ -77,7 +78,7 @@ export default function AboutPage() {
                       </div>
                       <div>
                         <h3 className="text-xl font-bold text-gray-900 mb-2">Our Values</h3>
-                        <p className="text-gray-600">Trust, reliability, and customer-first approach</p>
+                        <p className="text-base text-gray-600">Trust, reliability, and customer-first approach</p>
                       </div>
                     </div>
                   </div>
@@ -102,7 +103,7 @@ export default function AboutPage() {
               >
                 Why We Started
               </ScrollFloat>
-              <p className="text-xl text-gray-600 leading-relaxed">
+              <p className="text-base text-gray-600 leading-relaxed">
                 We recognized that many businesses struggle with complex accounting processes, GST compliance, 
                 and financial reporting. Finvera was created to solve these challenges by providing an 
                 all-in-one platform that simplifies accounting while ensuring compliance with Indian tax regulations.
@@ -124,10 +125,10 @@ export default function AboutPage() {
                 containerClassName="mb-5"
                 textClassName="text-3xl md:text-4xl font-extrabold text-gray-900"
               >
-                Partnered with
+                Our app is integrated with
               </ScrollFloat>
-              <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
-                Trusted integrations and partnerships for seamless business operations
+              <p className="text-base text-gray-600 max-w-3xl mx-auto">
+                Trusted integrations for seamless business operations
               </p>
             </div>
             <div className="grid md:grid-cols-4 lg:grid-cols-7 gap-5 max-w-7xl mx-auto items-center">
@@ -158,7 +159,7 @@ export default function AboutPage() {
                 >
                   Security & Trust
                 </ScrollFloat>
-                <p className="text-[1.2rem] text-gray-600 max-w-3xl mx-auto">
+                <p className="text-base text-gray-600 max-w-3xl mx-auto">
                   Your data security is our top priority
                 </p>
               </div>
@@ -170,17 +171,17 @@ export default function AboutPage() {
                 <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-lg border border-primary-100 text-center">
                   <FiShield className="text-5xl text-primary-600 mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-gray-900 mb-3">Bank-Level Security</h3>
-                  <p className="text-gray-600">256-bit encryption and industry-standard security practices</p>
+                  <p className="text-base text-gray-600">256-bit encryption and industry-standard security practices</p>
                 </div>
                 <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-lg border border-primary-100 text-center">
                   <FiAward className="text-5xl text-primary-600 mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-gray-900 mb-3">Compliance</h3>
-                  <p className="text-gray-600">GDPR compliant and data protection regulations</p>
+                  <p className="text-base text-gray-600">GDPR compliant and data protection regulations</p>
                 </div>
                 <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl shadow-lg border border-primary-100 text-center">
                   <FiCheck className="text-5xl text-primary-600 mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-gray-900 mb-3">Reliability</h3>
-                  <p className="text-gray-600">99.9% uptime guarantee with automated backups</p>
+                  <p className="text-base text-gray-600">99.9% uptime guarantee with automated backups</p>
                 </div>
               </AnimatedCardGrid>
             </div>
@@ -196,28 +197,28 @@ export default function AboutPage() {
                   <FiUsers className="text-white text-2xl" />
                 </div>
                 <div className="text-4xl font-extrabold text-gray-900 mb-2">10K+</div>
-                <div className="text-gray-600">Active Users</div>
+                <div className="text-base text-gray-600">Active Users</div>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
                   <FiTrendingUp className="text-white text-2xl" />
                 </div>
                 <div className="text-4xl font-extrabold text-gray-900 mb-2">50K+</div>
-                <div className="text-gray-600">Invoices Generated</div>
+                <div className="text-base text-gray-600">Invoices Generated</div>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
                   <FiAward className="text-white text-2xl" />
                 </div>
                 <div className="text-4xl font-extrabold text-gray-900 mb-2">99.9%</div>
-                <div className="text-gray-600">Uptime</div>
+                <div className="text-base text-gray-600">Uptime</div>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
                   <FiTarget className="text-white text-2xl" />
                 </div>
                 <div className="text-4xl font-extrabold text-gray-900 mb-2">24/7</div>
-                <div className="text-gray-600">Support</div>
+                <div className="text-base text-gray-600">Support</div>
               </div>
             </div>
           </div>
