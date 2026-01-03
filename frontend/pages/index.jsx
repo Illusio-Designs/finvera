@@ -15,7 +15,8 @@ import {
   FiBriefcase, FiTarget, FiCheck, FiZap, FiSmartphone, 
   FiAward, FiMail, FiPhone, FiMapPin, FiArrowRight,
   FiShield, FiUsers, FiStar, FiPackage, FiRefreshCw,
-  FiShare2, FiPrinter, FiDownload, FiLayers, FiSettings, FiUpload
+  FiShare2, FiPrinter, FiDownload, FiLayers, FiSettings, FiUpload,
+  FiChevronLeft, FiChevronRight
 } from 'react-icons/fi';
 import Image from 'next/image';
 
@@ -25,6 +26,7 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [currentSlide, setCurrentSlide] = useState(0);
   
   useEffect(() => {
     // Set client register URL only on client side
@@ -128,6 +130,19 @@ export default function LandingPage() {
       });
     };
   }, []);
+
+  const nextSlide = () => {
+    const maxSlides = Math.max(0, TEMPLATES.length - 4);
+    setCurrentSlide(prev => prev >= maxSlides ? maxSlides : prev + 1);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide(prev => prev <= 0 ? 0 : prev - 1);
+  };
+
+  const goToSlide = (index) => {
+    setCurrentSlide(index);
+  };
 
   return (
     <>
@@ -329,30 +344,109 @@ export default function LandingPage() {
                 Tailor made, professional, and hand crafted templates for your business to stand out.
               </p>
             </div>
-            <AnimatedCardGrid
-              className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-7xl mx-auto"
-              stagger={0.08}
-              ease="power3.out"
-            >
-              {TEMPLATES.map((template) => (
-                <div key={template.id} className="group bg-gradient-to-br from-primary-50 to-white p-5 rounded-xl shadow-sm hover:shadow-md transition-all border border-primary-100 hover:border-primary-200 cursor-pointer">
-                  <div className="aspect-[3/4] bg-white rounded-lg mb-3 flex items-center justify-center border border-gray-200 overflow-hidden relative">
-                    {template.previewImage ? (
-                      <Image
-                        src={template.previewImage}
-                        alt={template.name}
-                        fill
-                        className="object-contain"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                      />
-                    ) : (
-                      <FiFileText className="text-4xl text-primary-200" />
-                    )}
-                  </div>
-                  <h3 className="text-base font-bold text-gray-900 text-center">{template.name}</h3>
+            
+            {/* Desktop Slider */}
+            <div className="hidden lg:block max-w-7xl mx-auto relative">
+              {/* Navigation Arrows */}
+              {TEMPLATES.length > 4 && (
+                <>
+                  <button
+                    onClick={prevSlide}
+                    disabled={currentSlide === 0}
+                    className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 w-12 h-12 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center transition-all group ${
+                      currentSlide === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary-50 hover:border-primary-200'
+                    }`}
+                  >
+                    <FiChevronLeft className={`text-xl ${currentSlide === 0 ? 'text-gray-400' : 'text-gray-600 group-hover:text-primary-600'}`} />
+                  </button>
+                  <button
+                    onClick={nextSlide}
+                    disabled={currentSlide >= TEMPLATES.length - 4}
+                    className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-12 h-12 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center transition-all group ${
+                      currentSlide >= TEMPLATES.length - 4 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary-50 hover:border-primary-200'
+                    }`}
+                  >
+                    <FiChevronRight className={`text-xl ${currentSlide >= TEMPLATES.length - 4 ? 'text-gray-400' : 'text-gray-600 group-hover:text-primary-600'}`} />
+                  </button>
+                </>
+              )}
+              
+              {/* Slider Container */}
+              <div className="overflow-hidden">
+                <div 
+                  className="flex transition-transform duration-500 ease-in-out"
+                  style={{ 
+                    transform: `translateX(-${currentSlide * 25}%)`,
+                  }}
+                >
+                  {TEMPLATES.map((template, index) => (
+                    <div key={template.id} className="w-1/4 px-2.5 flex-shrink-0">
+                      <div className="group bg-gradient-to-br from-primary-50 to-white p-5 rounded-xl shadow-sm hover:shadow-md transition-all border border-primary-100 hover:border-primary-200 cursor-pointer h-full">
+                        <div className="aspect-[3/4] bg-white rounded-lg mb-3 flex items-center justify-center border border-gray-200 overflow-hidden relative">
+                          {template.previewImage ? (
+                            <Image
+                              src={template.previewImage}
+                              alt={template.name}
+                              fill
+                              className="object-contain"
+                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                            />
+                          ) : (
+                            <FiFileText className="text-4xl text-primary-200" />
+                          )}
+                        </div>
+                        <h3 className="text-base font-bold text-gray-900 text-center">{template.name}</h3>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </AnimatedCardGrid>
+              </div>
+              
+              {/* Dots Indicator */}
+              {TEMPLATES.length > 4 && (
+                <div className="flex justify-center mt-8 space-x-2">
+                  {Array.from({ length: Math.max(0, TEMPLATES.length - 4) + 1 }).map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => goToSlide(index)}
+                      className={`w-3 h-3 rounded-full transition-all ${
+                        currentSlide === index 
+                          ? 'bg-primary-600 w-8' 
+                          : 'bg-gray-300 hover:bg-gray-400'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Mobile/Tablet Grid */}
+            <div className="lg:hidden">
+              <AnimatedCardGrid
+                className="grid md:grid-cols-2 gap-5 max-w-7xl mx-auto"
+                stagger={0.08}
+                ease="power3.out"
+              >
+                {TEMPLATES.map((template) => (
+                  <div key={template.id} className="group bg-gradient-to-br from-primary-50 to-white p-5 rounded-xl shadow-sm hover:shadow-md transition-all border border-primary-100 hover:border-primary-200 cursor-pointer">
+                    <div className="aspect-[3/4] bg-white rounded-lg mb-3 flex items-center justify-center border border-gray-200 overflow-hidden relative">
+                      {template.previewImage ? (
+                        <Image
+                          src={template.previewImage}
+                          alt={template.name}
+                          fill
+                          className="object-contain"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                        />
+                      ) : (
+                        <FiFileText className="text-4xl text-primary-200" />
+                      )}
+                    </div>
+                    <h3 className="text-base font-bold text-gray-900 text-center">{template.name}</h3>
+                  </div>
+                ))}
+              </AnimatedCardGrid>
+            </div>
           </div>
         </section>
 
@@ -670,10 +764,28 @@ export default function LandingPage() {
               </ScrollFloat>
             </div>
             <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-5 max-w-7xl mx-auto items-center">
-              {['Tally', 'Sandbox API', 'FinBox', 'GST Portal', 'E-Invoice Portal', 'E-Way Bill Portal'].map((partner) => (
-                <div key={partner} className="bg-white p-5 rounded-xl border border-gray-200 hover:border-primary-200 hover:shadow-sm transition text-center">
-                  <div className="h-14 flex items-center justify-center">
-                    <span className="text-base font-medium text-gray-600">{partner}</span>
+              {[
+                { name: 'Tally', image: '/tally.png' },
+                { name: 'Sandbox API', image: '/sanbox.png' },
+                { name: 'FinBox', image: '/finbox.png' },
+                { name: 'GST Portal', image: '/GST.PNG' },
+                { name: 'E-Invoice Portal', image: null },
+                { name: 'E-Way Bill Portal', image: null }
+              ].map((partner) => (
+                <div key={partner.name} className="bg-white p-5 rounded-xl border border-gray-200 hover:border-primary-200 hover:shadow-sm transition text-center">
+                  <div className="h-16 flex items-center justify-center">
+                    {partner.image ? (
+                      <Image
+                        src={partner.image}
+                        alt={partner.name}
+                        width={200}
+                        height={80}
+                        className="max-w-full w-auto object-contain"
+                        style={{ maxHeight: '6rem', minHeight: '100px' }}
+                      />
+                    ) : (
+                      <span className="text-base font-medium text-gray-600">{partner.name}</span>
+                    )}
                   </div>
                 </div>
               ))}
