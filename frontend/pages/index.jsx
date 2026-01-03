@@ -1318,7 +1318,7 @@ export default function LandingPage() {
                   >
                     Ready to Get Started?
                   </ScrollFloat>
-                  <p className="text-xl md:text-2xl text-gray-600 mb-12">
+                  <p className="text-base text-gray-600 mb-8">
                     Join thousands of businesses using Finvera for their accounting needs
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -1345,83 +1345,83 @@ export default function LandingPage() {
         </section>
 
         {/* Contact Section */}
-        <section id="contact" className="py-24 bg-white">
-          <div className="container mx-auto px-8 md:px-12 lg:px-20">
-            <div className="max-w-6xl mx-auto">
-              <div className="text-center mb-16">
+        <section id="contact" className="py-16 bg-white">
+          <div className="container mx-auto px-6">
+            <div className="max-w-5xl mx-auto">
+              <div className="text-center mb-12">
                 <ScrollFloat
                   animationDuration={1}
                   ease='back.inOut(2)'
                   scrollStart='center bottom+=50%'
                   scrollEnd='bottom bottom-=40%'
                   stagger={0.03}
-                  containerClassName="mb-5"
-                  textClassName="text-3xl md:text-4xl font-medium text-gray-900"
+                  containerClassName="mb-4"
+                  textClassName="text-2xl md:text-3xl font-medium text-gray-900"
                 >
                   Get in Touch
                 </ScrollFloat>
-                <p className="text-base text-gray-600 max-w-3xl mx-auto">
+                <p className="text-sm text-gray-600 max-w-2xl mx-auto">
                   Have questions? We&apos;d love to hear from you
                 </p>
               </div>
-              <div className="grid md:grid-cols-2 gap-12">
-                <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-2xl shadow-lg border border-primary-100">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-8">Contact Information</h3>
-                  <div className="space-y-6">
-                    <div className="flex items-start space-x-4 group">
-                      <div className="w-14 h-14 bg-primary-600 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-primary-700 transition">
-                        <FiMail className="text-white text-xl" />
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-6">Contact Information</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <FiMail className="text-white text-sm" />
                       </div>
                       <div>
-                        <div className="font-semibold text-gray-700 text-lg mb-1">Email</div>
-                        <a href="mailto:support@finvera.com" className="text-gray-600 text-lg hover:text-primary-600 transition">
+                        <div className="font-medium text-gray-700 text-sm">Email</div>
+                        <a href="mailto:support@finvera.com" className="text-gray-600 text-sm hover:text-primary-600 transition">
                           support@finvera.com
                         </a>
                       </div>
                     </div>
-                    <div className="flex items-start space-x-4 group">
-                      <div className="w-14 h-14 bg-primary-600 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-primary-700 transition">
-                        <FiPhone className="text-white text-xl" />
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <FiPhone className="text-white text-sm" />
                       </div>
                       <div>
-                        <div className="font-semibold text-gray-700 text-lg mb-1">Phone</div>
-                        <a href="tel:+91849009684" className="text-gray-600 text-lg hover:text-primary-600 transition">
+                        <div className="font-medium text-gray-700 text-sm">Phone</div>
+                        <a href="tel:+91849009684" className="text-gray-600 text-sm hover:text-primary-600 transition">
                           +91 84900 9684
                         </a>
                       </div>
                     </div>
-                    <div className="flex items-start space-x-4 group">
-                      <div className="w-14 h-14 bg-primary-600 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-primary-700 transition">
-                        <FiMapPin className="text-white text-xl" />
+                    <div className="flex items-start space-x-3">
+                      <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <FiMapPin className="text-white text-sm" />
                       </div>
                       <div>
-                        <div className="font-semibold text-gray-700 text-lg mb-1">Address</div>
-                        <div className="text-gray-600 text-lg leading-relaxed">212, 2nd floor, Runway Heights, Ayodhya Chowk, Rajkot - 360001</div>
+                        <div className="font-medium text-gray-700 text-sm">Address</div>
+                        <div className="text-gray-600 text-sm leading-relaxed">212, 2nd floor, Runway Heights, Ayodhya Chowk, Rajkot - 360001</div>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-2xl shadow-lg border border-primary-100">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-6">Send us a Message</h3>
-                  <form className="space-y-5">
+                <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Send us a Message</h3>
+                  <form className="space-y-4">
                     <input
                       type="text"
                       placeholder="Your Name"
-                      className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-primary-600 text-lg transition"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-primary-600 text-sm transition"
                     />
                     <input
                       type="email"
                       placeholder="Your Email"
-                      className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-primary-600 text-lg transition"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-primary-600 text-sm transition"
                     />
                     <textarea
                       placeholder="Your Message"
-                      rows="5"
-                      className="w-full px-5 py-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-primary-600 text-lg transition resize-none"
+                      rows="4"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:border-primary-600 text-sm transition resize-none"
                     ></textarea>
                     <button
                       type="submit"
-                      className="w-full bg-primary-600 text-white py-2.5 rounded-xl hover:bg-primary-700 transition font-normal text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                      className="w-full bg-primary-600 text-white py-2.5 rounded-lg hover:bg-primary-700 transition font-medium text-sm shadow-sm hover:shadow-md"
                     >
                       Send Message
                     </button>
