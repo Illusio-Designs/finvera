@@ -1,5 +1,6 @@
 import Head from 'next/head';
 import Link from 'next/link';
+import Image from 'next/image';
 import WebsiteHeader from '../components/layouts/WebsiteHeader';
 import WebsiteFooter from '../components/layouts/WebsiteFooter';
 import Chatbot from '../components/chatbot/Chatbot';
@@ -132,10 +133,28 @@ export default function AboutPage() {
               </p>
             </div>
             <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-5 max-w-7xl mx-auto items-center">
-              {['Tally', 'Sandbox API', 'FinBox', 'GST Portal', 'E-Invoice Portal', 'E-Way Bill Portal'].map((partner) => (
-                <div key={partner} className="bg-white p-5 rounded-xl border border-gray-200 hover:border-primary-200 hover:shadow-sm transition text-center">
-                  <div className="h-14 flex items-center justify-center">
-                    <span className="text-base font-medium text-gray-600">{partner}</span>
+              {[
+                { name: 'Tally', image: '/tally.png' },
+                { name: 'Sandbox API', image: '/sanbox.png' },
+                { name: 'FinBox', image: '/finbox.png' },
+                { name: 'GST Portal', image: '/GST.PNG' },
+                { name: 'E-Invoice Portal', image: null },
+                { name: 'E-Way Bill Portal', image: null }
+              ].map((partner) => (
+                <div key={partner.name} className="bg-white p-5 rounded-xl border border-gray-200 hover:border-primary-200 hover:shadow-sm transition text-center">
+                  <div className="h-20 flex items-center justify-center">
+                    {partner.image ? (
+                      <Image
+                        src={partner.image}
+                        alt={partner.name}
+                        width={200}
+                        height={80}
+                        className="max-w-full w-auto object-contain"
+                        style={{ maxHeight: '7rem', minHeight: '40px' }}
+                      />
+                    ) : (
+                      <span className="text-base font-medium text-gray-600">{partner.name}</span>
+                    )}
                   </div>
                 </div>
               ))}
