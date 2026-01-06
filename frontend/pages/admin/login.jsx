@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { canAccessAdminPortal, getDefaultRedirect, getRoleDisplayName } from '../../lib/roleConfig';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import PasswordInput from '../../components/ui/PasswordInput';
 import Card from '../../components/ui/Card';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import toast, { Toaster } from 'react-hot-toast';
@@ -69,25 +70,25 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-primary-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-primary-100 px-4 sm:px-6 lg:px-8 overflow-hidden">
       <Toaster />
-      <Card className="max-w-md w-full shadow-xl border border-gray-200">
-        <div className="text-center mb-8">
-          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-primary-100 mb-4">
-            <FiLock className="h-8 w-8 text-primary-600" />
+      <Card className="max-w-md w-full shadow-xl border border-gray-200 max-h-[90vh] overflow-y-auto">
+        <div className="text-center mb-6">
+          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-primary-100 mb-3">
+            <FiLock className="h-6 w-6 text-primary-600" />
           </div>
-          <h2 className="text-3xl font-extrabold text-gray-900">
+          <h2 className="text-2xl font-extrabold text-gray-900">
             Admin Login
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-1 text-sm text-gray-600">
             Sign in to access the admin panel
           </p>
         </div>
         <form 
-          className="space-y-6" 
+          className="space-y-4" 
           onSubmit={handleSubmit}
         >
-          <div className="space-y-4">
+          <div className="space-y-3">
             <Input
                 id="email"
                 name="email"
@@ -100,18 +101,16 @@ export default function AdminLogin() {
                 onChange={(e) => setEmail(e.target.value)}
               className="w-full"
             />
-            <Input
-                id="password"
-                name="password"
-                type="password"
+            <PasswordInput
               label="Password"
-                autoComplete="current-password"
-                required
+              name="password"
+              autoComplete="current-password"
+              required
               placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               className="w-full"
-              />
+            />
           </div>
 
           <div>
