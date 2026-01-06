@@ -21,7 +21,6 @@ export default function ClientRegister() {
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState(null);
   const [billingCycle, setBillingCycle] = useState('monthly');
-  const [planLoading, setPlanLoading] = useState(false);
   const { register } = useAuth();
   const router = useRouter();
   
@@ -36,7 +35,6 @@ export default function ClientRegister() {
   
   const fetchPlan = async (planId) => {
     try {
-      setPlanLoading(true);
       const response = await pricingAPI.get(planId);
       if (response.data) {
         setPlan(response.data);
@@ -44,8 +42,6 @@ export default function ClientRegister() {
     } catch (error) {
       console.error('Error fetching plan:', error);
       toast.error('Failed to load plan details');
-    } finally {
-      setPlanLoading(false);
     }
   };
 
@@ -98,29 +94,29 @@ export default function ClientRegister() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4 sm:px-6 lg:px-8 overflow-hidden py-2">
       <Toaster />
-      <div className="max-w-md w-full space-y-8">
-        <Card className="p-8">
+      <div className="max-w-md w-full">
+        <Card className="p-3 max-h-[98vh] overflow-y-auto">
           <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            <h2 className="text-center text-lg font-extrabold text-gray-900">
               Create Account
             </h2>
-            <p className="mt-2 text-center text-sm text-gray-600">
+            <p className="text-center text-sm text-gray-600">
               Sign up for your Finvera account
             </p>
           </div>
           
           {/* Plan Selection Display */}
           {plan && (
-            <div className="mb-6 p-4 bg-primary-50 rounded-lg border border-primary-200">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold text-gray-900">{plan.plan_name}</h3>
-                <div className="flex items-center gap-2">
+            <div className="mb-3 p-2 bg-primary-50 rounded-lg border border-primary-200">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-sm font-semibold text-gray-900">{plan.plan_name}</h3>
+                <div className="flex items-center gap-1">
                   <button
                     type="button"
                     onClick={() => setBillingCycle('monthly')}
-                    className={`px-3 py-1 text-sm font-medium rounded ${
+                    className={`px-2 py-0.5 text-xs font-medium rounded ${
                       billingCycle === 'monthly'
                         ? 'bg-primary-600 text-white'
                         : 'bg-white text-gray-700 border border-gray-300'
@@ -131,7 +127,7 @@ export default function ClientRegister() {
                   <button
                     type="button"
                     onClick={() => setBillingCycle('yearly')}
-                    className={`px-3 py-1 text-sm font-medium rounded ${
+                    className={`px-2 py-0.5 text-xs font-medium rounded ${
                       billingCycle === 'yearly'
                         ? 'bg-primary-600 text-white'
                         : 'bg-white text-gray-700 border border-gray-300'
@@ -142,7 +138,7 @@ export default function ClientRegister() {
                 </div>
               </div>
               <div className="text-center">
-                <span className="text-2xl font-bold text-gray-900">
+                <span className="text-base font-bold text-gray-900">
                   {new Intl.NumberFormat('en-IN', {
                     style: 'currency',
                     currency: plan.currency || 'INR',
@@ -155,19 +151,19 @@ export default function ClientRegister() {
                       : plan.base_price
                   )}
                 </span>
-                <span className="text-gray-600 ml-1">
+                <span className="text-gray-600 ml-1 text-xs">
                   {billingCycle === 'yearly' ? '/year' : '/month'}
                 </span>
                 {billingCycle === 'yearly' && plan.discounted_price && (
-                  <div className="mt-1">
-                    <span className="text-sm text-gray-500 line-through">
+                  <div className="mt-0.5">
+                    <span className="text-xs text-gray-500 line-through">
                       {new Intl.NumberFormat('en-IN', {
                         style: 'currency',
                         currency: plan.currency || 'INR',
                         minimumFractionDigits: 0,
                       }).format(plan.base_price * 12)}
                     </span>
-                    <span className="ml-2 text-sm text-green-600 font-semibold">
+                    <span className="ml-1 text-xs text-green-600 font-semibold">
                       Save {Math.round(((plan.base_price * 12 - plan.discounted_price * 12) / (plan.base_price * 12)) * 100)}%
                     </span>
                   </div>
@@ -176,8 +172,8 @@ export default function ClientRegister() {
             </div>
           )}
           
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div className="space-y-4">
+          <form className="mt-3 space-y-2" onSubmit={handleSubmit}>
+            <div className="space-y-1.5">
               <FormInput
                 name="full_name"
                 label="Full Name"
@@ -246,7 +242,7 @@ export default function ClientRegister() {
               </Button>
             </div>
 
-            <div className="relative">
+            <div className="relative my-2">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
               </div>
@@ -255,16 +251,16 @@ export default function ClientRegister() {
               </div>
             </div>
 
-            <div>
+            <div className="mb-2">
               <button
                 type="button"
                 onClick={() => {
                   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://finvera.illusiodesigns.agency/api';
                   window.location.href = `${apiUrl}/auth/google`;
                 }}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition-colors font-medium shadow-sm"
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition-colors font-medium shadow-sm text-sm"
               >
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path
                     fill="#4285F4"
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -286,7 +282,7 @@ export default function ClientRegister() {
               </button>
             </div>
 
-            <div className="text-center">
+            <div className="text-center mt-2 mb-1">
               <span className="text-sm text-gray-600">
                 Already have an account?{' '}
                 <Link

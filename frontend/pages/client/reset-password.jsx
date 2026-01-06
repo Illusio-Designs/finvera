@@ -91,9 +91,9 @@ export default function ResetPassword() {
 
   if (verifying) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <Toaster />
-        <Card className="p-8">
+        <Card className="p-6 max-h-[90vh] overflow-y-auto">
           <div className="text-center">
             <p className="text-gray-600">Verifying reset token...</p>
           </div>
@@ -104,20 +104,20 @@ export default function ResetPassword() {
 
   if (!tokenValid) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <Toaster />
-        <div className="max-w-md w-full space-y-8">
-          <Card className="p-8">
+        <div className="max-w-md w-full">
+          <Card className="p-6 max-h-[90vh] overflow-y-auto">
             <div>
-              <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+              <h2 className="mt-4 text-center text-2xl font-extrabold text-gray-900">
                 Invalid Reset Link
               </h2>
-              <p className="mt-2 text-center text-sm text-gray-600">
+              <p className="mt-1 text-center text-sm text-gray-600">
                 This password reset link is invalid or has expired.
               </p>
             </div>
 
-            <div className="mt-8 space-y-6">
+            <div className="mt-6 space-y-4">
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <p className="text-sm text-red-800">
                   The reset link may have expired (links expire after 1 hour) or may have already been used.
@@ -149,15 +149,15 @@ export default function ResetPassword() {
 
   if (passwordReset) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <Toaster />
-        <div className="max-w-md w-full space-y-8">
-          <Card className="p-8">
+        <div className="max-w-md w-full">
+          <Card className="p-6 max-h-[90vh] overflow-y-auto">
             <div>
-              <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+              <h2 className="mt-4 text-center text-2xl font-extrabold text-gray-900">
                 Password Reset Successful
               </h2>
-              <p className="mt-2 text-center text-sm text-gray-600">
+              <p className="mt-1 text-center text-sm text-gray-600">
                 Your password has been reset successfully. Redirecting to login...
               </p>
             </div>
@@ -168,21 +168,21 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4 sm:px-6 lg:px-8 overflow-hidden">
       <Toaster />
-      <div className="max-w-md w-full space-y-8">
-        <Card className="p-8">
+      <div className="max-w-md w-full">
+        <Card className="p-6 max-h-[90vh] overflow-y-auto">
           <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            <h2 className="mt-4 text-center text-2xl font-extrabold text-gray-900">
               Reset Password
             </h2>
-            <p className="mt-2 text-center text-sm text-gray-600">
+            <p className="mt-1 text-center text-sm text-gray-600">
               {email && `Enter a new password for ${email}`}
             </p>
           </div>
 
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div className="space-y-4">
+          <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+            <div className="space-y-3">
               <FormPasswordInput
                 name="password"
                 label="New Password"
