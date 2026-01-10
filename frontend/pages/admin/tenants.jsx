@@ -9,6 +9,7 @@ import Card from '../../components/ui/Card';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import FormInput from '../../components/forms/FormInput';
 import FormPhoneInput from '../../components/forms/FormPhoneInput';
+import FormPasswordInput from '../../components/forms/FormPasswordInput';
 import FormSelect from '../../components/forms/FormSelect';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useTable } from '../../hooks/useTable';
@@ -414,10 +415,9 @@ export default function TenantsList() {
               />
 
               {modalMode === 'create' && (
-                <FormInput
+                <FormPasswordInput
                   name="password"
                   label="Password"
-                  type="password"
                   value={formData.password}
                   onChange={handleChange}
                   error={formErrors.password}
@@ -427,10 +427,9 @@ export default function TenantsList() {
               )}
 
               {modalMode === 'edit' && (
-                <FormInput
+                <FormPasswordInput
                   name="password"
                   label="Password (leave blank to keep current)"
-                  type="password"
                   value={formData.password}
                   onChange={handleChange}
                   error={formErrors.password}
@@ -594,11 +593,7 @@ export default function TenantsList() {
                 />
               )}
 
-              <div className="flex gap-3 pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
-                <Button type="submit">
-                  <FiSave className="h-4 w-4 mr-2" />
-                  {modalMode === 'create' ? 'Create Tenant' : 'Update Tenant'}
-                </Button>
+              <div className="flex gap-3 justify-end pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
                 <Button
                   type="button"
                   variant="outline"
@@ -606,6 +601,10 @@ export default function TenantsList() {
                 >
                   <FiX className="h-4 w-4 mr-2" />
                   Cancel
+                </Button>
+                <Button type="submit">
+                  <FiSave className="h-4 w-4 mr-2" />
+                  {modalMode === 'create' ? 'Create Tenant' : 'Update Tenant'}
                 </Button>
               </div>
             </form>
@@ -760,7 +759,16 @@ export default function TenantsList() {
                   </dl>
                 </div>
 
-                <div className="flex gap-3 pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
+                <div className="flex gap-3 justify-end pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowDetailModal(false);
+                      setSelectedTenant(null);
+                    }}
+                  >
+                    Close
+                  </Button>
                   <Button
                     variant="outline"
                     onClick={() => {
@@ -770,15 +778,6 @@ export default function TenantsList() {
                   >
                     <FiEdit className="h-4 w-4 mr-2" />
                     Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowDetailModal(false);
-                      setSelectedTenant(null);
-                    }}
-                  >
-                    Close
                   </Button>
                 </div>
               </div>

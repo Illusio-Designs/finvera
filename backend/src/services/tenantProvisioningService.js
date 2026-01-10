@@ -112,20 +112,21 @@ class TenantProvisioningService {
     // Get database credentials from environment
     // DB_USER on server is 'informative_finvera' (already exists, created by default)
     const dbUser = process.env.DB_USER || 'informative_finvera';
-    const dbPassword = process.env.DB_PASSWORD;
+    const dbPassword = process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : null;
     
     // Use root/admin user for database creation (needs CREATE DATABASE privilege)
     // If DB_ROOT_USER is not set, try using DB_USER (informative_finvera) - it might have CREATE privilege
     const rootUser = process.env.DB_ROOT_USER || dbUser;
-    const rootPassword = process.env.DB_ROOT_PASSWORD || dbPassword;
+    const rootPassword = process.env.DB_ROOT_PASSWORD !== undefined ? process.env.DB_ROOT_PASSWORD : dbPassword;
     
-    if (!dbUser || !dbPassword) {
-      throw new Error('DB_USER and DB_PASSWORD environment variables must be set');
+    if (!dbUser || dbPassword === null) {
+      throw new Error('DB_USER and DB_PASSWORD environment variables must be set (DB_PASSWORD can be empty string for no password)');
     }
 
     logger.info(`[PROVISION] Using user for database creation: ${rootUser}`);
     logger.info(`[PROVISION] Will grant privileges to: ${dbUser} for tenant connections`);
     logger.info(`[PROVISION] Root user source: ${process.env.DB_ROOT_USER ? 'DB_ROOT_USER env var' : 'DB_USER (fallback)'}`);
+    logger.info(`[PROVISION] Password provided: ${dbPassword === '' ? 'NO (empty string)' : 'YES'}`);
 
     // Use root/admin user for database creation (has CREATE DATABASE privilege)
     const rootConnection = new Sequelize('', rootUser, rootPassword, {
@@ -331,11 +332,11 @@ class TenantProvisioningService {
    * @param {string} plainPassword - Plain text database password
    */
   async initializeTenantSchema(tenant, plainPassword) {
-    const dbPassword = process.env.DB_PASSWORD;
+    const dbPassword = process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : null;
     const dbUser = process.env.DB_USER || 'informative_finvera';
     
-    if (!dbPassword) {
-      throw new Error('DB_PASSWORD environment variable must be set');
+    if (dbPassword === null) {
+      throw new Error('DB_PASSWORD environment variable must be set (can be empty string for no password)');
     }
 
     try {

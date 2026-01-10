@@ -342,11 +342,7 @@ export default function PayoutsList() {
                 touched={!!formErrors.notes}
               />
 
-              <div className="flex gap-3 pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
-                <Button type="submit" disabled={loading} loading={loading}>
-                  <FiSave className="h-4 w-4 mr-2" />
-                  Create Payout
-                </Button>
+              <div className="flex gap-3 justify-end pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
                 <Button
                   type="button"
                   variant="outline"
@@ -355,6 +351,10 @@ export default function PayoutsList() {
                 >
                   <FiX className="h-4 w-4 mr-2" />
                   Cancel
+                </Button>
+                <Button type="submit" disabled={loading} loading={loading}>
+                  <FiSave className="h-4 w-4 mr-2" />
+                  Create Payout
                 </Button>
               </div>
             </form>
@@ -416,12 +416,7 @@ export default function PayoutsList() {
                   </dl>
                 </div>
 
-                <div className="flex gap-3 pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
-                  {selectedPayout.status === 'pending' && (
-                    <Button onClick={handleProcess} disabled={loading} loading={loading}>
-                      Process Payout
-                    </Button>
-                  )}
+                <div className="flex gap-3 justify-end pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
                   <Button
                     variant="outline"
                     onClick={() => {
@@ -432,6 +427,11 @@ export default function PayoutsList() {
                   >
                     Close
                   </Button>
+                  {selectedPayout.status === 'pending' && (
+                    <Button onClick={handleProcess} disabled={loading} loading={loading}>
+                      Process Payout
+                    </Button>
+                  )}
                 </div>
               </div>
             )}

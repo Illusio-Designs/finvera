@@ -940,10 +940,9 @@ function EInvoiceModal({ isOpen, onClose, company, onSuccess }) {
               error={errors.e_invoice_username}
               required
             />
-            <FormInput
+            <FormPasswordInput
               name="e_invoice_password"
               label="API Password"
-              type="password"
               value={formData.e_invoice_password}
               onChange={handleChange}
               placeholder="Leave blank to keep existing password"
@@ -1100,10 +1099,9 @@ function EWayBillModal({ isOpen, onClose, company, onSuccess }) {
               error={errors.e_way_bill_username}
               required
             />
-            <FormInput
+            <FormPasswordInput
               name="e_way_bill_password"
               label="API Password"
-              type="password"
               value={formData.e_way_bill_password}
               onChange={handleChange}
               placeholder="Leave blank to keep existing password"
@@ -2027,10 +2025,9 @@ function DSCConfigModal({ isOpen, onClose, company, onSuccess }) {
               </div>
             )}
             <div className="mt-4">
-              <FormInput
+              <FormPasswordInput
                 name="certificate_password"
                 label="Certificate Password (if required)"
-                type="password"
                 value={certificatePassword}
                 onChange={(name, value) => setCertificatePassword(value)}
                 placeholder="Enter certificate password"
@@ -2080,10 +2077,9 @@ function DSCConfigModal({ isOpen, onClose, company, onSuccess }) {
               ]}
               placeholder="Select provider"
             />
-            <FormInput
+            <FormPasswordInput
               name="cloud_api_key"
               label="API Key / Access Token"
-              type="password"
               value={cloudApiKey}
               onChange={(name, value) => setCloudApiKey(value)}
               placeholder="Enter API key from your DSC provider"

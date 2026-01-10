@@ -354,10 +354,9 @@ export default function DistributorsList() {
                   />
 
                   {modalMode === 'create' ? (
-                    <FormInput
+                    <FormPasswordInput
                       name="password"
                       label="Password"
-                      type="password"
                       value={formData.password}
                       onChange={handleChange}
                       error={formErrors.password}
@@ -366,10 +365,9 @@ export default function DistributorsList() {
                       placeholder="Minimum 8 characters"
                     />
                   ) : (
-                    <FormInput
+                    <FormPasswordInput
                       name="password"
                       label="Password (leave blank to keep current)"
-                      type="password"
                       value={formData.password}
                       onChange={handleChange}
                       error={formErrors.password}
@@ -527,11 +525,7 @@ export default function DistributorsList() {
                 />
               )}
 
-              <div className="flex gap-3 pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
-                <Button type="submit" disabled={loading} loading={loading}>
-                  <FiSave className="h-4 w-4 mr-2" />
-                  {modalMode === 'create' ? 'Create Distributor' : 'Update Distributor'}
-                </Button>
+              <div className="flex gap-3 justify-end pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
                 <Button
                   type="button"
                   variant="outline"
@@ -540,6 +534,10 @@ export default function DistributorsList() {
                 >
                   <FiX className="h-4 w-4 mr-2" />
                   Cancel
+                </Button>
+                <Button type="submit" disabled={loading} loading={loading}>
+                  <FiSave className="h-4 w-4 mr-2" />
+                  {modalMode === 'create' ? 'Create Distributor' : 'Update Distributor'}
                 </Button>
               </div>
             </form>
@@ -597,7 +595,16 @@ export default function DistributorsList() {
                   </dl>
                 </div>
 
-                <div className="flex gap-3 pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
+                <div className="flex gap-3 justify-end pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowDetailModal(false);
+                      setSelectedDistributor(null);
+                    }}
+                  >
+                    Close
+                  </Button>
                   <Button
                     variant="outline"
                     onClick={() => {
@@ -607,15 +614,6 @@ export default function DistributorsList() {
                   >
                     <FiEdit className="h-4 w-4 mr-2" />
                     Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowDetailModal(false);
-                      setSelectedDistributor(null);
-                    }}
-                  >
-                    Close
                   </Button>
                 </div>
               </div>

@@ -391,10 +391,9 @@ function ChangePasswordModal({ isOpen, onClose }) {
           </p>
         </div>
 
-        <FormInput
+        <FormPasswordInput
           name="currentPassword"
           label="Current Password"
-          type="password"
           value={formData.currentPassword}
           onChange={handleChange}
           error={errors.currentPassword}
@@ -402,10 +401,9 @@ function ChangePasswordModal({ isOpen, onClose }) {
           placeholder="Enter your current password"
         />
 
-        <FormInput
+        <FormPasswordInput
           name="newPassword"
           label="New Password"
-          type="password"
           value={formData.newPassword}
           onChange={handleChange}
           error={errors.newPassword}
@@ -414,10 +412,9 @@ function ChangePasswordModal({ isOpen, onClose }) {
           helperText="Password must be at least 8 characters long"
         />
 
-        <FormInput
+        <FormPasswordInput
           name="confirmPassword"
           label="Confirm New Password"
-          type="password"
           value={formData.confirmPassword}
           onChange={handleChange}
           error={errors.confirmPassword}
