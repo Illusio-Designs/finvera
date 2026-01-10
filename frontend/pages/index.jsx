@@ -1084,7 +1084,7 @@ export default function LandingPage() {
         {/* Pricing Section */}
         <section id="pricing" className="py-24 bg-white">
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
-            <div className="text-center mb-16">
+            <div className="text-center mb-8">
               <ScrollFloat
                 animationDuration={1}
                 ease='back.inOut(2)'
@@ -1255,9 +1255,9 @@ export default function LandingPage() {
                 return (
                   <div className="max-w-6xl mx-auto">
                     {/* Top Row: Left, Popular (Center), Right */}
-                    <div className="grid md:grid-cols-3 gap-6 mb-6">
+                    <div className="grid md:grid-cols-3 gap-6">
                       {otherPlans.length > 0 && (
-                        <div className="md:mt-[50%]">
+                        <div>
                           {renderPlanCard(otherPlans[0], 0)}
                         </div>
                       )}
@@ -1267,7 +1267,7 @@ export default function LandingPage() {
                         </div>
                       )}
                       {otherPlans.length > 1 && (
-                        <div className="md:mt-[50%]">
+                        <div>
                           {renderPlanCard(otherPlans[1], 1)}
                         </div>
                       )}
