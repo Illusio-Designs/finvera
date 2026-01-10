@@ -87,8 +87,7 @@ async function initMasterDatabase() {
     try {
       await masterSequelize.authenticate();
       logger.info(`[INIT] ✓ Master database '${masterDbName}' already exists and is accessible`);
-      // Skip database creation if connection succeeds (database already exists)
-      return;
+      // Database exists, continue to sync tables
     } catch (directConnectError) {
       // Check if error is because database doesn't exist (ER_BAD_DB_ERROR) or connection issue
       const isDatabaseNotFound = directConnectError.original?.code === 'ER_BAD_DB_ERROR' || 
