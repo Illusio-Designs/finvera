@@ -237,7 +237,7 @@ export default function CommissionsPayoutsList() {
                 />
               )}
 
-              <div className="flex gap-3 pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
+              <div className="flex gap-3 justify-end pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
                 <Button
                   variant="outline"
                   onClick={() => {

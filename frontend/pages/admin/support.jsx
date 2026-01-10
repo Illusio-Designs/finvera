@@ -344,15 +344,7 @@ export default function SupportTicketsList() {
                   </div>
                 </div>
 
-                <div className="flex gap-3 pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowStatusModal(true);
-                    }}
-                  >
-                    Update Status
-                  </Button>
+                <div className="flex gap-3 justify-end pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
                   <Button
                     variant="outline"
                     onClick={() => {
@@ -362,6 +354,14 @@ export default function SupportTicketsList() {
                     }}
                   >
                     Close
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowStatusModal(true);
+                    }}
+                  >
+                    Update Status
                   </Button>
                 </div>
               </div>
@@ -398,10 +398,7 @@ export default function SupportTicketsList() {
                 </select>
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
-                <Button onClick={handleStatusUpdate} disabled={saving || !statusUpdate} loading={saving}>
-                  Update Status
-                </Button>
+              <div className="flex gap-3 justify-end pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -411,6 +408,9 @@ export default function SupportTicketsList() {
                   disabled={saving}
                 >
                   Cancel
+                </Button>
+                <Button onClick={handleStatusUpdate} disabled={saving || !statusUpdate} loading={saving}>
+                  Update Status
                 </Button>
               </div>
             </div>

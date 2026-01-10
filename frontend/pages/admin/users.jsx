@@ -4,6 +4,7 @@ import PageLayout from '../../components/layouts/PageLayout';
 import DataTable from '../../components/tables/DataTable';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import PasswordInput from '../../components/ui/PasswordInput';
 import Card from '../../components/ui/Card';
 import { useTable } from '../../hooks/useTable';
 import { adminAPI } from '../../lib/api';
@@ -187,10 +188,9 @@ export default function UserManagement() {
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <Input
+                  <PasswordInput
                     name="password"
                     label={editingId ? 'New Password (leave empty to keep current)' : 'Password'}
-                    type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required={!editingId}

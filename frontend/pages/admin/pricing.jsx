@@ -656,11 +656,7 @@ export default function PricingList() {
                 placeholder="GST Filing, Basic Reports, Invoice Management, etc."
               />
 
-              <div className="flex gap-3 pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
-                <Button type="submit" disabled={loading} loading={loading}>
-                  <FiSave className="h-4 w-4 mr-2" />
-                  {modalMode === 'create' ? 'Create Plan' : 'Update Plan'}
-                </Button>
+              <div className="flex gap-3 justify-end pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
                 <Button
                   type="button"
                   variant="outline"
@@ -669,6 +665,10 @@ export default function PricingList() {
                 >
                   <FiX className="h-4 w-4 mr-2" />
                   Cancel
+                </Button>
+                <Button type="submit" disabled={loading} loading={loading}>
+                  <FiSave className="h-4 w-4 mr-2" />
+                  {modalMode === 'create' ? 'Create Plan' : 'Update Plan'}
                 </Button>
               </div>
             </form>

@@ -397,10 +397,7 @@ export default function ClientSupport() {
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-gray-200">
-                <Button onClick={handleCreateTicket} disabled={saving} loading={saving}>
-                  Create Ticket
-                </Button>
+              <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -415,6 +412,9 @@ export default function ClientSupport() {
                   disabled={saving}
                 >
                   Cancel
+                </Button>
+                <Button onClick={handleCreateTicket} disabled={saving} loading={saving}>
+                  Create Ticket
                 </Button>
               </div>
             </div>
@@ -534,7 +534,7 @@ export default function ClientSupport() {
                   </div>
                 )}
 
-                <div className="flex gap-3 pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
+                <div className="flex gap-3 justify-end pt-4 border-t border-gray-200 bg-gray-50 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
                   <Button
                     variant="outline"
                     onClick={() => {
@@ -603,10 +603,7 @@ export default function ClientSupport() {
                 />
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-gray-200">
-                <Button onClick={handleSubmitReview} disabled={saving} loading={saving}>
-                  Submit Review
-                </Button>
+              <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -616,6 +613,9 @@ export default function ClientSupport() {
                   disabled={saving}
                 >
                   Cancel
+                </Button>
+                <Button onClick={handleSubmitReview} disabled={saving} loading={saving}>
+                  Submit Review
                 </Button>
               </div>
             </div>

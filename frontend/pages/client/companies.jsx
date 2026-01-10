@@ -760,11 +760,7 @@ export default function CompaniesPage() {
                   </div>
                 )}
 
-                <div className="flex gap-3 pt-4 border-t border-gray-200">
-                  <Button type="submit" loading={loading} disabled={loading} className="flex items-center gap-2">
-                    <FiSave className="h-4 w-4" />
-                    <span>Create Company</span>
-                  </Button>
+                <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
                   <Button
                     type="button"
                     variant="outline"
@@ -774,6 +770,10 @@ export default function CompaniesPage() {
                   >
                     <FiX className="h-4 w-4" />
                     <span>Cancel</span>
+                  </Button>
+                  <Button type="submit" loading={loading} disabled={loading} className="flex items-center gap-2">
+                    <FiSave className="h-4 w-4" />
+                    <span>Create Company</span>
                   </Button>
                 </div>
               </form>

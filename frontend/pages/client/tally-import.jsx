@@ -300,7 +300,7 @@ export default function TallyImport() {
                 )}
 
                 {/* Import Button */}
-                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
                   <Button
                     onClick={handleImport}
                     disabled={!selectedFile || uploading}
