@@ -1,15 +1,15 @@
 
 const { DataTypes } = require('sequelize');
-const { getMasterDatabase } = require('../config/database');
+const masterSequelize = require('../config/masterDatabase');
 
-const Branch = getMasterDatabase().define('Branch', {
+const Branch = masterSequelize.define('Branch', {
     id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
-        autoIncrement: true,
     },
     company_id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.UUID,
         allowNull: false,
         references: {
             model: 'companies', 

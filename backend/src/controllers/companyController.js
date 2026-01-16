@@ -225,6 +225,172 @@ module.exports = {
     }
   },
 
-  // ... other methods
+  async update(req, res, next) {
+    try {
+      const Company = masterModels.Company;
+      const company = await Company.findOne({
+        where: { id: req.params.id, tenant_id: req.tenant_id, is_active: true },
+      });
+      
+      if (!company) {
+        return res.status(404).json({ success: false, message: 'Company not found' });
+      }
+
+      const {
+        company_name,
+        company_type,
+        registration_number,
+        incorporation_date,
+        pan,
+        tan,
+        gstin,
+        registered_address,
+        state,
+        pincode,
+        contact_number,
+        email,
+        principals,
+        financial_year_start,
+        financial_year_end,
+        currency,
+        books_beginning_date,
+        bank_details,
+        compliance,
+      } = req.body || {};
+
+      await company.update({
+        company_name: company_name || company.company_name,
+        company_type: company_type || company.company_type,
+        registration_number,
+        incorporation_date,
+        pan,
+        tan,
+        gstin,
+        registered_address,
+        state,
+        pincode,
+        contact_number,
+        email,
+        principals,
+        financial_year_start,
+        financial_year_end,
+        currency,
+        books_beginning_date,
+        bank_details,
+        compliance,
+      });
+
+      return res.json({ success: true, data: company });
+    } catch (err) {
+      return next(err);
+    }
+  },
+
+  async uploadLogo(req, res, next) {
+    try {
+      const Company = masterModels.Company;
+      const company = await Company.findOne({
+        where: { id: req.params.id, tenant_id: req.tenant_id, is_active: true },
+      });
+      
+      if (!company) {
+        return res.status(404).json({ success: false, message: 'Company not found' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'No file uploaded' });
+      }
+
+      const logoUrl = `/uploads/company-logos/${req.file.filename}`;
+      await company.update({ logo_url: logoUrl });
+
+      return res.json({ success: true, data: { logo_url: logoUrl } });
+    } catch (err) {
+      return next(err);
+    }
+  },
+
+  async uploadSignature(req, res, next) {
+    try {
+      const Company = masterModels.Company;
+      const company = await Company.findOne({
+        where: { id: req.params.id, tenant_id: req.tenant_id, is_active: true },
+      });
+      
+      if (!company) {
+        return res.status(404).json({ success: false, message: 'Company not found' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'No file uploaded' });
+      }
+
+      const signatureUrl = `/uploads/company-signatures/${req.file.filename}`;
+      
+      // Store signature URL in compliance JSON field
+      const compliance = company.compliance || {};
+      compliance.signature_url = signatureUrl;
+      await company.update({ compliance });
+
+      return res.json({ success: true, data: { signature_url: signatureUrl } });
+    } catch (err) {
+      return next(err);
+    }
+  },
+
+  async uploadDSCCertificate(req, res, next) {
+    try {
+      const Company = masterModels.Company;
+      const company = await Company.findOne({
+        where: { id: req.params.id, tenant_id: req.tenant_id, is_active: true },
+      });
+      
+      if (!company) {
+        return res.status(404).json({ success: false, message: 'Company not found' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'No file uploaded' });
+      }
+
+      const certificateUrl = `/uploads/dsc-certificates/${req.file.filename}`;
+      
+      // Store certificate URL in compliance JSON field
+      const compliance = company.compliance || {};
+      compliance.dsc_certificate_url = certificateUrl;
+      await company.update({ compliance });
+
+      return res.json({ success: true, data: { dsc_certificate_url: certificateUrl } });
+    } catch (err) {
+      return next(err);
+    }
+  },
+
+  async updateDSCConfig(req, res, next) {
+    try {
+      const Company = masterModels.Company;
+      const company = await Company.findOne({
+        where: { id: req.params.id, tenant_id: req.tenant_id, is_active: true },
+      });
+      
+      if (!company) {
+        return res.status(404).json({ success: false, message: 'Company not found' });
+      }
+
+      const { dsc_enabled, dsc_password, dsc_alias } = req.body || {};
+
+      // Store DSC config in compliance JSON field
+      const compliance = company.compliance || {};
+      if (dsc_enabled !== undefined) compliance.dsc_enabled = dsc_enabled;
+      if (dsc_password !== undefined) compliance.dsc_password = dsc_password;
+      if (dsc_alias !== undefined) compliance.dsc_alias = dsc_alias;
+      
+      await company.update({ compliance });
+
+      return res.json({ success: true, data: { compliance } });
+    } catch (err) {
+      return next(err);
+    }
+  },
 
 };
