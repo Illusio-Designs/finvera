@@ -386,53 +386,36 @@ class TenantProvisioningService {
     const fs = require('fs');
     
     try {
-      // Use consolidated tenant migration
       const migrationsPath = path.join(__dirname, '../migrations');
-      const migrationFile = path.join(migrationsPath, '001-tenant-migration.js');
-      
-      if (!fs.existsSync(migrationFile)) {
-        logger.warn('⚠️  Consolidated tenant migration file not found, falling back to sync');
-        const tenantModels = require('./tenantModels')(connection);
-    await connection.sync({ force: false });
-        return;
-      }
-
       const queryInterface = connection.getQueryInterface();
       const { Sequelize } = require('sequelize');
-      const migration = require(migrationFile);
       
-      if (migration.up && typeof migration.up === 'function') {
+      // Run consolidated tenant migration
+      const consolidatedMigrationFile = path.join(migrationsPath, '001-tenant-migration.js');
+      
+      if (fs.existsSync(consolidatedMigrationFile)) {
         try {
-          await migration.up(queryInterface, Sequelize);
-          logger.info('✅ Tenant migrations completed successfully');
+          const migration = require(consolidatedMigrationFile);
+          if (migration.up && typeof migration.up === 'function') {
+            await migration.up(queryInterface, Sequelize);
+            logger.info('✅ Consolidated tenant migration completed');
+          }
         } catch (error) {
-          // Log the full error for debugging
-          logger.error('❌ Tenant migration error:', {
-            message: error.message,
-            stack: error.stack,
-            sql: error.sql,
-          });
-          
-          // Ignore errors if column/index already exists
           if (error.message && (error.message.includes('already exists') || 
-                                error.message.includes('Duplicate') ||
-                                error.message.includes('Duplicate column'))) {
-            logger.debug('Tenant migration already applied (duplicate column/index)');
+                                error.message.includes('Duplicate'))) {
+            logger.debug('Consolidated migration already applied');
           } else {
-            logger.warn(`⚠️  Tenant migration failed: ${error.message}`);
-            logger.warn('Falling back to sync...');
-            // Fallback to sync if migration fails
-            try {
-              const tenantModels = require('./tenantModels')(connection);
-              await connection.sync({ force: false, alter: true });
-              logger.info('✅ Fallback sync completed');
-            } catch (syncError) {
-              logger.error('❌ Fallback sync also failed:', syncError.message);
-              throw syncError;
-            }
+            logger.warn(`⚠️  Consolidated migration failed: ${error.message}`);
           }
         }
+      } else {
+        logger.warn('⚠️  Consolidated tenant migration file not found, falling back to sync');
+        const tenantModels = require('./tenantModels')(connection);
+        await connection.sync({ force: false });
       }
+      
+      logger.info('✅ All tenant migrations completed successfully');
+      
     } catch (error) {
       logger.warn('Error running tenant migrations, falling back to sync:', error.message);
       // Fallback to sync

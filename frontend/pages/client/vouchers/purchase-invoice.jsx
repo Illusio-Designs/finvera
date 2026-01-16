@@ -11,10 +11,11 @@ import FormDatePicker from '../../../components/forms/FormDatePicker';
 import FormTextarea from '../../../components/forms/FormTextarea';
 import SearchableHSNSelect from '../../../components/forms/SearchableHSNSelect';
 import Checkbox from '../../../components/ui/Checkbox';
+import BarcodeGenerationModal from '../../../components/modals/BarcodeGenerationModal';
 import { accountingAPI } from '../../../lib/api';
 import { useApi } from '../../../hooks/useApi';
 import toast from 'react-hot-toast';
-import { FiPlus, FiTrash2, FiSave, FiArrowLeft } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiSave, FiArrowLeft, FiBarcode } from 'react-icons/fi';
 import { formatCurrency } from '../../../lib/formatters';
 
 // Helper function to calculate GST
@@ -49,6 +50,8 @@ export default function PurchaseInvoicePage() {
   const [loading, setLoading] = useState(false);
   const [partyLedger, setPartyLedger] = useState(null);
   const [supplierState, setSupplierState] = useState('Maharashtra'); // Default, should come from company
+  const [showBarcodeModal, setShowBarcodeModal] = useState(false);
+  const [createdItems, setCreatedItems] = useState([]);
 
   const [formData, setFormData] = useState({
     voucher_date: new Date().toISOString().split('T')[0],
@@ -277,6 +280,7 @@ export default function PurchaseInvoicePage() {
       );
     } catch (error) {
       console.error('Error fetching warehouse stock:', error);
+      toast.error('Failed to fetch warehouse stock');
       setItems((prev) =>
         prev.map((item) => {
           if (item.id !== itemId) return item;
@@ -456,9 +460,17 @@ export default function PurchaseInvoicePage() {
         })),
       };
 
-      await accountingAPI.invoices.createPurchase(payload);
+      const response = await accountingAPI.invoices.createPurchase(payload);
       toast.success('Purchase invoice created successfully');
-      router.push('/client/vouchers/vouchers');
+      
+      // Check if any new items were created and prompt for barcode generation
+      const newItems = items.filter(item => !item.inventory_item_id);
+      if (newItems.length > 0) {
+        setCreatedItems(newItems);
+        setShowBarcodeModal(true);
+      } else {
+        router.push('/client/vouchers/vouchers');
+      }
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to create purchase invoice';
       toast.error(errorMessage);
@@ -466,6 +478,48 @@ export default function PurchaseInvoicePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBarcodeGeneration = async (barcodeConfig) => {
+    try {
+      // Get all newly created inventory items
+      const response = await accountingAPI.inventory.items.list({ 
+        limit: 1000,
+        search: createdItems.map(i => i.item_description).join('|')
+      });
+      
+      const inventoryItems = response?.data || response || [];
+      const itemsWithoutBarcodes = inventoryItems.filter(item => 
+        !item.barcode && createdItems.some(ci => 
+          ci.item_description === item.item_name
+        )
+      );
+
+      if (itemsWithoutBarcodes.length === 0) {
+        toast.info('No items need barcode generation');
+        router.push('/client/vouchers/vouchers');
+        return;
+      }
+
+      // Generate barcodes for items
+      const itemIds = itemsWithoutBarcodes.map(item => item.id);
+      await accountingAPI.inventory.items.bulkGenerateBarcodes({
+        item_ids: itemIds,
+        ...barcodeConfig
+      });
+
+      toast.success(`Barcodes generated for ${itemsWithoutBarcodes.length} items`);
+      router.push('/client/vouchers/vouchers');
+    } catch (error) {
+      console.error('Error generating barcodes:', error);
+      toast.error('Failed to generate barcodes');
+      router.push('/client/vouchers/vouchers');
+    }
+  };
+
+  const handleSkipBarcode = () => {
+    setShowBarcodeModal(false);
+    router.push('/client/vouchers/vouchers');
   };
 
   // Indian states list
@@ -793,6 +847,14 @@ export default function PurchaseInvoicePage() {
               </div>
             </Card>
           </form>
+
+          {/* Barcode Generation Modal */}
+          <BarcodeGenerationModal
+            isOpen={showBarcodeModal}
+            onClose={handleSkipBarcode}
+            items={createdItems}
+            onGenerate={handleBarcodeGeneration}
+          />
         </PageLayout>
       </ClientLayout>
     </ProtectedRoute>

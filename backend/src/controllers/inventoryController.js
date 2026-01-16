@@ -63,12 +63,16 @@ module.exports = {
       const {
         item_code,
         item_name,
+        barcode,
         hsn_sac_code,
         uqc,
         gst_rate,
         quantity_on_hand = 0,
         avg_cost = 0,
         is_active = true,
+        generate_barcode = false,
+        barcode_type = 'EAN13', // EAN13, EAN8, CUSTOM
+        barcode_prefix = 'PRD',
       } = req.body;
 
       if (!item_name) {
@@ -89,10 +93,56 @@ module.exports = {
         });
       }
 
+      // Check if barcode already exists
+      if (barcode) {
+        const existingBarcode = await req.tenantModels.InventoryItem.findOne({
+          where: { barcode },
+        });
+        if (existingBarcode) {
+          return res.status(400).json({ 
+            error: 'An item with this barcode already exists' 
+          });
+        }
+      }
+
+      // Generate barcode if requested
+      let generatedBarcode = barcode;
+      if (generate_barcode && !barcode) {
+        const barcodeGenerator = require('../utils/barcodeGenerator');
+        
+        switch (barcode_type) {
+          case 'EAN13':
+            generatedBarcode = barcodeGenerator.generateEAN13('890'); // 890 is India prefix
+            break;
+          case 'EAN8':
+            generatedBarcode = barcodeGenerator.generateEAN8();
+            break;
+          case 'CUSTOM':
+            const nextSeq = await barcodeGenerator.getNextSequence(req.tenantModels, barcode_prefix);
+            generatedBarcode = barcodeGenerator.generateCustomBarcode(barcode_prefix, nextSeq, 13);
+            break;
+          default:
+            generatedBarcode = null;
+        }
+
+        // Ensure generated barcode is unique
+        if (generatedBarcode) {
+          const existingGenerated = await req.tenantModels.InventoryItem.findOne({
+            where: { barcode: generatedBarcode },
+          });
+          if (existingGenerated) {
+            return res.status(400).json({ 
+              error: 'Generated barcode already exists. Please try again.' 
+            });
+          }
+        }
+      }
+
       const item = await req.tenantModels.InventoryItem.create({
         item_key: itemKey,
         item_code: item_code || null,
         item_name,
+        barcode: generatedBarcode || null,
         hsn_sac_code: hsn_sac_code || null,
         uqc: uqc || null,
         gst_rate: gst_rate || null,
@@ -106,7 +156,7 @@ module.exports = {
       logger.error('Error creating inventory item:', error);
       if (error.name === 'SequelizeUniqueConstraintError') {
         return res.status(400).json({ 
-          error: 'An item with this code or name already exists' 
+          error: 'An item with this code, name, or barcode already exists' 
         });
       }
       next(error);
@@ -205,6 +255,141 @@ module.exports = {
       res.json({ message: 'Inventory item deleted successfully' });
     } catch (error) {
       logger.error('Error deleting inventory item:', error);
+      next(error);
+    }
+  },
+
+  async generateBarcode(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { barcode_type = 'EAN13', barcode_prefix = 'PRD' } = req.body;
+
+      const item = await req.tenantModels.InventoryItem.findByPk(id);
+      if (!item) {
+        return res.status(404).json({ error: 'Inventory item not found' });
+      }
+
+      if (item.barcode) {
+        return res.status(400).json({ 
+          error: 'Item already has a barcode',
+          current_barcode: item.barcode 
+        });
+      }
+
+      const barcodeGenerator = require('../utils/barcodeGenerator');
+      let generatedBarcode;
+
+      switch (barcode_type) {
+        case 'EAN13':
+          generatedBarcode = barcodeGenerator.generateEAN13('890'); // 890 is India prefix
+          break;
+        case 'EAN8':
+          generatedBarcode = barcodeGenerator.generateEAN8();
+          break;
+        case 'CUSTOM':
+          const nextSeq = await barcodeGenerator.getNextSequence(req.tenantModels, barcode_prefix);
+          generatedBarcode = barcodeGenerator.generateCustomBarcode(barcode_prefix, nextSeq, 13);
+          break;
+        default:
+          return res.status(400).json({ error: 'Invalid barcode type' });
+      }
+
+      // Ensure generated barcode is unique
+      const existingBarcode = await req.tenantModels.InventoryItem.findOne({
+        where: { barcode: generatedBarcode },
+      });
+
+      if (existingBarcode) {
+        return res.status(400).json({ 
+          error: 'Generated barcode already exists. Please try again.' 
+        });
+      }
+
+      await item.update({ barcode: generatedBarcode });
+
+      res.json({ 
+        data: item,
+        message: 'Barcode generated successfully',
+        barcode: generatedBarcode 
+      });
+    } catch (error) {
+      logger.error('Error generating barcode:', error);
+      next(error);
+    }
+  },
+
+  async bulkGenerateBarcodes(req, res, next) {
+    try {
+      const { item_ids, barcode_type = 'EAN13', barcode_prefix = 'PRD' } = req.body;
+
+      if (!item_ids || !Array.isArray(item_ids) || item_ids.length === 0) {
+        return res.status(400).json({ error: 'Item IDs array is required' });
+      }
+
+      const barcodeGenerator = require('../utils/barcodeGenerator');
+      const results = [];
+      const errors = [];
+
+      for (const itemId of item_ids) {
+        try {
+          const item = await req.tenantModels.InventoryItem.findByPk(itemId);
+          
+          if (!item) {
+            errors.push({ item_id: itemId, error: 'Item not found' });
+            continue;
+          }
+
+          if (item.barcode) {
+            errors.push({ item_id: itemId, error: 'Item already has a barcode' });
+            continue;
+          }
+
+          let generatedBarcode;
+          switch (barcode_type) {
+            case 'EAN13':
+              generatedBarcode = barcodeGenerator.generateEAN13('890');
+              break;
+            case 'EAN8':
+              generatedBarcode = barcodeGenerator.generateEAN8();
+              break;
+            case 'CUSTOM':
+              const nextSeq = await barcodeGenerator.getNextSequence(req.tenantModels, barcode_prefix);
+              generatedBarcode = barcodeGenerator.generateCustomBarcode(barcode_prefix, nextSeq, 13);
+              break;
+            default:
+              errors.push({ item_id: itemId, error: 'Invalid barcode type' });
+              continue;
+          }
+
+          // Check uniqueness
+          const existingBarcode = await req.tenantModels.InventoryItem.findOne({
+            where: { barcode: generatedBarcode },
+          });
+
+          if (existingBarcode) {
+            errors.push({ item_id: itemId, error: 'Generated barcode already exists' });
+            continue;
+          }
+
+          await item.update({ barcode: generatedBarcode });
+          results.push({ 
+            item_id: itemId, 
+            item_name: item.item_name,
+            barcode: generatedBarcode 
+          });
+        } catch (error) {
+          errors.push({ item_id: itemId, error: error.message });
+        }
+      }
+
+      res.json({ 
+        success: results.length,
+        failed: errors.length,
+        results,
+        errors 
+      });
+    } catch (error) {
+      logger.error('Error bulk generating barcodes:', error);
       next(error);
     }
   },

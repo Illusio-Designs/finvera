@@ -127,22 +127,29 @@ async function applyPurchaseInventory({ tenantModels }, voucher, voucherItems, t
       inv = await tenantModels.InventoryItem.findByPk(it.inventory_item_id, { transaction: t });
     }
     if (!inv) {
-      const [foundInv] = await tenantModels.InventoryItem.findOrCreate({
-      where: { item_key: itemKey },
-      defaults: {
-        item_key: itemKey,
-        item_code: it.item_code || null,
-        item_name: it.item_description || keyRaw,
-        hsn_sac_code: it.hsn_sac_code || null,
-        uqc: it.uqc || null,
-        gst_rate: it.gst_rate || null,
-        quantity_on_hand: 0,
-        avg_cost: 0,
-        is_active: true,
-      },
-      transaction: t,
-    });
+      // Auto-create inventory item from purchase invoice
+      const [foundInv, created] = await tenantModels.InventoryItem.findOrCreate({
+        where: { item_key: itemKey },
+        defaults: {
+          item_key: itemKey,
+          item_code: it.item_code || null,
+          item_name: it.item_description || keyRaw,
+          barcode: null, // Barcode will be generated separately if needed
+          hsn_sac_code: it.hsn_sac_code || null,
+          uqc: it.uqc || null,
+          gst_rate: it.gst_rate || null,
+          quantity_on_hand: 0,
+          avg_cost: 0,
+          is_active: true,
+        },
+        transaction: t,
+      });
       inv = foundInv;
+      
+      // Log if new item was created
+      if (created) {
+        logger.info(`Auto-created inventory item: ${inv.item_name} (${inv.id}) from purchase invoice`);
+      }
     }
 
     // Handle warehouse-specific stock if warehouse is specified

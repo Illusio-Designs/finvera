@@ -67,11 +67,13 @@ router.get('/bills/aging', billWiseController.getAgingReport);
 // Inventory Items
 router.get('/inventory/items', inventoryController.list);
 router.post('/inventory/items', inventoryController.create);
+router.post('/inventory/items/bulk-generate-barcodes', inventoryController.bulkGenerateBarcodes);
 router.get('/inventory/items/:id', inventoryController.getById);
 router.put('/inventory/items/:id', inventoryController.update);
 router.delete('/inventory/items/:id', inventoryController.delete);
 router.post('/inventory/items/:id/opening-stock', inventoryController.setOpeningStockByWarehouse);
 router.get('/inventory/items/:id/warehouse-stock', inventoryController.getStockByWarehouse);
+router.post('/inventory/items/:id/generate-barcode', inventoryController.generateBarcode);
 
 // Warehouses
 router.get('/warehouses', warehouseController.list);

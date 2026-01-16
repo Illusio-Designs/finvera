@@ -699,6 +699,12 @@ module.exports = {
           type: Sequelize.STRING(500),
           allowNull: false,
         },
+        barcode: {
+          type: Sequelize.STRING(100),
+          allowNull: true,
+          unique: true,
+          comment: 'Product barcode (EAN-13, UPC, etc.)',
+        },
         hsn_sac_code: Sequelize.STRING(20),
         uqc: Sequelize.STRING(20),
         gst_rate: {
@@ -719,6 +725,14 @@ module.exports = {
         },
         createdAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
         updatedAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
+      });
+    } else {
+      // Add barcode column if it doesn't exist
+      await addColumnIfNotExists('inventory_items', 'barcode', {
+        type: Sequelize.STRING(100),
+        allowNull: true,
+        unique: true,
+        comment: 'Product barcode (EAN-13, UPC, etc.)',
       });
     }
 
@@ -821,16 +835,29 @@ module.exports = {
           type: Sequelize.BOOLEAN,
           defaultValue: true,
         },
-        created_at: {
+        createdAt: {
           type: Sequelize.DATE,
           allowNull: false,
           defaultValue: Sequelize.NOW,
         },
-        updated_at: {
+        updatedAt: {
           type: Sequelize.DATE,
           allowNull: false,
           defaultValue: Sequelize.NOW,
         },
+      });
+    } else {
+      // Add createdAt and updatedAt columns if they don't exist
+      await addColumnIfNotExists('warehouses', 'createdAt', {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+      });
+      
+      await addColumnIfNotExists('warehouses', 'updatedAt', {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
       });
     }
 
@@ -861,12 +888,12 @@ module.exports = {
           defaultValue: 0,
           allowNull: false,
         },
-        created_at: {
+        createdAt: {
           type: Sequelize.DATE,
           allowNull: false,
           defaultValue: Sequelize.NOW,
         },
-        updated_at: {
+        updatedAt: {
           type: Sequelize.DATE,
           allowNull: false,
           defaultValue: Sequelize.NOW,

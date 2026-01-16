@@ -346,6 +346,8 @@ export const accountingAPI = {
       delete: (id) => api.delete(`/accounting/inventory/items/${id}`),
       setOpeningStock: (id, data) => api.post(`/accounting/inventory/items/${id}/opening-stock`, data),
       getWarehouseStock: (id, params) => api.get(`/accounting/inventory/items/${id}/warehouse-stock`, { params }),
+      generateBarcode: (id, data) => api.post(`/accounting/inventory/items/${id}/generate-barcode`, data),
+      bulkGenerateBarcodes: (data) => api.post("/accounting/inventory/items/bulk-generate-barcodes", data),
     },
   },
   // Warehouses
