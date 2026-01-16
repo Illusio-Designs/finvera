@@ -15,6 +15,7 @@ export default function SubscribePage() {
   const { user } = useAuth();
   const [plan, setPlan] = useState(null);
   const [billingCycle, setBillingCycle] = useState('monthly');
+  const [planType, setPlanType] = useState('multi-company');
   const [loading, setLoading] = useState(false);
   const [planLoading, setPlanLoading] = useState(true);
   const [referralCode, setReferralCode] = useState('');
@@ -87,6 +88,7 @@ export default function SubscribePage() {
       const response = await subscriptionAPI.create({
         plan_id: plan.id,
         billing_cycle: billingCycle,
+        plan_type: planType,
         referral_code: referralCode || undefined,
       });
 
@@ -216,6 +218,46 @@ export default function SubscribePage() {
                 </div>
               </div>
 
+              {/* Plan Type Selector - Only show if plan allows branches */}
+              {plan.max_branches > 0 && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Plan Type
+                  </label>
+                  <div className="space-y-3">
+                    <button
+                      type="button"
+                      onClick={() => setPlanType('multi-company')}
+                      className={`w-full px-4 py-3 rounded-lg border-2 transition text-left ${
+                        planType === 'multi-company'
+                          ? 'border-primary-600 bg-primary-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="font-medium text-gray-900">Multi-Company</div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        Create up to {plan.max_companies} {plan.max_companies === 1 ? 'company' : 'companies'}
+                      </div>
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => setPlanType('multi-branch')}
+                      className={`w-full px-4 py-3 rounded-lg border-2 transition text-left ${
+                        planType === 'multi-branch'
+                          ? 'border-primary-600 bg-primary-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="font-medium text-gray-900">Multi-Branch</div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        Single company with up to {plan.max_branches} {plan.max_branches === 1 ? 'branch' : 'branches'}
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Price Display */}
               <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                 <div className="text-center">
@@ -259,12 +301,21 @@ export default function SubscribePage() {
                       {plan.max_invoices_per_month == null ? 'Unlimited' : plan.max_invoices_per_month}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Companies:</span>
-                    <span className="font-medium">
-                      {plan.max_companies == null ? 'Unlimited' : plan.max_companies}
-                    </span>
-                  </div>
+                  {planType === 'multi-company' ? (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Companies:</span>
+                      <span className="font-medium">
+                        {plan.max_companies == null ? 'Unlimited' : plan.max_companies}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Branches:</span>
+                      <span className="font-medium">
+                        {plan.max_branches == null ? 'Unlimited' : plan.max_branches}
+                      </span>
+                    </div>
+                  )}
                   {plan.storage_limit_gb && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Storage:</span>

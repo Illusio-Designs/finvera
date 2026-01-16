@@ -182,16 +182,11 @@ module.exports = {
     // ============================================
     
     if (isMainDb) {
-    // 3. CREATE ADMIN USERS
+    // 3. CREATE ADMIN USER (only rishi@finvera.com)
     try {
-      // Check for existing admin users
+      // Check for existing admin user
       const existingRishi = await queryInterface.sequelize.query(
-        `SELECT id FROM users WHERE email = 'Rishi@finvera.com'`,
-        { type: Sequelize.QueryTypes.SELECT }
-      );
-      
-      const existingAdmin = await queryInterface.sequelize.query(
-        `SELECT id FROM users WHERE email = 'admin@finvera.com'`,
+        `SELECT id FROM users WHERE email = 'rishi@finvera.com'`,
         { type: Sequelize.QueryTypes.SELECT }
       );
 
@@ -203,7 +198,7 @@ module.exports = {
         usersToCreate.push({
           id: uuid.v4(),
           tenant_id: null, // Platform admin doesn't need tenant_id
-          email: 'Rishi@finvera.com',
+          email: 'rishi@finvera.com',
           password: rishiPasswordHash,
           name: 'Rishi Kumar',
           role: 'super_admin',
@@ -217,67 +212,27 @@ module.exports = {
         // User exists, but update password to ensure it's correct
         const rishiPasswordHash = await bcrypt.hash('Rishi@1995', 10);
         await queryInterface.sequelize.query(
-          `UPDATE users SET password = ?, updatedAt = ? WHERE email = 'Rishi@finvera.com'`,
+          `UPDATE users SET password = ?, updatedAt = ? WHERE email = 'rishi@finvera.com'`,
           {
             replacements: [rishiPasswordHash, now],
             type: Sequelize.QueryTypes.UPDATE,
           }
         );
-        console.log('✓ Updated password for Rishi@finvera.com');
-      }
-
-      // Create or update admin@finvera.com user
-      if (existingAdmin.length === 0) {
-        const adminPasswordHash = await bcrypt.hash('admin@123', 10);
-        usersToCreate.push({
-          id: uuid.v4(),
-          tenant_id: null, // Platform admin doesn't need tenant_id
-          email: 'admin@finvera.com',
-          password: adminPasswordHash,
-          name: 'Admin User',
-          role: 'super_admin',
-          phone: null,
-          is_active: true,
-          last_login: null,
-          createdAt: now,
-          updatedAt: now,
-        });
-      } else {
-        // User exists, but update password to ensure it's correct
-        const adminPasswordHash = await bcrypt.hash('admin@123', 10);
-        await queryInterface.sequelize.query(
-          `UPDATE users SET password = ?, updatedAt = ? WHERE email = 'admin@finvera.com'`,
-          {
-            replacements: [adminPasswordHash, now],
-            type: Sequelize.QueryTypes.UPDATE,
-          }
-        );
-        console.log('✓ Updated password for admin@finvera.com');
+        console.log('✓ Updated password for rishi@finvera.com');
       }
 
       if (usersToCreate.length > 0) {
         await queryInterface.bulkInsert('users', usersToCreate);
         
-        console.log('✓ Platform Admin Users Created:');
-        usersToCreate.forEach(user => {
-          const password = user.email === 'Rishi@finvera.com' ? 'Rishi@1995' : 'admin@123';
-          console.log(`  - Email: ${user.email}`);
-          console.log(`  - Password: ${password}`);
-          console.log(`  - Role: ${user.role} (platform-wide)`);
-        });
+        console.log('✓ Platform Admin User Created:');
+        console.log(`  - Email: rishi@finvera.com`);
+        console.log(`  - Password: Rishi@1995`);
+        console.log(`  - Role: super_admin (platform-wide)`);
       }
       
-      // Log password updates if users were updated
-      if (existingRishi.length > 0 || existingAdmin.length > 0) {
-        if (existingRishi.length > 0) {
-          console.log('✓ Password updated for Rishi@finvera.com');
-        }
-        if (existingAdmin.length > 0) {
-          console.log('✓ Password updated for admin@finvera.com');
-        }
-        if (usersToCreate.length === 0) {
-          console.log('ℹ️  Admin users already exist (passwords updated)');
-        }
+      // Log password updates if user was updated
+      if (existingRishi.length > 0 && usersToCreate.length === 0) {
+        console.log('ℹ️  Admin user already exists (password updated)');
       }
     } catch (error) {
       console.log('⚠️  Could not create admin users:', error.message);
@@ -304,6 +259,8 @@ module.exports = {
             trial_days: 0,
             max_users: 1,
             max_invoices_per_month: 50,
+            max_companies: 1,
+            max_branches: 0,
             features: JSON.stringify({ gst_filing: false, e_invoicing: false }),
             is_active: true,
             is_visible: true,
@@ -321,6 +278,8 @@ module.exports = {
             trial_days: 30,
             max_users: 3,
             max_invoices_per_month: 200,
+            max_companies: 1,
+            max_branches: 2,
             features: JSON.stringify({ gst_filing: true, e_invoicing: false }),
             salesman_commission_rate: 15,
             distributor_commission_rate: 5,
@@ -351,7 +310,7 @@ module.exports = {
     // Remove admin users
     await queryInterface.bulkDelete('users', {
       email: {
-        [Op.in]: ['Rishi@finvera.com', 'admin@finvera.com']
+        [Op.in]: ['rishi@finvera.com']
       }
     }, {});
     

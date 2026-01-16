@@ -15,33 +15,20 @@ async function resetAdminPasswords() {
 
     const now = new Date();
 
-    // Reset admin@finvera.com password
-    const adminPasswordHash = await bcrypt.hash('admin@123', 10);
-    const [adminResult] = await sequelize.query(
-      `UPDATE users SET password = ?, updatedAt = ? WHERE email = 'admin@finvera.com'`,
-      {
-        replacements: [adminPasswordHash, now],
-        type: QueryTypes.UPDATE,
-      }
-    );
-    console.log('✓ Password reset for admin@finvera.com');
-    console.log('  - Email: admin@finvera.com');
-    console.log('  - New Password: admin@123');
-
-    // Reset Rishi@finvera.com password
+    // Reset rishi@finvera.com password
     const rishiPasswordHash = await bcrypt.hash('Rishi@1995', 10);
     const [rishiResult] = await sequelize.query(
-      `UPDATE users SET password = ?, updatedAt = ? WHERE email = 'Rishi@finvera.com'`,
+      `UPDATE users SET password = ?, updatedAt = ? WHERE email = 'rishi@finvera.com'`,
       {
         replacements: [rishiPasswordHash, now],
         type: QueryTypes.UPDATE,
       }
     );
-    console.log('✓ Password reset for Rishi@finvera.com');
-    console.log('  - Email: Rishi@finvera.com');
+    console.log('✓ Password reset for rishi@finvera.com');
+    console.log('  - Email: rishi@finvera.com');
     console.log('  - New Password: Rishi@1995');
 
-    console.log('\n✅ Admin passwords reset successfully!');
+    console.log('\n✅ Admin password reset successfully!');
     process.exit(0);
   } catch (error) {
     console.error('❌ Error resetting admin passwords:', error);

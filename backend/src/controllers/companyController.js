@@ -70,24 +70,50 @@ module.exports = {
         return res.status(403).json({ success: false, message: 'Tenant account is suspended' });
       }
 
+      // Get tenant's active subscription to check plan_type and limits
+      const Subscription = masterModels.Subscription;
+      const subscription = await Subscription.findOne({
+        where: { 
+          tenant_id: req.tenant_id,
+          status: 'active'
+        },
+        order: [['createdAt', 'DESC']]
+      });
+
       let maxCompanies = 1;
       let maxBranches = 0;
       let planType = 'multi-company';
-      const plan = tenant.subscription_plan ? await SubscriptionPlan.findOne({
-        where: { plan_code: tenant.subscription_plan, is_active: true },
-      }) : null;
 
-      if (plan) {
-        maxCompanies = parseInt(plan.max_companies, 10) || 1;
-        maxBranches = parseInt(plan.max_branches, 10) || 0;
-        planType = plan.plan_type || 'multi-company';
+      if (subscription) {
+        maxCompanies = parseInt(subscription.max_companies, 10) || 1;
+        maxBranches = parseInt(subscription.max_branches, 10) || 0;
+        planType = subscription.plan_type || 'multi-company';
+      } else {
+        // Fallback to plan if no active subscription
+        const plan = tenant.subscription_plan ? await SubscriptionPlan.findOne({
+          where: { plan_code: tenant.subscription_plan, is_active: true },
+        }) : null;
+
+        if (plan) {
+          maxCompanies = parseInt(plan.max_companies, 10) || 1;
+          maxBranches = parseInt(plan.max_branches, 10) || 0;
+        }
       }
 
       const existingCount = await Company.count({ where: { tenant_id: req.tenant_id, is_active: true } });
+      
+      // Check limits based on plan type
       if (planType === 'multi-company' && existingCount >= maxCompanies) {
         return res.status(403).json({
           success: false,
           message: `Company limit reached for your plan (max ${maxCompanies}). Please upgrade to add more companies.`,
+        });
+      }
+
+      if (planType === 'multi-branch' && existingCount >= 1) {
+        return res.status(403).json({
+          success: false,
+          message: 'Multi-branch plan allows only 1 company. Use branches instead.',
         });
       }
 

@@ -49,6 +49,11 @@ const Subscription = masterSequelize.define('Subscription', {
     type: DataTypes.TEXT,
     allowNull: true,
   },
+  plan_type: {
+    type: DataTypes.ENUM('multi-company', 'multi-branch'),
+    defaultValue: 'multi-company',
+    comment: 'Consumer selected plan type: multi-company or multi-branch',
+  },
   billing_cycle: {
     type: DataTypes.STRING(20),
     allowNull: false,
@@ -84,6 +89,11 @@ const Subscription = masterSequelize.define('Subscription', {
   max_companies: {
     type: DataTypes.INTEGER,
     defaultValue: 1,
+  },
+  max_branches: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    comment: 'Maximum branches allowed for this subscription',
   },
   storage_limit_gb: {
     type: DataTypes.INTEGER,

@@ -10,10 +10,17 @@ module.exports = {
   async createSubscription(req, res, next) {
     try {
       const tenant_id = req.tenant_id || req.user?.tenant_id;
-      const { plan_id, billing_cycle, referral_code } = req.body;
+      const { plan_id, billing_cycle, plan_type, referral_code } = req.body;
 
       if (!plan_id || !billing_cycle) {
         return res.status(400).json({ message: 'plan_id and billing_cycle are required' });
+      }
+
+      // Validate plan_type
+      if (!plan_type || !['multi-company', 'multi-branch'].includes(plan_type)) {
+        return res.status(400).json({ 
+          message: 'plan_type is required and must be either "multi-company" or "multi-branch"' 
+        });
       }
 
       const masterModels = req.masterModels || require('../models/masterModels');
@@ -27,6 +34,13 @@ module.exports = {
       const plan = await db.SubscriptionPlan.findByPk(plan_id);
       if (!plan) {
         return res.status(404).json({ message: 'Subscription plan not found' });
+      }
+
+      // Validate plan_type against plan limits
+      if (plan_type === 'multi-branch' && (!plan.max_branches || plan.max_branches === 0)) {
+        return res.status(400).json({ 
+          message: 'This plan does not support multi-branch configuration' 
+        });
       }
 
       let basePrice = parseFloat(plan.base_price || 0);
@@ -144,7 +158,7 @@ module.exports = {
           plan_code: plan.plan_code,
           plan_name: plan.plan_name,
           description: plan.description,
-          plan_type: plan.plan_type,
+          plan_type: plan_type,
           billing_cycle: billing_cycle,
           base_price: plan.base_price,
           discounted_price: plan.discounted_price,
