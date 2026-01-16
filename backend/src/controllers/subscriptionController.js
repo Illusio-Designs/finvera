@@ -78,6 +78,90 @@ module.exports = {
         }
       }
 
+      // Check if Razorpay is configured
+      const isRazorpayConfigured = process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET;
+      const isLocalMode = process.env.NODE_ENV === 'development' && !isRazorpayConfigured;
+
+      // LOCAL MODE: Skip Razorpay and create subscription directly
+      if (isLocalMode) {
+        logger.info('LOCAL MODE: Creating subscription without Razorpay');
+        
+        // Calculate dates
+        const startDate = new Date();
+        let endDate = null;
+        let currentPeriodEnd = null;
+        if (billing_cycle === 'monthly') {
+          endDate = new Date(startDate);
+          endDate.setMonth(endDate.getMonth() + 1);
+          currentPeriodEnd = endDate;
+        } else if (billing_cycle === 'yearly') {
+          endDate = new Date(startDate);
+          endDate.setFullYear(endDate.getFullYear() + 1);
+          currentPeriodEnd = new Date(startDate);
+          currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1);
+        }
+
+        // Create subscription directly (local mode)
+        const subscription = await masterModels.Subscription.create({
+          tenant_id: tenant_id,
+          subscription_plan_id: null, // Don't use FK - plan is in different database
+          razorpay_subscription_id: `local_sub_${Date.now()}`,
+          razorpay_plan_id: null,
+          status: 'active', // Directly set to active in local mode
+          plan_code: plan.plan_code,
+          plan_name: plan.plan_name,
+          description: plan.description,
+          plan_type: plan_type,
+          billing_cycle: billing_cycle,
+          base_price: plan.base_price,
+          discounted_price: plan.discounted_price,
+          amount: amount,
+          currency: plan.currency || 'INR',
+          trial_days: plan.trial_days || 0,
+          max_users: plan.max_users,
+          max_invoices_per_month: plan.max_invoices_per_month,
+          max_companies: plan.max_companies || 1,
+          max_branches: plan.max_branches || 0,
+          storage_limit_gb: plan.storage_limit_gb,
+          features: plan.features,
+          salesman_commission_rate: plan.salesman_commission_rate,
+          distributor_commission_rate: plan.distributor_commission_rate,
+          renewal_commission_rate: plan.renewal_commission_rate,
+          is_active: plan.is_active !== undefined ? plan.is_active : true,
+          is_visible: plan.is_visible !== undefined ? plan.is_visible : true,
+          is_featured: plan.is_featured || false,
+          display_order: plan.display_order,
+          valid_from: plan.valid_from,
+          valid_until: plan.valid_until,
+          start_date: startDate,
+          end_date: endDate,
+          current_period_start: startDate,
+          current_period_end: currentPeriodEnd,
+          metadata: { mode: 'local', plan_id: plan.id, created_at: new Date().toISOString() },
+        });
+
+        // Update tenant
+        await tenant.update({
+          subscription_plan: plan.plan_code,
+          subscription_start: startDate,
+          subscription_end: endDate,
+        });
+
+        return res.json({
+          success: true,
+          mode: 'local',
+          message: 'Subscription activated (local mode - no payment required)',
+          subscription: {
+            id: subscription.id,
+            status: 'active',
+            plan_name: plan.plan_name,
+            amount: amount,
+            currency: plan.currency || 'INR',
+          },
+        });
+      }
+
+      // PRODUCTION MODE: Use Razorpay
       // Create or get Razorpay customer
       let razorpayCustomerId = tenant.razorpay_customer_id;
       if (!razorpayCustomerId) {
@@ -151,7 +235,7 @@ module.exports = {
         // Save subscription to database
         const subscription = await masterModels.Subscription.create({
           tenant_id: tenant_id,
-          subscription_plan_id: plan_id,
+          subscription_plan_id: null, // Don't use FK - plan is in different database
           razorpay_subscription_id: razorpaySubscription.id,
           razorpay_plan_id: razorpayPlanId,
           status: razorpaySubscription.status,
@@ -184,7 +268,7 @@ module.exports = {
           end_date: endDate,
           current_period_start: startDate,
           current_period_end: currentPeriodEnd,
-          metadata: razorpaySubscription,
+          metadata: { ...razorpaySubscription, plan_id: plan.id },
         });
 
         // Update tenant (also store referral_code if provided for reward creation on payment)
@@ -201,6 +285,7 @@ module.exports = {
 
         return res.json({
           success: true,
+          mode: 'razorpay',
           subscription: {
             id: subscription.id,
             razorpay_subscription_id: razorpaySubscription.id,
@@ -231,6 +316,7 @@ module.exports = {
 
         return res.json({
           success: true,
+          mode: 'razorpay',
           order: {
             id: order.id,
             amount: order.amount / 100, // Convert from paise

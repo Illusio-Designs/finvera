@@ -18,10 +18,8 @@ const Subscription = masterSequelize.define('Subscription', {
   subscription_plan_id: {
     type: DataTypes.UUID,
     allowNull: true,
-    references: {
-      model: 'subscription_plans',
-      key: 'id',
-    },
+    // Note: No foreign key reference because subscription_plans is in different database
+    // Plan ID is stored in metadata.plan_id for reference
   },
   razorpay_subscription_id: {
     type: DataTypes.STRING(255),

@@ -3,14 +3,14 @@ import Image from 'next/image';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'next/router';
 import { getProfileImageUrl } from '../../lib/imageUtils';
-import { companyAPI, searchAPI, authAPI } from '../../lib/api';
+import { companyAPI, searchAPI, authAPI, subscriptionAPI, branchAPI } from '../../lib/api';
 import { canAccessClientPortal } from '../../lib/roleConfig';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import {
   FiMenu, FiBell, FiSearch, FiUser, FiSettings,
   FiLogOut, FiChevronDown, FiX, FiBriefcase, FiPlus,
-  FiFileText, FiPackage, FiLayers, FiCreditCard, FiUsers, FiHeadphones, FiCamera
+  FiFileText, FiPackage, FiLayers, FiCreditCard, FiUsers, FiHeadphones, FiCamera, FiMapPin
 } from 'react-icons/fi';
 import NotificationDropdown from '../notifications/NotificationDropdown';
 
@@ -20,8 +20,13 @@ export default function Header({ onMenuClick, title, actions }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
+  const [showBranchDropdown, setShowBranchDropdown] = useState(false);
   const [companies, setCompanies] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [currentBranch, setCurrentBranch] = useState(null);
+  const [subscription, setSubscription] = useState(null);
   const [loadingCompanies, setLoadingCompanies] = useState(false);
+  const [loadingBranches, setLoadingBranches] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -30,6 +35,7 @@ export default function Header({ onMenuClick, title, actions }) {
   const [uploadingProfileImage, setUploadingProfileImage] = useState(false);
   const menuRef = useRef(null);
   const companyDropdownRef = useRef(null);
+  const branchDropdownRef = useRef(null);
   const searchRef = useRef(null);
   const searchResultsRef = useRef(null);
   const fetchingCompaniesRef = useRef(false);
@@ -41,6 +47,25 @@ export default function Header({ onMenuClick, title, actions }) {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Fetch current subscription to check if multi-branch
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      if (!user || !canAccessClientPortal(user.role)) return;
+      
+      try {
+        const response = await subscriptionAPI.getCurrent();
+        const sub = response.data?.subscription;
+        setSubscription(sub);
+      } catch (error) {
+        console.error('Error fetching subscription:', error);
+      }
+    };
+
+    if (mounted && user) {
+      fetchSubscription();
+    }
+  }, [user, mounted]);
 
   // Fetch companies for client users
   useEffect(() => {
@@ -131,6 +156,41 @@ export default function Header({ onMenuClick, title, actions }) {
     }
   }, [user, companies.length, mounted]);
 
+  // Fetch branches for multi-branch subscriptions
+  useEffect(() => {
+    const fetchBranches = async () => {
+      if (!user?.company_id || !subscription || subscription.plan_type !== 'multi-branch') {
+        setBranches([]);
+        return;
+      }
+
+      setLoadingBranches(true);
+      try {
+        const response = await branchAPI.list(user.company_id);
+        const branchesData = response.data?.data || response.data || [];
+        setBranches(Array.isArray(branchesData) ? branchesData : []);
+        
+        // Set current branch from localStorage or default to first
+        const savedBranchId = localStorage.getItem('currentBranchId');
+        if (savedBranchId) {
+          const branch = branchesData.find(b => b.id === savedBranchId);
+          setCurrentBranch(branch || branchesData[0] || null);
+        } else {
+          setCurrentBranch(branchesData[0] || null);
+        }
+      } catch (error) {
+        console.error('Error fetching branches:', error);
+        setBranches([]);
+      } finally {
+        setLoadingBranches(false);
+      }
+    };
+
+    if (mounted && user && subscription) {
+      fetchBranches();
+    }
+  }, [user, subscription, mounted]);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -138,6 +198,9 @@ export default function Header({ onMenuClick, title, actions }) {
       }
       if (companyDropdownRef.current && !companyDropdownRef.current.contains(event.target)) {
         setShowCompanyDropdown(false);
+      }
+      if (branchDropdownRef.current && !branchDropdownRef.current.contains(event.target)) {
+        setShowBranchDropdown(false);
       }
       if (searchResultsRef.current && !searchResultsRef.current.contains(event.target) &&
           searchRef.current && !searchRef.current.contains(event.target)) {
@@ -322,6 +385,20 @@ export default function Header({ onMenuClick, title, actions }) {
     }
   };
 
+  const handleBranchSwitch = (branch) => {
+    if (branch.id === currentBranch?.id) {
+      setShowBranchDropdown(false);
+      return;
+    }
+
+    setCurrentBranch(branch);
+    localStorage.setItem('currentBranchId', branch.id);
+    setShowBranchDropdown(false);
+    toast.success(`Switched to ${branch.branch_name}`);
+    // Optionally reload to refresh data for the new branch
+    // router.reload();
+  };
+
   const isClientUser = user && canAccessClientPortal(user.role);
   const currentCompany = companies.find(c => c.id === user?.company_id);
 
@@ -354,7 +431,7 @@ export default function Header({ onMenuClick, title, actions }) {
 
         {/* Company Selection Dropdown (for client users) */}
         {isClientUser && (
-          <div className="relative" ref={companyDropdownRef}>
+          <div className="relative ml-3" ref={companyDropdownRef}>
             <button
               onClick={() => setShowCompanyDropdown(!showCompanyDropdown)}
               disabled={loadingCompanies}
@@ -418,6 +495,85 @@ export default function Header({ onMenuClick, title, actions }) {
                     >
                       <FiPlus className="h-4 w-4" />
                       <span>Create New Company</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Branch Selection Dropdown (for multi-branch subscriptions) */}
+        {isClientUser && subscription?.plan_type === 'multi-branch' && (
+          <div className="relative ml-2" ref={branchDropdownRef}>
+            <button
+              onClick={() => setShowBranchDropdown(!showBranchDropdown)}
+              disabled={loadingBranches}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FiMapPin className="h-4 w-4 text-gray-500" />
+              <span className="hidden sm:block max-w-[120px] truncate">
+                {loadingBranches ? 'Loading...' : (currentBranch?.branch_name || 'Select Branch')}
+              </span>
+              <FiChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${showBranchDropdown ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showBranchDropdown && (
+              <div className="absolute left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[70] max-h-80 overflow-y-auto">
+                {loadingBranches ? (
+                  <div className="px-4 py-3 text-sm text-gray-500 text-center">Loading branches...</div>
+                ) : branches.length === 0 ? (
+                  <div className="px-4 py-3">
+                    <div className="text-sm text-gray-500 text-center mb-2">No branches found</div>
+                    <button
+                      onClick={() => {
+                        setShowBranchDropdown(false);
+                        router.push('/client/companies'); // Navigate to company/branch management
+                      }}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition"
+                    >
+                      <FiPlus className="h-4 w-4" />
+                      <span>Create Branch</span>
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {branches.map((branch) => {
+                      const isCurrentBranch = branch.id === currentBranch?.id;
+                      return (
+                        <button
+                          key={branch.id}
+                          onClick={() => !isCurrentBranch && handleBranchSwitch(branch)}
+                          disabled={isCurrentBranch}
+                          className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition ${
+                            isCurrentBranch
+                              ? 'bg-green-50 text-green-700 font-medium cursor-default'
+                              : 'text-gray-700 hover:bg-gray-50 cursor-pointer'
+                          } disabled:opacity-100`}
+                        >
+                          <FiMapPin className={`h-4 w-4 ${isCurrentBranch ? 'text-green-600' : 'text-gray-400'}`} />
+                          <div className="flex-1 min-w-0">
+                            <div className="truncate">{branch.branch_name}</div>
+                            {branch.branch_code && (
+                              <div className="text-xs text-gray-500 truncate">Code: {branch.branch_code}</div>
+                            )}
+                          </div>
+                          {isCurrentBranch && (
+                            <span className="text-green-600 text-xs font-medium">Current</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                    <div className="border-t border-gray-200 my-1"></div>
+                    <button
+                      onClick={() => {
+                        setShowBranchDropdown(false);
+                        router.push('/client/companies'); // Navigate to branch management
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-green-600 hover:bg-green-50 transition"
+                    >
+                      <FiPlus className="h-4 w-4" />
+                      <span>Create New Branch</span>
                     </button>
                   </>
                 )}

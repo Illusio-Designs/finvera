@@ -13,10 +13,10 @@ router.post('/webhook', razorpayWebhookController.handleWebhook);
 router.use(authenticate);
 
 // Subscription management
-router.post('/subscriptions', subscriptionController.createSubscription);
-router.get('/subscriptions/current', subscriptionController.getCurrentSubscription);
-router.put('/subscriptions/:id', subscriptionController.updateSubscription);
-router.post('/subscriptions/cancel', subscriptionController.cancelSubscription);
+router.post('/', subscriptionController.createSubscription);
+router.get('/current', subscriptionController.getCurrentSubscription);
+router.put('/:id', subscriptionController.updateSubscription);
+router.post('/cancel', subscriptionController.cancelSubscription);
 
 // Payment management
 router.post('/payments/verify', subscriptionController.verifyPayment);

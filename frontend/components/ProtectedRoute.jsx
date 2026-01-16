@@ -11,6 +11,8 @@ export default function ProtectedRoute({ children, portalType = null }) {
   const [mounted, setMounted] = useState(false);
   const [hasToken, setHasToken] = useState(false);
   const [hasUserCookie, setHasUserCookie] = useState(false);
+  const [subscriptionChecked, setSubscriptionChecked] = useState(false);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
 
   // Set mounted state on client side only
   useEffect(() => {
@@ -21,6 +23,37 @@ export default function ProtectedRoute({ children, portalType = null }) {
       setHasUserCookie(!!Cookies.get('user'));
     }
   }, []);
+
+  // Check subscription status for client portal users
+  useEffect(() => {
+    if (!mounted || !isAuthenticated || !user || portalType !== 'client') {
+      // For non-client portal or unauthenticated users, mark subscription as checked
+      if (mounted && portalType !== 'client') {
+        setSubscriptionChecked(true);
+      }
+      return;
+    }
+
+    const checkSubscription = async () => {
+      try {
+        const { subscriptionAPI } = require('../lib/api');
+        const response = await subscriptionAPI.getCurrent();
+        const subscription = response.data?.subscription;
+        
+        // Check if subscription is active
+        const isActive = subscription && ['active', 'authenticated', 'pending'].includes(subscription.status);
+        setHasActiveSubscription(isActive);
+        setSubscriptionChecked(true);
+      } catch (error) {
+        console.error('Error checking subscription:', error);
+        // On error, assume no subscription (fail closed for subscription check)
+        setHasActiveSubscription(false);
+        setSubscriptionChecked(true);
+      }
+    };
+
+    checkSubscription();
+  }, [mounted, isAuthenticated, user, portalType]);
 
   useEffect(() => {
     // Don't run until mounted to avoid hydration mismatch
@@ -36,6 +69,9 @@ export default function ProtectedRoute({ children, portalType = null }) {
     }
 
     const isCompanyCreationPage = currentPath === '/client/companies';
+    const isPricingPage = currentPath === '/pricing';
+    const isPlansPage = currentPath === '/client/plans';
+    const isSubscribePage = currentPath === '/client/subscribe';
     
     // If we have a token but auth is still loading, wait
     if (loading && hasToken) {
@@ -95,15 +131,26 @@ export default function ProtectedRoute({ children, portalType = null }) {
         return;
       }
 
-      // For client portal users, check if they have a company
-      // Allow access to company creation page, but redirect other pages
+      // For client portal users, check subscription and company status
       if (portalType === 'client' && canAccessClientPortal(userRole)) {
-        const isCompanyCreationPage = currentPath === '/client/companies';
+        // Wait for subscription check to complete
+        if (!subscriptionChecked) {
+          return; // Wait for subscription check
+        }
+
         const hasCompany = !!user.company_id;
         
-        // If user doesn't have a company and is not on company creation page, redirect
-        if (!hasCompany && !isCompanyCreationPage) {
-          console.log('User does not have a company, redirecting to company creation');
+        // Priority 1: Check subscription status (except on plans/subscribe pages)
+        if (!hasActiveSubscription && !isPlansPage && !isSubscribePage) {
+          console.log('User does not have active subscription, redirecting to plans page');
+          router.replace('/client/plans');
+          setHasChecked(true);
+          return;
+        }
+        
+        // Priority 2: If has subscription but no company, redirect to company creation
+        if (hasActiveSubscription && !hasCompany && !isCompanyCreationPage) {
+          console.log('User has subscription but no company, redirecting to company creation');
           router.replace('/client/companies');
           setHasChecked(true);
           return;
@@ -112,7 +159,7 @@ export default function ProtectedRoute({ children, portalType = null }) {
     }
 
     setHasChecked(true);
-  }, [loading, isAuthenticated, user, router, portalType, hasChecked, mounted, hasToken, hasUserCookie]);
+  }, [loading, isAuthenticated, user, router, portalType, hasChecked, mounted, hasToken, hasUserCookie, subscriptionChecked, hasActiveSubscription]);
 
   // Don't render until mounted to avoid hydration mismatch
   if (!mounted) {
@@ -126,7 +173,7 @@ export default function ProtectedRoute({ children, portalType = null }) {
   const isCompanyCreationPage = router.pathname === '/client/companies';
 
   // Show loading spinner while checking
-  if (loading || !hasChecked) {
+  if (loading || !hasChecked || (portalType === 'client' && isAuthenticated && !subscriptionChecked)) {
     // For company creation page, allow rendering if we have token and user cookie
     // This handles the case where user just logged in and is being redirected
     if (isCompanyCreationPage && hasToken && hasUserCookie) {

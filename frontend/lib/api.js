@@ -531,6 +531,15 @@ export const subscriptionAPI = {
   getPaymentHistory: () => api.get("/payments/history"),
 };
 
+// Branch API
+export const branchAPI = {
+  create: (data) => api.post("/branches", data),
+  list: (companyId) => api.get(`/branches/company/${companyId}`),
+  get: (id) => api.get(`/branches/${id}`),
+  update: (id, data) => api.put(`/branches/${id}`, data),
+  delete: (id) => api.delete(`/branches/${id}`),
+};
+
 export const fileAPI = {
   upload: (formData) => {
     return api.post("/files/upload", formData, {

@@ -382,6 +382,12 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING(500),
       allowNull: false,
     },
+    barcode: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      unique: true,
+      comment: 'Product barcode (EAN-13, UPC, etc.)',
+    },
     hsn_sac_code: DataTypes.STRING(20),
     uqc: DataTypes.STRING(20),
     gst_rate: {

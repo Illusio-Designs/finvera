@@ -81,7 +81,8 @@ export default function ClientRegister() {
         if (router.query.plan_id) {
           router.push(`/client/subscribe?plan_id=${router.query.plan_id}&billing_cycle=${billingCycle}`);
         } else {
-          router.push('/client/dashboard');
+          // No plan selected - redirect to plans page to choose a plan
+          router.push('/client/plans');
         }
       } else {
         toast.error(result.message || 'Registration failed');

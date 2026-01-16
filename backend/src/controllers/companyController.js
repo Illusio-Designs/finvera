@@ -2,7 +2,7 @@
 const logger = require('../utils/logger');
 const TenantMaster = require('../models/TenantMaster');
 const masterModels = require('../models/masterModels');
-const { SubscriptionPlan, Branch } = require('../models');
+const { SubscriptionPlan } = require('../models');
 
 module.exports = {
   async list(req, res, next) {
@@ -147,18 +147,16 @@ module.exports = {
         });
       }
 
-      if (planType === 'multi-branch' && (!branches || branches.length === 0)) {
-          return res.status(400).json({
-              success: false,
-              message: 'At least one branch is required for a multi-branch plan.',
-          });
-      }
-
-      if (planType === 'multi-branch' && branches.length > maxBranches) {
-        return res.status(403).json({
+      // For multi-branch plans, branches are optional during company creation
+      // Users can add branches later through the branch management interface
+      // Validate branch count only if branches are provided
+      if (planType === 'multi-branch' && branches && branches.length > 0) {
+        if (branches.length > maxBranches) {
+          return res.status(403).json({
             success: false,
             message: `Branch limit reached for your plan (max ${maxBranches}).`,
-        });
+          });
+        }
       }
 
       const tenantProvisioningService = require('../services/tenantProvisioningService');
@@ -208,6 +206,7 @@ module.exports = {
 
       // Create branches if provided
       if (planType === 'multi-branch' && branches && branches.length > 0) {
+        const Branch = masterModels.Branch;
         const branchData = branches.map(branch => ({
             ...branch,
             company_id: company.id,

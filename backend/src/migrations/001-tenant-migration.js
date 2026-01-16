@@ -133,14 +133,31 @@ module.exports = {
         ledger_name: { type: Sequelize.STRING, allowNull: false },
         opening_balance: { type: Sequelize.DECIMAL(15, 2), defaultValue: 0 },
         opening_balance_type: Sequelize.STRING,
+        balance_type: { type: Sequelize.ENUM('debit', 'credit'), defaultValue: 'debit' },
         gstin: Sequelize.STRING(15),
         pan: Sequelize.STRING(10),
         address: Sequelize.TEXT,
         city: Sequelize.STRING(100),
         state: Sequelize.STRING(100),
         pincode: Sequelize.STRING(10),
+        country: Sequelize.STRING(100),
         phone: Sequelize.STRING(15),
         email: Sequelize.STRING(255),
+        bank_name: Sequelize.STRING(255),
+        bank_account_number: Sequelize.STRING(50),
+        bank_ifsc_code: Sequelize.STRING(11),
+        bank_branch: Sequelize.STRING(255),
+        bank_account_type: Sequelize.STRING(50),
+        shipping_location_name: Sequelize.STRING(255),
+        shipping_address: Sequelize.TEXT,
+        shipping_city: Sequelize.STRING(100),
+        shipping_state: Sequelize.STRING(100),
+        shipping_pincode: Sequelize.STRING(10),
+        shipping_country: Sequelize.STRING(100),
+        currency: { type: Sequelize.STRING(3), defaultValue: 'INR' },
+        opening_balance_date: Sequelize.DATEONLY,
+        description: Sequelize.TEXT,
+        additional_fields: Sequelize.JSON,
         is_active: { type: Sequelize.BOOLEAN, defaultValue: true },
         createdAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
         updatedAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
@@ -160,6 +177,55 @@ module.exports = {
       }
 
       // Add missing columns from 20251218-add-ledger-fields.js
+      await addColumnIfNotExists('ledgers', 'balance_type', {
+        type: Sequelize.ENUM('debit', 'credit'),
+        allowNull: true,
+        defaultValue: 'debit',
+      });
+      await addColumnIfNotExists('ledgers', 'bank_name', {
+        type: Sequelize.STRING(255),
+        allowNull: true,
+      });
+      await addColumnIfNotExists('ledgers', 'bank_account_number', {
+        type: Sequelize.STRING(50),
+        allowNull: true,
+      });
+      await addColumnIfNotExists('ledgers', 'bank_ifsc_code', {
+        type: Sequelize.STRING(11),
+        allowNull: true,
+      });
+      await addColumnIfNotExists('ledgers', 'bank_branch', {
+        type: Sequelize.STRING(255),
+        allowNull: true,
+      });
+      await addColumnIfNotExists('ledgers', 'bank_account_type', {
+        type: Sequelize.STRING(50),
+        allowNull: true,
+      });
+      await addColumnIfNotExists('ledgers', 'shipping_location_name', {
+        type: Sequelize.STRING(255),
+        allowNull: true,
+      });
+      await addColumnIfNotExists('ledgers', 'shipping_address', {
+        type: Sequelize.TEXT,
+        allowNull: true,
+      });
+      await addColumnIfNotExists('ledgers', 'shipping_city', {
+        type: Sequelize.STRING(100),
+        allowNull: true,
+      });
+      await addColumnIfNotExists('ledgers', 'shipping_state', {
+        type: Sequelize.STRING(100),
+        allowNull: true,
+      });
+      await addColumnIfNotExists('ledgers', 'shipping_pincode', {
+        type: Sequelize.STRING(10),
+        allowNull: true,
+      });
+      await addColumnIfNotExists('ledgers', 'shipping_country', {
+        type: Sequelize.STRING(100),
+        allowNull: true,
+      });
       await addColumnIfNotExists('ledgers', 'currency', {
         type: Sequelize.STRING(3),
         allowNull: true,

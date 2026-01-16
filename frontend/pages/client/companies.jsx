@@ -13,10 +13,10 @@ import FormDatePicker from '../../components/forms/FormDatePicker';
 import FormPasswordInput from '../../components/forms/FormPasswordInput';
 import DataTable from '../../components/tables/DataTable';
 import toast from 'react-hot-toast';
-import { companyAPI } from '../../lib/api';
+import { companyAPI, subscriptionAPI, branchAPI } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { extractPANFromGSTIN } from '../../lib/formatters';
-import { FiPlus, FiX, FiSave, FiPackage } from 'react-icons/fi';
+import { FiPlus, FiX, FiSave, FiPackage, FiMapPin } from 'react-icons/fi';
 
 const COMPANY_TYPES = [
   { value: 'sole_proprietorship', label: 'Sole Proprietorship' },
@@ -35,6 +35,7 @@ export default function CompaniesPage() {
   const [loading, setLoading] = useState(false);
   const [companies, setCompanies] = useState([]);
   const [status, setStatus] = useState(null);
+  const [subscription, setSubscription] = useState(null);
   const [formErrors, setFormErrors] = useState({});
 
   const [formData, setFormData] = useState({
@@ -79,18 +80,31 @@ export default function CompaniesPage() {
     e_way_bill_password: '',
     e_way_bill_client_id: '',
     e_way_bill_client_secret: '',
+    // Branch fields (for multi-branch subscriptions)
+    create_branch: false,
+    branch_name: '',
+    branch_code: '',
+    branch_gstin: '',
+    branch_address: '',
+    branch_city: '',
+    branch_state: '',
+    branch_pincode: '',
+    branch_contact: '',
+    branch_email: '',
   });
 
   // Fetch companies and status
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [companiesRes, statusRes] = await Promise.all([
+        const [companiesRes, statusRes, subscriptionRes] = await Promise.all([
           companyAPI.list().catch(() => ({ data: { data: [] } })),
           companyAPI.status().catch(() => ({ data: { data: {} } })),
+          subscriptionAPI.getCurrent().catch(() => ({ data: { subscription: null } })),
         ]);
         setCompanies(companiesRes?.data?.data || companiesRes?.data || []);
         setStatus(statusRes?.data?.data || {});
+        setSubscription(subscriptionRes?.data?.subscription);
       } catch (error) {
         console.error('Error fetching companies:', error);
       }
@@ -167,6 +181,17 @@ export default function CompaniesPage() {
       e_way_bill_password: '',
       e_way_bill_client_id: '',
       e_way_bill_client_secret: '',
+      // Branch fields
+      create_branch: false,
+      branch_name: '',
+      branch_code: '',
+      branch_gstin: '',
+      branch_address: '',
+      branch_city: '',
+      branch_state: '',
+      branch_pincode: '',
+      branch_contact: '',
+      branch_email: '',
     });
     setFormErrors({});
     setShowForm(false);
@@ -206,6 +231,23 @@ export default function CompaniesPage() {
         pan: formData.principal_pan?.trim() || null,
         phone: formData.principal_phone?.trim() || null,
         address: formData.principal_address?.trim() || null,
+      });
+    }
+
+    // Prepare branches array if user wants to create branch
+    const branches = [];
+    if (formData.create_branch && formData.branch_name.trim()) {
+      branches.push({
+        branch_name: formData.branch_name.trim(),
+        branch_code: formData.branch_code?.trim() || null,
+        gstin: formData.branch_gstin?.trim() || null,
+        address: formData.branch_address?.trim() || null,
+        city: formData.branch_city?.trim() || null,
+        state: formData.branch_state?.trim() || null,
+        pincode: formData.branch_pincode?.trim() || null,
+        contact_number: formData.branch_contact?.trim() || null,
+        email: formData.branch_email?.trim() || null,
+        is_active: true,
       });
     }
 
@@ -255,6 +297,8 @@ export default function CompaniesPage() {
           client_secret: formData.e_way_bill_client_secret?.trim() || null,
         },
       },
+      // Include branches array if user wants to create branch
+      branches: branches.length > 0 ? branches : undefined,
     };
   }, [formData]);
 
@@ -283,7 +327,11 @@ export default function CompaniesPage() {
       if (companyId && switchCompany) {
         try {
           await switchCompany(companyId);
-          toast.success('Company created successfully');
+          if (formData.create_branch && formData.branch_name.trim()) {
+            toast.success('Company and branch created successfully');
+          } else {
+            toast.success('Company created successfully');
+          }
           setTimeout(() => {
             router.replace('/client/dashboard');
           }, 300);
@@ -757,6 +805,106 @@ export default function CompaniesPage() {
                         </div>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* Branch Creation (for multi-branch subscriptions) */}
+                {subscription?.plan_type === 'multi-branch' && (
+                  <div className="space-y-4 border-t pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                          <FiMapPin className="h-5 w-5 text-green-600" />
+                          Create First Branch
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Add your first branch location (you can add more branches later)
+                        </p>
+                      </div>
+                      <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.create_branch}
+                          onChange={(e) => handleChange('create_branch', e.target.checked)}
+                          className="h-4 w-4"
+                        />
+                        <span>Create Branch</span>
+                      </label>
+                    </div>
+                    
+                    {formData.create_branch && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                        <FormInput
+                          name="branch_name"
+                          label="Branch Name"
+                          value={formData.branch_name}
+                          onChange={handleChange}
+                          placeholder="e.g. Head Office, Mumbai Branch"
+                          required={formData.create_branch}
+                        />
+                        <FormInput
+                          name="branch_code"
+                          label="Branch Code"
+                          value={formData.branch_code}
+                          onChange={handleChange}
+                          placeholder="e.g. HO, MUM01"
+                        />
+                        <FormInput
+                          name="branch_gstin"
+                          label="Branch GSTIN"
+                          value={formData.branch_gstin}
+                          onChange={(name, value) => handleChange(name, value.toUpperCase())}
+                          placeholder="27ABCDE1234F1Z5"
+                          maxLength={15}
+                          style={{ textTransform: 'uppercase' }}
+                        />
+                        <FormInput
+                          name="branch_city"
+                          label="City"
+                          value={formData.branch_city}
+                          onChange={handleChange}
+                          placeholder="e.g. Mumbai"
+                        />
+                        <FormInput
+                          name="branch_state"
+                          label="State"
+                          value={formData.branch_state}
+                          onChange={handleChange}
+                          placeholder="e.g. Maharashtra"
+                        />
+                        <FormInput
+                          name="branch_pincode"
+                          label="PIN Code"
+                          value={formData.branch_pincode}
+                          onChange={handleChange}
+                          placeholder="e.g. 400001"
+                        />
+                        <div className="md:col-span-2">
+                          <FormTextarea
+                            name="branch_address"
+                            label="Branch Address"
+                            value={formData.branch_address}
+                            onChange={handleChange}
+                            placeholder="Full address of the branch"
+                          />
+                        </div>
+                        <FormPhoneInput
+                          name="branch_contact"
+                          label="Contact Number"
+                          value={formData.branch_contact}
+                          onChange={handleChange}
+                          defaultCountry="IN"
+                        />
+                        <FormInput
+                          name="branch_email"
+                          label="Email"
+                          type="email"
+                          value={formData.branch_email}
+                          onChange={handleChange}
+                          placeholder="branch@company.com"
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
 

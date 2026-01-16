@@ -19,6 +19,12 @@ export default function SubscribePage() {
   const [loading, setLoading] = useState(false);
   const [planLoading, setPlanLoading] = useState(true);
   const [referralCode, setReferralCode] = useState('');
+  const [isLocalMode, setIsLocalMode] = useState(false);
+
+  useEffect(() => {
+    // Check if we're in local mode (development without Razorpay)
+    setIsLocalMode(process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID);
+  }, []);
 
   const fetchPlan = useCallback(async (planId) => {
     try {
@@ -93,6 +99,17 @@ export default function SubscribePage() {
       });
 
       if (response.data.success) {
+        // Check if it's local mode (no payment required)
+        if (response.data.mode === 'local') {
+          toast.success(response.data.message || 'Subscription activated successfully!');
+          // Redirect to company creation or dashboard
+          setTimeout(() => {
+            router.push('/client/companies');
+          }, 1500);
+          return;
+        }
+
+        // Razorpay mode
         if (response.data.subscription?.auth_link) {
           // Redirect to Razorpay payment page
           window.location.href = response.data.subscription.auth_link;
@@ -347,6 +364,27 @@ export default function SubscribePage() {
             <Card className="p-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Payment Summary</h2>
 
+              {/* Local Mode Banner */}
+              {isLocalMode && (
+                <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <svg className="h-5 w-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-yellow-900 mb-1">
+                        Development Mode
+                      </h3>
+                      <p className="text-sm text-yellow-700">
+                        Payment gateway is disabled. Subscription will be activated immediately without payment.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Referral Code */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -398,12 +436,23 @@ export default function SubscribePage() {
                 loading={loading}
                 className="w-full py-3 text-lg"
               >
-                {loading ? 'Processing...' : `Subscribe to ${plan.plan_name}`}
+                {loading 
+                  ? 'Processing...' 
+                  : isLocalMode 
+                    ? 'Activate Subscription (Free - Dev Mode)' 
+                    : `Subscribe to ${plan.plan_name}`
+                }
               </Button>
 
-              {plan.trial_days > 0 && (
+              {!isLocalMode && plan.trial_days > 0 && (
                 <p className="text-center text-sm text-gray-500 mt-4">
                   {plan.trial_days} days free trial • Cancel anytime
+                </p>
+              )}
+
+              {isLocalMode && (
+                <p className="text-center text-sm text-yellow-600 mt-4">
+                  No payment required in development mode
                 </p>
               )}
 
