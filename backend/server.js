@@ -1,9 +1,9 @@
 require('dotenv').config();
 const http = require('http');
 const sequelize = require('./src/config/database');
-const { initDatabase } = require('./src/config/database');
+const { initDatabase } = require('./src/scripts/initDatabase');
 const masterSequelize = require('./src/config/masterDatabase');
-const { initMasterDatabase } = require('./src/config/masterDatabase');
+const { initMasterDatabase } = require('./src/scripts/initMasterDatabase');
 const redisClient = require('./src/config/redis');
 const logger = require('./src/utils/logger');
 const { syncDatabase } = require('./src/utils/dbSync');

@@ -380,4 +380,3 @@ async function runMasterSeeder() {
 
 // Export both connection and init function
 module.exports = masterSequelize;
-module.exports.initMasterDatabase = initMasterDatabase;
