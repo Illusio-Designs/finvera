@@ -1,3 +1,4 @@
+
 const { DataTypes } = require('sequelize');
 const masterSequelize = require('../config/masterDatabase');
 
@@ -184,6 +185,12 @@ models.Company = masterSequelize.define('Company', {
   tableName: 'companies',
   timestamps: true,
 });
+
+models.Branch = require('./Branch');
+
+models.Company.hasMany(models.Branch, { foreignKey: 'company_id', as: 'branches' });
+models.Branch.belongsTo(models.Company, { foreignKey: 'company_id', as: 'company' });
+
 
 // Account Group Model (SHARED - Same chart of accounts for all tenants)
 models.AccountGroup = masterSequelize.define('AccountGroup', {
@@ -494,6 +501,7 @@ async function syncMasterModels() {
   
   // Company model can evolve (tenant-controlled metadata)
   await models.Company.sync({ alter: true });
+  await models.Branch.sync({ alter: true });
 
   await models.AccountGroup.sync({ alter: false });
   await models.VoucherType.sync({ alter: false });
@@ -513,6 +521,7 @@ async function syncMasterModels() {
           plan_code VARCHAR(50) NOT NULL UNIQUE,
           plan_name VARCHAR(255) NOT NULL,
           description TEXT,
+          plan_type ENUM('multi-company', 'multi-branch') DEFAULT 'multi-company',
           billing_cycle VARCHAR(50),
           base_price DECIMAL(15,2) NOT NULL,
           discounted_price DECIMAL(15,2),
@@ -521,6 +530,7 @@ async function syncMasterModels() {
           max_users INT,
           max_invoices_per_month INT,
           max_companies INT DEFAULT 1,
+          max_branches INT DEFAULT 0,
           storage_limit_gb INT,
           features JSON,
           salesman_commission_rate DECIMAL(5,2),
@@ -568,6 +578,7 @@ async function syncMasterModels() {
             plan_code VARCHAR(50) NOT NULL,
             plan_name VARCHAR(255),
             description TEXT,
+            plan_type ENUM('multi-company', 'multi-branch') DEFAULT 'multi-company',
             billing_cycle VARCHAR(20) NOT NULL,
             base_price DECIMAL(15,2),
             discounted_price DECIMAL(15,2),
@@ -577,6 +588,7 @@ async function syncMasterModels() {
             max_users INT,
             max_invoices_per_month INT,
             max_companies INT DEFAULT 1,
+            max_branches INT DEFAULT 0,
             storage_limit_gb INT,
             features JSON,
             salesman_commission_rate DECIMAL(5,2),

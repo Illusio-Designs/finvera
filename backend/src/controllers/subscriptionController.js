@@ -1,3 +1,4 @@
+
 const razorpayService = require('../services/razorpayService');
 const logger = require('../utils/logger');
 const { Op } = require('sequelize');
@@ -143,6 +144,7 @@ module.exports = {
           plan_code: plan.plan_code,
           plan_name: plan.plan_name,
           description: plan.description,
+          plan_type: plan.plan_type,
           billing_cycle: billing_cycle,
           base_price: plan.base_price,
           discounted_price: plan.discounted_price,
@@ -152,6 +154,7 @@ module.exports = {
           max_users: plan.max_users,
           max_invoices_per_month: plan.max_invoices_per_month,
           max_companies: plan.max_companies || 1,
+          max_branches: plan.max_branches || 0,
           storage_limit_gb: plan.storage_limit_gb,
           features: plan.features,
           salesman_commission_rate: plan.salesman_commission_rate,
@@ -268,6 +271,7 @@ module.exports = {
         plan_code,
         plan_name,
         description,
+        plan_type,
         billing_cycle,
         base_price,
         discounted_price,
@@ -277,6 +281,7 @@ module.exports = {
         max_users,
         max_invoices_per_month,
         max_companies,
+        max_branches,
         storage_limit_gb,
         features,
         salesman_commission_rate,
@@ -309,6 +314,7 @@ module.exports = {
       if (plan_code !== undefined) updateData.plan_code = plan_code;
       if (plan_name !== undefined) updateData.plan_name = plan_name;
       if (description !== undefined) updateData.description = description;
+      if (plan_type !== undefined) updateData.plan_type = plan_type;
       if (billing_cycle !== undefined) updateData.billing_cycle = billing_cycle;
       if (base_price !== undefined) updateData.base_price = base_price;
       if (discounted_price !== undefined) updateData.discounted_price = discounted_price;
@@ -318,6 +324,7 @@ module.exports = {
       if (max_users !== undefined) updateData.max_users = max_users;
       if (max_invoices_per_month !== undefined) updateData.max_invoices_per_month = max_invoices_per_month;
       if (max_companies !== undefined) updateData.max_companies = max_companies;
+      if (max_branches !== undefined) updateData.max_branches = max_branches;
       if (storage_limit_gb !== undefined) updateData.storage_limit_gb = storage_limit_gb;
       if (features !== undefined) updateData.features = features;
       if (salesman_commission_rate !== undefined) updateData.salesman_commission_rate = salesman_commission_rate;

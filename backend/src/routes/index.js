@@ -1,3 +1,4 @@
+
 const { Router } = require('express');
 const authRoutes = require('./authRoutes');
 const tenantRoutes = require('./tenantRoutes');
@@ -25,6 +26,7 @@ const seoRoutes = require('./seoRoutes');
 const supportRoutes = require('./supportRoutes');
 const notificationRoutes = require('./notificationRoutes');
 const companyRoutes = require('./companyRoutes');
+const branchRoutes = require('./branchRoutes');
 const hsnRoutes = require('./hsnRoutes');
 const subscriptionRoutes = require('./subscriptionRoutes');
 const reviewRoutes = require('./reviewRoutes');
@@ -53,6 +55,7 @@ router.use('/income-tax', incomeTaxRoutes);
 router.use('/finbox', finboxRoutes);
 router.use('/search', searchRoutes);
 router.use('/companies', companyRoutes);
+router.use('/branches', branchRoutes);
 router.use('/hsn', hsnRoutes);
 router.use('/', blogRoutes);
 router.use('/', seoRoutes);
