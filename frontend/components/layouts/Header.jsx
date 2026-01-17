@@ -13,6 +13,7 @@ import {
   FiFileText, FiPackage, FiLayers, FiCreditCard, FiUsers, FiHeadphones, FiCamera, FiMapPin
 } from 'react-icons/fi';
 import NotificationDropdown from '../notifications/NotificationDropdown';
+import CreateBranchModal from '../modals/CreateBranchModal';
 
 export default function Header({ onMenuClick, title, actions }) {
   const { user, logout, switchCompany, updateUser } = useAuth();
@@ -21,6 +22,7 @@ export default function Header({ onMenuClick, title, actions }) {
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
   const [showBranchDropdown, setShowBranchDropdown] = useState(false);
+  const [showCreateBranchModal, setShowCreateBranchModal] = useState(false);
   const [companies, setCompanies] = useState([]);
   const [branches, setBranches] = useState([]);
   const [currentBranch, setCurrentBranch] = useState(null);
@@ -399,6 +401,33 @@ export default function Header({ onMenuClick, title, actions }) {
     // router.reload();
   };
 
+  const handleBranchCreated = async (newBranch) => {
+    // Refresh the branches list
+    try {
+      const response = await branchAPI.list(user?.company_id);
+      const branchesData = response.data?.data || response.data || [];
+      setBranches(Array.isArray(branchesData) ? branchesData : []);
+      
+      // Set the newly created branch as current
+      if (newBranch && newBranch.id) {
+        setCurrentBranch(newBranch);
+        localStorage.setItem('currentBranchId', newBranch.id);
+        
+        // Show selection message (not creation message since modal already shows that)
+        toast.success(`Switched to "${newBranch.branch_name}" branch`);
+      }
+    } catch (error) {
+      console.error('Error refreshing branches:', error);
+      // Still add the new branch to the list manually if API call fails
+      if (newBranch) {
+        setBranches(prev => Array.isArray(prev) ? [...prev, newBranch] : [newBranch]);
+        setCurrentBranch(newBranch);
+        localStorage.setItem('currentBranchId', newBranch.id);
+        toast.success(`Switched to "${newBranch.branch_name}" branch`);
+      }
+    }
+  };
+
   const isClientUser = user && canAccessClientPortal(user.role);
   const currentCompany = companies.find(c => c.id === user?.company_id);
 
@@ -522,13 +551,13 @@ export default function Header({ onMenuClick, title, actions }) {
               <div className="absolute left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[70] max-h-80 overflow-y-auto">
                 {loadingBranches ? (
                   <div className="px-4 py-3 text-sm text-gray-500 text-center">Loading branches...</div>
-                ) : branches.length === 0 ? (
+                ) : !Array.isArray(branches) || branches.length === 0 ? (
                   <div className="px-4 py-3">
                     <div className="text-sm text-gray-500 text-center mb-2">No branches found</div>
                     <button
                       onClick={() => {
                         setShowBranchDropdown(false);
-                        router.push('/client/companies'); // Navigate to company/branch management
+                        setShowCreateBranchModal(true);
                       }}
                       className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition"
                     >
@@ -538,7 +567,7 @@ export default function Header({ onMenuClick, title, actions }) {
                   </div>
                 ) : (
                   <>
-                    {branches.map((branch) => {
+                    {Array.isArray(branches) && branches.map((branch) => {
                       const isCurrentBranch = branch.id === currentBranch?.id;
                       return (
                         <button
@@ -547,11 +576,11 @@ export default function Header({ onMenuClick, title, actions }) {
                           disabled={isCurrentBranch}
                           className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition ${
                             isCurrentBranch
-                              ? 'bg-green-50 text-green-700 font-medium cursor-default'
+                              ? 'bg-primary-50 text-primary-700 font-medium cursor-default'
                               : 'text-gray-700 hover:bg-gray-50 cursor-pointer'
                           } disabled:opacity-100`}
                         >
-                          <FiMapPin className={`h-4 w-4 ${isCurrentBranch ? 'text-green-600' : 'text-gray-400'}`} />
+                          <FiMapPin className={`h-4 w-4 ${isCurrentBranch ? 'text-primary-600' : 'text-gray-400'}`} />
                           <div className="flex-1 min-w-0">
                             <div className="truncate">{branch.branch_name}</div>
                             {branch.branch_code && (
@@ -559,7 +588,7 @@ export default function Header({ onMenuClick, title, actions }) {
                             )}
                           </div>
                           {isCurrentBranch && (
-                            <span className="text-green-600 text-xs font-medium">Current</span>
+                            <span className="text-primary-600 text-xs font-medium">Current</span>
                           )}
                         </button>
                       );
@@ -568,9 +597,9 @@ export default function Header({ onMenuClick, title, actions }) {
                     <button
                       onClick={() => {
                         setShowBranchDropdown(false);
-                        router.push('/client/companies'); // Navigate to branch management
+                        setShowCreateBranchModal(true);
                       }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-green-600 hover:bg-green-50 transition"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary-600 hover:bg-primary-50 transition"
                     >
                       <FiPlus className="h-4 w-4" />
                       <span>Create New Branch</span>
@@ -865,6 +894,14 @@ export default function Header({ onMenuClick, title, actions }) {
           )}
         </div>
       )}
+      
+      {/* Create Branch Modal */}
+      <CreateBranchModal
+        isOpen={showCreateBranchModal}
+        onClose={() => setShowCreateBranchModal(false)}
+        companyId={user?.company_id}
+        onBranchCreated={handleBranchCreated}
+      />
     </header>
   );
 }

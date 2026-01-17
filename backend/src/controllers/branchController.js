@@ -6,7 +6,18 @@ const { SubscriptionPlan } = require('../models');
 module.exports = {
   async create(req, res, next) {
     try {
-      const { company_id, branch_name, gstin, address } = req.body;
+      const { 
+        company_id, 
+        branch_name, 
+        branch_code,
+        gstin, 
+        address,
+        city,
+        state,
+        pincode,
+        phone,
+        email
+      } = req.body;
 
       const company = await masterModels.Company.findOne({ where: { id: company_id, tenant_id: req.tenant_id } });
       if (!company) {
@@ -23,7 +34,32 @@ module.exports = {
         }
       }
 
-      const branch = await masterModels.Branch.create({ company_id, branch_name, gstin, address });
+      // Check for unique branch_code if provided
+      if (branch_code) {
+        const existingBranch = await masterModels.Branch.findOne({ 
+          where: { branch_code, company_id } 
+        });
+        if (existingBranch) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Branch code already exists for this company' 
+          });
+        }
+      }
+
+      const branch = await masterModels.Branch.create({ 
+        company_id, 
+        branch_name, 
+        branch_code,
+        gstin, 
+        address,
+        city,
+        state,
+        pincode,
+        phone,
+        email
+      });
+      
       return res.status(201).json({ success: true, data: branch });
     } catch (err) {
       return next(err);
@@ -56,14 +92,52 @@ module.exports = {
   async update(req, res, next) {
     try {
       const { id } = req.params;
-      const { branch_name, gstin, address } = req.body;
+      const { 
+        branch_name, 
+        branch_code,
+        gstin, 
+        address,
+        city,
+        state,
+        pincode,
+        phone,
+        email
+      } = req.body;
 
       const branch = await masterModels.Branch.findOne({ where: { id, is_active: true } });
       if (!branch) {
         return res.status(404).json({ success: false, message: 'Branch not found' });
       }
 
-      await branch.update({ branch_name, gstin, address });
+      // Check for unique branch_code if provided and different from current
+      if (branch_code && branch_code !== branch.branch_code) {
+        const existingBranch = await masterModels.Branch.findOne({ 
+          where: { 
+            branch_code, 
+            company_id: branch.company_id,
+            id: { [require('sequelize').Op.ne]: id }
+          } 
+        });
+        if (existingBranch) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Branch code already exists for this company' 
+          });
+        }
+      }
+
+      await branch.update({ 
+        branch_name, 
+        branch_code,
+        gstin, 
+        address,
+        city,
+        state,
+        pincode,
+        phone,
+        email
+      });
+      
       return res.json({ success: true, data: branch });
     } catch (err) {
       return next(err);

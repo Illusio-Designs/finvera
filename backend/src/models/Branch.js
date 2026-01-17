@@ -20,13 +20,41 @@ const Branch = masterSequelize.define('Branch', {
         type: DataTypes.STRING,
         allowNull: false,
     },
+    branch_code: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        unique: true,
+    },
     gstin: {
         type: DataTypes.STRING,
         allowNull: true,
     },
     address: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+    },
+    city: {
         type: DataTypes.STRING,
         allowNull: true,
+    },
+    state: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
+    pincode: {
+        type: DataTypes.STRING(10),
+        allowNull: true,
+    },
+    phone: {
+        type: DataTypes.STRING(15),
+        allowNull: true,
+    },
+    email: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        validate: {
+            isEmail: true,
+        },
     },
     is_active: {
         type: DataTypes.BOOLEAN,

@@ -16,7 +16,7 @@ import toast from 'react-hot-toast';
 import { companyAPI, subscriptionAPI, branchAPI } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { extractPANFromGSTIN } from '../../lib/formatters';
-import { FiPlus, FiX, FiSave, FiPackage, FiMapPin } from 'react-icons/fi';
+import { FiPlus, FiX, FiSave, FiPackage, FiMapPin, FiFileText } from 'react-icons/fi';
 
 const COMPANY_TYPES = [
   { value: 'sole_proprietorship', label: 'Sole Proprietorship' },
@@ -437,7 +437,9 @@ export default function CompaniesPage() {
 
               <form onSubmit={handleSubmit} className="space-y-8">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormInput
                       name="company_name"
@@ -529,7 +531,9 @@ export default function CompaniesPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Registered Office</h3>
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900">Registered Office</h3>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
                       <FormTextarea
@@ -570,9 +574,11 @@ export default function CompaniesPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Director / Partner / Proprietor
-                  </h3>
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Director / Partner / Proprietor
+                    </h3>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormInput
                       name="principal_name"
@@ -615,7 +621,9 @@ export default function CompaniesPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Financial & Accounting</h3>
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900">Financial & Accounting</h3>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormDatePicker
                       name="financial_year_start"
@@ -647,7 +655,9 @@ export default function CompaniesPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Bank Details (optional)</h3>
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900">Bank Details (optional)</h3>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormInput
                       name="bank_name"
@@ -679,7 +689,9 @@ export default function CompaniesPage() {
                 {formData.gstin && (
                   <div className="space-y-6">
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Compliance</h3>
+                      <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                        <h3 className="text-lg font-semibold text-gray-900">Compliance</h3>
+                      </div>
                       <div className="grid grid-cols-1 gap-4">
                         <label className="flex items-center gap-2 text-sm text-gray-700">
                           <input
@@ -688,7 +700,7 @@ export default function CompaniesPage() {
                             onChange={(e) =>
                               handleChange('professional_tax_registered', e.target.checked)
                             }
-                            className="h-4 w-4"
+                            className="h-4 w-4 text-primary-600 focus:ring-primary-500 rounded border-gray-300"
                           />
                           Professional tax registered
                         </label>
@@ -704,14 +716,22 @@ export default function CompaniesPage() {
                             type="checkbox"
                             checked={formData.e_invoice_applicable}
                             onChange={(e) => handleChange('e_invoice_applicable', e.target.checked)}
-                            className="h-4 w-4"
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 rounded border-gray-300"
                           />
                           <span>E-Invoice Applicable</span>
                         </label>
                       </div>
                       
                       {formData.e_invoice_applicable && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50/50 rounded-lg border border-blue-200/50">
+                          <div className="md:col-span-2 mb-2">
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="p-1.5 bg-blue-100 rounded-lg">
+                                <FiFileText className="h-4 w-4 text-blue-600" />
+                              </div>
+                              <h4 className="text-sm font-medium text-gray-900">E-Invoice API Configuration</h4>
+                            </div>
+                          </div>
                           <FormInput
                             name="e_invoice_username"
                             label="API Username"
@@ -764,14 +784,22 @@ export default function CompaniesPage() {
                             type="checkbox"
                             checked={formData.e_way_bill_applicable}
                             onChange={(e) => handleChange('e_way_bill_applicable', e.target.checked)}
-                            className="h-4 w-4"
+                            className="h-4 w-4 text-orange-600 focus:ring-orange-500 rounded border-gray-300"
                           />
                           <span>E-Way Bill Applicable</span>
                         </label>
                       </div>
                       
                       {formData.e_way_bill_applicable && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-orange-50/50 rounded-lg border border-orange-200/50">
+                          <div className="md:col-span-2 mb-2">
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="p-1.5 bg-orange-100 rounded-lg">
+                                <FiFileText className="h-4 w-4 text-orange-600" />
+                              </div>
+                              <h4 className="text-sm font-medium text-gray-900">E-Way Bill API Configuration</h4>
+                            </div>
+                          </div>
                           <FormInput
                             name="e_way_bill_username"
                             label="API Username"
@@ -814,7 +842,7 @@ export default function CompaniesPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                          <FiMapPin className="h-5 w-5 text-green-600" />
+                          <FiMapPin className="h-5 w-5 text-primary-600" />
                           Create First Branch
                         </h3>
                         <p className="text-sm text-gray-600 mt-1">
@@ -826,14 +854,23 @@ export default function CompaniesPage() {
                           type="checkbox"
                           checked={formData.create_branch}
                           onChange={(e) => handleChange('create_branch', e.target.checked)}
-                          className="h-4 w-4"
+                          className="h-4 w-4 text-primary-600 focus:ring-primary-500 rounded border-gray-300"
                         />
                         <span>Create Branch</span>
                       </label>
                     </div>
                     
                     {formData.create_branch && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 bg-primary-50/50 rounded-xl border border-primary-200/50 shadow-sm">
+                        <div className="md:col-span-2 mb-2">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="p-1.5 bg-primary-100 rounded-lg">
+                              <FiMapPin className="h-4 w-4 text-primary-600" />
+                            </div>
+                            <h4 className="text-base font-medium text-gray-900">Branch Details</h4>
+                          </div>
+                        </div>
+                        
                         <FormInput
                           name="branch_name"
                           label="Branch Name"
@@ -841,6 +878,7 @@ export default function CompaniesPage() {
                           onChange={handleChange}
                           placeholder="e.g. Head Office, Mumbai Branch"
                           required={formData.create_branch}
+                          className="focus:ring-primary-500/20 focus:border-primary-500"
                         />
                         <FormInput
                           name="branch_code"
@@ -848,37 +886,9 @@ export default function CompaniesPage() {
                           value={formData.branch_code}
                           onChange={handleChange}
                           placeholder="e.g. HO, MUM01"
+                          className="focus:ring-primary-500/20 focus:border-primary-500"
                         />
-                        <FormInput
-                          name="branch_gstin"
-                          label="Branch GSTIN"
-                          value={formData.branch_gstin}
-                          onChange={(name, value) => handleChange(name, value.toUpperCase())}
-                          placeholder="27ABCDE1234F1Z5"
-                          maxLength={15}
-                          style={{ textTransform: 'uppercase' }}
-                        />
-                        <FormInput
-                          name="branch_city"
-                          label="City"
-                          value={formData.branch_city}
-                          onChange={handleChange}
-                          placeholder="e.g. Mumbai"
-                        />
-                        <FormInput
-                          name="branch_state"
-                          label="State"
-                          value={formData.branch_state}
-                          onChange={handleChange}
-                          placeholder="e.g. Maharashtra"
-                        />
-                        <FormInput
-                          name="branch_pincode"
-                          label="PIN Code"
-                          value={formData.branch_pincode}
-                          onChange={handleChange}
-                          placeholder="e.g. 400001"
-                        />
+                        
                         <div className="md:col-span-2">
                           <FormTextarea
                             name="branch_address"
@@ -886,14 +896,53 @@ export default function CompaniesPage() {
                             value={formData.branch_address}
                             onChange={handleChange}
                             placeholder="Full address of the branch"
+                            className="focus:ring-primary-500/20 focus:border-primary-500"
                           />
                         </div>
+                        
+                        <FormInput
+                          name="branch_city"
+                          label="City"
+                          value={formData.branch_city}
+                          onChange={handleChange}
+                          placeholder="e.g. Mumbai"
+                          className="focus:ring-primary-500/20 focus:border-primary-500"
+                        />
+                        <FormInput
+                          name="branch_state"
+                          label="State"
+                          value={formData.branch_state}
+                          onChange={handleChange}
+                          placeholder="e.g. Maharashtra"
+                          className="focus:ring-primary-500/20 focus:border-primary-500"
+                        />
+                        <FormInput
+                          name="branch_pincode"
+                          label="PIN Code"
+                          value={formData.branch_pincode}
+                          onChange={handleChange}
+                          placeholder="e.g. 400001"
+                          className="focus:ring-primary-500/20 focus:border-primary-500"
+                        />
+                        
+                        <FormInput
+                          name="branch_gstin"
+                          label="Branch GSTIN"
+                          value={formData.branch_gstin}
+                          onChange={(name, value) => handleChange(name, value.toUpperCase())}
+                          placeholder="27ABCDE1234F1Z5 (Optional)"
+                          maxLength={15}
+                          style={{ textTransform: 'uppercase' }}
+                          className="focus:ring-primary-500/20 focus:border-primary-500"
+                        />
+                        
                         <FormPhoneInput
                           name="branch_contact"
                           label="Contact Number"
                           value={formData.branch_contact}
                           onChange={handleChange}
                           defaultCountry="IN"
+                          className="focus:ring-primary-500/20 focus:border-primary-500"
                         />
                         <FormInput
                           name="branch_email"
@@ -902,13 +951,14 @@ export default function CompaniesPage() {
                           value={formData.branch_email}
                           onChange={handleChange}
                           placeholder="branch@company.com"
+                          className="focus:ring-primary-500/20 focus:border-primary-500"
                         />
                       </div>
                     )}
                   </div>
                 )}
 
-                <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
+                <div className="flex gap-3 justify-end pt-6 border-t border-gray-200 bg-gray-50/30 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
                   <Button
                     type="button"
                     variant="outline"
@@ -919,7 +969,12 @@ export default function CompaniesPage() {
                     <FiX className="h-4 w-4" />
                     <span>Cancel</span>
                   </Button>
-                  <Button type="submit" loading={loading} disabled={loading} className="flex items-center gap-2">
+                  <Button 
+                    type="submit" 
+                    loading={loading} 
+                    disabled={loading} 
+                    className="flex items-center gap-2 shadow-sm"
+                  >
                     <FiSave className="h-4 w-4" />
                     <span>Create Company</span>
                   </Button>
