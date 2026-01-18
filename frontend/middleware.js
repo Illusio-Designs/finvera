@@ -48,6 +48,9 @@ export function middleware(request) {
         url.pathname = '/client/forgot-password';
       } else if (url.pathname === '/reset-password') {
         url.pathname = '/client/reset-password';
+      } else if (url.pathname === '/pricing') {
+        // Use the plain pricing page for client subdomain
+        url.pathname = '/plans';
       } else if (url.pathname === '/' || url.pathname === '') {
         url.pathname = '/client/dashboard';
       } else {

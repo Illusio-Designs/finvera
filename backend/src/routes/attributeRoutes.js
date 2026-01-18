@@ -1,12 +1,12 @@
 
 const express = require('express');
 const attributeController = require('../controllers/attributeController');
-const { requireAuth } = require('../middleware/auth'); // Assuming you want these endpoints protected
+const { authenticate } = require('../middleware/auth'); // Use authenticate instead of requireAuth
 
 const router = express.Router();
 
 // Protect all routes in this file
-router.use(requireAuth);
+router.use(authenticate);
 
 // -- Attribute Types --
 

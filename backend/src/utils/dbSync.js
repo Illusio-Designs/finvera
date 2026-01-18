@@ -131,11 +131,21 @@ async function runSeeders() {
         if (typeof seeder.up === 'function') {
           await seeder.up(sequelize.getQueryInterface(), Sequelize);
           
-          // Mark seeder as executed
-          await sequelize.query(
-            'INSERT INTO seeder_meta (name, executed_at) VALUES (?, ?)',
-            { replacements: [seederName, new Date()] }
-          );
+          // Mark seeder as executed (with duplicate protection)
+          try {
+            await sequelize.query(
+              'INSERT INTO seeder_meta (name, executed_at) VALUES (?, ?)',
+              { replacements: [seederName, new Date()] }
+            );
+          } catch (insertError) {
+            // If duplicate entry error, it means another process already inserted it
+            if (insertError.message.includes('Duplicate entry') || 
+                insertError.message.includes('name must be unique')) {
+              logger.info(`ℹ️  Seeder '${seederName}' already marked as executed by another process`);
+            } else {
+              throw insertError; // Re-throw if it's a different error
+            }
+          }
           
         logger.info(`✅ Consolidated seeder completed successfully`);
         }

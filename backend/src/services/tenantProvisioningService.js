@@ -141,21 +141,28 @@ class TenantProvisioningService {
       await rootConnection.authenticate();
       logger.info(`[PROVISION] ✓ Authentication successful with ${rootUser}`);
       
-      logger.info(`[PROVISION] Creating database: ${tenant.db_name}...`);
-      // Create database
-      try {
-        await rootConnection.query(`CREATE DATABASE IF NOT EXISTS \`${tenant.db_name}\``);
-        logger.info(`[PROVISION] ✓ Database created: ${tenant.db_name}`);
-      } catch (createDbError) {
-        if (createDbError.original && createDbError.original.code === 'ER_DBACCESS_DENIED_ERROR') {
-          logger.error(`[PROVISION] ✗ CREATE DATABASE failed: User '${rootUser}' does not have CREATE DATABASE privilege`);
-          logger.error(`[PROVISION] SOLUTION: Run the following SQL commands as MySQL root/admin:`);
-          logger.error(`[PROVISION] GRANT CREATE DATABASE ON *.* TO '${rootUser}'@'localhost';`);
-          logger.error(`[PROVISION] GRANT CREATE DATABASE ON *.* TO '${rootUser}'@'%';`);
-          logger.error(`[PROVISION] FLUSH PRIVILEGES;`);
-          throw new Error(`User '${rootUser}' does not have CREATE DATABASE privilege. Please grant it using: GRANT CREATE DATABASE ON *.* TO '${rootUser}'@'localhost'; GRANT CREATE DATABASE ON *.* TO '${rootUser}'@'%'; FLUSH PRIVILEGES;`);
+      // Check if database already exists
+      const databaseExists = await this.checkDatabaseExists(rootConnection, tenant.db_name);
+      
+      if (databaseExists) {
+        logger.info(`[PROVISION] ℹ️  Database '${tenant.db_name}' already exists, skipping creation`);
+      } else {
+        logger.info(`[PROVISION] Creating database: ${tenant.db_name}...`);
+        // Create database
+        try {
+          await rootConnection.query(`CREATE DATABASE IF NOT EXISTS \`${tenant.db_name}\``);
+          logger.info(`[PROVISION] ✓ Database created: ${tenant.db_name}`);
+        } catch (createDbError) {
+          if (createDbError.original && createDbError.original.code === 'ER_DBACCESS_DENIED_ERROR') {
+            logger.error(`[PROVISION] ✗ CREATE DATABASE failed: User '${rootUser}' does not have CREATE DATABASE privilege`);
+            logger.error(`[PROVISION] SOLUTION: Run the following SQL commands as MySQL root/admin:`);
+            logger.error(`[PROVISION] GRANT CREATE DATABASE ON *.* TO '${rootUser}'@'localhost';`);
+            logger.error(`[PROVISION] GRANT CREATE DATABASE ON *.* TO '${rootUser}'@'%';`);
+            logger.error(`[PROVISION] FLUSH PRIVILEGES;`);
+            throw new Error(`User '${rootUser}' does not have CREATE DATABASE privilege. Please grant it using: GRANT CREATE DATABASE ON *.* TO '${rootUser}'@'localhost'; GRANT CREATE DATABASE ON *.* TO '${rootUser}'@'%'; FLUSH PRIVILEGES;`);
+          }
+          throw createDbError;
         }
-        throw createDbError;
       }
       
       // Check if this is RDS (AWS RDS doesn't allow GRANT with 'localhost')
@@ -472,12 +479,17 @@ class TenantProvisioningService {
       // Check if user already exists
       const existingUser = await models.User.findOne({ where: { email } });
       if (!existingUser) {
+        // Get tenant_id from tenantOrCompany (could be tenant.id or company.tenant_id)
+        const tenantId = tenantOrCompany.id || tenantOrCompany.tenant_id;
+        
         await models.User.create({
-          name: 'Admin',
+          first_name: 'Admin',
+          last_name: 'User',
           email: email,
-          role: 'admin',
+          role: 'tenant_admin',
           is_active: true,
           password: bcrypt.hashSync('ChangeMe@123', 10),
+          tenant_id: tenantId,
         });
         logger.info('Default admin user created');
       }
@@ -510,7 +522,8 @@ class TenantProvisioningService {
     }
 
     // Create default ledgers
-    await this.createDefaultLedgers(models, masterModels);
+    const tenantId = tenantOrCompany.id || tenantOrCompany.tenant_id;
+    await this.createDefaultLedgers(models, masterModels, tenantId);
 
     logger.info('Default data seeded (admin user, GSTIN, and default ledgers)');
   }
@@ -519,8 +532,9 @@ class TenantProvisioningService {
    * Create default ledgers for a new company
    * @param {Object} tenantModels - Tenant database models
    * @param {Object} masterModels - Master database models
+   * @param {string} tenantId - Tenant ID for the ledgers
    */
-  async createDefaultLedgers(tenantModels, masterModels) {
+  async createDefaultLedgers(tenantModels, masterModels, tenantId) {
     try {
       logger.info('[LEDGER] Starting default ledger creation...');
       
@@ -628,8 +642,8 @@ class TenantProvisioningService {
               opening_balance: ledgerData.opening_balance,
               opening_balance_type: ledgerData.balance_type === 'debit' ? 'Dr' : 'Cr',
               balance_type: ledgerData.balance_type,
-              currency: 'INR',
               is_active: true,
+              tenant_id: tenantId,
             });
             logger.info(`[LEDGER] ✓ Created default ledger: ${ledgerData.ledger_name} (${ledgerData.ledger_code})`);
             createdCount++;
@@ -750,18 +764,34 @@ class TenantProvisioningService {
 
   // Helper methods
 
+  /**
+   * Check if a database already exists
+   * @param {Sequelize} connection - Database connection
+   * @param {string} databaseName - Name of the database to check
+   * @returns {Promise<boolean>} - True if database exists
+   */
+  async checkDatabaseExists(connection, databaseName) {
+    try {
+      const [results] = await connection.query(
+        `SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?`,
+        { replacements: [databaseName] }
+      );
+      return results.length > 0;
+    } catch (error) {
+      logger.warn(`[PROVISION] Could not check if database exists: ${error.message}`);
+      return false;
+    }
+  }
+
   generateDatabaseName(subdomain) {
     const sanitized = subdomain.toLowerCase().replace(/[^a-z0-9]/g, '_');
-    const timestamp = Date.now().toString();
     // MySQL database name limit is 64 characters
-    // Format: informative_<name>_<timestamp>
-    // Calculate max length for name part: 64 - 12 (informative_) - 1 (_) - 13 (timestamp) - 1 (safety) = 37
-    const prefix = 'informative_';
-    const maxNameLength = 37;
+    // Format: finvera_<company_name> (no timestamp, no "informative" prefix)
+    const prefix = 'finvera_';
+    const maxNameLength = 64 - prefix.length;
     const truncatedName = sanitized.substring(0, maxNameLength);
-    const dbName = `${prefix}${truncatedName}_${timestamp}`;
-    // Final check to ensure it's within 64 chars
-    return dbName.substring(0, 64);
+    const dbName = `${prefix}${truncatedName}`;
+    return dbName;
   }
 
   generateDatabaseUser(subdomain) {

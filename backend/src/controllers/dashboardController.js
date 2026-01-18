@@ -57,7 +57,13 @@ async function movementByLedger(tenantModels, { fromDate, toDate, asOnDate, befo
       [Sequelize.fn('SUM', Sequelize.col(`VoucherLedgerEntry.${debitCol}`)), 'total_debit'],
       [Sequelize.fn('SUM', Sequelize.col(`VoucherLedgerEntry.${creditCol}`)), 'total_credit'],
     ],
-    include: [{ model: tenantModels.Voucher, attributes: [], where: voucherWhere, required: true }],
+    include: [{ 
+      model: tenantModels.Voucher, 
+      as: 'voucher',
+      attributes: [], 
+      where: voucherWhere, 
+      required: true 
+    }],
     group: ['ledger_id'],
     raw: true,
   });

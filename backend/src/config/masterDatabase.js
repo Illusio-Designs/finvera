@@ -347,6 +347,28 @@ async function runMasterSeeder() {
       return;
     }
 
+    // Ensure seeder_meta table exists
+    await masterSequelize.query(`
+      CREATE TABLE IF NOT EXISTS seeder_meta (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL UNIQUE,
+        executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    const seederName = '001-admin-master-seeder';
+    
+    // Check if seeder has already been run
+    const [results] = await masterSequelize.query(
+      'SELECT * FROM seeder_meta WHERE name = ?',
+      { replacements: [seederName], type: masterSequelize.QueryTypes.SELECT }
+    );
+
+    if (results && results.length > 0) {
+      logger.info(`  ℹ️  Master seeder '${seederName}' already executed, skipping`);
+      return;
+    }
+
     // Use consolidated admin-master seeder (for master DB parts)
     const seederFile = path.join(seedersPath, '001-admin-master-seeder.js');
     
@@ -362,6 +384,23 @@ async function runMasterSeeder() {
     if (seeder.up && typeof seeder.up === 'function') {
       try {
         await seeder.up(queryInterface, Sequelize);
+        
+        // Mark seeder as executed (with duplicate protection)
+        try {
+          await masterSequelize.query(
+            'INSERT INTO seeder_meta (name, executed_at) VALUES (?, ?)',
+            { replacements: [seederName, new Date()] }
+          );
+        } catch (insertError) {
+          // If duplicate entry error, it means another process already inserted it
+          if (insertError.message.includes('Duplicate entry') || 
+              insertError.message.includes('name must be unique')) {
+            logger.info(`  ℹ️  Master seeder '${seederName}' already marked as executed by another process`);
+          } else {
+            throw insertError; // Re-throw if it's a different error
+          }
+        }
+        
         logger.info(`  ✓ Consolidated master seeder completed`);
       } catch (error) {
         // Ignore errors if data already exists

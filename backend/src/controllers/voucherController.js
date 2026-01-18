@@ -93,5 +93,85 @@ module.exports = {
       next(err);
     }
   },
-// ... (rest of the file remains the same)
+
+  async create(req, res, next) {
+    try {
+      const voucher = await req.tenantModels.Voucher.create(req.body);
+      res.status(201).json(voucher);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async getById(req, res, next) {
+    try {
+      const voucher = await req.tenantModels.Voucher.findByPk(req.params.id, {
+        include: [
+          { model: req.tenantModels.Ledger, as: 'partyLedger', attributes: ['id', 'ledger_name'] },
+          { model: req.tenantModels.VoucherItem, as: 'items' }
+        ]
+      });
+      
+      if (!voucher) {
+        return res.status(404).json({ message: 'Voucher not found' });
+      }
+      
+      res.json(voucher);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async update(req, res, next) {
+    try {
+      const voucher = await req.tenantModels.Voucher.findByPk(req.params.id);
+      
+      if (!voucher) {
+        return res.status(404).json({ message: 'Voucher not found' });
+      }
+      
+      await voucher.update(req.body);
+      res.json(voucher);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async post(req, res, next) {
+    try {
+      const voucher = await req.tenantModels.Voucher.findByPk(req.params.id);
+      
+      if (!voucher) {
+        return res.status(404).json({ message: 'Voucher not found' });
+      }
+      
+      if (voucher.status === 'posted') {
+        return res.status(400).json({ message: 'Voucher is already posted' });
+      }
+      
+      await voucher.update({ status: 'posted' });
+      res.json({ message: 'Voucher posted successfully', voucher });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async cancel(req, res, next) {
+    try {
+      const voucher = await req.tenantModels.Voucher.findByPk(req.params.id);
+      
+      if (!voucher) {
+        return res.status(404).json({ message: 'Voucher not found' });
+      }
+      
+      if (voucher.status === 'cancelled') {
+        return res.status(400).json({ message: 'Voucher is already cancelled' });
+      }
+      
+      await voucher.update({ status: 'cancelled' });
+      res.json({ message: 'Voucher cancelled successfully', voucher });
+    } catch (err) {
+      next(err);
+    }
+  }
 };

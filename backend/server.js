@@ -8,6 +8,7 @@ const redisClient = require('./src/config/redis');
 const logger = require('./src/utils/logger');
 const { syncDatabase } = require('./src/utils/dbSync');
 const { initSocketServer } = require('./src/websocket/socketServer');
+const cronService = require('./src/services/cronService');
 
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -76,6 +77,16 @@ async function startServer() {
     }
 
     logger.info('✅ All databases initialized successfully');
+    
+    // Initialize Cron Service for scheduled tasks
+    logger.info('🕒 Initializing scheduled tasks...');
+    try {
+      await cronService.initialize();
+    } catch (cronError) {
+      logger.error('❌ Failed to initialize cron service:', cronError);
+      // Don't fail server startup if cron fails - log and continue
+      logger.warn('⚠️  Server will continue without scheduled tasks');
+    }
     
     // Load Express app AFTER database initialization to avoid WebAssembly memory conflicts
     // This ensures databases initialize first, then HTTP server starts
@@ -171,6 +182,7 @@ async function startServer() {
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM signal received: closing HTTP server');
+  cronService.stopAll();
   await sequelize.close();
   await masterSequelize.close();
   if (redisClient && redisClient.isConnected && redisClient.isConnected()) {
@@ -181,6 +193,7 @@ process.on('SIGTERM', async () => {
 
 process.on('SIGINT', async () => {
   logger.info('SIGINT signal received: closing HTTP server');
+  cronService.stopAll();
   await sequelize.close();
   await masterSequelize.close();
   if (redisClient && redisClient.isConnected && redisClient.isConnected()) {

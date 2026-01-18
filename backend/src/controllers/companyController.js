@@ -166,11 +166,74 @@ module.exports = {
         return crypto.randomBytes(length).toString('base64').slice(0, length);
       };
 
-      const dbPassword = generateSecurePassword();
       const sanitizedCompanyName = company_name.toLowerCase().replace(/[^a-z0-9]/g, '_');
       const dbNamePrefix = sanitizedCompanyName.substring(0, 30);
       const dbName = tenantProvisioningService.generateDatabaseName(dbNamePrefix);
       const dbUser = tenantProvisioningService.generateDatabaseUser(dbNamePrefix);
+
+      // Check if a company with the same database name already exists
+      const existingCompany = await Company.findOne({
+        where: {
+          tenant_id: req.tenant_id,
+          db_name: dbName,
+        },
+      });
+
+      if (existingCompany) {
+        logger.info(`Company with database '${dbName}' already exists (ID: ${existingCompany.id}), updating existing company instead of creating new one`);
+        
+        // Update the existing company with new data
+        await existingCompany.update({
+          company_name,
+          company_type,
+          registration_number: registration_number || existingCompany.registration_number,
+          incorporation_date: incorporation_date || existingCompany.incorporation_date,
+          pan: pan || existingCompany.pan,
+          tan: tan || existingCompany.tan,
+          gstin: gstin || existingCompany.gstin,
+          registered_address: registered_address || existingCompany.registered_address,
+          state: state || existingCompany.state,
+          pincode: pincode || existingCompany.pincode,
+          contact_number: contact_number || existingCompany.contact_number,
+          email: email || existingCompany.email,
+          principals: principals || existingCompany.principals,
+          financial_year_start: financial_year_start || existingCompany.financial_year_start,
+          financial_year_end: financial_year_end || existingCompany.financial_year_end,
+          currency: currency || existingCompany.currency,
+          books_beginning_date: books_beginning_date || existingCompany.books_beginning_date,
+          bank_details: bank_details || existingCompany.bank_details,
+          compliance: compliance || existingCompany.compliance,
+          is_active: true,
+        });
+
+        // Ensure database is provisioned (in case it wasn't completed before)
+        if (!existingCompany.db_provisioned) {
+          try {
+            logger.info(`Ensuring database is provisioned for existing company: ${existingCompany.id}`);
+            const dbPassword = generateSecurePassword();
+            await tenantProvisioningService.provisionDatabase(existingCompany, dbPassword);
+            await existingCompany.reload();
+          } catch (provisionError) {
+            logger.error('Database provisioning failed for existing company:', provisionError);
+            return res.status(500).json({
+              success: false,
+              message: 'Failed to provision database for existing company. Please try again.',
+              error: provisionError.message,
+            });
+          }
+        }
+
+        return res.status(200).json({
+          success: true,
+          message: 'Company updated successfully',
+          data: {
+            company: existingCompany,
+            isUpdate: true,
+          },
+        });
+      }
+
+      const dbPassword = generateSecurePassword();
 
       const company = await Company.create({
         tenant_id: req.tenant_id,

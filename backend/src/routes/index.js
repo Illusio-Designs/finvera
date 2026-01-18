@@ -31,6 +31,7 @@ const hsnRoutes = require('./hsnRoutes');
 const subscriptionRoutes = require('./subscriptionRoutes');
 const reviewRoutes = require('./reviewRoutes');
 const attributeRoutes = require('./attributeRoutes');
+const cronRoutes = require('./cronRoutes');
 
 const router = Router();
 
@@ -65,6 +66,7 @@ router.use('/notifications', notificationRoutes);
 router.use('/subscriptions', subscriptionRoutes);
 router.use('/reviews', reviewRoutes);
 router.use('/attributes', attributeRoutes);
+router.use('/admin/cron', cronRoutes);
 
 router.get('/health', (req, res) => res.json({ status: 'ok' }));
 
