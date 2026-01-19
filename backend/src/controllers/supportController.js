@@ -15,13 +15,21 @@ module.exports = {
         category,
         priority,
         attachments,
+        // Handle alternative field names for compatibility
+        name,
+        email,
+        phone,
       } = req.body;
 
+      // Generate unique ticket number
+      const ticketNumber = `TKT-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+
       const ticket = await SupportTicket.create({
+        ticket_number: ticketNumber,
         tenant_id: req.user?.tenant_id || null, // If authenticated tenant user
-        client_name,
-        client_email,
-        client_phone,
+        client_name: client_name || name,
+        client_email: client_email || email,
+        client_phone: client_phone || phone,
         subject,
         description,
         category,
@@ -34,7 +42,7 @@ module.exports = {
       await TicketMessage.create({
         ticket_id: ticket.id,
         sender_type: 'client',
-        sender_name: client_name,
+        sender_name: client_name || name,
         message: description,
         attachments: attachments || [],
       });

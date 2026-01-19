@@ -439,9 +439,9 @@ module.exports = {
       let queryOptions = {
         where,
         attributes: [
-          // Stored as DB columns `debit`/`credit` (mapped to debit_amount/credit_amount in model)
-          [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.debit')), 'total_debit'],
-          [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.credit')), 'total_credit'],
+          // Use actual column names from the model
+          [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.debit_amount')), 'total_debit'],
+          [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.credit_amount')), 'total_credit'],
         ],
         raw: true,
       };

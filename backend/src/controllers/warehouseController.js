@@ -122,6 +122,7 @@ module.exports = {
         contact_phone: contact_phone || null,
         contact_email: contact_email || null,
         is_active: is_active !== false,
+        tenant_id: req.tenant_id,
       });
 
       res.status(201).json({ data: warehouse });

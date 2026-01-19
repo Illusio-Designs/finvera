@@ -52,12 +52,12 @@ const resolveTenant = async (req, res, next) => {
     }
 
     // Resolve company context (JWT claim or header)
-    const companyId =
+    let companyId =
       req.company_id ||
       req.headers['x-company-id'] ||
       req.headers['x-companyid'] ||
-      req.query.company_id ||
-      req.body.company_id;
+      (req.query && req.query.company_id) ||
+      (req.body && req.body.company_id);
 
     if (!companyId) {
       const companies = await masterModels.Company.findAll({
@@ -73,6 +73,7 @@ const resolveTenant = async (req, res, next) => {
         });
       }
       if (companies.length === 1) {
+        companyId = companies[0].id;
         req.company_id = companies[0].id;
       } else {
         return res.status(400).json({
@@ -82,10 +83,12 @@ const resolveTenant = async (req, res, next) => {
           companies,
         });
       }
+    } else {
+      req.company_id = companyId;
     }
 
     const company = await masterModels.Company.findOne({
-      where: { id: req.company_id || companyId, tenant_id: tenant.id, is_active: true },
+      where: { id: companyId, tenant_id: tenant.id, is_active: true },
     });
     if (!company) {
       return res.status(404).json({ success: false, message: 'Company not found' });

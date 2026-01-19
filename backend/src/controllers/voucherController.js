@@ -96,8 +96,45 @@ module.exports = {
 
   async create(req, res, next) {
     try {
+      // Ensure required fields are set
+      if (!req.body.tenant_id) {
+        req.body.tenant_id = req.tenant_id;
+      }
+      
+      // Generate voucher number if not provided
+      if (!req.body.voucher_number) {
+        const voucherType = req.body.voucher_type || 'GEN';
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        
+        // Get the next sequence number for this voucher type
+        const lastVoucher = await req.tenantModels.Voucher.findOne({
+          where: {
+            voucher_type: voucherType,
+            tenant_id: req.tenant_id,
+          },
+          order: [['createdAt', 'DESC']],
+        });
+        
+        let sequence = 1;
+        if (lastVoucher && lastVoucher.voucher_number) {
+          const match = lastVoucher.voucher_number.match(/(\d+)$/);
+          if (match) {
+            sequence = parseInt(match[1]) + 1;
+          }
+        }
+        
+        req.body.voucher_number = `${voucherType}${year}${month}${String(sequence).padStart(4, '0')}`;
+      }
+      
+      // Set default voucher_date if not provided
+      if (!req.body.voucher_date) {
+        req.body.voucher_date = new Date();
+      }
+      
       const voucher = await req.tenantModels.Voucher.create(req.body);
-      res.status(201).json(voucher);
+      res.status(201).json({ data: voucher });
     } catch (err) {
       next(err);
     }

@@ -85,7 +85,7 @@ module.exports = {
         password: { type: Sequelize.STRING, allowNull: false },
         first_name: { type: Sequelize.STRING, allowNull: false },
         last_name: { type: Sequelize.STRING, allowNull: false },
-        role: { type: Sequelize.ENUM('admin', 'accountant', 'viewer'), defaultValue: 'viewer' },
+        role: { type: Sequelize.ENUM('tenant_admin', 'user', 'accountant'), defaultValue: 'user' },
         is_active: { type: Sequelize.BOOLEAN, defaultValue: true },
         last_login: { type: Sequelize.DATE, allowNull: true },
         email_verified: { type: Sequelize.BOOLEAN, defaultValue: false },

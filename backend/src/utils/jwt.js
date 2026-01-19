@@ -142,9 +142,18 @@ async function refreshAccessToken(refreshToken) {
       return null;
     }
 
-    // Verify session exists
-    const session = await getSession(decoded.id, decoded.jti);
-    if (!session) {
+    // Check if session exists (optional if Redis is not available)
+    let session = null;
+    try {
+      session = await getSession(decoded.id, decoded.jti);
+    } catch (error) {
+      // If Redis error, continue without session validation
+      logger.warn('Redis error during refresh token validation:', error.message);
+    }
+
+    // If Redis is connected but session doesn't exist, reject
+    if (redisClient.isConnected() && !session) {
+      logger.warn(`Session not found for refresh token, user ${decoded.id}, jti ${decoded.jti}`);
       return null;
     }
 
@@ -154,8 +163,8 @@ async function refreshAccessToken(refreshToken) {
       user_id: decoded.id,
       sub: decoded.id,
       tenant_id: decoded.tenant_id,
-      company_id: session.company_id || decoded.company_id || null,
-      role: session.role,
+      company_id: session?.company_id || decoded.company_id || null,
+      role: session?.role || decoded.role,
       jti: decoded.jti,
     };
 

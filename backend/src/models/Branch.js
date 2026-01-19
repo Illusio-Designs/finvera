@@ -23,7 +23,7 @@ const Branch = masterSequelize.define('Branch', {
     branch_code: {
         type: DataTypes.STRING,
         allowNull: true,
-        unique: true,
+        // Remove unique: true from here to prevent duplicate index creation
     },
     gstin: {
         type: DataTypes.STRING,
@@ -63,6 +63,13 @@ const Branch = masterSequelize.define('Branch', {
 }, {
     tableName: 'branches',
     timestamps: true,
+    indexes: [
+        {
+            unique: true,
+            fields: ['branch_code'],
+            name: 'branch_code_unique'
+        }
+    ]
 });
 
 module.exports = Branch;

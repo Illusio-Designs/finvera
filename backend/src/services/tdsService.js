@@ -138,6 +138,48 @@ class TDSService {
   }
 
   /**
+   * Calculate TDS for a given amount (testing/preview mode)
+   */
+  async calculateTDSForAmount(ctx, amount, tdsSection = '194C', tdsRate = 10, panAvailable = true) {
+    const { company } = ctx;
+
+    const grossAmount = parseFloat(amount || 0);
+    const section = tdsSection || '194C';
+    const rate = parseFloat(tdsRate) || 10;
+
+    // Adjust rate based on PAN availability (higher rate if PAN not available)
+    const effectiveRate = panAvailable ? rate : rate * 2;
+
+    // Determine quarter and financial year
+    const paymentDate = new Date();
+    const quarter = getQuarter(paymentDate);
+    const financialYear = getFinancialYear(paymentDate);
+
+    let tdsAmount = (grossAmount * effectiveRate) / 100;
+    let netAmount = grossAmount - tdsAmount;
+
+    // Return calculation without saving to database
+    return {
+      tdsDetail: {
+        section: section,
+        tds_rate: effectiveRate,
+        taxable_amount: grossAmount,
+        tds_amount: parseFloat(tdsAmount.toFixed(2)),
+        quarter: quarter,
+        financial_year: financialYear,
+        pan_available: panAvailable,
+      },
+      summary: {
+        grossAmount,
+        tdsAmount: parseFloat(tdsAmount.toFixed(2)),
+        netAmount: parseFloat(netAmount.toFixed(2)),
+        effectiveRate,
+      },
+      apiResponse: null,
+    };
+  }
+
+  /**
    * Prepare and file TDS return
    * Uses third-party API if configured
    */

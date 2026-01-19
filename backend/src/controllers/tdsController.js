@@ -24,10 +24,11 @@ module.exports = {
 
   async calculateTDS(req, res, next) {
     try {
-      const { voucher_id, tds_section, tds_rate } = req.body;
+      const { voucher_id, tds_section, tds_rate, amount, pan_available } = req.body;
 
-      if (!voucher_id) {
-        return res.status(400).json({ message: 'voucher_id is required' });
+      // For testing purposes, allow calculation without voucher_id if amount is provided
+      if (!voucher_id && !amount) {
+        return res.status(400).json({ message: 'Either voucher_id or amount is required' });
       }
 
       const ctx = {
@@ -36,7 +37,14 @@ module.exports = {
         company: req.company,
       };
 
-      const result = await tdsService.calculateTDS(ctx, voucher_id, tds_section, tds_rate);
+      let result;
+      if (voucher_id) {
+        // Calculate TDS for existing voucher
+        result = await tdsService.calculateTDS(ctx, voucher_id, tds_section, tds_rate);
+      } else {
+        // Calculate TDS for given amount (testing/preview mode)
+        result = await tdsService.calculateTDSForAmount(ctx, amount, tds_section, tds_rate, pan_available);
+      }
 
       res.status(201).json({
         success: true,

@@ -18,6 +18,7 @@
     "electron:build:win": "cross-env ELECTRON_BUILD=true next build && electron-builder --win",
     "electron:build:win:client": "cross-env ELECTRON_BUILD=true ELECTRON_CLIENT_ONLY=true next build && electron-builder --win",
     "electron:build:client-only": "node scripts/build-client-only.js",
+    "electron:build:client-only:mac": "node scripts/build-client-only-mac.js",
     "electron:build:all": "cross-env ELECTRON_BUILD=true next build && electron-builder --mac --win",
     "postinstall": "electron-builder install-app-deps"
   },
@@ -107,7 +108,7 @@
           ]
         }
       ],
-      "icon": "public/Fav Icon/Fav_Dark_PNG@4x.png",
+      "icon": "build/icon.icns",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "entitlements": "electron/entitlements.mac.plist",

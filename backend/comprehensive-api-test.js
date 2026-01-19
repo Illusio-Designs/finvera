@@ -245,7 +245,7 @@ async function testBranchManagement() {
   // 3.2 Create Branch
   const branchResult = await apiCall('POST', '/branches', {
     branch_name: 'Mumbai Branch',
-    branch_code: 'MUM001',
+    branch_code: `MUM${Date.now()}`,
     address: '123 Branch Street',
     city: 'Mumbai',
     state: 'Maharashtra',
@@ -291,7 +291,7 @@ async function testAccountingFoundation() {
   // 4.4 List Voucher Types
   await apiCall('GET', '/accounting/voucher-types', null, true, 'List Voucher Types');
 
-  // 4.5 Create Voucher Type
+  // 4.5 Create Voucher Type (Expected to fail - read-only)
   const voucherTypeResult = await apiCall('POST', '/accounting/voucher-types', {
     voucher_type_name: 'Test Sales',
     voucher_type_code: 'TSL',
@@ -314,17 +314,32 @@ async function testLedgerManagement() {
   await apiCall('GET', '/accounting/ledgers?page=1&limit=20', null, true, 'List Ledgers');
 
   // 5.2 Create Ledger
-  const ledgerResult = await apiCall('POST', '/accounting/ledgers', {
-    ledger_name: 'Test Cash Account',
-    ledger_code: 'CASH001',
-    account_group_id: 1,
-    opening_balance: 10000.00,
-    opening_balance_type: 'Dr'
-  }, true, 'Create Ledger');
+  // First get account groups to find a valid ID
+  const accountGroupsResult = await apiCall('GET', '/accounting/groups', null, true, 'Get Account Groups for Ledger');
+  let validAccountGroupId = null;
+  if (accountGroupsResult.success && accountGroupsResult.data.data && accountGroupsResult.data.data.length > 0) {
+    // Find a suitable account group (preferably Cash or Bank)
+    const cashGroup = accountGroupsResult.data.data.find(group => 
+      group.group_name && (group.group_name.toLowerCase().includes('cash') || group.group_name.toLowerCase().includes('bank'))
+    );
+    validAccountGroupId = cashGroup ? cashGroup.id : accountGroupsResult.data.data[0].id;
+  }
 
-  if (ledgerResult.success && ledgerResult.data.data?.id) {
-    testData.ledgerId = ledgerResult.data.data.id;
-    console.log(`📚 Ledger ID saved: ${testData.ledgerId}`);
+  if (validAccountGroupId) {
+    const ledgerResult = await apiCall('POST', '/accounting/ledgers', {
+      ledger_name: 'Test Cash Account',
+      ledger_code: `CASH${Date.now()}`,
+      account_group_id: validAccountGroupId,
+      opening_balance: 10000.00,
+      opening_balance_type: 'Dr'
+    }, true, 'Create Ledger');
+
+    if (ledgerResult.success && ledgerResult.data.data?.id) {
+      testData.ledgerId = ledgerResult.data.data.id;
+      console.log(`📚 Ledger ID saved: ${testData.ledgerId}`);
+    }
+  } else {
+    console.log('⚠️  Skipping ledger creation - no valid account group found');
   }
 
   // 5.3 Get Ledger by ID (Previously problematic)
@@ -357,7 +372,7 @@ async function testInventoryManagement() {
   // 6.2 Create Warehouse
   const warehouseResult = await apiCall('POST', '/accounting/warehouses', {
     warehouse_name: 'Main Warehouse',
-    warehouse_code: 'MW001',
+    warehouse_code: `MW${Date.now()}`,
     address: '123 Warehouse Street',
     city: 'Mumbai',
     state: 'Maharashtra',
@@ -375,7 +390,7 @@ async function testInventoryManagement() {
   // 6.4 Create Inventory Item
   const itemResult = await apiCall('POST', '/accounting/inventory/items', {
     item_name: 'Test Product',
-    item_code: 'TP001',
+    item_code: `TP${Date.now()}`,
     category: 'Electronics',
     unit: 'Pcs',
     purchase_rate: 100.00,
@@ -462,8 +477,9 @@ async function testGSTCompliance() {
   await apiCall('GET', '/gst/gstins', null, true, 'List GSTINs');
 
   // 9.2 Create GSTIN
+  const uniqueGstin = `27ABCDE${Date.now().toString().slice(-4)}F1Z5`;
   await apiCall('POST', '/gst/gstins', {
-    gstin: '27ABCDE1234F1Z5',
+    gstin: uniqueGstin,
     legal_name: 'Test Company Pvt Ltd',
     trade_name: 'Test Company',
     state_code: '27',
@@ -537,7 +553,14 @@ async function testSubscriptionsPricing() {
   await apiCall('GET', '/pricing', null, false, 'List Pricing Plans');
 
   // 11.4 Get Pricing Plan by ID
-  await apiCall('GET', '/pricing/1', null, false, 'Get Pricing Plan by ID');
+  const pricingPlans = await apiCall('GET', '/pricing', null, false, 'List Pricing Plans for ID');
+  let planId = null;
+  if (pricingPlans.success && pricingPlans.data?.data?.length > 0) {
+    planId = pricingPlans.data.data[0].id;
+    await apiCall('GET', `/pricing/${planId}`, null, false, 'Get Pricing Plan by ID');
+  } else {
+    await apiCall('GET', '/pricing/1', null, false, 'Get Pricing Plan by ID');
+  }
 }
 
 // Test Phase 12: Advanced Features
@@ -561,7 +584,279 @@ async function testAdvancedFeatures() {
   await apiCall('GET', '/ewaybill', null, true, 'List E-Way Bills');
 }
 
-// Main test runner
+// Test Phase 13: Admin Portal APIs
+async function testAdminAPIs() {
+  console.log('\n👑 PHASE 13: ADMIN PORTAL APIS');
+  console.log('==============================');
+
+  // 13.1 Admin Dashboard
+  await apiCall('GET', '/admin/dashboard', null, true, 'Admin Dashboard');
+
+  // 13.2 List Tenants
+  await apiCall('GET', '/admin/tenants', null, true, 'List Tenants');
+
+  // 13.3 Get Tenant by ID
+  if (testData.tenantId) {
+    await apiCall('GET', `/admin/tenants/${testData.tenantId}`, null, true, 'Get Tenant by ID');
+  }
+}
+
+// Test Phase 14: Distributor Management
+async function testDistributorAPIs() {
+  console.log('\n🏢 PHASE 14: DISTRIBUTOR MANAGEMENT');
+  console.log('===================================');
+
+  // 14.1 List Distributors
+  await apiCall('GET', '/admin/distributors', null, true, 'List Distributors');
+
+  // 14.2 Create Distributor
+  const distributorResult = await apiCall('POST', '/admin/distributors', {
+    distributor_code: `DIST${Date.now()}`,
+    company_name: 'Test Distributor Ltd',
+    contact_person: 'John Doe',
+    email: `distributor${Date.now()}@test.com`,
+    phone: '9876543210',
+    address: '123 Distributor Street',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    pincode: '400001'
+  }, true, 'Create Distributor');
+
+  if (distributorResult.success && distributorResult.data?.data?.id) {
+    testData.distributorId = distributorResult.data.data.id;
+    console.log(`🏢 Distributor ID saved: ${testData.distributorId}`);
+
+    // 14.3 Get Distributor by ID
+    await apiCall('GET', `/admin/distributors/${testData.distributorId}`, null, true, 'Get Distributor by ID');
+
+    // 14.4 Update Distributor
+    await apiCall('PUT', `/admin/distributors/${testData.distributorId}`, {
+      company_name: 'Updated Distributor Ltd',
+      phone: '9999999999'
+    }, true, 'Update Distributor');
+
+    // 14.5 Get Distributor Performance
+    await apiCall('GET', `/admin/distributors/${testData.distributorId}/performance`, null, true, 'Get Distributor Performance');
+  }
+}
+
+// Test Phase 15: Salesman Management
+async function testSalesmanAPIs() {
+  console.log('\n👨‍💼 PHASE 15: SALESMAN MANAGEMENT');
+  console.log('=================================');
+
+  // 15.1 List Salesmen
+  await apiCall('GET', '/admin/salesmen', null, true, 'List Salesmen');
+
+  // 15.2 Create Salesman
+  const salesmanResult = await apiCall('POST', '/admin/salesmen', {
+    salesman_code: `SALES${Date.now()}`,
+    full_name: 'Test Salesman',
+    email: `salesman${Date.now()}@test.com`,
+    phone: '9876543210',
+    address: '123 Salesman Street',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    pincode: '400001',
+    distributor_id: testData.distributorId
+  }, true, 'Create Salesman');
+
+  if (salesmanResult.success && salesmanResult.data?.data?.id) {
+    testData.salesmanId = salesmanResult.data.data.id;
+    console.log(`👨‍💼 Salesman ID saved: ${testData.salesmanId}`);
+
+    // 15.3 Get Salesman by ID
+    await apiCall('GET', `/admin/salesmen/${testData.salesmanId}`, null, true, 'Get Salesman by ID');
+
+    // 15.4 Update Salesman
+    await apiCall('PUT', `/admin/salesmen/${testData.salesmanId}`, {
+      full_name: 'Updated Salesman',
+      phone: '9999999999'
+    }, true, 'Update Salesman');
+
+    // 15.5 Get Salesman Performance
+    await apiCall('GET', `/admin/salesmen/${testData.salesmanId}/performance`, null, true, 'Get Salesman Performance');
+
+    // 15.6 Get Salesman Leads
+    await apiCall('GET', `/admin/salesmen/${testData.salesmanId}/leads`, null, true, 'Get Salesman Leads');
+  }
+}
+
+// Test Phase 16: Target Management
+async function testTargetAPIs() {
+  console.log('\n🎯 PHASE 16: TARGET MANAGEMENT');
+  console.log('==============================');
+
+  // 16.1 List Targets
+  await apiCall('GET', '/admin/targets', null, true, 'List Targets');
+
+  // 16.2 Create Target
+  if (testData.salesmanId) {
+    const targetResult = await apiCall('POST', '/admin/targets', {
+      target_type: 'salesman',
+      target_entity_id: testData.salesmanId,
+      target_period: 'monthly',
+      target_year: 2024,
+      target_month: 12,
+      target_amount: 100000,
+      target_quantity: 50
+    }, true, 'Create Target');
+
+    if (targetResult.success && targetResult.data?.data?.id) {
+      testData.targetId = targetResult.data.data.id;
+      console.log(`🎯 Target ID saved: ${testData.targetId}`);
+
+      // 16.3 Get Target by ID
+      await apiCall('GET', `/admin/targets/${testData.targetId}`, null, true, 'Get Target by ID');
+
+      // 16.4 Update Target
+      await apiCall('PUT', `/admin/targets/${testData.targetId}`, {
+        target_amount: 150000,
+        target_quantity: 75
+      }, true, 'Update Target');
+    }
+  }
+}
+
+// Test Phase 17: Commission & Payout Management
+async function testCommissionPayoutAPIs() {
+  console.log('\n💰 PHASE 17: COMMISSION & PAYOUT MANAGEMENT');
+  console.log('===========================================');
+
+  // 17.1 List Commissions
+  await apiCall('GET', '/admin/commissions', null, true, 'List Commissions');
+
+  // 17.2 List Payouts
+  await apiCall('GET', '/admin/payouts', null, true, 'List Payouts');
+
+  // 17.3 Commission Payouts Summary
+  await apiCall('GET', '/admin/commissions-payouts', null, true, 'Commission Payouts Summary');
+}
+
+// Test Phase 18: Referral System
+async function testReferralAPIs() {
+  console.log('\n🔗 PHASE 18: REFERRAL SYSTEM');
+  console.log('=============================');
+
+  // 18.1 List Referrals
+  await apiCall('GET', '/referrals', null, true, 'List Referrals');
+
+  // 18.2 Get Referral Stats
+  await apiCall('GET', '/referrals/stats', null, true, 'Get Referral Stats');
+}
+
+// Test Phase 19: Product Attributes
+async function testAttributeAPIs() {
+  console.log('\n🏷️  PHASE 19: PRODUCT ATTRIBUTES');
+  console.log('=================================');
+
+  // 19.1 List Attributes
+  await apiCall('GET', '/attributes', null, true, 'List Attributes');
+
+  // 19.2 Create Attribute
+  const attributeResult = await apiCall('POST', '/attributes', {
+    attribute_name: 'Color',
+    attribute_type: 'select',
+    is_required: false
+  }, true, 'Create Attribute');
+
+  if (attributeResult.success && attributeResult.data?.data?.id) {
+    testData.attributeId = attributeResult.data.data.id;
+    console.log(`🏷️  Attribute ID saved: ${testData.attributeId}`);
+
+    // 19.3 Update Attribute
+    await apiCall('PUT', `/attributes/${testData.attributeId}`, {
+      attribute_name: 'Updated Color',
+      is_required: true
+    }, true, 'Update Attribute');
+
+    // 19.4 Add Attribute Value
+    const valueResult = await apiCall('POST', `/attributes/${testData.attributeId}/values`, {
+      value_name: 'Red',
+      value_code: 'RED'
+    }, true, 'Add Attribute Value');
+
+    if (valueResult.success && valueResult.data?.data?.id) {
+      testData.attributeValueId = valueResult.data.data.id;
+
+      // 19.5 Remove Attribute Value
+      await apiCall('DELETE', `/attributes/values/${testData.attributeValueId}`, null, true, 'Remove Attribute Value');
+    }
+  }
+}
+
+// Test Phase 20: Blog & Content Management
+async function testBlogAPIs() {
+  console.log('\n📝 PHASE 20: BLOG & CONTENT MANAGEMENT');
+  console.log('======================================');
+
+  // 20.1 List Blogs
+  await apiCall('GET', '/blogs', null, false, 'List Blogs');
+
+  // 20.2 List Blog Categories
+  await apiCall('GET', '/blog-categories', null, false, 'List Blog Categories');
+
+  // Note: Blog creation requires special admin roles, so we'll skip create/update/delete for now
+}
+
+// Test Phase 21: Review System
+async function testReviewAPIs() {
+  console.log('\n⭐ PHASE 21: REVIEW SYSTEM');
+  console.log('==========================');
+
+  // 21.1 List Reviews
+  await apiCall('GET', '/reviews', null, true, 'List Reviews');
+
+  // 21.2 Create Review
+  const reviewResult = await apiCall('POST', '/reviews', {
+    rating: 5,
+    review_text: 'Excellent service!',
+    reviewer_name: 'Test User',
+    reviewer_email: 'test@example.com'
+  }, true, 'Create Review');
+
+  if (reviewResult.success && reviewResult.data?.data?.id) {
+    testData.reviewId = reviewResult.data.data.id;
+    console.log(`⭐ Review ID saved: ${testData.reviewId}`);
+
+    // 21.3 Get Review by ID
+    await apiCall('GET', `/reviews/${testData.reviewId}`, null, true, 'Get Review by ID');
+
+    // 21.4 Update Review
+    await apiCall('PUT', `/reviews/${testData.reviewId}`, {
+      rating: 4,
+      review_text: 'Good service!'
+    }, true, 'Update Review');
+  }
+}
+
+// Test Phase 22: File Management
+async function testFileAPIs() {
+  console.log('\n📁 PHASE 22: FILE MANAGEMENT');
+  console.log('=============================');
+
+  // 22.1 List Files
+  await apiCall('GET', '/files', null, true, 'List Files');
+
+  // Note: File upload requires multipart/form-data, which is complex to test in this script
+  // We'll skip file upload for now but include the list endpoint
+}
+
+// Test Phase 23: Income Tax & Finbox
+async function testAdvancedIntegrations() {
+  console.log('\n🧮 PHASE 23: ADVANCED INTEGRATIONS');
+  console.log('===================================');
+
+  // 23.1 Income Tax Calculation
+  await apiCall('POST', '/income-tax/calculate', {
+    income_amount: 500000,
+    financial_year: '2024-25',
+    age_category: 'below_60'
+  }, true, 'Calculate Income Tax');
+
+  // 23.2 Finbox Credit Score
+  await apiCall('GET', '/finbox/credit-score', null, true, 'Get Credit Score');
+}
 async function runComprehensiveTests() {
   console.log('🚀 COMPREHENSIVE BACKEND API TESTING');
   console.log('====================================');

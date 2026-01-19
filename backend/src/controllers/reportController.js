@@ -32,14 +32,14 @@ async function movementByLedger(tenantModels, { fromDate, toDate, asOnDate, befo
   }
 
   // When using includes, Sequelize.col() needs the model name prefix with attribute name
-  // The model maps debit_amount -> debit column, so we use the attribute name with model prefix
+  // The model has debit_amount and credit_amount columns
   const rows = await tenantModels.VoucherLedgerEntry.findAll({
     attributes: [
       'ledger_id',
-      [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.debit')), 'total_debit'],
-      [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.credit')), 'total_credit'],
+      [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.debit_amount')), 'total_debit'],
+      [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.credit_amount')), 'total_credit'],
     ],
-    include: [{ model: tenantModels.Voucher, attributes: [], where: voucherWhere, required: true }],
+    include: [{ model: tenantModels.Voucher, as: 'voucher', attributes: [], where: voucherWhere, required: true }],
     group: ['ledger_id'],
     raw: true,
   });
@@ -259,67 +259,28 @@ module.exports = {
       }
 
       // Find all voucher ledger entries for this ledger within the date range
-      // DATEONLY fields work directly with date strings in YYYY-MM-DD format
-      // First, let's check what voucher dates actually exist for this ledger
-      const debugEntries = await req.tenantModels.VoucherLedgerEntry.findAll({
-        where: { ledger_id },
-        include: [
-          {
-            model: req.tenantModels.Voucher,
-            where: { status: 'posted' },
-            required: true,
-            attributes: ['id', 'voucher_date', 'voucher_number', 'voucher_type', 'narration'],
-          },
-        ],
-        limit: 10,
-        order: [[req.tenantModels.Voucher, 'voucher_date', 'DESC']],
-      });
-      
-      logger.info(`Debug: Found ${debugEntries.length} posted entries for ledger ${ledger_id} (${ledger.ledger_name}) with dates:`, 
-        debugEntries.map(e => ({
-          voucher_number: e.voucher?.voucher_number,
-          voucher_date: e.voucher?.voucher_date,
-          voucher_type: e.voucher?.voucher_type,
-          date_type: typeof e.voucher?.voucher_date,
-        }))
-      );
-      logger.info(`Query date range: from=${from} (type: ${typeof from}), to=${to} (type: ${typeof to})`);
-
-      // Also try a raw query to see if there's a Sequelize issue
-      try {
-        const rawQueryResult = await req.tenantDb.query(
-          `SELECT vle.id, vle.ledger_id, vle.debit, vle.credit, v.voucher_date, v.voucher_number, v.voucher_type, v.status
-           FROM voucher_ledger_entries vle
-           INNER JOIN vouchers v ON vle.voucher_id = v.id
-           WHERE vle.ledger_id = :ledger_id 
-             AND v.status = 'posted'
-             AND v.voucher_date BETWEEN :from_date AND :to_date
-           ORDER BY v.voucher_date ASC, v.voucher_number ASC
-           LIMIT 20`,
-          {
-            replacements: { ledger_id, from_date: from, to_date: to },
-            type: Sequelize.QueryTypes.SELECT,
-          }
-        );
-        logger.info(`Raw SQL query found ${rawQueryResult.length} entries:`, JSON.stringify(rawQueryResult, null, 2));
-      } catch (rawQueryError) {
-        logger.warn('Raw SQL query failed:', rawQueryError.message);
-      }
-
       const entries = await req.tenantModels.VoucherLedgerEntry.findAll({
         where: { ledger_id },
         include: [
           {
             model: req.tenantModels.Voucher,
+            as: 'voucher', // Use the alias defined in the association
             where: { 
               status: 'posted',
-              voucher_date: { [Op.between]: [from, to] }
+              voucher_date: {
+                [Op.gte]: from,
+                [Op.lte]: to,
+              },
             },
             required: true,
             attributes: ['id', 'voucher_date', 'voucher_number', 'voucher_type', 'narration'],
           },
         ],
-        order: [[req.tenantModels.Voucher, 'voucher_date', 'ASC'], [req.tenantModels.Voucher, 'voucher_number', 'ASC'], ['createdAt', 'ASC']],
+        order: [
+          [{ model: req.tenantModels.Voucher, as: 'voucher' }, 'voucher_date', 'ASC'],
+          [{ model: req.tenantModels.Voucher, as: 'voucher' }, 'voucher_number', 'ASC'],
+          ['createdAt', 'ASC']
+        ],
       });
 
       logger.info(`Found ${entries.length} voucher ledger entries for ledger ${ledger_id} (${ledger.ledger_name}) between ${from} and ${to}`);
@@ -340,6 +301,7 @@ module.exports = {
           where: { ledger_id },
           include: [{
             model: req.tenantModels.Voucher,
+            as: 'voucher',
             where: { status: 'posted' },
             required: true,
           }],
@@ -352,12 +314,13 @@ module.exports = {
             where: { ledger_id },
             include: [{
               model: req.tenantModels.Voucher,
+              as: 'voucher',
               where: { status: 'posted' },
               required: true,
               attributes: ['voucher_date', 'voucher_number', 'voucher_type'],
             }],
             limit: 5,
-            order: [[req.tenantModels.Voucher, 'voucher_date', 'DESC']],
+            order: [[{ model: req.tenantModels.Voucher, as: 'voucher' }, 'voucher_date', 'DESC']],
           });
           logger.info(`Sample posted entries (any date):`, JSON.stringify(sampleEntries.map(e => ({
             voucher_number: e.voucher?.voucher_number,
@@ -373,6 +336,7 @@ module.exports = {
           where: { ledger_id },
           include: [{
             model: req.tenantModels.Voucher,
+            as: 'voucher',
             required: true,
           }],
         });

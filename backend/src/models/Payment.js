@@ -26,7 +26,7 @@ const Payment = masterSequelize.define('Payment', {
   razorpay_payment_id: {
     type: DataTypes.STRING(255),
     allowNull: false,
-    unique: true,
+    // Remove unique: true to prevent duplicate index creation
   },
   razorpay_order_id: {
     type: DataTypes.STRING(255),
@@ -71,6 +71,25 @@ const Payment = masterSequelize.define('Payment', {
 }, {
   tableName: 'payments',
   timestamps: true,
+  indexes: [
+    {
+      unique: true,
+      fields: ['razorpay_payment_id'],
+      name: 'razorpay_payment_id_unique'
+    },
+    {
+      fields: ['tenant_id'],
+      name: 'idx_payments_tenant_id'
+    },
+    {
+      fields: ['subscription_id'],
+      name: 'idx_payments_subscription_id'
+    },
+    {
+      fields: ['status'],
+      name: 'idx_payments_status'
+    }
+  ]
 });
 
 module.exports = Payment;

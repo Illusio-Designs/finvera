@@ -5,6 +5,11 @@ const fs = require('fs');
 const http = require('http');
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
+// Set client-only mode for packaged app
+if (app.isPackaged) {
+  process.env.ELECTRON_CLIENT_ONLY = 'true';
+}
+
 let mainWindow;
 let serverProcess;
 
@@ -95,6 +100,8 @@ function startNextServer() {
     PORT: '3001',
     HOSTNAME: 'localhost',
     NODE_ENV: 'production',
+    ELECTRON_BUILD: 'true',
+    ELECTRON_CLIENT_ONLY: 'true',
   };
 
   // Start the Next.js server
@@ -169,6 +176,23 @@ function createWindow() {
 
   // Handle external links
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    const parsedUrl = new URL(url);
+    
+    // Handle subdomain redirects (client.localhost -> localhost:3001/client)
+    if (parsedUrl.hostname.endsWith('.localhost') || parsedUrl.hostname.endsWith('.local')) {
+      const subdomain = parsedUrl.hostname.split('.')[0];
+      if (subdomain === 'client') {
+        // Redirect client.localhost to localhost:3001/client
+        const newPath = parsedUrl.pathname === '/' ? '/client/dashboard' : `/client${parsedUrl.pathname}`;
+        mainWindow.loadURL(`http://localhost:3001${newPath}`);
+      } else {
+        // Other subdomains redirect to client dashboard
+        mainWindow.loadURL('http://localhost:3001/client/dashboard');
+      }
+      return { action: 'deny' };
+    }
+    
+    // Open external URLs in default browser
     shell.openExternal(url);
     return { action: 'deny' };
   });
@@ -177,43 +201,44 @@ function createWindow() {
   mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
     const parsedUrl = new URL(navigationUrl);
     
-    // Check for restricted routes (admin and public pages)
-    const restrictedRoutes = [
-      '/admin',
-      '/about',
-      '/contact',
-      '/features',
-      '/plans',
-      '/use-cases',
-      '/docs',
-      '/help',
-      '/privacy',
-      '/terms'
-    ];
-    
-    const isRestrictedRoute = restrictedRoutes.some(route => 
-      parsedUrl.pathname.startsWith(route)
-    );
-    
-    if (isRestrictedRoute) {
+    // Handle subdomain redirects (client.localhost -> localhost:3001/client)
+    if (parsedUrl.hostname.endsWith('.localhost') || parsedUrl.hostname.endsWith('.local')) {
       event.preventDefault();
-      // Redirect to client dashboard instead
+      const subdomain = parsedUrl.hostname.split('.')[0];
+      if (subdomain === 'client') {
+        // Redirect client.localhost to localhost:3001/client
+        const newPath = parsedUrl.pathname === '/' ? '/client/dashboard' : `/client${parsedUrl.pathname}`;
+        mainWindow.loadURL(`http://localhost:3001${newPath}`);
+      } else {
+        // Other subdomains redirect to client dashboard
+        mainWindow.loadURL('http://localhost:3001/client/dashboard');
+      }
+      return;
+    }
+    
+    // Check for restricted routes - CLIENT ONLY MODE: Block everything except /client/*
+    const isClientRoute = parsedUrl.pathname.startsWith('/client/') || parsedUrl.pathname === '/client';
+    const isAuthRoute = parsedUrl.pathname.startsWith('/auth/'); // Allow auth callbacks
+    const isRootRoute = parsedUrl.pathname === '/'; // Allow root for redirect
+    
+    // Block ALL non-client routes (admin, public pages, etc.)
+    if (!isClientRoute && !isAuthRoute && !isRootRoute) {
+      event.preventDefault();
+      // Always redirect to client dashboard for any blocked route
       mainWindow.loadURL('http://localhost:3001/client/dashboard');
       return;
     }
     
-    if (isDev) {
-      // In development, allow localhost for client routes only
-      if (parsedUrl.origin !== 'http://localhost:3001') {
-        event.preventDefault();
-        shell.openExternal(navigationUrl);
-      }
-    } else {
-      // In production, only allow localhost for client routes
-      if (parsedUrl.origin !== 'http://localhost:3001') {
-        event.preventDefault();
-        shell.openExternal(navigationUrl);
-      }
+    // Allow localhost navigation for client routes
+    if (parsedUrl.hostname === 'localhost' && parsedUrl.port === '3001') {
+      // Allow navigation within the app
+      return;
+    }
+    
+    // Block external navigation
+    if (parsedUrl.origin !== 'http://localhost:3001') {
+      event.preventDefault();
+      shell.openExternal(navigationUrl);
     }
   });
 }

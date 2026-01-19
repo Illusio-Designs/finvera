@@ -20,7 +20,7 @@ module.exports = {
     try {
       const gstins = await req.tenantModels.GSTIN.findAll({
         where: {},
-        order: [['is_primary', 'DESC'], ['created_at', 'ASC']],
+        order: [['createdAt', 'ASC']],
       });
       res.json({ gstins });
     } catch (err) {
@@ -30,8 +30,9 @@ module.exports = {
 
   async createGSTIN(req, res, next) {
     try {
-      if (req.body.is_primary) {
-        await req.tenantModels.GSTIN.update({ is_primary: false }, { where: {} });
+      // Ensure tenant_id is set
+      if (!req.body.tenant_id) {
+        req.body.tenant_id = req.tenant_id;
       }
 
       const gstin = await req.tenantModels.GSTIN.create({ ...req.body });
@@ -47,10 +48,6 @@ module.exports = {
       const gstin = await req.tenantModels.GSTIN.findByPk(id);
       if (!gstin) return res.status(404).json({ message: 'GSTIN not found' });
 
-      if (req.body.is_primary) {
-        await req.tenantModels.GSTIN.update({ is_primary: false }, { where: { id: { [Op.ne]: id } } });
-      }
-
       await gstin.update(req.body);
       res.json({ gstin });
     } catch (err) {
@@ -65,7 +62,6 @@ module.exports = {
 
       const { hsn_sac_code, item_type } = req.query;
       const where = {
-        [Op.or]: [{ tenant_id: req.tenant_id }, { tenant_id: null }],
         is_active: true,
       };
 
@@ -74,7 +70,7 @@ module.exports = {
 
       const rates = await GSTRate.findAll({
         where,
-        order: [['tenant_id', 'ASC'], ['hsn_sac_code', 'ASC']],
+        order: [['rate_name', 'ASC']],
       });
 
       res.json({ rates });
@@ -88,7 +84,7 @@ module.exports = {
       const GSTRate = req.masterModels?.GSTRate;
       if (!GSTRate) return res.status(500).json({ message: 'GSTRate model not available' });
 
-      const rate = await GSTRate.create({ ...req.body, tenant_id: req.tenant_id });
+      const rate = await GSTRate.create({ ...req.body });
       res.status(201).json({ rate });
     } catch (err) {
       next(err);

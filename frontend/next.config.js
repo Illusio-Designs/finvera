@@ -37,17 +37,17 @@ const nextConfig = {
       },
     ];
   },
-  // For client-only Electron build, exclude admin and public pages
+  // For client-only Electron build, redirect ALL non-client routes
   ...(process.env.ELECTRON_CLIENT_ONLY === 'true' && {
     async redirects() {
       return [
-        // Redirect admin routes to client login
+        // Redirect ALL admin routes to client login
         {
           source: '/admin/:path*',
           destination: '/client/login',
           permanent: false,
         },
-        // Redirect public marketing pages to client dashboard
+        // Redirect ALL public/marketing pages to client dashboard
         {
           source: '/',
           destination: '/client/dashboard',
@@ -95,6 +95,12 @@ const nextConfig = {
         },
         {
           source: '/terms',
+          destination: '/client/dashboard',
+          permanent: false,
+        },
+        // Catch-all: redirect any other non-client route to client dashboard
+        {
+          source: '/((?!client|auth|api|_next|favicon.ico).*)',
           destination: '/client/dashboard',
           permanent: false,
         },
