@@ -1,8 +1,11 @@
 
 import { useState, useEffect } from 'react';
-import { ClientLayout } from '@/components/layouts';
-import { Card, FormInput, Button, IconButton } from '@/components/ui';
-import { attributeAPI } from '@/lib/api';
+import ClientLayout from '../../components/layouts/ClientLayout';
+import Card from '../../components/ui/Card';
+import FormInput from '../../components/forms/FormInput';
+import Button from '../../components/ui/Button';
+import IconButton from '../../components/ui/IconButton';
+import { attributeAPI } from '../../lib/api';
 import { FaTrash } from 'react-icons/fa';
 
 const AttributesPage = () => {

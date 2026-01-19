@@ -4,10 +4,13 @@ export function middleware(request) {
   const url = request.nextUrl.clone();
   const hostname = request.headers.get('host') || '';
   
+  // Check if this is a client-only Electron build
+  const isClientOnly = process.env.ELECTRON_CLIENT_ONLY === 'true';
+  
   // Extract subdomain
   const subdomain = getSubdomain(hostname);
   
-  console.log(`[Middleware] Host: ${hostname}, Subdomain: ${subdomain}, Path: ${url.pathname}`);
+  console.log(`[Middleware] Host: ${hostname}, Subdomain: ${subdomain}, Path: ${url.pathname}, ClientOnly: ${isClientOnly}`);
 
   // Skip if already on correct path to prevent loops
   if (url.pathname.startsWith('/_next') || 
@@ -19,6 +22,49 @@ export function middleware(request) {
     return NextResponse.next();
   }
 
+  // Client-only Electron build restrictions
+  if (isClientOnly) {
+    // Restricted routes for client-only build
+    const restrictedRoutes = [
+      '/admin',
+      '/about',
+      '/contact',
+      '/features',
+      '/plans',
+      '/use-cases',
+      '/docs',
+      '/help',
+      '/privacy',
+      '/terms'
+    ];
+    
+    // Check if current path is restricted
+    const isRestrictedRoute = restrictedRoutes.some(route => 
+      url.pathname.startsWith(route)
+    );
+    
+    // Redirect root to client dashboard
+    if (url.pathname === '/' || url.pathname === '') {
+      url.pathname = '/client/dashboard';
+      return NextResponse.redirect(url);
+    }
+    
+    // Redirect restricted routes to client dashboard
+    if (isRestrictedRoute) {
+      url.pathname = '/client/dashboard';
+      return NextResponse.redirect(url);
+    }
+    
+    // Allow only client routes and auth callback
+    if (!url.pathname.startsWith('/client') && !url.pathname.startsWith('/auth')) {
+      url.pathname = '/client/dashboard';
+      return NextResponse.redirect(url);
+    }
+    
+    return NextResponse.next();
+  }
+
+  // Regular web app behavior (non-Electron)
   // Admin subdomain
   if (subdomain === 'admin') {
     // If not already on admin path, redirect

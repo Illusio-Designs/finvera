@@ -151,14 +151,14 @@ function createWindow() {
   if (isDev) {
     // In development, wait for Next.js dev server
     waitForServer('http://localhost:3001', () => {
-      mainWindow.loadURL('http://localhost:3001');
+      mainWindow.loadURL('http://localhost:3001/client/dashboard');
     });
   } else {
     // In production, start Next.js standalone server
     startNextServer();
-    // Wait for server to start, then load
+    // Wait for server to start, then load client dashboard directly
     waitForServer('http://localhost:3001', () => {
-      mainWindow.loadURL('http://localhost:3001');
+      mainWindow.loadURL('http://localhost:3001/client/dashboard');
     });
   }
 
@@ -173,19 +173,44 @@ function createWindow() {
     return { action: 'deny' };
   });
 
-  // Prevent navigation to external URLs
+  // Prevent navigation to external URLs and restricted routes
   mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
     const parsedUrl = new URL(navigationUrl);
     
+    // Check for restricted routes (admin and public pages)
+    const restrictedRoutes = [
+      '/admin',
+      '/about',
+      '/contact',
+      '/features',
+      '/plans',
+      '/use-cases',
+      '/docs',
+      '/help',
+      '/privacy',
+      '/terms'
+    ];
+    
+    const isRestrictedRoute = restrictedRoutes.some(route => 
+      parsedUrl.pathname.startsWith(route)
+    );
+    
+    if (isRestrictedRoute) {
+      event.preventDefault();
+      // Redirect to client dashboard instead
+      mainWindow.loadURL('http://localhost:3001/client/dashboard');
+      return;
+    }
+    
     if (isDev) {
-      // In development, allow localhost
+      // In development, allow localhost for client routes only
       if (parsedUrl.origin !== 'http://localhost:3001') {
         event.preventDefault();
         shell.openExternal(navigationUrl);
       }
     } else {
-      // In production, only allow file:// protocol
-      if (parsedUrl.protocol !== 'file:') {
+      // In production, only allow localhost for client routes
+      if (parsedUrl.origin !== 'http://localhost:3001') {
         event.preventDefault();
         shell.openExternal(navigationUrl);
       }

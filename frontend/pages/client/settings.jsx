@@ -8,6 +8,7 @@ import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import Stepper from '../../components/ui/Stepper';
 import FormInput from '../../components/forms/FormInput';
+import FormPasswordInput from '../../components/forms/FormPasswordInput';
 import FormTextarea from '../../components/forms/FormTextarea';
 import FormSelect from '../../components/forms/FormSelect';
 import FormDatePicker from '../../components/forms/FormDatePicker';

@@ -1,0 +1,1391 @@
+{
+  "summary": {
+    "total": 56,
+    "passed": 25,
+    "failed": 31,
+    "startTime": "2026-01-19T13:48:25.715Z",
+    "endTime": "2026-01-19T13:48:46.230Z"
+  },
+  "tests": [
+    {
+      "method": "GET",
+      "endpoint": "/health",
+      "description": "Health Check",
+      "timestamp": "2026-01-19T13:48:26.278Z",
+      "success": true,
+      "status": 200,
+      "responseTime": 407,
+      "request": null,
+      "response": {
+        "status": "ok"
+      },
+      "error": null
+    },
+    {
+      "method": "POST",
+      "endpoint": "/auth/register",
+      "description": "Register New User",
+      "timestamp": "2026-01-19T13:48:26.686Z",
+      "success": true,
+      "status": 201,
+      "responseTime": 3020,
+      "request": {
+        "email": "test1768830506686@finvera.com",
+        "password": "Test123456",
+        "full_name": "Test User",
+        "phone": "9876543210"
+      },
+      "response": {
+        "user": {
+          "id": "e18a985e-4c56-4eb6-bbf7-eda4585ca2f8",
+          "email": "test1768830506686@finvera.com",
+          "tenant_id": "a4ab92f8-3e41-4281-ae04-60c9ffd0972c",
+          "role": "tenant_admin"
+        },
+        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImUxOGE5ODVlLTRjNTYtNGViNi1iYmY3LWVkYTQ1ODVjYTJmOCIsInVzZXJfaWQiOiJlMThhOTg1ZS00YzU2LTRlYjYtYmJmNy1lZGE0NTg1Y2EyZjgiLCJzdWIiOiJlMThhOTg1ZS00YzU2LTRlYjYtYmJmNy1lZGE0NTg1Y2EyZjgiLCJ0ZW5hbnRfaWQiOiJhNGFiOTJmOC0zZTQxLTQyODEtYWUwNC02MGM5ZmZkMDk3MmMiLCJjb21wYW55X2lkIjpudWxsLCJyb2xlIjoidGVuYW50X2FkbWluIiwianRpIjoiN2NjZjhlMDQtZWVlOS00MzhjLWJmYWEtMWNjNWQxMGJmNDBkIiwiaWF0IjoxNzY4ODMwNTA5LCJleHAiOjE3Njg5MTY5MDl9.sQHQXyHfTx7UZxsFzsdssFhGjpqyTLjTQ8gNamEU_fM",
+        "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImUxOGE5ODVlLTRjNTYtNGViNi1iYmY3LWVkYTQ1ODVjYTJmOCIsInRlbmFudF9pZCI6ImE0YWI5MmY4LTNlNDEtNDI4MS1hZTA0LTYwYzlmZmQwOTcyYyIsImp0aSI6IjdjY2Y4ZTA0LWVlZTktNDM4Yy1iZmFhLTFjYzVkMTBiZjQwZCIsImlhdCI6MTc2ODgzMDUwOSwiZXhwIjoxNzY5NDM1MzA5fQ.4QLIuTe6HCCpj2AZD8CjsWJfKTdRrbhwJ3ieoKdSWyc",
+        "jti": "7ccf8e04-eee9-438c-bfaa-1cc5d10bf40d"
+      },
+      "error": null
+    },
+    {
+      "method": "GET",
+      "endpoint": "/auth/profile",
+      "description": "Get User Profile",
+      "timestamp": "2026-01-19T13:48:29.707Z",
+      "success": true,
+      "status": 200,
+      "responseTime": 130,
+      "request": null,
+      "response": {
+        "success": true,
+        "data": {
+          "id": "e18a985e-4c56-4eb6-bbf7-eda4585ca2f8",
+          "email": "test1768830506686@finvera.com",
+          "name": "Test User",
+          "role": "tenant_admin",
+          "phone": null,
+          "profile_image": null,
+          "is_active": true,
+          "last_login": null
+        }
+      },
+      "error": null
+    },
+    {
+      "method": "POST",
+      "endpoint": "/auth/refresh",
+      "description": "Refresh Access Token",
+      "timestamp": "2026-01-19T13:48:29.851Z",
+      "success": false,
+      "status": 401,
+      "responseTime": 22,
+      "request": {
+        "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImUxOGE5ODVlLTRjNTYtNGViNi1iYmY3LWVkYTQ1ODVjYTJmOCIsInRlbmFudF9pZCI6ImE0YWI5MmY4LTNlNDEtNDI4MS1hZTA0LTYwYzlmZmQwOTcyYyIsImp0aSI6IjdjY2Y4ZTA0LWVlZTktNDM4Yy1iZmFhLTFjYzVkMTBiZjQwZCIsImlhdCI6MTc2ODgzMDUwOSwiZXhwIjoxNzY5NDM1MzA5fQ.4QLIuTe6HCCpj2AZD8CjsWJfKTdRrbhwJ3ieoKdSWyc"
+      },
+      "response": null,
+      "error": {
+        "message": "Invalid or expired refresh token"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/tenants/profile",
+      "description": "Get Tenant Profile",
+      "timestamp": "2026-01-19T13:48:29.877Z",
+      "success": true,
+      "status": 200,
+      "responseTime": 63,
+      "request": null,
+      "response": {
+        "success": true,
+        "data": {
+          "id": "a4ab92f8-3e41-4281-ae04-60c9ffd0972c",
+          "company_name": "test1768830506686",
+          "subdomain": "test1768830506686",
+          "db_name": null,
+          "db_host": "localhost",
+          "db_port": 3306,
+          "db_user": null,
+          "db_password": null,
+          "gstin": null,
+          "pan": null,
+          "tan": null,
+          "subscription_plan": "trial",
+          "subscription_start": null,
+          "subscription_end": null,
+          "is_trial": true,
+          "trial_ends_at": "2026-02-18T13:48:28.000Z",
+          "salesman_id": null,
+          "distributor_id": null,
+          "referral_code": null,
+          "referred_by": null,
+          "referral_type": null,
+          "acquisition_category": "organic",
+          "address": null,
+          "city": null,
+          "state": null,
+          "pincode": null,
+          "phone": null,
+          "email": "test1768830506686@finvera.com",
+          "is_active": true,
+          "is_suspended": false,
+          "suspended_reason": null,
+          "db_provisioned": false,
+          "db_provisioned_at": null,
+          "storage_limit_mb": 1024,
+          "storage_used_mb": 0,
+          "razorpay_customer_id": null,
+          "razorpay_subscription_id": null,
+          "settings": "{}",
+          "createdAt": "2026-01-19T13:48:28.000Z",
+          "updatedAt": "2026-01-19T13:48:28.000Z"
+        }
+      },
+      "error": null
+    },
+    {
+      "method": "GET",
+      "endpoint": "/companies/status",
+      "description": "Get Company Status",
+      "timestamp": "2026-01-19T13:48:29.945Z",
+      "success": true,
+      "status": 200,
+      "responseTime": 107,
+      "request": null,
+      "response": {
+        "success": true,
+        "data": {
+          "has_company": false,
+          "company_count": 0,
+          "provisioned_company_count": 0,
+          "max_companies": 1,
+          "max_branches": 0,
+          "plan_type": "multi-company"
+        }
+      },
+      "error": null
+    },
+    {
+      "method": "GET",
+      "endpoint": "/companies",
+      "description": "List Companies",
+      "timestamp": "2026-01-19T13:48:30.052Z",
+      "success": true,
+      "status": 200,
+      "responseTime": 40,
+      "request": null,
+      "response": {
+        "success": true,
+        "data": []
+      },
+      "error": null
+    },
+    {
+      "method": "POST",
+      "endpoint": "/companies",
+      "description": "Create Company",
+      "timestamp": "2026-01-19T13:48:30.094Z",
+      "success": true,
+      "status": 201,
+      "responseTime": 6741,
+      "request": {
+        "company_name": "Test Company Ltd",
+        "company_code": "TCL001",
+        "company_type": "private_limited",
+        "address": "123 Test Street",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "pincode": "400001",
+        "phone": "9876543210",
+        "email": "company@test.com",
+        "gstin": "27ABCDE1234F1Z5",
+        "pan": "ABCDE1234F"
+      },
+      "response": {
+        "success": true,
+        "data": {
+          "id": "e157545e-05ac-4434-8d07-b4087e16f583",
+          "tenant_id": "a4ab92f8-3e41-4281-ae04-60c9ffd0972c",
+          "created_by_user_id": "e18a985e-4c56-4eb6-bbf7-eda4585ca2f8",
+          "company_name": "Test Company Ltd",
+          "company_type": "private_limited",
+          "registration_number": null,
+          "incorporation_date": null,
+          "pan": "ABCDE1234F",
+          "tan": null,
+          "gstin": "27ABCDE1234F1Z5",
+          "registered_address": null,
+          "state": "Maharashtra",
+          "pincode": "400001",
+          "contact_number": null,
+          "email": "company@test.com",
+          "logo_url": null,
+          "principals": null,
+          "financial_year_start": null,
+          "financial_year_end": null,
+          "authorized_capital": null,
+          "accounting_method": null,
+          "currency": "INR",
+          "books_beginning_date": null,
+          "bank_details": null,
+          "compliance": null,
+          "db_name": "finvera_test_company_ltd",
+          "db_host": "localhost",
+          "db_port": 3306,
+          "db_user": "fv_test_company_ltd",
+          "db_password": "3433f348e2b4c454727231fce14b8460:2c88577a8dc2ab49b7d51cc018628afb57866fc0fb1d89614540f8521676dabd",
+          "db_provisioned": true,
+          "db_provisioned_at": "2026-01-19T13:48:36.000Z",
+          "is_active": true,
+          "createdAt": "2026-01-19T13:48:30.000Z",
+          "updatedAt": "2026-01-19T13:48:36.000Z"
+        }
+      },
+      "error": null
+    },
+    {
+      "method": "GET",
+      "endpoint": "/companies/e157545e-05ac-4434-8d07-b4087e16f583",
+      "description": "Get Company by ID",
+      "timestamp": "2026-01-19T13:48:36.837Z",
+      "success": true,
+      "status": 200,
+      "responseTime": 128,
+      "request": null,
+      "response": {
+        "success": true,
+        "data": {
+          "id": "e157545e-05ac-4434-8d07-b4087e16f583",
+          "tenant_id": "a4ab92f8-3e41-4281-ae04-60c9ffd0972c",
+          "created_by_user_id": "e18a985e-4c56-4eb6-bbf7-eda4585ca2f8",
+          "company_name": "Test Company Ltd",
+          "company_type": "private_limited",
+          "registration_number": null,
+          "incorporation_date": null,
+          "pan": "ABCDE1234F",
+          "tan": null,
+          "gstin": "27ABCDE1234F1Z5",
+          "registered_address": null,
+          "state": "Maharashtra",
+          "pincode": "400001",
+          "contact_number": null,
+          "email": "company@test.com",
+          "logo_url": null,
+          "principals": null,
+          "financial_year_start": null,
+          "financial_year_end": null,
+          "authorized_capital": null,
+          "accounting_method": null,
+          "currency": "INR",
+          "books_beginning_date": null,
+          "bank_details": null,
+          "compliance": null,
+          "db_name": "finvera_test_company_ltd",
+          "db_host": "localhost",
+          "db_port": 3306,
+          "db_user": "fv_test_company_ltd",
+          "db_password": "3433f348e2b4c454727231fce14b8460:2c88577a8dc2ab49b7d51cc018628afb57866fc0fb1d89614540f8521676dabd",
+          "db_provisioned": true,
+          "db_provisioned_at": "2026-01-19T13:48:36.000Z",
+          "is_active": true,
+          "createdAt": "2026-01-19T13:48:30.000Z",
+          "updatedAt": "2026-01-19T13:48:36.000Z",
+          "branches": []
+        }
+      },
+      "error": null
+    },
+    {
+      "method": "PUT",
+      "endpoint": "/companies/e157545e-05ac-4434-8d07-b4087e16f583",
+      "description": "Update Company",
+      "timestamp": "2026-01-19T13:48:36.967Z",
+      "success": true,
+      "status": 200,
+      "responseTime": 64,
+      "request": {
+        "company_name": "Updated Test Company Ltd",
+        "phone": "9999999999"
+      },
+      "response": {
+        "success": true,
+        "data": {
+          "id": "e157545e-05ac-4434-8d07-b4087e16f583",
+          "tenant_id": "a4ab92f8-3e41-4281-ae04-60c9ffd0972c",
+          "created_by_user_id": "e18a985e-4c56-4eb6-bbf7-eda4585ca2f8",
+          "company_name": "Updated Test Company Ltd",
+          "company_type": "private_limited",
+          "registration_number": null,
+          "incorporation_date": null,
+          "pan": "ABCDE1234F",
+          "tan": null,
+          "gstin": "27ABCDE1234F1Z5",
+          "registered_address": null,
+          "state": "Maharashtra",
+          "pincode": "400001",
+          "contact_number": null,
+          "email": "company@test.com",
+          "logo_url": null,
+          "principals": null,
+          "financial_year_start": null,
+          "financial_year_end": null,
+          "authorized_capital": null,
+          "accounting_method": null,
+          "currency": "INR",
+          "books_beginning_date": null,
+          "bank_details": null,
+          "compliance": null,
+          "db_name": "finvera_test_company_ltd",
+          "db_host": "localhost",
+          "db_port": 3306,
+          "db_user": "fv_test_company_ltd",
+          "db_password": "3433f348e2b4c454727231fce14b8460:2c88577a8dc2ab49b7d51cc018628afb57866fc0fb1d89614540f8521676dabd",
+          "db_provisioned": true,
+          "db_provisioned_at": "2026-01-19T13:48:36.000Z",
+          "is_active": true,
+          "createdAt": "2026-01-19T13:48:30.000Z",
+          "updatedAt": "2026-01-19T13:48:37.000Z"
+        }
+      },
+      "error": null
+    },
+    {
+      "method": "GET",
+      "endpoint": "/branches/company/e157545e-05ac-4434-8d07-b4087e16f583",
+      "description": "List Branches by Company",
+      "timestamp": "2026-01-19T13:48:37.034Z",
+      "success": true,
+      "status": 200,
+      "responseTime": 29,
+      "request": null,
+      "response": {
+        "success": true,
+        "data": []
+      },
+      "error": null
+    },
+    {
+      "method": "POST",
+      "endpoint": "/branches",
+      "description": "Create Branch",
+      "timestamp": "2026-01-19T13:48:37.063Z",
+      "success": true,
+      "status": 201,
+      "responseTime": 184,
+      "request": {
+        "branch_name": "Mumbai Branch",
+        "branch_code": "MUM001",
+        "address": "123 Branch Street",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "pincode": "400001",
+        "phone": "9876543210",
+        "email": "mumbai@test.com",
+        "company_id": "e157545e-05ac-4434-8d07-b4087e16f583"
+      },
+      "response": {
+        "success": true,
+        "data": {
+          "id": "2d879d6e-89a9-4a1b-aac1-dc9e0191781c",
+          "is_active": true,
+          "company_id": "e157545e-05ac-4434-8d07-b4087e16f583",
+          "branch_name": "Mumbai Branch",
+          "branch_code": "MUM001",
+          "address": "123 Branch Street",
+          "city": "Mumbai",
+          "state": "Maharashtra",
+          "pincode": "400001",
+          "phone": "9876543210",
+          "email": "mumbai@test.com",
+          "updatedAt": "2026-01-19T13:48:37.145Z",
+          "createdAt": "2026-01-19T13:48:37.145Z"
+        }
+      },
+      "error": null
+    },
+    {
+      "method": "GET",
+      "endpoint": "/branches/2d879d6e-89a9-4a1b-aac1-dc9e0191781c",
+      "description": "Get Branch by ID",
+      "timestamp": "2026-01-19T13:48:37.248Z",
+      "success": true,
+      "status": 200,
+      "responseTime": 23,
+      "request": null,
+      "response": {
+        "success": true,
+        "data": {
+          "id": "2d879d6e-89a9-4a1b-aac1-dc9e0191781c",
+          "company_id": "e157545e-05ac-4434-8d07-b4087e16f583",
+          "branch_name": "Mumbai Branch",
+          "branch_code": "MUM001",
+          "gstin": null,
+          "address": "123 Branch Street",
+          "city": "Mumbai",
+          "state": "Maharashtra",
+          "pincode": "400001",
+          "phone": "9876543210",
+          "email": "mumbai@test.com",
+          "is_active": true,
+          "createdAt": "2026-01-19T13:48:37.000Z",
+          "updatedAt": "2026-01-19T13:48:37.000Z"
+        }
+      },
+      "error": null
+    },
+    {
+      "method": "PUT",
+      "endpoint": "/branches/2d879d6e-89a9-4a1b-aac1-dc9e0191781c",
+      "description": "Update Branch",
+      "timestamp": "2026-01-19T13:48:37.272Z",
+      "success": true,
+      "status": 200,
+      "responseTime": 80,
+      "request": {
+        "branch_name": "Updated Mumbai Branch",
+        "phone": "9999999999"
+      },
+      "response": {
+        "success": true,
+        "data": {
+          "id": "2d879d6e-89a9-4a1b-aac1-dc9e0191781c",
+          "company_id": "e157545e-05ac-4434-8d07-b4087e16f583",
+          "branch_name": "Updated Mumbai Branch",
+          "branch_code": "MUM001",
+          "gstin": null,
+          "address": "123 Branch Street",
+          "city": "Mumbai",
+          "state": "Maharashtra",
+          "pincode": "400001",
+          "phone": "9999999999",
+          "email": "mumbai@test.com",
+          "is_active": true,
+          "createdAt": "2026-01-19T13:48:37.000Z",
+          "updatedAt": "2026-01-19T13:48:37.288Z"
+        }
+      },
+      "error": null
+    },
+    {
+      "method": "GET",
+      "endpoint": "/accounting/dashboard",
+      "description": "Get Accounting Dashboard",
+      "timestamp": "2026-01-19T13:48:37.354Z",
+      "success": false,
+      "status": 500,
+      "responseTime": 32,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Failed to resolve tenant",
+        "error": "Cannot read properties of undefined (reading 'company_id')"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/accounting/groups",
+      "description": "List Account Groups",
+      "timestamp": "2026-01-19T13:48:37.388Z",
+      "success": false,
+      "status": 500,
+      "responseTime": 49,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Failed to resolve tenant",
+        "error": "Cannot read properties of undefined (reading 'company_id')"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/accounting/groups/tree",
+      "description": "Get Account Groups Tree",
+      "timestamp": "2026-01-19T13:48:37.438Z",
+      "success": false,
+      "status": 500,
+      "responseTime": 320,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Failed to resolve tenant",
+        "error": "Cannot read properties of undefined (reading 'company_id')"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/accounting/voucher-types",
+      "description": "List Voucher Types",
+      "timestamp": "2026-01-19T13:48:37.759Z",
+      "success": false,
+      "status": 500,
+      "responseTime": 40,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Failed to resolve tenant",
+        "error": "Cannot read properties of undefined (reading 'company_id')"
+      }
+    },
+    {
+      "method": "POST",
+      "endpoint": "/accounting/voucher-types",
+      "description": "Create Voucher Type",
+      "timestamp": "2026-01-19T13:48:37.800Z",
+      "success": false,
+      "status": 403,
+      "responseTime": 779,
+      "request": {
+        "voucher_type_name": "Test Sales",
+        "voucher_type_code": "TSL",
+        "category": "sales",
+        "is_active": true
+      },
+      "response": null,
+      "error": {
+        "message": "Voucher types are read-only (managed by system)"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/accounting/ledgers?page=1&limit=20",
+      "description": "List Ledgers",
+      "timestamp": "2026-01-19T13:48:38.581Z",
+      "success": false,
+      "status": 500,
+      "responseTime": 157,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Failed to resolve tenant",
+        "error": "Cannot read properties of undefined (reading 'company_id')"
+      }
+    },
+    {
+      "method": "POST",
+      "endpoint": "/accounting/ledgers",
+      "description": "Create Ledger",
+      "timestamp": "2026-01-19T13:48:38.746Z",
+      "success": true,
+      "status": 201,
+      "responseTime": 1458,
+      "request": {
+        "ledger_name": "Test Cash Account",
+        "ledger_code": "CASH001",
+        "account_group_id": 1,
+        "opening_balance": 10000,
+        "opening_balance_type": "Dr"
+      },
+      "response": {
+        "data": {
+          "id": "174146b7-a5cb-4dfa-be75-25c8275c493b",
+          "current_balance": 0,
+          "is_default": false,
+          "is_active": true,
+          "ledger_name": "Test Cash Account",
+          "ledger_code": "IND_INC-002",
+          "account_group_id": 1,
+          "opening_balance": 10000,
+          "opening_balance_type": "Dr",
+          "balance_type": "debit",
+          "gstin": null,
+          "pan": null,
+          "address": null,
+          "city": null,
+          "state": null,
+          "pincode": null,
+          "country": null,
+          "email": null,
+          "tenant_id": "a4ab92f8-3e41-4281-ae04-60c9ffd0972c",
+          "updatedAt": "2026-01-19T13:48:40.005Z",
+          "createdAt": "2026-01-19T13:48:40.005Z"
+        }
+      },
+      "error": null
+    },
+    {
+      "method": "GET",
+      "endpoint": "/accounting/ledgers/174146b7-a5cb-4dfa-be75-25c8275c493b",
+      "description": "Get Ledger by ID (Previously Problematic)",
+      "timestamp": "2026-01-19T13:48:40.205Z",
+      "success": false,
+      "status": 500,
+      "responseTime": 42,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Failed to resolve tenant",
+        "error": "Cannot read properties of undefined (reading 'company_id')"
+      }
+    },
+    {
+      "method": "PUT",
+      "endpoint": "/accounting/ledgers/174146b7-a5cb-4dfa-be75-25c8275c493b",
+      "description": "Update Ledger",
+      "timestamp": "2026-01-19T13:48:40.249Z",
+      "success": true,
+      "status": 200,
+      "responseTime": 554,
+      "request": {
+        "ledger_name": "Updated Cash Account",
+        "opening_balance": 15000
+      },
+      "response": {
+        "data": {
+          "id": "174146b7-a5cb-4dfa-be75-25c8275c493b",
+          "ledger_name": "Updated Cash Account",
+          "ledger_code": "IND_INC-002",
+          "account_group_id": "1",
+          "opening_balance": 15000,
+          "opening_balance_type": "Dr",
+          "balance_type": "debit",
+          "current_balance": "0.00",
+          "address": null,
+          "city": null,
+          "state": null,
+          "pincode": null,
+          "country": null,
+          "gstin": null,
+          "pan": null,
+          "email": null,
+          "contact_number": null,
+          "is_default": false,
+          "is_active": true,
+          "tenant_id": "a4ab92f8-3e41-4281-ae04-60c9ffd0972c",
+          "createdAt": "2026-01-19T13:48:40.000Z",
+          "updatedAt": "2026-01-19T13:48:40.785Z"
+        }
+      },
+      "error": null
+    },
+    {
+      "method": "GET",
+      "endpoint": "/accounting/ledgers/174146b7-a5cb-4dfa-be75-25c8275c493b/balance",
+      "description": "Get Ledger Balance (Previously Problematic)",
+      "timestamp": "2026-01-19T13:48:40.804Z",
+      "success": false,
+      "status": 500,
+      "responseTime": 48,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Failed to resolve tenant",
+        "error": "Cannot read properties of undefined (reading 'company_id')"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/accounting/warehouses",
+      "description": "List Warehouses",
+      "timestamp": "2026-01-19T13:48:40.854Z",
+      "success": false,
+      "status": 500,
+      "responseTime": 32,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Failed to resolve tenant",
+        "error": "Cannot read properties of undefined (reading 'company_id')"
+      }
+    },
+    {
+      "method": "POST",
+      "endpoint": "/accounting/warehouses",
+      "description": "Create Warehouse",
+      "timestamp": "2026-01-19T13:48:40.887Z",
+      "success": false,
+      "status": 400,
+      "responseTime": 557,
+      "request": {
+        "warehouse_name": "Main Warehouse",
+        "warehouse_code": "MW001",
+        "address": "123 Warehouse Street",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "pincode": "400001"
+      },
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Validation error",
+        "errors": [
+          {
+            "field": "tenant_id",
+            "message": "Warehouse.tenant_id cannot be null"
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/accounting/inventory/items?page=1&limit=20",
+      "description": "List Inventory Items",
+      "timestamp": "2026-01-19T13:48:41.455Z",
+      "success": false,
+      "status": 500,
+      "responseTime": 43,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Failed to resolve tenant",
+        "error": "Cannot read properties of undefined (reading 'company_id')"
+      }
+    },
+    {
+      "method": "POST",
+      "endpoint": "/accounting/inventory/items",
+      "description": "Create Inventory Item",
+      "timestamp": "2026-01-19T13:48:41.501Z",
+      "success": true,
+      "status": 201,
+      "responseTime": 436,
+      "request": {
+        "item_name": "Test Product",
+        "item_code": "TP001",
+        "category": "Electronics",
+        "unit": "Pcs",
+        "purchase_rate": 100,
+        "sales_rate": 150,
+        "hsn_code": "8517"
+      },
+      "response": {
+        "data": {
+          "id": "0e1ad54f-f7d6-44f7-a5cc-a95f60ba9fd7",
+          "item_key": "tp001",
+          "item_code": "TP001",
+          "item_name": "Test Product",
+          "barcode": null,
+          "hsn_sac_code": null,
+          "uqc": null,
+          "gst_rate": null,
+          "quantity_on_hand": 0,
+          "avg_cost": 0,
+          "is_active": true,
+          "updatedAt": "2026-01-19T13:48:41.914Z",
+          "createdAt": "2026-01-19T13:48:41.914Z"
+        }
+      },
+      "error": null
+    },
+    {
+      "method": "GET",
+      "endpoint": "/accounting/vouchers?page=1&limit=20",
+      "description": "List Vouchers",
+      "timestamp": "2026-01-19T13:48:41.944Z",
+      "success": false,
+      "status": 500,
+      "responseTime": 60,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Failed to resolve tenant",
+        "error": "Cannot read properties of undefined (reading 'company_id')"
+      }
+    },
+    {
+      "method": "POST",
+      "endpoint": "/accounting/invoices/sales",
+      "description": "Create Sales Invoice",
+      "timestamp": "2026-01-19T13:48:42.005Z",
+      "success": false,
+      "status": 400,
+      "responseTime": 613,
+      "request": {
+        "voucher_date": "2024-01-15",
+        "party_ledger_id": "174146b7-a5cb-4dfa-be75-25c8275c493b",
+        "items": [
+          {
+            "item_id": "0e1ad54f-f7d6-44f7-a5cc-a95f60ba9fd7",
+            "quantity": 10,
+            "rate": 100,
+            "amount": 1000
+          }
+        ],
+        "total_amount": 1000,
+        "narration": "Test sales invoice"
+      },
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Validation error",
+        "errors": [
+          {
+            "field": "voucher_number",
+            "message": "Voucher.voucher_number cannot be null"
+          },
+          {
+            "field": "tenant_id",
+            "message": "Voucher.tenant_id cannot be null"
+          }
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "endpoint": "/accounting/payments",
+      "description": "Create Payment",
+      "timestamp": "2026-01-19T13:48:42.632Z",
+      "success": false,
+      "status": 400,
+      "responseTime": 990,
+      "request": {
+        "voucher_date": "2024-01-15",
+        "payment_ledger_id": "174146b7-a5cb-4dfa-be75-25c8275c493b",
+        "party_ledger_id": "174146b7-a5cb-4dfa-be75-25c8275c493b",
+        "amount": 500,
+        "narration": "Payment to supplier"
+      },
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Validation error",
+        "errors": [
+          {
+            "field": "voucher_number",
+            "message": "Voucher.voucher_number cannot be null"
+          },
+          {
+            "field": "tenant_id",
+            "message": "Voucher.tenant_id cannot be null"
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/reports/trial-balance?from_date=2024-01-01&to_date=2024-12-31",
+      "description": "Generate Trial Balance",
+      "timestamp": "2026-01-19T13:48:43.687Z",
+      "success": false,
+      "status": 500,
+      "responseTime": 79,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Failed to resolve tenant",
+        "error": "Cannot read properties of undefined (reading 'company_id')"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/reports/balance-sheet?as_on_date=2024-12-31",
+      "description": "Generate Balance Sheet",
+      "timestamp": "2026-01-19T13:48:43.815Z",
+      "success": false,
+      "status": 500,
+      "responseTime": 35,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Failed to resolve tenant",
+        "error": "Cannot read properties of undefined (reading 'company_id')"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/reports/profit-loss?from_date=2024-01-01&to_date=2024-12-31",
+      "description": "Generate Profit & Loss",
+      "timestamp": "2026-01-19T13:48:43.864Z",
+      "success": false,
+      "status": 500,
+      "responseTime": 34,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Failed to resolve tenant",
+        "error": "Cannot read properties of undefined (reading 'company_id')"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/reports/ledger-statement?ledger_id=174146b7-a5cb-4dfa-be75-25c8275c493b&from_date=2024-01-01&to_date=2024-12-31",
+      "description": "Generate Ledger Statement",
+      "timestamp": "2026-01-19T13:48:43.901Z",
+      "success": false,
+      "status": 500,
+      "responseTime": 42,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Failed to resolve tenant",
+        "error": "Cannot read properties of undefined (reading 'company_id')"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/reports/stock-summary",
+      "description": "Generate Stock Summary",
+      "timestamp": "2026-01-19T13:48:43.955Z",
+      "success": false,
+      "status": 500,
+      "responseTime": 45,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Failed to resolve tenant",
+        "error": "Cannot read properties of undefined (reading 'company_id')"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/gst/gstins",
+      "description": "List GSTINs",
+      "timestamp": "2026-01-19T13:48:44.004Z",
+      "success": false,
+      "status": 500,
+      "responseTime": 44,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Failed to resolve tenant",
+        "error": "Cannot read properties of undefined (reading 'company_id')"
+      }
+    },
+    {
+      "method": "POST",
+      "endpoint": "/gst/gstins",
+      "description": "Create GSTIN",
+      "timestamp": "2026-01-19T13:48:44.053Z",
+      "success": false,
+      "status": 400,
+      "responseTime": 431,
+      "request": {
+        "gstin": "27ABCDE1234F1Z5",
+        "legal_name": "Test Company Pvt Ltd",
+        "trade_name": "Test Company",
+        "state_code": "27",
+        "is_active": true
+      },
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Validation error",
+        "errors": [
+          {
+            "field": "tenant_id",
+            "message": "GSTIN.tenant_id cannot be null"
+          }
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "endpoint": "/gst/validate",
+      "description": "Validate GSTIN",
+      "timestamp": "2026-01-19T13:48:44.486Z",
+      "success": true,
+      "status": 200,
+      "responseTime": 653,
+      "request": {
+        "gstin": "27ABCDE1234F1Z5"
+      },
+      "response": {
+        "success": true,
+        "valid": true,
+        "gstin": "27ABCDE1234F1Z5",
+        "message": "GSTIN format is valid",
+        "details": null
+      },
+      "error": null
+    },
+    {
+      "method": "GET",
+      "endpoint": "/gst/rates",
+      "description": "Get GST Rates",
+      "timestamp": "2026-01-19T13:48:45.185Z",
+      "success": false,
+      "status": 500,
+      "responseTime": 47,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Failed to resolve tenant",
+        "error": "Cannot read properties of undefined (reading 'company_id')"
+      }
+    },
+    {
+      "method": "POST",
+      "endpoint": "/tds/calculate",
+      "description": "Calculate TDS",
+      "timestamp": "2026-01-19T13:48:45.249Z",
+      "success": false,
+      "status": 400,
+      "responseTime": 426,
+      "request": {
+        "amount": 10000,
+        "tds_section": "194C",
+        "pan_available": true
+      },
+      "response": null,
+      "error": {
+        "message": "voucher_id is required"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/tds",
+      "description": "List TDS Records",
+      "timestamp": "2026-01-19T13:48:45.678Z",
+      "success": false,
+      "status": 500,
+      "responseTime": 27,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Failed to resolve tenant",
+        "error": "Cannot read properties of undefined (reading 'company_id')"
+      }
+    },
+    {
+      "method": "POST",
+      "endpoint": "/support/tickets",
+      "description": "Create Support Ticket",
+      "timestamp": "2026-01-19T13:48:45.738Z",
+      "success": false,
+      "status": 400,
+      "responseTime": 23,
+      "request": {
+        "subject": "Test Support Ticket",
+        "description": "This is a test support ticket",
+        "priority": "medium",
+        "category": "technical",
+        "email": "test@finvera.com",
+        "name": "Test User"
+      },
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Validation error",
+        "errors": [
+          {
+            "field": "ticket_number",
+            "message": "SupportTicket.ticket_number cannot be null"
+          },
+          {
+            "field": "client_name",
+            "message": "SupportTicket.client_name cannot be null"
+          },
+          {
+            "field": "client_email",
+            "message": "SupportTicket.client_email cannot be null"
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/support/my-tickets",
+      "description": "Get My Support Tickets",
+      "timestamp": "2026-01-19T13:48:45.764Z",
+      "success": true,
+      "status": 200,
+      "responseTime": 41,
+      "request": null,
+      "response": {
+        "success": true,
+        "data": [],
+        "pagination": {
+          "page": 1,
+          "limit": 20,
+          "total": 0,
+          "totalPages": 0
+        }
+      },
+      "error": null
+    },
+    {
+      "method": "GET",
+      "endpoint": "/notifications?page=1&limit=20",
+      "description": "Get Notifications",
+      "timestamp": "2026-01-19T13:48:45.808Z",
+      "success": true,
+      "status": 200,
+      "responseTime": 35,
+      "request": null,
+      "response": {
+        "data": [],
+        "pagination": {
+          "total": 0,
+          "limit": 20,
+          "offset": 0
+        }
+      },
+      "error": null
+    },
+    {
+      "method": "GET",
+      "endpoint": "/notifications/unread-count",
+      "description": "Get Unread Notification Count",
+      "timestamp": "2026-01-19T13:48:45.848Z",
+      "success": true,
+      "status": 200,
+      "responseTime": 18,
+      "request": null,
+      "response": {
+        "count": 0
+      },
+      "error": null
+    },
+    {
+      "method": "GET",
+      "endpoint": "/notifications/preferences",
+      "description": "Get Notification Preferences",
+      "timestamp": "2026-01-19T13:48:45.867Z",
+      "success": true,
+      "status": 200,
+      "responseTime": 69,
+      "request": null,
+      "response": {
+        "data": {
+          "id": "7fa46880-3260-4000-a258-b36b31c43971",
+          "user_id": "e18a985e-4c56-4eb6-bbf7-eda4585ca2f8",
+          "in_app_enabled": true,
+          "email_enabled": true,
+          "desktop_enabled": true,
+          "sound_enabled": true,
+          "type_preferences": {},
+          "updated_at": "2026-01-19T13:48:45.918Z",
+          "created_at": "2026-01-19T13:48:45.918Z"
+        }
+      },
+      "error": null
+    },
+    {
+      "method": "GET",
+      "endpoint": "/subscriptions/current",
+      "description": "Get Current Subscription",
+      "timestamp": "2026-01-19T13:48:45.937Z",
+      "success": true,
+      "status": 200,
+      "responseTime": 65,
+      "request": null,
+      "response": {
+        "success": true,
+        "subscription": null
+      },
+      "error": null
+    },
+    {
+      "method": "GET",
+      "endpoint": "/subscriptions/payments/history",
+      "description": "Get Payment History",
+      "timestamp": "2026-01-19T13:48:46.002Z",
+      "success": true,
+      "status": 200,
+      "responseTime": 22,
+      "request": null,
+      "response": {
+        "success": true,
+        "payments": []
+      },
+      "error": null
+    },
+    {
+      "method": "GET",
+      "endpoint": "/pricing",
+      "description": "List Pricing Plans",
+      "timestamp": "2026-01-19T13:48:46.026Z",
+      "success": true,
+      "status": 200,
+      "responseTime": 46,
+      "request": null,
+      "response": {
+        "total": 2,
+        "page": 1,
+        "limit": 20,
+        "data": [
+          {
+            "id": "b33c96c3-b7e7-4da4-9f00-c6aa2d39eee8",
+            "plan_code": "FREE",
+            "plan_name": "Free",
+            "description": "Free tier",
+            "billing_cycle": "monthly",
+            "base_price": "0.00",
+            "discounted_price": null,
+            "currency": "INR",
+            "trial_days": 0,
+            "max_users": 1,
+            "max_invoices_per_month": 50,
+            "max_companies": 1,
+            "max_branches": 0,
+            "storage_limit_gb": null,
+            "features": "{\"gst_filing\":false,\"e_invoicing\":false}",
+            "salesman_commission_rate": null,
+            "distributor_commission_rate": null,
+            "renewal_commission_rate": null,
+            "is_active": true,
+            "is_visible": true,
+            "is_featured": false,
+            "display_order": null,
+            "valid_from": null,
+            "valid_until": null,
+            "createdAt": "2026-01-19T10:24:33.000Z",
+            "updatedAt": "2026-01-19T10:24:33.000Z"
+          },
+          {
+            "id": "3376c0d9-9eeb-43a8-a410-91b6127147bb",
+            "plan_code": "STARTER",
+            "plan_name": "Starter",
+            "description": "Starter plan",
+            "billing_cycle": "monthly",
+            "base_price": "999.00",
+            "discounted_price": null,
+            "currency": "INR",
+            "trial_days": 30,
+            "max_users": 3,
+            "max_invoices_per_month": 200,
+            "max_companies": 1,
+            "max_branches": 2,
+            "storage_limit_gb": null,
+            "features": "{\"gst_filing\":true,\"e_invoicing\":false}",
+            "salesman_commission_rate": "15.00",
+            "distributor_commission_rate": "5.00",
+            "renewal_commission_rate": null,
+            "is_active": true,
+            "is_visible": true,
+            "is_featured": false,
+            "display_order": null,
+            "valid_from": null,
+            "valid_until": null,
+            "createdAt": "2026-01-19T10:24:33.000Z",
+            "updatedAt": "2026-01-19T10:24:33.000Z"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "method": "GET",
+      "endpoint": "/pricing/1",
+      "description": "Get Pricing Plan by ID",
+      "timestamp": "2026-01-19T13:48:46.073Z",
+      "success": false,
+      "status": 404,
+      "responseTime": 14,
+      "request": null,
+      "response": null,
+      "error": {
+        "message": "Plan not found"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/search?q=test&type=all",
+      "description": "Global Search",
+      "timestamp": "2026-01-19T13:48:46.088Z",
+      "success": true,
+      "status": 200,
+      "responseTime": 29,
+      "request": null,
+      "response": {
+        "success": true,
+        "query": "test",
+        "results": [],
+        "summary": {
+          "ledgers": 0,
+          "vouchers": 0,
+          "inventory": 0,
+          "warehouses": 0,
+          "companies": 0,
+          "users": 0,
+          "tenants": 0,
+          "distributors": 0,
+          "salesmen": 0,
+          "support_tickets": 0
+        },
+        "total": 0
+      },
+      "error": null
+    },
+    {
+      "method": "GET",
+      "endpoint": "/hsn/search?q=mobile&limit=10",
+      "description": "Search HSN Codes",
+      "timestamp": "2026-01-19T13:48:46.117Z",
+      "success": false,
+      "status": 400,
+      "responseTime": 17,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "HSN API not configured. Please configure HSN API credentials in company settings.",
+        "configStatus": {
+          "applicable": false,
+          "hasApiKey": false,
+          "provider": null
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/hsn/8517",
+      "description": "Get HSN by Code",
+      "timestamp": "2026-01-19T13:48:46.150Z",
+      "success": false,
+      "status": 400,
+      "responseTime": 27,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "HSN API not configured. Please configure HSN API credentials in company settings.",
+        "configStatus": {
+          "applicable": false,
+          "hasApiKey": false,
+          "provider": null
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/einvoice",
+      "description": "List E-Invoices",
+      "timestamp": "2026-01-19T13:48:46.181Z",
+      "success": false,
+      "status": 500,
+      "responseTime": 20,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Failed to resolve tenant",
+        "error": "Cannot read properties of undefined (reading 'company_id')"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/ewaybill",
+      "description": "List E-Way Bills",
+      "timestamp": "2026-01-19T13:48:46.201Z",
+      "success": false,
+      "status": 500,
+      "responseTime": 21,
+      "request": null,
+      "response": null,
+      "error": {
+        "success": false,
+        "message": "Failed to resolve tenant",
+        "error": "Cannot read properties of undefined (reading 'company_id')"
+      }
+    }
+  ]
+}

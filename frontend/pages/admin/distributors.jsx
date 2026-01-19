@@ -8,6 +8,7 @@ import Modal from '../../components/ui/Modal';
 import Card from '../../components/ui/Card';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import FormInput from '../../components/forms/FormInput';
+import FormPasswordInput from '../../components/forms/FormPasswordInput';
 import FormSelect from '../../components/forms/FormSelect';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import Badge from '../../components/ui/Badge';

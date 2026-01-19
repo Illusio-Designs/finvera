@@ -8,6 +8,7 @@ import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import Stepper from '../../components/ui/Stepper';
 import FormInput from '../../components/forms/FormInput';
+import FormPasswordInput from '../../components/forms/FormPasswordInput';
 import { authAPI, adminAPI } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';

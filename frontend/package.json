@@ -16,6 +16,8 @@
     "electron:build": "cross-env ELECTRON_BUILD=true next build && electron-builder",
     "electron:build:mac": "cross-env ELECTRON_BUILD=true next build && electron-builder --mac",
     "electron:build:win": "cross-env ELECTRON_BUILD=true next build && electron-builder --win",
+    "electron:build:win:client": "cross-env ELECTRON_BUILD=true ELECTRON_CLIENT_ONLY=true next build && electron-builder --win",
+    "electron:build:client-only": "node scripts/build-client-only.js",
     "electron:build:all": "cross-env ELECTRON_BUILD=true next build && electron-builder --mac --win",
     "postinstall": "electron-builder install-app-deps"
   },
@@ -49,8 +51,8 @@
     "wait-on": "^7.2.0"
   },
   "build": {
-    "appId": "com.finvera.app",
-    "productName": "Finvera",
+    "appId": "com.finvera.client",
+    "productName": "Finvera Client",
     "directories": {
       "buildResources": "build",
       "output": "dist"
@@ -135,7 +137,12 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "installerHeaderIcon": "public/Fav Icon/Fav_Dark_PNG@4x.png",
+      "installerIcon": "public/Fav Icon/Fav_Dark_PNG@4x.png",
+      "uninstallerIcon": "public/Fav Icon/Fav_Dark_PNG@4x.png",
+      "artifactName": "Finvera-Client-Setup-${version}.${ext}",
+      "shortcutName": "Finvera Client"
     },
     "linux": {
       "target": [

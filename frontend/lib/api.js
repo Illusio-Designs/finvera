@@ -471,11 +471,25 @@ export const eWayBillAPI = {
 // GST API
 export const gstAPI = {
   // GSTIN Management
+  gstins: {
+    list: () => api.get("/gst/gstins"),
+    create: (data) => api.post("/gst/gstins", data),
+    update: (id, data) => api.put(`/gst/gstins/${id}`, data),
+    delete: (id) => api.delete(`/gst/gstins/${id}`),
+  },
+  
+  // GST Rates
+  rates: {
+    list: () => api.get("/gst/rates"),
+    create: (data) => api.post("/gst/rates", data),
+    update: (id, data) => api.put(`/gst/rates/${id}`, data),
+    delete: (id) => api.delete(`/gst/rates/${id}`),
+  },
+  
+  // Backward compatibility
   listGSTINs: () => api.get("/gst/gstins"),
   createGSTIN: (data) => api.post("/gst/gstins", data),
   updateGSTIN: (id, data) => api.put(`/gst/gstins/${id}`, data),
-  
-  // GST Rates
   getGSTRates: () => api.get("/gst/rates"),
   createGSTRate: (data) => api.post("/gst/rates", data),
   
@@ -600,3 +614,64 @@ export const branchAPI = {
 };
 
 export default api;
+
+// Admin API placeholders for client-only builds
+// These are not implemented in the client-only version
+export const adminAPI = {
+  distributors: {
+    list: () => Promise.resolve({ data: [] }),
+    create: () => Promise.resolve({}),
+    update: () => Promise.resolve({}),
+    delete: () => Promise.resolve({}),
+  },
+  commissionPayouts: {
+    list: () => Promise.resolve({ data: [] }),
+  },
+  referrals: {
+    list: () => Promise.resolve({ data: [] }),
+  },
+  payouts: {
+    list: () => Promise.resolve({ data: [] }),
+  },
+  salesmen: {
+    list: () => Promise.resolve({ data: [] }),
+    create: () => Promise.resolve({}),
+    update: () => Promise.resolve({}),
+    delete: () => Promise.resolve({}),
+  },
+  support: {
+    list: () => Promise.resolve({ data: [] }),
+  },
+  targets: {
+    list: () => Promise.resolve({ data: [] }),
+    create: () => Promise.resolve({}),
+    update: () => Promise.resolve({}),
+    delete: () => Promise.resolve({}),
+  },
+  tenants: {
+    list: () => Promise.resolve({ data: [] }),
+    create: () => Promise.resolve({}),
+    update: () => Promise.resolve({}),
+    delete: () => Promise.resolve({}),
+  },
+  users: {
+    list: () => Promise.resolve({ data: [] }),
+  },
+  dashboard: {
+    getStats: () => Promise.resolve({ data: {} }),
+  },
+};
+
+export const blogAPI = {
+  list: () => Promise.resolve({ data: [] }),
+  create: () => Promise.resolve({}),
+  update: () => Promise.resolve({}),
+  delete: () => Promise.resolve({}),
+};
+
+export const seoAPI = {
+  list: () => Promise.resolve({ data: [] }),
+  create: () => Promise.resolve({}),
+  update: () => Promise.resolve({}),
+  delete: () => Promise.resolve({}),
+};
