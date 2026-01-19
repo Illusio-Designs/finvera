@@ -11,7 +11,12 @@ async function getMasterGroupId(masterModels, groupCode) {
   return group.id;
 }
 
-async function getOrCreateSystemLedger({ tenantModels, masterModels }, { ledgerCode, ledgerName, groupCode }) {
+async function getOrCreateSystemLedger({ tenantModels, masterModels, tenant_id }, { ledgerCode, ledgerName, groupCode }) {
+  // Ensure tenant_id is available
+  if (!tenant_id) {
+    throw new Error('tenant_id is required for creating system ledgers');
+  }
+
   const existing =
     (ledgerCode ? await tenantModels.Ledger.findOne({ where: { ledger_code: ledgerCode } }) : null) ||
     (ledgerName ? await tenantModels.Ledger.findOne({ where: { ledger_name: ledgerName } }) : null);
@@ -27,12 +32,13 @@ async function getOrCreateSystemLedger({ tenantModels, masterModels }, { ledgerC
     opening_balance_type: 'Dr',
     balance_type: 'debit',
     is_active: true,
+    tenant_id: tenant_id, // Ensure tenant_id is set
   });
 }
 
 class VoucherService {
   async createSalesInvoice(ctx, invoiceData) {
-    const { tenantModels, masterModels, company } = ctx;
+    const { tenantModels, masterModels, company, tenant_id } = ctx;
     const { party_ledger_id, items = [], place_of_supply, is_reverse_charge = false, narration } = invoiceData || {};
 
     const partyLedger = await tenantModels.Ledger.findByPk(party_ledger_id);
@@ -92,7 +98,7 @@ class VoucherService {
     const roundOffAmount = roundedTotal - grandTotal;
 
     const salesLedger = await getOrCreateSystemLedger(
-      { tenantModels, masterModels },
+      { tenantModels, masterModels, tenant_id },
       { ledgerCode: 'SALES', ledgerName: 'Sales', groupCode: 'SAL' }
     );
 
@@ -113,21 +119,21 @@ class VoucherService {
 
     if (totalCGST > 0) {
       const cgst = await getOrCreateSystemLedger(
-        { tenantModels, masterModels },
+        { tenantModels, masterModels, tenant_id },
         { ledgerCode: 'CGST_OUTPUT', ledgerName: 'GST Output - CGST', groupCode: 'DT' }
       );
       ledgerEntries.push({ ledger_id: cgst.id, debit_amount: 0, credit_amount: totalCGST, narration: 'CGST Output' });
     }
     if (totalSGST > 0) {
       const sgst = await getOrCreateSystemLedger(
-        { tenantModels, masterModels },
+        { tenantModels, masterModels, tenant_id },
         { ledgerCode: 'SGST_OUTPUT', ledgerName: 'GST Output - SGST', groupCode: 'DT' }
       );
       ledgerEntries.push({ ledger_id: sgst.id, debit_amount: 0, credit_amount: totalSGST, narration: 'SGST Output' });
     }
     if (totalIGST > 0) {
       const igst = await getOrCreateSystemLedger(
-        { tenantModels, masterModels },
+        { tenantModels, masterModels, tenant_id },
         { ledgerCode: 'IGST_OUTPUT', ledgerName: 'GST Output - IGST', groupCode: 'DT' }
       );
       ledgerEntries.push({ ledger_id: igst.id, debit_amount: 0, credit_amount: totalIGST, narration: 'IGST Output' });
@@ -136,7 +142,7 @@ class VoucherService {
     // Default round-off handling (computed always; posted only if non-zero)
     if (Math.abs(roundOffAmount) > 0.000001) {
       const roundOffLedger = await getOrCreateSystemLedger(
-        { tenantModels, masterModels },
+        { tenantModels, masterModels, tenant_id },
         { ledgerCode: 'ROUND_OFF', ledgerName: 'Round Off', groupCode: 'IND_EXP' }
       );
       ledgerEntries.push({
@@ -163,7 +169,7 @@ class VoucherService {
   }
 
   async createPurchaseInvoice(ctx, invoiceData) {
-    const { tenantModels, masterModels, company } = ctx;
+    const { tenantModels, masterModels, company, tenant_id } = ctx;
     const { party_ledger_id, items = [], place_of_supply, is_reverse_charge = false, narration } = invoiceData || {};
 
     const partyLedger = await tenantModels.Ledger.findByPk(party_ledger_id);
@@ -225,7 +231,7 @@ class VoucherService {
 
     // Perpetual inventory: debit inventory for taxable subtotal.
     const inventoryLedger = await getOrCreateSystemLedger(
-      { tenantModels, masterModels },
+      { tenantModels, masterModels, tenant_id },
       { ledgerCode: 'INVENTORY', ledgerName: 'Stock-in-Hand', groupCode: 'INV' }
     );
 
@@ -241,14 +247,14 @@ class VoucherService {
       if (totalCGST > 0) {
         // RCM Output (liability)
         const cgstRcmOutput = await getOrCreateSystemLedger(
-          { tenantModels, masterModels },
+          { tenantModels, masterModels, tenant_id },
           { ledgerCode: 'CGST_RCM_OUTPUT', ledgerName: 'GST RCM Output - CGST', groupCode: 'DT' }
         );
         ledgerEntries.push({ ledger_id: cgstRcmOutput.id, debit_amount: 0, credit_amount: totalCGST, narration: 'CGST RCM Output' });
         
         // RCM Input (asset/ITC)
         const cgstRcmInput = await getOrCreateSystemLedger(
-          { tenantModels, masterModels },
+          { tenantModels, masterModels, tenant_id },
           { ledgerCode: 'CGST_RCM_INPUT', ledgerName: 'GST RCM Input - CGST', groupCode: 'CA' }
         );
         ledgerEntries.push({ ledger_id: cgstRcmInput.id, debit_amount: totalCGST, credit_amount: 0, narration: 'CGST RCM Input' });
@@ -256,14 +262,14 @@ class VoucherService {
       if (totalSGST > 0) {
         // RCM Output (liability)
         const sgstRcmOutput = await getOrCreateSystemLedger(
-          { tenantModels, masterModels },
+          { tenantModels, masterModels, tenant_id },
           { ledgerCode: 'SGST_RCM_OUTPUT', ledgerName: 'GST RCM Output - SGST', groupCode: 'DT' }
         );
         ledgerEntries.push({ ledger_id: sgstRcmOutput.id, debit_amount: 0, credit_amount: totalSGST, narration: 'SGST RCM Output' });
         
         // RCM Input (asset/ITC)
         const sgstRcmInput = await getOrCreateSystemLedger(
-          { tenantModels, masterModels },
+          { tenantModels, masterModels, tenant_id },
           { ledgerCode: 'SGST_RCM_INPUT', ledgerName: 'GST RCM Input - SGST', groupCode: 'CA' }
         );
         ledgerEntries.push({ ledger_id: sgstRcmInput.id, debit_amount: totalSGST, credit_amount: 0, narration: 'SGST RCM Input' });
@@ -271,14 +277,14 @@ class VoucherService {
       if (totalIGST > 0) {
         // RCM Output (liability)
         const igstRcmOutput = await getOrCreateSystemLedger(
-          { tenantModels, masterModels },
+          { tenantModels, masterModels, tenant_id },
           { ledgerCode: 'IGST_RCM_OUTPUT', ledgerName: 'GST RCM Output - IGST', groupCode: 'DT' }
         );
         ledgerEntries.push({ ledger_id: igstRcmOutput.id, debit_amount: 0, credit_amount: totalIGST, narration: 'IGST RCM Output' });
         
         // RCM Input (asset/ITC)
         const igstRcmInput = await getOrCreateSystemLedger(
-          { tenantModels, masterModels },
+          { tenantModels, masterModels, tenant_id },
           { ledgerCode: 'IGST_RCM_INPUT', ledgerName: 'GST RCM Input - IGST', groupCode: 'CA' }
         );
         ledgerEntries.push({ ledger_id: igstRcmInput.id, debit_amount: totalIGST, credit_amount: 0, narration: 'IGST RCM Input' });
@@ -287,21 +293,21 @@ class VoucherService {
       // Normal GST Input ledgers (asset/ITC) - only when NOT reverse charge
       if (totalCGST > 0) {
         const cgst = await getOrCreateSystemLedger(
-          { tenantModels, masterModels },
+          { tenantModels, masterModels, tenant_id },
           { ledgerCode: 'CGST_INPUT', ledgerName: 'GST Input - CGST', groupCode: 'CA' }
         );
         ledgerEntries.push({ ledger_id: cgst.id, debit_amount: totalCGST, credit_amount: 0, narration: 'CGST Input' });
       }
       if (totalSGST > 0) {
         const sgst = await getOrCreateSystemLedger(
-          { tenantModels, masterModels },
+          { tenantModels, masterModels, tenant_id },
           { ledgerCode: 'SGST_INPUT', ledgerName: 'GST Input - SGST', groupCode: 'CA' }
         );
         ledgerEntries.push({ ledger_id: sgst.id, debit_amount: totalSGST, credit_amount: 0, narration: 'SGST Input' });
       }
       if (totalIGST > 0) {
         const igst = await getOrCreateSystemLedger(
-          { tenantModels, masterModels },
+          { tenantModels, masterModels, tenant_id },
           { ledgerCode: 'IGST_INPUT', ledgerName: 'GST Input - IGST', groupCode: 'CA' }
         );
         ledgerEntries.push({ ledger_id: igst.id, debit_amount: totalIGST, credit_amount: 0, narration: 'IGST Input' });
@@ -318,7 +324,7 @@ class VoucherService {
 
     if (Math.abs(roundOffAmount) > 0.000001) {
       const roundOffLedger = await getOrCreateSystemLedger(
-        { tenantModels, masterModels },
+        { tenantModels, masterModels, tenant_id },
         { ledgerCode: 'ROUND_OFF', ledgerName: 'Round Off', groupCode: 'IND_EXP' }
       );
       ledgerEntries.push({

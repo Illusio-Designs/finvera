@@ -156,7 +156,8 @@ export const accountingAPI = {
     get: (id) => api.get(`/accounting/ledgers/${id}`),
     update: (id, data) => api.put(`/accounting/ledgers/${id}`, data),
     delete: (id) => api.delete(`/accounting/ledgers/${id}`),
-    getBalance: (id) => api.get(`/accounting/ledgers/${id}/balance`),
+    getBalance: (id, params) => api.get(`/accounting/ledgers/${id}/balance`, { params }),
+    getStatement: (id, params) => api.get(`/accounting/ledgers/${id}/statement`, { params }),
   },
   
   // Voucher Types
@@ -175,7 +176,33 @@ export const accountingAPI = {
     cancel: (id) => api.post(`/accounting/vouchers/${id}/cancel`),
   },
   
-  // Transactions
+  // Invoices
+  invoices: {
+    createSales: (data) => api.post("/accounting/invoices/sales", data),
+    createPurchase: (data) => api.post("/accounting/invoices/purchase", data),
+  },
+  
+  // Payments
+  payments: {
+    create: (data) => api.post("/accounting/payments", data),
+  },
+  
+  // Receipts
+  receipts: {
+    create: (data) => api.post("/accounting/receipts", data),
+  },
+  
+  // Journals
+  journals: {
+    create: (data) => api.post("/accounting/journals", data),
+  },
+  
+  // Contra
+  contra: {
+    create: (data) => api.post("/accounting/contra", data),
+  },
+  
+  // Transactions (alias for backward compatibility)
   transactions: {
     createSalesInvoice: (data) => api.post("/accounting/invoices/sales", data),
     createPurchaseInvoice: (data) => api.post("/accounting/invoices/purchase", data),
@@ -187,18 +214,23 @@ export const accountingAPI = {
   
   // Inventory
   inventory: {
-    list: (params) => api.get("/accounting/inventory/items", { params }),
-    create: (data) => api.post("/accounting/inventory/items", data),
-    get: (id) => api.get(`/accounting/inventory/items/${id}`),
-    update: (id, data) => api.put(`/accounting/inventory/items/${id}`, data),
-    delete: (id) => api.delete(`/accounting/inventory/items/${id}`),
-    generateBarcode: (id) => api.post(`/accounting/inventory/items/${id}/generate-barcode`),
-    bulkGenerateBarcodes: (data) => api.post("/accounting/inventory/items/bulk-generate-barcodes", data),
+    items: {
+      list: (params) => api.get("/accounting/inventory/items", { params }),
+      create: (data) => api.post("/accounting/inventory/items", data),
+      get: (id) => api.get(`/accounting/inventory/items/${id}`),
+      update: (id, data) => api.put(`/accounting/inventory/items/${id}`, data),
+      delete: (id) => api.delete(`/accounting/inventory/items/${id}`),
+      generateBarcode: (id) => api.post(`/accounting/inventory/items/${id}/generate-barcode`),
+      bulkGenerateBarcodes: (data) => api.post("/accounting/inventory/items/bulk-generate-barcodes", data),
+      getWarehouseStock: (id, params) => api.get(`/accounting/inventory/items/${id}/warehouse-stock`, { params }),
+      setOpeningStock: (id, data) => api.post(`/accounting/inventory/items/${id}/opening-stock`, data),
+    },
   },
   
   // Warehouses
   warehouses: {
     list: (params) => api.get("/accounting/warehouses", { params }),
+    getAll: (params) => api.get("/accounting/warehouses", { params }),
     create: (data) => api.post("/accounting/warehouses", data),
     get: (id) => api.get(`/accounting/warehouses/${id}`),
     update: (id, data) => api.put(`/accounting/warehouses/${id}`, data),
@@ -220,9 +252,18 @@ export const accountingAPI = {
   // Tally Import
   tallyImport: {
     getTemplate: () => api.get("/accounting/tally-import/template"),
-    import: (formData) => api.post("/accounting/tally-import", formData, {
-      headers: { "Content-Type": "multipart/form-data" }
-    }),
+    import: (formData, onProgress) => {
+      const config = {
+        headers: { "Content-Type": "multipart/form-data" }
+      };
+      if (onProgress) {
+        config.onUploadProgress = (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(percentCompleted);
+        };
+      }
+      return api.post("/accounting/tally-import", formData, config);
+    },
   },
   
   // Outstanding Bills
@@ -255,18 +296,6 @@ export const accountingAPI = {
   createReceipt: (data) => api.post("/accounting/receipts", data),
   createJournal: (data) => api.post("/accounting/journals", data),
   createContra: (data) => api.post("/accounting/contra", data),
-  getInventoryItems: (params) => api.get("/accounting/inventory/items", { params }),
-  createInventoryItem: (data) => api.post("/accounting/inventory/items", data),
-  getInventoryItem: (id) => api.get(`/accounting/inventory/items/${id}`),
-  updateInventoryItem: (id, data) => api.put(`/accounting/inventory/items/${id}`, data),
-  deleteInventoryItem: (id) => api.delete(`/accounting/inventory/items/${id}`),
-  generateBarcode: (id) => api.post(`/accounting/inventory/items/${id}/generate-barcode`),
-  bulkGenerateBarcodes: (data) => api.post("/accounting/inventory/items/bulk-generate-barcodes", data),
-  getWarehouses: () => api.get("/accounting/warehouses"),
-  createWarehouse: (data) => api.post("/accounting/warehouses", data),
-  getWarehouse: (id) => api.get(`/accounting/warehouses/${id}`),
-  updateWarehouse: (id, data) => api.put(`/accounting/warehouses/${id}`, data),
-  deleteWarehouse: (id) => api.delete(`/accounting/warehouses/${id}`),
   getStockAdjustments: (params) => api.get("/accounting/stock-adjustments", { params }),
   createStockAdjustment: (data) => api.post("/accounting/stock-adjustments", data),
   getStockTransfers: (params) => api.get("/accounting/stock-transfers", { params }),
@@ -293,15 +322,17 @@ export const reviewAPI = {
   getPublicReviews: (params) => api.get("/reviews/public", { params }),
   getPublic: (params) => api.get("/reviews/public", { params }), // Alias for backward compatibility
   submitReview: (data) => api.post("/reviews", data),
+  submit: (data) => api.post("/reviews", data), // Alias
   getMyReview: () => api.get("/reviews/my"),
+  getMy: () => api.get("/reviews/my"), // Alias
   updateReview: (id, data) => api.put(`/reviews/my/${id}`, data),
+  update: (id, data) => api.put(`/reviews/my/${id}`, data), // Alias
   getAllReviews: (params) => api.get("/reviews", { params }),
   approveReview: (id) => api.put(`/reviews/${id}/approve`),
   deleteReview: (id) => api.delete(`/reviews/${id}`),
   // Backward compatibility
   list: (params) => api.get("/reviews", { params }),
   create: (data) => api.post("/reviews", data),
-  update: (id, data) => api.put(`/reviews/${id}`, data),
   delete: (id) => api.delete(`/reviews/${id}`),
 };
 
@@ -310,7 +341,7 @@ export const tdsAPI = {
   list: () => api.get("/tds"),
   calculateTDS: (data) => api.post("/tds/calculate", data),
   generateReturn: (data) => api.post("/tds/return", data),
-  getReturnStatus: (returnId) => api.get(`/tds/return/${returnId}/status`),
+  getReturnStatus: (returnId, formType) => api.get(`/tds/return/${returnId}/status`, { params: { form_type: formType } }),
   generateCertificate: (id) => api.get(`/tds/certificate/${id}`),
   // Backward compatibility
   getSections: () => api.get("/tds/sections"),
@@ -389,13 +420,20 @@ export const referralAPI = {
 
 // Reports API
 export const reportsAPI = {
+  trialBalance: (params) => api.get("/reports/trial-balance", { params }),
+  balanceSheet: (params) => api.get("/reports/balance-sheet", { params }),
+  profitLoss: (params) => api.get("/reports/profit-loss", { params }),
+  ledgerStatement: (params) => api.get("/reports/ledger-statement", { params }),
+  stockSummary: (params) => api.get("/reports/stock-summary", { params }),
+  stockLedger: (params) => api.get("/reports/stock-ledger", { params }),
+  
+  // Backward compatibility
   getTrialBalance: (params) => api.get("/reports/trial-balance", { params }),
   getBalanceSheet: (params) => api.get("/reports/balance-sheet", { params }),
   getProfitLoss: (params) => api.get("/reports/profit-loss", { params }),
   getLedgerStatement: (params) => api.get("/reports/ledger-statement", { params }),
   getStockSummary: (params) => api.get("/reports/stock-summary", { params }),
   getStockLedger: (params) => api.get("/reports/stock-ledger", { params }),
-  // Backward compatibility
   getCashFlow: (params) => api.get("/reports/cash-flow", { params }),
   getLedgerReport: (params) => api.get("/reports/ledger", { params }),
   getGSTReport: (params) => api.get("/reports/gst", { params }),
@@ -409,12 +447,12 @@ export const reportsAPI = {
 // E-Invoice API
 export const eInvoiceAPI = {
   list: () => api.get("/einvoice"),
-  generateIRN: (data) => api.post("/einvoice/generate", data),
+  generate: (data) => api.post("/einvoice/generate", data),
+  get: (voucherId) => api.get(`/einvoice/voucher/${voucherId}`),
   getByVoucher: (voucherId) => api.get(`/einvoice/voucher/${voucherId}`),
-  cancelIRN: (voucherId) => api.post(`/einvoice/cancel/${voucherId}`),
-  // Backward compatibility
-  generate: (voucherId) => api.post(`/einvoice/generate/${voucherId}`),
   cancel: (voucherId) => api.post(`/einvoice/cancel/${voucherId}`),
+  cancelIRN: (voucherId) => api.post(`/einvoice/cancel/${voucherId}`),
+  generateIRN: (data) => api.post("/einvoice/generate", data),
   getStatus: (voucherId) => api.get(`/einvoice/status/${voucherId}`),
   downloadPDF: (voucherId) => api.get(`/einvoice/pdf/${voucherId}`, { responseType: 'blob' }),
 };
@@ -423,9 +461,9 @@ export const eInvoiceAPI = {
 export const eWayBillAPI = {
   list: () => api.get("/ewaybill"),
   generate: (data) => api.post("/ewaybill/generate", data),
+  get: (voucherId) => api.get(`/ewaybill/voucher/${voucherId}`),
   getByVoucher: (voucherId) => api.get(`/ewaybill/voucher/${voucherId}`),
   cancel: (voucherId) => api.post(`/ewaybill/cancel/${voucherId}`),
-  // Backward compatibility
   getStatus: (voucherId) => api.get(`/ewaybill/status/${voucherId}`),
   updateVehicle: (voucherId, data) => api.post(`/ewaybill/update-vehicle/${voucherId}`, data),
 };

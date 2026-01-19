@@ -13,6 +13,7 @@ import FormSelect from '../../components/forms/FormSelect';
 import FormDatePicker from '../../components/forms/FormDatePicker';
 import FormTextarea from '../../components/forms/FormTextarea';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import CreateSupplierModal from '../../components/modals/CreateSupplierModal';
 import { useTable } from '../../hooks/useTable';
 import { accountingAPI, reportsAPI, companyAPI } from '../../lib/api';
 import Badge from '../../components/ui/Badge';
@@ -35,6 +36,7 @@ export default function LedgersList() {
   const [showStatement, setShowStatement] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [selectedLedgerId, setSelectedLedgerId] = useState(null);
+  const [showCreateSupplierModal, setShowCreateSupplierModal] = useState(false);
   const [statementDateRange, setStatementDateRange] = useState({
     from_date: getStartOfMonth(),
     to_date: getEndOfMonth(),
@@ -345,6 +347,19 @@ export default function LedgersList() {
     setShowDetail(false);
     setSelectedLedgerId(null);
     router.push('/client/ledgers', undefined, { shallow: true });
+  };
+
+  // Handle supplier creation
+  const handleSupplierCreated = async (newSupplier) => {
+    try {
+      // Refresh the ledgers list
+      await fetchData();
+      
+      toast.success('Supplier created successfully');
+    } catch (error) {
+      console.error('Error refreshing ledgers:', error);
+      toast.error('Supplier created but failed to refresh list');
+    }
   };
 
   const handleCloseStatement = () => {
@@ -749,16 +764,26 @@ export default function LedgersList() {
             { label: 'Ledgers', href: '/client/ledgers' },
           ]}
           actions={
-            <Button
-              onClick={() => {
-                setShowForm(true);
-                setEditingId(null);
-                resetForm();
-              }}
-            >
-              <FiPlus className="h-4 w-4 mr-2" />
-              New Ledger
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setShowCreateSupplierModal(true)}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <FiPlus className="h-4 w-4" />
+                Create Supplier
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowForm(true);
+                  setEditingId(null);
+                  resetForm();
+                }}
+              >
+                <FiPlus className="h-4 w-4" />
+                New Ledger
+              </Button>
+            </div>
           }
         >
           {/* Create/Edit Modal */}
@@ -1642,6 +1667,13 @@ export default function LedgersList() {
             />
           </Card>
           </div>
+
+          {/* Create Supplier Modal */}
+          <CreateSupplierModal
+            isOpen={showCreateSupplierModal}
+            onClose={() => setShowCreateSupplierModal(false)}
+            onSupplierCreated={handleSupplierCreated}
+          />
         </PageLayout>
       </ClientLayout>
     </ProtectedRoute>

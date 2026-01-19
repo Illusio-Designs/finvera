@@ -8,7 +8,7 @@ import {
   FiHome, FiFolder, FiFileText, FiTrendingUp, FiTrendingDown,
   FiDollarSign, FiCreditCard, FiRefreshCw, FiFile, FiBarChart2,
   FiShield, FiPercent, FiFileMinus, FiFilePlus, FiMail, FiSettings, FiUser, FiGift,
-  FiPackage, FiLayers, FiMove, FiEdit, FiHeadphones, FiUpload, FiStar
+  FiPackage, FiLayers, FiMove, FiEdit, FiHeadphones, FiUpload, FiStar, FiTag
 } from 'react-icons/fi';
 
 const getClientMenuItems = () => [
@@ -42,6 +42,7 @@ const getClientMenuItems = () => [
     children: [
       { label: 'Items', href: '/client/inventory', icon: FiPackage },
       { label: 'Warehouses', href: '/client/warehouses', icon: FiLayers },
+      { label: 'Product Attributes', href: '/client/attributes', icon: FiTag },
       { label: 'Stock Adjustment', href: '/client/inventory-adjustment', icon: FiEdit },
       { label: 'Stock Transfer', href: '/client/inventory-transfer', icon: FiMove },
     ],

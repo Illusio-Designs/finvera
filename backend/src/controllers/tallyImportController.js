@@ -119,6 +119,7 @@ module.exports = {
                 email: ledger.email,
                 contact_number: ledger.phone,
                 is_default: ledger.isDefault || false,
+                tenant_id: req.tenant_id || req.tenant?.id || req.company?.tenant_id, // Ensure tenant_id is set
               });
               importResult.ledgers.imported++;
             } else {

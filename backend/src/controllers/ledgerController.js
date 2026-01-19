@@ -109,6 +109,15 @@ module.exports = {
 
   async create(req, res, next) {
     try {
+      // Debug logging
+      logger.info('Ledger create request:', {
+        tenant_id: req.tenant_id,
+        tenant: req.tenant?.id,
+        company_tenant_id: req.company?.tenant_id,
+        user_id: req.user_id,
+        body_keys: Object.keys(req.body)
+      });
+
       // Run migration automatically if needed (adds missing columns)
       // This ensures the database has all required columns
       await runLedgerMigration(req.tenantDb);
@@ -221,6 +230,7 @@ module.exports = {
         country: country || null,
         phone: phone || null,
         email: email || null,
+        tenant_id: req.tenant_id, // Add tenant_id from middleware
       };
       
       // Store shipping_locations and dynamic fields in additional_fields JSON column
@@ -238,9 +248,19 @@ module.exports = {
         }
       });
 
+      // Ensure tenant_id is set - get from multiple sources
+      const tenantId = req.tenant_id || req.tenant?.id || req.company?.tenant_id;
+      if (!tenantId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tenant ID is required but not found in request context',
+        });
+      }
+
       // Create ledger with all fields (migration should have added missing columns)
       const ledger = await req.tenantModels.Ledger.create({
         ...standardFields,
+        tenant_id: tenantId, // Ensure tenant_id is explicitly set
         additional_fields: Object.keys(additionalFields).length > 0 ? additionalFields : null,
       });
 

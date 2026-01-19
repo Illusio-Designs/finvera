@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
-import FormSelect from '../forms/FormSelect';
-import FormInput from '../forms/FormInput';
-import { FiBarcode, FiCheck } from 'react-icons/fi';
+import { FiHash, FiCheck } from 'react-icons/fi';
 
 export default function BarcodeGenerationModal({ 
   isOpen, 
@@ -46,7 +44,7 @@ export default function BarcodeGenerationModal({
       <div className="space-y-4">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
-            <FiBarcode className="h-5 w-5 text-blue-600 mt-0.5" />
+            <FiHash className="h-5 w-5 text-blue-600 mt-0.5" />
             <div>
               <h4 className="font-medium text-blue-900 mb-1">
                 Barcode Generation
@@ -61,25 +59,41 @@ export default function BarcodeGenerationModal({
           </div>
         </div>
 
-        <FormSelect
-          name="barcode_type"
-          label="Barcode Type"
-          value={barcodeType}
-          onChange={(name, value) => setBarcodeType(value)}
-          options={barcodeTypeOptions}
-          required
-        />
+        {/* Barcode Type Selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Barcode Type
+          </label>
+          <select
+            value={barcodeType}
+            onChange={(e) => setBarcodeType(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            {barcodeTypeOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
+        {/* Barcode Prefix Input (only for CUSTOM type) */}
         {barcodeType === 'CUSTOM' && (
-          <FormInput
-            name="barcode_prefix"
-            label="Barcode Prefix"
-            value={barcodePrefix}
-            onChange={(name, value) => setBarcodePrefix(value)}
-            placeholder="PRD"
-            helperText="Prefix for custom sequential barcodes (e.g., PRD, ITEM, SKU)"
-            required
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Barcode Prefix
+            </label>
+            <input
+              type="text"
+              value={barcodePrefix}
+              onChange={(e) => setBarcodePrefix(e.target.value)}
+              placeholder="PRD"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            <p className="mt-1 text-sm text-gray-500">
+              Prefix for custom sequential barcodes (e.g., PRD, ITEM, SKU)
+            </p>
+          </div>
         )}
 
         <div className="bg-gray-50 rounded-lg p-4 space-y-2">

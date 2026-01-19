@@ -99,7 +99,7 @@ const AttributesPage = () => {
                 </div>
 
                 <div className="mb-2">
-                  {attr.ProductAttributeValues && attr.ProductAttributeValues.map((val) => (
+                  {attr.values && attr.values.map((val) => (
                     <div
                       key={val.id}
                       className="flex items-center justify-between bg-gray-100 rounded-md px-2 py-1 mb-1"

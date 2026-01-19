@@ -7,9 +7,18 @@ module.exports = {
    */
   async createSalesInvoice(req, res, next) {
     try {
+      // Ensure tenant_id is available
+      const tenantId = req.tenant_id || req.tenant?.id || req.company?.tenant_id;
+      if (!tenantId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tenant ID is required but not found in request context',
+        });
+      }
+
       // Calculate invoice totals and ledger entries using service
       const invoiceData = await voucherService.createSalesInvoice(
-        { tenantModels: req.tenantModels, masterModels: req.masterModels, company: req.company },
+        { tenantModels: req.tenantModels, masterModels: req.masterModels, company: req.company, tenant_id: tenantId },
         req.body
       );
 
@@ -38,8 +47,17 @@ module.exports = {
    */
   async createPurchaseInvoice(req, res, next) {
     try {
+      // Ensure tenant_id is available
+      const tenantId = req.tenant_id || req.tenant?.id || req.company?.tenant_id;
+      if (!tenantId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tenant ID is required but not found in request context',
+        });
+      }
+
       const invoiceData = await voucherService.createPurchaseInvoice(
-        { tenantModels: req.tenantModels, masterModels: req.masterModels, company: req.company },
+        { tenantModels: req.tenantModels, masterModels: req.masterModels, company: req.company, tenant_id: tenantId },
         req.body
       );
 
