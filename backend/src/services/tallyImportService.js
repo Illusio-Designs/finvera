@@ -109,12 +109,28 @@ class TallyImportService {
         mergeAttrs: true,
         trim: true,
         normalize: true,
-        explicitRoot: false,
+        explicitRoot: true,  // Changed to true to preserve root element
         ignoreAttrs: false,
         charkey: '_',
         attrkey: '$'
       });
       const result = await parser.parseStringPromise(xmlData);
+      
+      // Add debugging for XML structure
+      logger.info('XML parsing completed');
+      logger.info('Root keys:', Object.keys(result));
+      if (result.ENVELOPE) {
+        logger.info('ENVELOPE keys:', Object.keys(result.ENVELOPE));
+        if (result.ENVELOPE.BODY) {
+          logger.info('BODY keys:', Object.keys(result.ENVELOPE.BODY));
+          if (result.ENVELOPE.BODY.IMPORTDATA) {
+            logger.info('IMPORTDATA keys:', Object.keys(result.ENVELOPE.BODY.IMPORTDATA));
+            if (result.ENVELOPE.BODY.IMPORTDATA.REQUESTDATA) {
+              logger.info('REQUESTDATA keys:', Object.keys(result.ENVELOPE.BODY.IMPORTDATA.REQUESTDATA));
+            }
+          }
+        }
+      }
       
       const data = {
         groups: [],
@@ -127,90 +143,101 @@ class TallyImportService {
       // Parse Tally XML structure
       const tallyData = result.ENVELOPE?.BODY?.IMPORTDATA?.REQUESTDATA || {};
       
-      // Extract Groups
-      if (tallyData.TALLYMESSAGE?.GROUP) {
-        const groups = Array.isArray(tallyData.TALLYMESSAGE.GROUP) 
-          ? tallyData.TALLYMESSAGE.GROUP 
-          : [tallyData.TALLYMESSAGE.GROUP];
-        
-        for (const group of groups) {
-          data.groups.push({
-            name: group.$.NAME || group.NAME,
-            parent: group.PARENT || null,
-            nature: this.mapTallyNatureToFinvera(group.$.NAME || group.NAME),
-          });
-        }
+      // Handle TALLYMESSAGE as array or single object
+      let tallyMessages = [];
+      if (tallyData.TALLYMESSAGE) {
+        tallyMessages = Array.isArray(tallyData.TALLYMESSAGE) 
+          ? tallyData.TALLYMESSAGE 
+          : [tallyData.TALLYMESSAGE];
+        logger.info(`Found ${tallyMessages.length} TALLYMESSAGE elements`);
+      } else {
+        logger.warn('No TALLYMESSAGE found in XML');
       }
-
-      // Extract Ledgers
-      if (tallyData.TALLYMESSAGE?.LEDGER) {
-        const ledgers = Array.isArray(tallyData.TALLYMESSAGE.LEDGER)
-          ? tallyData.TALLYMESSAGE.LEDGER
-          : [tallyData.TALLYMESSAGE.LEDGER];
+      
+      // Extract Groups and Ledgers from TALLYMESSAGE array
+      for (const message of tallyMessages) {
+        // Extract Groups
+        if (message.GROUP) {
+          const groups = Array.isArray(message.GROUP) ? message.GROUP : [message.GROUP];
+          for (const group of groups) {
+            const groupName = group.NAME || group.$ || (group.$ && group.$.NAME);
+            data.groups.push({
+              name: groupName,
+              parent: group.PARENT || null,
+              nature: this.mapTallyNatureToFinvera(groupName),
+            });
+          }
+        }
         
-        for (const ledger of ledgers) {
-          const openingBalance = ledger.OPENINGBALANCE || '0';
-          data.ledgers.push({
-            name: ledger.$.NAME || ledger.NAME,
-            group: ledger.PARENT || ledger.GROUP,
-            address: ledger.ADDRESS || null,
-            state: ledger.STATE || null,
-            pincode: ledger.PINCODE || null,
-            gstin: ledger.GSTIN || null,
-            pan: ledger.PAN || null,
-            email: ledger.EMAIL || null,
-            phone: ledger.PHONE || null,
-            openingBalance: this.parseTallyAmount(openingBalance),
-            isDefault: ledger.$.NAME === 'Cash' || ledger.$.NAME === 'Bank',
-          });
-          
-          // Track opening balances separately
-          if (openingBalance && openingBalance !== '0') {
-            data.openingBalances.push({
-              ledgerName: ledger.$.NAME || ledger.NAME,
-              amount: this.parseTallyAmount(openingBalance),
-              type: this.parseTallyAmount(openingBalance) >= 0 ? 'debit' : 'credit',
+        // Extract Ledgers
+        if (message.LEDGER) {
+          const ledgers = Array.isArray(message.LEDGER) ? message.LEDGER : [message.LEDGER];
+          for (const ledger of ledgers) {
+            const ledgerName = ledger.NAME || (ledger.$ && ledger.$.NAME);
+            const ledgerParent = ledger.PARENT || ledger.GROUP;
+            
+            const openingBalance = ledger.OPENINGBALANCE || '0';
+            data.ledgers.push({
+              name: ledgerName,
+              group: ledgerParent,
+              address: ledger.ADDRESS || null,
+              state: ledger.STATE || null,
+              pincode: ledger.PINCODE || null,
+              gstin: ledger.GSTIN || null,
+              pan: ledger.PAN || null,
+              email: ledger.EMAIL || null,
+              phone: ledger.PHONE || null,
+              openingBalance: this.parseTallyAmount(openingBalance),
+              isDefault: ledgerName === 'Cash' || ledgerName === 'Bank',
+            });
+            
+            // Track opening balances separately
+            if (openingBalance && openingBalance !== '0') {
+              data.openingBalances.push({
+                ledgerName: ledgerName,
+                amount: this.parseTallyAmount(openingBalance),
+                type: this.parseTallyAmount(openingBalance) >= 0 ? 'debit' : 'credit',
+              });
+            }
+          }
+        }
+        
+        // Extract Stock Items
+        if (message.STOCKITEM) {
+          const stockItems = Array.isArray(message.STOCKITEM) ? message.STOCKITEM : [message.STOCKITEM];
+          for (const item of stockItems) {
+            data.stockItems.push({
+              name: item.$.NAME || item.NAME,
+              group: item.PARENT || item.GROUP,
+              unit: item.BASEUNIT || item.UNIT || 'NOS',
+              hsnCode: item.HSNCODE || null,
+              gstRate: item.GSTRATE || 0,
+              openingStock: this.parseTallyAmount(item.OPENINGBALANCE || '0'),
+              openingValue: this.parseTallyAmount(item.OPENINGVALUE || '0'),
             });
           }
         }
       }
+      
+      // Log final counts
+      logger.info(`Parsed data summary: ${data.groups.length} groups, ${data.ledgers.length} ledgers, ${data.stockItems.length} stock items`);
 
-      // Extract Stock Items
-      if (tallyData.TALLYMESSAGE?.STOCKITEM) {
-        const stockItems = Array.isArray(tallyData.TALLYMESSAGE.STOCKITEM)
-          ? tallyData.TALLYMESSAGE.STOCKITEM
-          : [tallyData.TALLYMESSAGE.STOCKITEM];
-        
-        for (const item of stockItems) {
-          data.stockItems.push({
-            name: item.$.NAME || item.NAME,
-            group: item.PARENT || item.GROUP,
-            unit: item.BASEUNIT || item.UNIT || 'NOS',
-            hsnCode: item.HSNCODE || null,
-            gstRate: item.GSTRATE ? parseFloat(item.GSTRATE) : null,
-            openingStock: item.OPENINGBALANCE || '0',
-            openingValue: item.OPENINGVALUE || '0',
-          });
-        }
-      }
-
-      // Extract Vouchers
-      if (tallyData.TALLYMESSAGE?.VOUCHER) {
-        const vouchers = Array.isArray(tallyData.TALLYMESSAGE.VOUCHER)
-          ? tallyData.TALLYMESSAGE.VOUCHER
-          : [tallyData.TALLYMESSAGE.VOUCHER];
-        
-        for (const voucher of vouchers) {
-          const voucherType = this.mapTallyVoucherType(voucher.$.VOUCHERTYPE || voucher.VOUCHERTYPE);
-          data.vouchers.push({
-            type: voucherType,
-            number: voucher.VOUCHERNUMBER || voucher.$.VOUCHERNUMBER,
-            date: this.parseTallyDate(voucher.DATE || voucher.$.DATE),
-            party: voucher.PARTYNAME || null,
-            narration: voucher.NARRATION || '',
-            items: this.parseTallyVoucherEntries(voucher.ENTRIES || []),
-            totalAmount: this.calculateVoucherTotal(voucher.ENTRIES || []),
-          });
+      // Extract Vouchers from TALLYMESSAGE array
+      for (const message of tallyMessages) {
+        if (message.VOUCHER) {
+          const vouchers = Array.isArray(message.VOUCHER) ? message.VOUCHER : [message.VOUCHER];
+          for (const voucher of vouchers) {
+            const voucherType = this.mapTallyVoucherType(voucher.$.VOUCHERTYPE || voucher.VOUCHERTYPE);
+            data.vouchers.push({
+              type: voucherType,
+              number: voucher.VOUCHERNUMBER || voucher.$.VOUCHERNUMBER,
+              date: this.parseTallyDate(voucher.DATE || voucher.$.DATE),
+              party: voucher.PARTYNAME || null,
+              narration: voucher.NARRATION || '',
+              items: this.parseTallyVoucherEntries(voucher.ENTRIES || []),
+              totalAmount: this.calculateVoucherTotal(voucher.ENTRIES || []),
+            });
+          }
         }
       }
 
@@ -446,35 +473,70 @@ class TallyImportService {
   mapTallyNatureToFinvera(tallyGroupName) {
     const name = (tallyGroupName || '').toLowerCase();
     
-    // Assets
-    if (name.includes('asset') || name.includes('current asset') || name.includes('fixed asset')) {
-      return 'asset';
-    }
-    // Liabilities
-    if (name.includes('liability') || name.includes('current liability') || name.includes('duties')) {
+    // More specific patterns first (to avoid conflicts)
+    
+    // Sundry Creditors (Liability) - check before general "purchase" check
+    if (name.includes('sundry creditors') || name.includes('sundry creditor')) {
       return 'liability';
     }
-    // Income
-    if (name.includes('income') || name.includes('sales') || name.includes('revenue')) {
+    
+    // Sundry Debtors (Asset) - check before general "sales" check  
+    if (name.includes('sundry debtors') || name.includes('sundry debtor')) {
+      return 'asset';
+    }
+    
+    // Capital Account (Liability)
+    if (name.includes('capital account') || name.includes('capital')) {
+      return 'liability';
+    }
+    
+    // Specific Asset Groups
+    if (name.includes('current asset') || name.includes('fixed asset') || 
+        name.includes('bank') || name.includes('cash') || 
+        name.includes('deposits') || name.includes('loans & advances') ||
+        name.includes('stock-in-hand') || name.includes('inventory')) {
+      return 'asset';
+    }
+    
+    // Specific Liability Groups
+    if (name.includes('current liabilities') || name.includes('current liability') || 
+        name.includes('duties & taxes') || name.includes('provisions') || 
+        name.includes('loan') || name.includes('outstanding') || name.includes('payable')) {
+      return 'liability';
+    }
+    
+    // Income Groups (check before sales to avoid conflicts)
+    if (name.includes('direct income') || name.includes('indirect income') ||
+        name.includes('sales account') || name.includes('revenue') ||
+        name.includes('income')) {
       return 'income';
     }
-    // Expenses
-    if (name.includes('expense') || name.includes('purchase') || name.includes('indirect expense')) {
+    
+    // Expense Groups
+    if (name.includes('direct expense') || name.includes('indirect expense') ||
+        name.includes('purchase account') || name.includes('expenses')) {
       return 'expense';
     }
     
-    // Default based on common Tally groups
-    const assetGroups = ['bank', 'cash', 'deposits', 'loans & advances'];
-    const liabilityGroups = ['sundry creditors', 'duties & taxes', 'provisions'];
-    const incomeGroups = ['sales', 'income', 'revenue'];
-    const expenseGroups = ['purchase', 'expenses', 'indirect expenses'];
+    // General patterns (less specific)
+    if (name.includes('asset')) return 'asset';
+    if (name.includes('liability')) return 'liability';
+    if (name.includes('sales') && !name.includes('creditor') && !name.includes('debtor')) return 'income';
+    if (name.includes('purchase') && !name.includes('creditor') && !name.includes('debtor')) return 'expense';
     
-    if (assetGroups.some(g => name.includes(g))) return 'asset';
-    if (liabilityGroups.some(g => name.includes(g))) return 'liability';
-    if (incomeGroups.some(g => name.includes(g))) return 'income';
-    if (expenseGroups.some(g => name.includes(g))) return 'expense';
+    // Branch/Divisions and other organizational groups
+    if (name.includes('branch') || name.includes('division')) {
+      return 'asset'; // Usually treated as cost centers under assets
+    }
     
-    return 'expense'; // Default
+    // Default fallback based on common accounting principles
+    // If it contains "creditor" → liability
+    // If it contains "debtor" → asset  
+    // Otherwise → expense (conservative default)
+    if (name.includes('creditor')) return 'liability';
+    if (name.includes('debtor')) return 'asset';
+    
+    return 'expense'; // Conservative default
   }
 
   /**

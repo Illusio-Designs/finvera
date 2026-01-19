@@ -155,7 +155,7 @@ export default function LedgersList() {
     handlePageChange,
     handleSort,
     sort,
-    refetch,
+    fetchData: refetch,
   } = useTable(accountingAPI.ledgers.list, {});
 
   // Load ledger data when editing
@@ -353,7 +353,7 @@ export default function LedgersList() {
   const handleSupplierCreated = async (newSupplier) => {
     try {
       // Refresh the ledgers list
-      await fetchData();
+      await refetch();
       
       toast.success('Supplier created successfully');
     } catch (error) {

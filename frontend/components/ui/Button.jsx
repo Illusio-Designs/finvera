@@ -1,6 +1,7 @@
+import { forwardRef } from 'react';
 import LoadingSpinner from './LoadingSpinner';
 
-export default function Button({
+const Button = forwardRef(function Button({
   children,
   variant = 'primary',
   size = 'md',
@@ -9,8 +10,10 @@ export default function Button({
   loading = false,
   onClick,
   className = '',
+  fullWidth = false,
+  icon,
   ...props
-}) {
+}, ref) {
   // Base classes with modern SaaS styling
   const baseClasses = `
     font-normal
@@ -45,17 +48,16 @@ export default function Button({
       active:bg-primary-800
     `,
     secondary: `
-      bg-white
-      text-gray-700
-      border
-      border-gray-300
-      shadow-sm
-      hover:bg-gray-50
-      hover:border-gray-400
-      hover:shadow-md
+      bg-gray-600
+      text-white
+      shadow-md
+      shadow-gray-600/25
+      hover:bg-gray-700
+      hover:shadow-lg
+      hover:shadow-gray-600/40
       hover:-translate-y-0.5
       focus:ring-gray-500
-      active:bg-gray-100
+      active:bg-gray-800
     `,
     danger: `
       bg-red-600
@@ -107,13 +109,14 @@ export default function Button({
   
   // Size variants with proper padding and font sizes
   const sizes = {
-    sm: 'px-3 py-1.5 text-xs font-normal',
+    sm: 'px-3 py-1.5 text-sm font-normal',
     md: 'px-5 py-2.5 text-sm font-normal',
     lg: 'px-6 py-3 text-base font-normal',
   };
   
   return (
     <button
+      ref={ref}
       type={type}
       disabled={disabled || loading}
       onClick={onClick}
@@ -121,6 +124,7 @@ export default function Button({
         ${baseClasses}
         ${variants[variant]}
         ${sizes[size]}
+        ${fullWidth ? 'w-full' : ''}
         ${className}
       `.replace(/\s+/g, ' ').trim()}
       {...props}
@@ -132,10 +136,13 @@ export default function Button({
         </span>
       ) : (
         <span className="relative z-10 flex items-center justify-center">
+          {icon && <span className="mr-2">{icon}</span>}
           {children}
         </span>
       )}
     </button>
   );
-}
+});
+
+export default Button;
 

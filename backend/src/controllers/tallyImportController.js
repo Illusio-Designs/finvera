@@ -53,30 +53,44 @@ module.exports = {
       if (importOptions.importGroups !== false && parsedData.groups.length > 0) {
         for (const group of parsedData.groups) {
           try {
-            // Check if group exists in master
+            // Skip groups without names
+            if (!group.name || !group.name.trim()) {
+              logger.warn('Skipping group with empty name');
+              continue;
+            }
+
+            // Check if group exists in master (case-insensitive)
             const existingGroup = await masterModels.AccountGroup.findOne({
-              where: { name: group.name },
+              where: { 
+                name: group.name.trim()
+              },
             });
 
             if (!existingGroup) {
               // Find or create parent group if specified
               let parentId = null;
-              if (group.parent) {
+              if (group.parent && group.parent.trim()) {
                 const parentGroup = await masterModels.AccountGroup.findOne({
-                  where: { name: group.parent },
+                  where: { 
+                    name: group.parent.trim()
+                  },
                 });
                 if (parentGroup) parentId = parentGroup.id;
               }
 
+              // Create new group with proper nature
               await masterModels.AccountGroup.create({
-                name: group.name,
+                name: group.name.trim(),
                 parent_id: parentId,
                 nature: group.nature,
                 is_system: false,
+                group_code: group.name.trim().substring(0, 10).toUpperCase().replace(/[^A-Z0-9]/g, ''),
               });
               importResult.groups.imported++;
+              logger.info(`Created new group: ${group.name} (${group.nature})`);
             } else {
               importResult.groups.skipped++;
+              logger.debug(`Skipped existing group: ${group.name}`);
             }
           } catch (error) {
             logger.error(`Error importing group ${group.name}:`, error);
@@ -89,15 +103,26 @@ module.exports = {
       if (importOptions.importLedgers !== false && parsedData.ledgers.length > 0) {
         for (const ledger of parsedData.ledgers) {
           try {
-            // Find account group
-            const group = await masterModels.AccountGroup.findOne({
-              where: { name: ledger.group },
-            });
+            // Find account group - skip if no group specified
+            let group = null;
+            if (ledger.group && ledger.group.trim()) {
+              group = await masterModels.AccountGroup.findOne({
+                where: { name: ledger.group },
+              });
 
-            if (!group) {
+              if (!group) {
+                importResult.ledgers.errors.push({
+                  ledger: ledger.name,
+                  error: `Group "${ledger.group}" not found`,
+                });
+                continue;
+              }
+            } else {
+              // For ledgers without a group, try to find a default group or skip
+              logger.warn(`Ledger "${ledger.name}" has no group specified, skipping`);
               importResult.ledgers.errors.push({
                 ledger: ledger.name,
-                error: `Group "${ledger.group}" not found`,
+                error: `No account group specified`,
               });
               continue;
             }
@@ -118,10 +143,18 @@ module.exports = {
                 pan: ledger.pan,
                 email: ledger.email,
                 contact_number: ledger.phone,
+                opening_balance: ledger.openingBalance || 0,
+                opening_balance_type: ledger.openingBalance >= 0 ? 'Dr' : 'Cr',
+                balance_type: ledger.openingBalance >= 0 ? 'debit' : 'credit',
                 is_default: ledger.isDefault || false,
                 tenant_id: req.tenant_id || req.tenant?.id || req.company?.tenant_id, // Ensure tenant_id is set
               });
               importResult.ledgers.imported++;
+              
+              // Track opening balance import
+              if (ledger.openingBalance && ledger.openingBalance !== 0) {
+                importResult.openingBalances.imported++;
+              }
             } else {
               importResult.ledgers.skipped++;
             }
