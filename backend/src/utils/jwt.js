@@ -157,14 +157,22 @@ async function refreshAccessToken(refreshToken) {
       return null;
     }
 
-    // Generate new access token
+    // Fetch user from database to get current role and other info
+    const { User } = require('../models');
+    const user = await User.findByPk(decoded.id);
+    if (!user) {
+      logger.warn(`User not found for refresh token: ${decoded.id}`);
+      return null;
+    }
+
+    // Generate new access token with fresh user data
     const newPayload = {
       id: decoded.id,
       user_id: decoded.id,
       sub: decoded.id,
       tenant_id: decoded.tenant_id,
       company_id: session?.company_id || decoded.company_id || null,
-      role: session?.role || decoded.role,
+      role: user.role, // Use role from database
       jti: decoded.jti,
     };
 

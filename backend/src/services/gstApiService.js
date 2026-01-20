@@ -13,8 +13,9 @@ class GSTApiService {
     const { company } = ctx;
     const compliance = company?.compliance || {};
     const useThirdParty = compliance.gst_api?.applicable && compliance.gst_api?.api_key;
+    const hasEnvCredentials = process.env.SANDBOX_API_KEY && process.env.SANDBOX_API_SECRET;
 
-    if (useThirdParty) {
+    if (useThirdParty || hasEnvCredentials) {
       try {
         const apiClient = createApiClientFromCompany(company);
         const result = await apiClient.validateGSTIN(gstin);
@@ -54,8 +55,9 @@ class GSTApiService {
     const { company } = ctx;
     const compliance = company?.compliance || {};
     const useThirdParty = compliance.gst_api?.applicable && compliance.gst_api?.api_key;
+    const hasEnvCredentials = process.env.SANDBOX_API_KEY && process.env.SANDBOX_API_SECRET;
 
-    if (useThirdParty) {
+    if (useThirdParty || hasEnvCredentials) {
       try {
         const apiClient = createApiClientFromCompany(company);
         const result = await apiClient.getGSTINDetails(gstin);
@@ -89,9 +91,10 @@ class GSTApiService {
     const { company } = ctx;
     const compliance = company?.compliance || {};
     const useThirdParty = compliance.gst_api?.applicable && compliance.gst_api?.api_key;
+    const hasEnvCredentials = process.env.SANDBOX_API_KEY && process.env.SANDBOX_API_SECRET;
 
-    if (!useThirdParty) {
-      throw new Error('GST API not configured. Please configure Sandbox API credentials.');
+    if (!useThirdParty && !hasEnvCredentials) {
+      throw new Error('GST API not configured. Please configure Sandbox API credentials in company settings or environment variables.');
     }
 
     try {
@@ -120,8 +123,9 @@ class GSTApiService {
     const { company } = ctx;
     const compliance = company?.compliance || {};
     const useThirdParty = compliance.gst_api?.applicable && compliance.gst_api?.api_key;
+    const hasEnvCredentials = process.env.SANDBOX_API_KEY && process.env.SANDBOX_API_SECRET;
 
-    if (useThirdParty) {
+    if (useThirdParty || hasEnvCredentials) {
       try {
         const apiClient = createApiClientFromCompany(company);
         const result = await apiClient.generateGSTR1(gstr1Data);
@@ -148,8 +152,9 @@ class GSTApiService {
     const { company } = ctx;
     const compliance = company?.compliance || {};
     const useThirdParty = compliance.gst_api?.applicable && compliance.gst_api?.api_key;
+    const hasEnvCredentials = process.env.SANDBOX_API_KEY && process.env.SANDBOX_API_SECRET;
 
-    if (useThirdParty) {
+    if (useThirdParty || hasEnvCredentials) {
       try {
         const apiClient = createApiClientFromCompany(company);
         const result = await apiClient.generateGSTR3B(gstr3bData);
@@ -176,8 +181,9 @@ class GSTApiService {
     const { company } = ctx;
     const compliance = company?.compliance || {};
     const useThirdParty = compliance.gst_api?.applicable && compliance.gst_api?.api_key;
+    const hasEnvCredentials = process.env.SANDBOX_API_KEY && process.env.SANDBOX_API_SECRET;
 
-    if (useThirdParty) {
+    if (useThirdParty || hasEnvCredentials) {
       try {
         const apiClient = createApiClientFromCompany(company);
         const result = await apiClient.createGSTR2AReconciliationJob(params);
@@ -204,8 +210,9 @@ class GSTApiService {
     const { company } = ctx;
     const compliance = company?.compliance || {};
     const useThirdParty = compliance.gst_api?.applicable && compliance.gst_api?.api_key;
+    const hasEnvCredentials = process.env.SANDBOX_API_KEY && process.env.SANDBOX_API_SECRET;
 
-    if (useThirdParty) {
+    if (useThirdParty || hasEnvCredentials) {
       try {
         const apiClient = createApiClientFromCompany(company);
         const result = await apiClient.getGSTR2AReconciliationStatus(jobId);
@@ -232,8 +239,9 @@ class GSTApiService {
     const { company } = ctx;
     const compliance = company?.compliance || {};
     const useThirdParty = compliance.gst_api?.applicable && compliance.gst_api?.api_key;
+    const hasEnvCredentials = process.env.SANDBOX_API_KEY && process.env.SANDBOX_API_SECRET;
 
-    if (useThirdParty) {
+    if (useThirdParty || hasEnvCredentials) {
       try {
         const apiClient = createApiClientFromCompany(company);
         const result = await apiClient.uploadPurchaseLedgerData(uploadUrl, ledgerData);

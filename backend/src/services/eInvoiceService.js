@@ -35,8 +35,9 @@ class EInvoiceService {
     const compliance = company?.compliance || {};
     const useThirdParty = compliance.e_invoice?.applicable && 
                           compliance.e_invoice?.api_key;
+    const hasEnvCredentials = process.env.SANDBOX_API_KEY && process.env.SANDBOX_API_SECRET;
 
-    if (useThirdParty) {
+    if (useThirdParty || hasEnvCredentials) {
       try {
         const apiClient = createApiClientFromCompany(company);
         
@@ -145,8 +146,9 @@ class EInvoiceService {
     const compliance = company?.compliance || {};
     const useThirdParty = compliance.e_invoice?.applicable && 
                           compliance.e_invoice?.api_key;
+    const hasEnvCredentials = process.env.SANDBOX_API_KEY && process.env.SANDBOX_API_SECRET;
 
-    if (useThirdParty && eInvoice.irn) {
+    if (useThirdParty || hasEnvCredentials && eInvoice.irn) {
       try {
         const apiClient = createApiClientFromCompany(company);
         await apiClient.cancelIRN(eInvoice.irn, reason || 'Cancelled by user');

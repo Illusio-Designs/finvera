@@ -60,13 +60,14 @@ class TDSService {
     const compliance = company?.compliance || {};
     const useThirdParty = compliance.tds_api?.applicable && 
                           compliance.tds_api?.api_key;
+    const hasEnvCredentials = process.env.SANDBOX_API_KEY && process.env.SANDBOX_API_SECRET;
 
     let tdsAmount = 0;
     let netAmount = grossAmount;
     let effectiveRate = parseFloat(tdsRate) || parseFloat(partyLedger.tds_rate) || 10;
     let apiResponse = null;
 
-    if (useThirdParty) {
+    if (useThirdParty || hasEnvCredentials) {
       try {
         const apiClient = createApiClientFromCompany(company);
         
@@ -154,13 +155,14 @@ class TDSService {
     // Check if Sandbox API is configured
     const compliance = company?.compliance || {};
     const useThirdParty = compliance.tds_api?.applicable && compliance.tds_api?.api_key;
+    const hasEnvCredentials = process.env.SANDBOX_API_KEY && process.env.SANDBOX_API_SECRET;
 
     let tdsAmount = 0;
     let netAmount = grossAmount;
     let effectiveRate = parseFloat(tdsRate) || 10;
     let apiResponse = null;
 
-    if (useThirdParty) {
+    if (useThirdParty || hasEnvCredentials) {
       try {
         const apiClient = createApiClientFromCompany(company);
         

@@ -64,12 +64,13 @@ class EWayBillService {
     const compliance = company?.compliance || {};
     const useThirdParty = compliance.e_way_bill?.applicable && 
                           compliance.e_way_bill?.api_key;
+    const hasEnvCredentials = process.env.SANDBOX_API_KEY && process.env.SANDBOX_API_SECRET;
 
     let ewayBillNo = fakeEWayBillNo();
     let generatedAt = new Date();
     let validUpto = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000); // stub: +2 days
 
-    if (useThirdParty) {
+    if (useThirdParty || hasEnvCredentials) {
       try {
         const apiClient = createApiClientFromCompany(company);
         
@@ -191,8 +192,9 @@ class EWayBillService {
     const compliance = company?.compliance || {};
     const useThirdParty = compliance.e_way_bill?.applicable && 
                           compliance.e_way_bill?.api_key;
+    const hasEnvCredentials = process.env.SANDBOX_API_KEY && process.env.SANDBOX_API_SECRET;
 
-    if (useThirdParty && ewb.eway_bill_no) {
+    if (useThirdParty || hasEnvCredentials && ewb.eway_bill_no) {
       try {
         const apiClient = createApiClientFromCompany(company);
         await apiClient.cancelEWayBill(ewb.eway_bill_no, reason || 'Cancelled by user');

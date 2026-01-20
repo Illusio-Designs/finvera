@@ -92,6 +92,12 @@ class ThirdPartyApiClient {
       throw new Error('Invalid authentication response');
     } catch (error) {
       logger.error('Sandbox authentication failed:', error.message);
+      
+      // Check if it's an API key issue
+      if (error.response?.status === 401) {
+        throw new Error(`Sandbox authentication failed: Invalid API credentials. Please check your API key and secret for ${process.env.SANDBOX_ENVIRONMENT || 'test'} environment.`);
+      }
+      
       throw new Error(`Sandbox authentication failed: ${error.message}`);
     }
   }
@@ -759,6 +765,7 @@ class ThirdPartyApiClient {
  * - All services use Sandbox as the only provider
  * - Single API key and secret for all tax compliance services
  * - E-Invoice, E-Way Bill, HSN, GST, TDS, Income Tax (ITR) APIs
+ * - Always falls back to environment variables if company config not available
  */
 function createApiClientFromCompany(company) {
   const compliance = company?.compliance || {};
@@ -772,52 +779,55 @@ function createApiClientFromCompany(company) {
   const environment = process.env.SANDBOX_ENVIRONMENT || 'test';
   const baseUrl = environment === 'live' ? sandboxBaseUrl : testSandboxBaseUrl;
   
+  // Check if environment variables are available for fallback
+  const hasEnvCredentials = process.env.SANDBOX_API_KEY && process.env.SANDBOX_API_SECRET;
+  
   const config = {
     einvoice: {
-      [provider]: compliance.e_invoice?.applicable ? {
-        base_url: compliance.e_invoice.base_url || baseUrl,
-        api_key: compliance.e_invoice.api_key || process.env.SANDBOX_API_KEY,
-        api_secret: compliance.e_invoice.api_secret || process.env.SANDBOX_API_SECRET,
+      [provider]: (compliance.e_invoice?.applicable || hasEnvCredentials) ? {
+        base_url: compliance.e_invoice?.base_url || baseUrl,
+        api_key: compliance.e_invoice?.api_key || process.env.SANDBOX_API_KEY,
+        api_secret: compliance.e_invoice?.api_secret || process.env.SANDBOX_API_SECRET,
         provider: provider,
       } : null,
     },
     ewaybill: {
-      [provider]: compliance.e_way_bill?.applicable ? {
-        base_url: compliance.e_way_bill.base_url || baseUrl,
-        api_key: compliance.e_way_bill.api_key || process.env.SANDBOX_API_KEY,
-        api_secret: compliance.e_way_bill.api_secret || process.env.SANDBOX_API_SECRET,
+      [provider]: (compliance.e_way_bill?.applicable || hasEnvCredentials) ? {
+        base_url: compliance.e_way_bill?.base_url || baseUrl,
+        api_key: compliance.e_way_bill?.api_key || process.env.SANDBOX_API_KEY,
+        api_secret: compliance.e_way_bill?.api_secret || process.env.SANDBOX_API_SECRET,
         provider: provider,
       } : null,
     },
     hsn: {
-      [provider]: compliance.hsn_api?.applicable && compliance.hsn_api?.api_key ? {
-        base_url: compliance.hsn_api.base_url || baseUrl,
-        api_key: compliance.hsn_api.api_key || process.env.SANDBOX_API_KEY,
-        api_secret: compliance.hsn_api.api_secret || process.env.SANDBOX_API_SECRET,
+      [provider]: (compliance.hsn_api?.applicable || hasEnvCredentials) ? {
+        base_url: compliance.hsn_api?.base_url || baseUrl,
+        api_key: compliance.hsn_api?.api_key || process.env.SANDBOX_API_KEY,
+        api_secret: compliance.hsn_api?.api_secret || process.env.SANDBOX_API_SECRET,
         provider: provider,
       } : null,
     },
     gst: {
-      [provider]: compliance.gst_api?.applicable && compliance.gst_api?.api_key ? {
-        base_url: compliance.gst_api.base_url || baseUrl,
-        api_key: compliance.gst_api.api_key || process.env.SANDBOX_API_KEY,
-        api_secret: compliance.gst_api.api_secret || process.env.SANDBOX_API_SECRET,
+      [provider]: (compliance.gst_api?.applicable || hasEnvCredentials) ? {
+        base_url: compliance.gst_api?.base_url || baseUrl,
+        api_key: compliance.gst_api?.api_key || process.env.SANDBOX_API_KEY,
+        api_secret: compliance.gst_api?.api_secret || process.env.SANDBOX_API_SECRET,
         provider: provider,
       } : null,
     },
     tds: {
-      [provider]: compliance.tds_api?.applicable && compliance.tds_api?.api_key ? {
-        base_url: compliance.tds_api.base_url || baseUrl,
-        api_key: compliance.tds_api.api_key || process.env.SANDBOX_API_KEY,
-        api_secret: compliance.tds_api.api_secret || process.env.SANDBOX_API_SECRET,
+      [provider]: (compliance.tds_api?.applicable || hasEnvCredentials) ? {
+        base_url: compliance.tds_api?.base_url || baseUrl,
+        api_key: compliance.tds_api?.api_key || process.env.SANDBOX_API_KEY,
+        api_secret: compliance.tds_api?.api_secret || process.env.SANDBOX_API_SECRET,
         provider: provider,
       } : null,
     },
     income_tax: {
-      [provider]: compliance.income_tax_api?.applicable && compliance.income_tax_api?.api_key ? {
-        base_url: compliance.income_tax_api.base_url || baseUrl,
-        api_key: compliance.income_tax_api.api_key || process.env.SANDBOX_API_KEY,
-        api_secret: compliance.income_tax_api.api_secret || process.env.SANDBOX_API_SECRET,
+      [provider]: (compliance.income_tax_api?.applicable || hasEnvCredentials) ? {
+        base_url: compliance.income_tax_api?.base_url || baseUrl,
+        api_key: compliance.income_tax_api?.api_key || process.env.SANDBOX_API_KEY,
+        api_secret: compliance.income_tax_api?.api_secret || process.env.SANDBOX_API_SECRET,
         provider: provider,
       } : null,
     },

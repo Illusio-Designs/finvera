@@ -13,9 +13,11 @@ class HSNApiService {
   async search(ctx, query, filters = {}) {
     const { company } = ctx;
     const compliance = company?.compliance || {};
+    const useThirdParty = compliance.hsn_api?.applicable && compliance.hsn_api?.api_key;
+    const hasEnvCredentials = process.env.SANDBOX_API_KEY && process.env.SANDBOX_API_SECRET;
     
-    if (!compliance.hsn_api?.applicable || !compliance.hsn_api?.api_key) {
-      throw new Error('HSN API not configured. Please configure HSN API credentials in company settings.');
+    if (!useThirdParty && !hasEnvCredentials) {
+      throw new Error('HSN API not configured. Please configure HSN API credentials in company settings or environment variables.');
     }
 
     try {
@@ -35,9 +37,11 @@ class HSNApiService {
   async getByCode(ctx, code) {
     const { company } = ctx;
     const compliance = company?.compliance || {};
+    const useThirdParty = compliance.hsn_api?.applicable && compliance.hsn_api?.api_key;
+    const hasEnvCredentials = process.env.SANDBOX_API_KEY && process.env.SANDBOX_API_SECRET;
     
-    if (!compliance.hsn_api?.applicable || !compliance.hsn_api?.api_key) {
-      throw new Error('HSN API not configured. Please configure HSN API credentials in company settings.');
+    if (!useThirdParty && !hasEnvCredentials) {
+      throw new Error('HSN API not configured. Please configure HSN API credentials in company settings or environment variables.');
     }
 
     try {
@@ -64,12 +68,14 @@ class HSNApiService {
   async validate(ctx, code) {
     const { company } = ctx;
     const compliance = company?.compliance || {};
+    const useThirdParty = compliance.hsn_api?.applicable && compliance.hsn_api?.api_key;
+    const hasEnvCredentials = process.env.SANDBOX_API_KEY && process.env.SANDBOX_API_SECRET;
     
-    if (!compliance.hsn_api?.applicable || !compliance.hsn_api?.api_key) {
+    if (!useThirdParty && !hasEnvCredentials) {
       return {
         valid: false,
         code,
-        message: 'HSN API not configured. Please configure HSN API credentials in company settings.',
+        message: 'HSN API not configured. Please configure HSN API credentials in company settings or environment variables.',
         details: null,
       };
     }
@@ -100,7 +106,9 @@ class HSNApiService {
    */
   isConfigured(company) {
     const compliance = company?.compliance || {};
-    return compliance.hsn_api?.applicable && compliance.hsn_api?.api_key;
+    const hasCompanyConfig = compliance.hsn_api?.applicable && compliance.hsn_api?.api_key;
+    const hasEnvCredentials = process.env.SANDBOX_API_KEY && process.env.SANDBOX_API_SECRET;
+    return hasCompanyConfig || hasEnvCredentials;
   }
 
   /**
@@ -108,11 +116,13 @@ class HSNApiService {
    */
   getConfigStatus(company) {
     const compliance = company?.compliance || {};
+    const hasEnvCredentials = process.env.SANDBOX_API_KEY && process.env.SANDBOX_API_SECRET;
     return {
       configured: this.isConfigured(company),
       applicable: compliance.hsn_api?.applicable || false,
       hasApiKey: !!(compliance.hsn_api?.api_key),
-      provider: compliance.hsn_api?.provider || null,
+      hasEnvCredentials: hasEnvCredentials,
+      provider: compliance.hsn_api?.provider || 'sandbox',
     };
   }
 }
