@@ -343,6 +343,32 @@ export const tdsAPI = {
   generateReturn: (data) => api.post("/tds/return", data),
   getReturnStatus: (returnId, formType) => api.get(`/tds/return/${returnId}/status`, { params: { form_type: formType } }),
   generateCertificate: (id) => api.get(`/tds/certificate/${id}`),
+  
+  // Sandbox TDS Analytics APIs
+  analytics: {
+    createPotentialNoticeJob: (data) => api.post("/tds/analytics/potential-notices", data),
+    getJobStatus: (jobId) => api.get(`/tds/analytics/potential-notices/${jobId}`),
+  },
+  
+  // Sandbox TDS Calculator APIs
+  calculator: {
+    calculateNonSalary: (data) => api.post("/tds/calculator/non-salary", data),
+  },
+  
+  // Sandbox TDS Compliance APIs
+  compliance: {
+    check206AB: (data) => api.post("/tds/compliance/206ab/check", data),
+    generateCSIOTP: (data) => api.post("/tds/compliance/csi/otp", data),
+    downloadCSI: (data) => api.post("/tds/compliance/csi/download", data),
+  },
+  
+  // Sandbox TDS Reports APIs
+  reports: {
+    submitTCSJob: (data) => api.post("/tds/reports/tcs", data),
+    getTCSJobStatus: (jobId) => api.get(`/tds/reports/tcs/${jobId}`),
+    searchTCSJobs: (data) => api.post("/tds/reports/tcs/search", data),
+  },
+  
   // Backward compatibility
   getSections: () => api.get("/tds/sections"),
   getReturns: (params) => api.get("/tds/returns", { params }),
@@ -478,20 +504,14 @@ export const gstAPI = {
     delete: (id) => api.delete(`/gst/gstins/${id}`),
   },
   
-  // GST Rates
-  rates: {
-    list: () => api.get("/gst/rates"),
-    create: (data) => api.post("/gst/rates", data),
-    update: (id, data) => api.put(`/gst/rates/${id}`, data),
-    delete: (id) => api.delete(`/gst/rates/${id}`),
-  },
+  // GST Rates removed - now using Sandbox API for live rates
   
   // Backward compatibility
   listGSTINs: () => api.get("/gst/gstins"),
   createGSTIN: (data) => api.post("/gst/gstins", data),
   updateGSTIN: (id, data) => api.put(`/gst/gstins/${id}`, data),
-  getGSTRates: () => api.get("/gst/rates"),
-  createGSTRate: (data) => api.post("/gst/rates", data),
+  // getGSTRates: () => api.get("/gst/rates"), // Removed - using Sandbox API
+  // createGSTRate: (data) => api.post("/gst/rates", data), // Removed - using Sandbox API
   
   // GST Returns
   listReturns: (params) => api.get("/gst/returns", { params }),
@@ -502,6 +522,13 @@ export const gstAPI = {
   validateGSTIN: (data) => api.post("/gst/validate", data),
   getGSTINDetails: (gstin) => api.get(`/gst/details/${gstin}`),
   getGSTRate: (params) => api.get("/gst/rate", { params }),
+  
+  // Sandbox GST Analytics APIs
+  analytics: {
+    createGSTR2AReconciliation: (data) => api.post("/gst/analytics/gstr2a-reconciliation", data),
+    getGSTR2AReconciliationStatus: (jobId) => api.get(`/gst/analytics/gstr2a-reconciliation/${jobId}`),
+    uploadPurchaseLedger: (data) => api.post("/gst/analytics/upload-purchase-ledger", data),
+  },
   
   // Backward compatibility
   getReturns: (params) => api.get("/gst/returns", { params }),
@@ -530,6 +557,21 @@ export const incomeTaxAPI = {
   getITRStatus: (returnId) => api.get(`/income-tax/itr/${returnId}/status`),
   getForm26AS: (pan) => api.get(`/income-tax/form26as/${pan}`),
   parseForm16: (data) => api.post("/income-tax/form16/parse", data),
+  
+  // Sandbox Income Tax Calculator APIs
+  calculator: {
+    securities: {
+      submitTaxPnLJob: (data) => api.post("/income-tax/calculator/securities/tax-pnl", data),
+      getTaxPnLJobStatus: (jobId) => api.get(`/income-tax/calculator/securities/tax-pnl/${jobId}`),
+      uploadTradingData: (data) => api.post("/income-tax/calculator/securities/upload-trading-data", data),
+    },
+    calculateCapitalGains: (data) => api.post("/income-tax/calculator/capital-gains", data),
+    calculateAdvanceTax: (data) => api.post("/income-tax/calculator/advance-tax", data),
+  },
+  
+  // Form 16 generation
+  generateForm16: (data) => api.post("/income-tax/form16/generate", data),
+  
   // Backward compatibility
   getReturns: (params) => api.get("/income-tax/returns", { params }),
   createReturn: (data) => api.post("/income-tax/returns", data),

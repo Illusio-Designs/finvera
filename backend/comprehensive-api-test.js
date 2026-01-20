@@ -130,12 +130,144 @@ async function apiCall(method, endpoint, data = null, useAuth = false, descripti
   }
 }
 
-// Save test results to file
+// Save test results to single consolidated file with enhanced reporting
 function saveResults() {
   testResults.summary.endTime = new Date().toISOString();
+  testResults.summary.duration = new Date(testResults.summary.endTime) - new Date(testResults.summary.startTime);
+  testResults.summary.successRate = ((testResults.summary.passed / testResults.summary.total) * 100).toFixed(1);
+  
+  // Add phase-wise breakdown
+  testResults.summary.phaseBreakdown = {
+    foundation: { passed: 0, failed: 0, total: 0 },
+    company: { passed: 0, failed: 0, total: 0 },
+    accounting: { passed: 0, failed: 0, total: 0 },
+    gst_compliance: { passed: 0, failed: 0, total: 0 },
+    income_tax: { passed: 0, failed: 0, total: 0 },
+    admin: { passed: 0, failed: 0, total: 0 },
+    other: { passed: 0, failed: 0, total: 0 }
+  };
+
+  // Categorize tests by phase
+  testResults.tests.forEach(test => {
+    let phase = 'other';
+    if (test.endpoint.includes('/auth')) phase = 'foundation';
+    else if (test.endpoint.includes('/companies') || test.endpoint.includes('/branches')) phase = 'company';
+    else if (test.endpoint.includes('/accounting') || test.endpoint.includes('/reports')) phase = 'accounting';
+    else if (test.endpoint.includes('/gst') || test.endpoint.includes('/tds')) phase = 'gst_compliance';
+    else if (test.endpoint.includes('/income-tax')) phase = 'income_tax';
+    else if (test.endpoint.includes('/admin')) phase = 'admin';
+
+    testResults.summary.phaseBreakdown[phase].total++;
+    if (test.success) {
+      testResults.summary.phaseBreakdown[phase].passed++;
+    } else {
+      testResults.summary.phaseBreakdown[phase].failed++;
+    }
+  });
+
+  // Add environment info
+  testResults.environment = {
+    baseUrl: BASE_URL,
+    nodeVersion: process.version,
+    platform: process.platform,
+    timestamp: new Date().toISOString(),
+    testDataSnapshot: {
+      hasAccessToken: !!testData.accessToken,
+      hasCompanyId: !!testData.companyId,
+      hasBranchId: !!testData.branchId,
+      hasLedgerId: !!testData.ledgerId,
+      hasItemId: !!testData.itemId
+    }
+  };
+
+  // Add failed tests summary
+  testResults.failedTests = testResults.tests
+    .filter(test => !test.success)
+    .map(test => ({
+      description: test.description,
+      endpoint: test.endpoint,
+      method: test.method,
+      status: test.status,
+      error: test.error?.message || test.error || 'Unknown error',
+      timestamp: test.timestamp
+    }));
+
+  // Add sandbox API specific results
+  testResults.sandboxApiResults = {
+    gstApis: testResults.tests.filter(test => 
+      test.endpoint.includes('/gst/') && 
+      (test.endpoint.includes('validate') || test.endpoint.includes('rate') || test.endpoint.includes('analytics'))
+    ).map(test => ({
+      endpoint: test.endpoint,
+      success: test.success,
+      responseTime: test.responseTime,
+      status: test.status
+    })),
+    tdsApis: testResults.tests.filter(test => 
+      test.endpoint.includes('/tds/')
+    ).map(test => ({
+      endpoint: test.endpoint,
+      success: test.success,
+      responseTime: test.responseTime,
+      status: test.status
+    })),
+    incomeTaxApis: testResults.tests.filter(test => 
+      test.endpoint.includes('/income-tax/')
+    ).map(test => ({
+      endpoint: test.endpoint,
+      success: test.success,
+      responseTime: test.responseTime,
+      status: test.status
+    }))
+  };
+
+  // Add performance metrics
+  testResults.performance = {
+    averageResponseTime: testResults.tests
+      .filter(test => test.success)
+      .reduce((sum, test) => sum + test.responseTime, 0) / (testResults.summary.passed || 1),
+    slowestTests: testResults.tests
+      .filter(test => test.responseTime > 1000)
+      .sort((a, b) => b.responseTime - a.responseTime)
+      .slice(0, 10)
+      .map(test => ({
+        description: test.description,
+        endpoint: test.endpoint,
+        responseTime: test.responseTime
+      })),
+    fastestTests: testResults.tests
+      .filter(test => test.success && test.responseTime < 100)
+      .sort((a, b) => a.responseTime - b.responseTime)
+      .slice(0, 10)
+      .map(test => ({
+        description: test.description,
+        endpoint: test.endpoint,
+        responseTime: test.responseTime
+      }))
+  };
+
+  // Add API coverage analysis
+  testResults.coverage = {
+    totalEndpointsTested: testResults.summary.total,
+    uniqueEndpoints: [...new Set(testResults.tests.map(test => test.endpoint))].length,
+    httpMethods: {
+      GET: testResults.tests.filter(test => test.method === 'GET').length,
+      POST: testResults.tests.filter(test => test.method === 'POST').length,
+      PUT: testResults.tests.filter(test => test.method === 'PUT').length,
+      DELETE: testResults.tests.filter(test => test.method === 'DELETE').length,
+      PATCH: testResults.tests.filter(test => test.method === 'PATCH').length
+    },
+    statusCodes: testResults.tests.reduce((acc, test) => {
+      const status = test.status || 'unknown';
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {})
+  };
+
+  // Save single consolidated results file
   const resultsFile = path.join(__dirname, 'api-test-results.json');
   fs.writeFileSync(resultsFile, JSON.stringify(testResults, null, 2));
-  console.log(`\n💾 Test results saved to: ${resultsFile}`);
+  console.log(`\n💾 Consolidated test results saved to: ${resultsFile}`);
 }
 
 // Test Phase 1: Foundation
@@ -274,10 +406,10 @@ async function testBranchManagement() {
   }
 }
 
-// Test Phase 4: Accounting Foundation
+// Test Phase 4: Accounting Foundation (Enhanced)
 async function testAccountingFoundation() {
-  console.log('\n📊 PHASE 4: ACCOUNTING FOUNDATION');
-  console.log('=================================');
+  console.log('\n📊 PHASE 4: ACCOUNTING FOUNDATION (ENHANCED)');
+  console.log('=============================================');
 
   // 4.1 Dashboard
   await apiCall('GET', '/accounting/dashboard', null, true, 'Get Accounting Dashboard');
@@ -288,10 +420,17 @@ async function testAccountingFoundation() {
   // 4.3 Account Groups Tree
   await apiCall('GET', '/accounting/groups/tree', null, true, 'Get Account Groups Tree');
 
-  // 4.4 List Voucher Types
+  // 4.4 Get Account Group by ID
+  const groupsResult = await apiCall('GET', '/accounting/groups', null, true, 'Get Account Groups for ID Test');
+  if (groupsResult.success && groupsResult.data.data && groupsResult.data.data.length > 0) {
+    const firstGroupId = groupsResult.data.data[0].id;
+    await apiCall('GET', `/accounting/groups/${firstGroupId}`, null, true, 'Get Account Group by ID');
+  }
+
+  // 4.5 List Voucher Types
   await apiCall('GET', '/accounting/voucher-types', null, true, 'List Voucher Types');
 
-  // 4.5 Create Voucher Type (Expected to fail - read-only)
+  // 4.6 Create Voucher Type
   const voucherTypeResult = await apiCall('POST', '/accounting/voucher-types', {
     voucher_type_name: 'Test Sales',
     voucher_type_code: 'TSL',
@@ -302,13 +441,21 @@ async function testAccountingFoundation() {
   if (voucherTypeResult.success && voucherTypeResult.data.data?.id) {
     testData.voucherTypeId = voucherTypeResult.data.data.id;
     console.log(`📋 Voucher Type ID saved: ${testData.voucherTypeId}`);
+
+    // 4.7 Get Voucher Type by ID
+    await apiCall('GET', `/accounting/voucher-types/${testData.voucherTypeId}`, null, true, 'Get Voucher Type by ID');
+
+    // 4.8 Update Voucher Type
+    await apiCall('PUT', `/accounting/voucher-types/${testData.voucherTypeId}`, {
+      voucher_type_name: 'Updated Test Sales'
+    }, true, 'Update Voucher Type');
   }
 }
 
-// Test Phase 5: Ledger Management
+// Test Phase 5: Ledger Management (Enhanced)
 async function testLedgerManagement() {
-  console.log('\n📚 PHASE 5: LEDGER MANAGEMENT');
-  console.log('=============================');
+  console.log('\n📚 PHASE 5: LEDGER MANAGEMENT (ENHANCED)');
+  console.log('========================================');
 
   // 5.1 List Ledgers
   await apiCall('GET', '/accounting/ledgers?page=1&limit=20', null, true, 'List Ledgers');
@@ -337,39 +484,39 @@ async function testLedgerManagement() {
     if (ledgerResult.success && ledgerResult.data.data?.id) {
       testData.ledgerId = ledgerResult.data.data.id;
       console.log(`📚 Ledger ID saved: ${testData.ledgerId}`);
+
+      // 5.3 Get Ledger by ID
+      await apiCall('GET', `/accounting/ledgers/${testData.ledgerId}`, null, true, 'Get Ledger by ID');
+
+      // 5.4 Update Ledger
+      await apiCall('PUT', `/accounting/ledgers/${testData.ledgerId}`, {
+        ledger_name: 'Updated Cash Account',
+        opening_balance: 15000.00
+      }, true, 'Update Ledger');
+
+      // 5.5 Get Ledger Balance
+      await apiCall('GET', `/accounting/ledgers/${testData.ledgerId}/balance`, null, true, 'Get Ledger Balance');
+
+      // 5.6 Delete Ledger (test at the end)
+      await apiCall('DELETE', `/accounting/ledgers/${testData.ledgerId}`, null, true, 'Delete Ledger');
     }
   } else {
     console.log('⚠️  Skipping ledger creation - no valid account group found');
   }
-
-  // 5.3 Get Ledger by ID (Previously problematic)
-  if (testData.ledgerId) {
-    await apiCall('GET', `/accounting/ledgers/${testData.ledgerId}`, null, true, 'Get Ledger by ID (Previously Problematic)');
-  }
-
-  // 5.4 Update Ledger
-  if (testData.ledgerId) {
-    await apiCall('PUT', `/accounting/ledgers/${testData.ledgerId}`, {
-      ledger_name: 'Updated Cash Account',
-      opening_balance: 15000.00
-    }, true, 'Update Ledger');
-  }
-
-  // 5.5 Get Ledger Balance (Previously problematic)
-  if (testData.ledgerId) {
-    await apiCall('GET', `/accounting/ledgers/${testData.ledgerId}/balance`, null, true, 'Get Ledger Balance (Previously Problematic)');
-  }
 }
 
-// Test Phase 6: Inventory Management
+// Test Phase 6: Inventory Management (Enhanced)
 async function testInventoryManagement() {
-  console.log('\n📦 PHASE 6: INVENTORY MANAGEMENT');
-  console.log('================================');
+  console.log('\n📦 PHASE 6: INVENTORY MANAGEMENT (ENHANCED)');
+  console.log('============================================');
 
   // 6.1 List Warehouses
   await apiCall('GET', '/accounting/warehouses', null, true, 'List Warehouses');
 
-  // 6.2 Create Warehouse
+  // 6.2 Get All Warehouses
+  await apiCall('GET', '/accounting/warehouses/all', null, true, 'Get All Warehouses');
+
+  // 6.3 Create Warehouse
   const warehouseResult = await apiCall('POST', '/accounting/warehouses', {
     warehouse_name: 'Main Warehouse',
     warehouse_code: `MW${Date.now()}`,
@@ -382,12 +529,21 @@ async function testInventoryManagement() {
   if (warehouseResult.success && warehouseResult.data.data?.id) {
     testData.warehouseId = warehouseResult.data.data.id;
     console.log(`📦 Warehouse ID saved: ${testData.warehouseId}`);
+
+    // 6.4 Get Warehouse by ID
+    await apiCall('GET', `/accounting/warehouses/${testData.warehouseId}`, null, true, 'Get Warehouse by ID');
+
+    // 6.5 Update Warehouse
+    await apiCall('PUT', `/accounting/warehouses/${testData.warehouseId}`, {
+      warehouse_name: 'Updated Main Warehouse',
+      address: '456 Updated Street'
+    }, true, 'Update Warehouse');
   }
 
-  // 6.3 List Inventory Items
+  // 6.6 List Inventory Items
   await apiCall('GET', '/accounting/inventory/items?page=1&limit=20', null, true, 'List Inventory Items');
 
-  // 6.4 Create Inventory Item
+  // 6.7 Create Inventory Item
   const itemResult = await apiCall('POST', '/accounting/inventory/items', {
     item_name: 'Test Product',
     item_code: `TP${Date.now()}`,
@@ -401,18 +557,111 @@ async function testInventoryManagement() {
   if (itemResult.success && itemResult.data.data?.id) {
     testData.itemId = itemResult.data.data.id;
     console.log(`📦 Item ID saved: ${testData.itemId}`);
+
+    // 6.8 Get Item by ID
+    await apiCall('GET', `/accounting/inventory/items/${testData.itemId}`, null, true, 'Get Inventory Item by ID');
+
+    // 6.9 Update Item
+    await apiCall('PUT', `/accounting/inventory/items/${testData.itemId}`, {
+      item_name: 'Updated Test Product',
+      sales_rate: 175.00
+    }, true, 'Update Inventory Item');
+
+    // 6.10 Generate Barcode for Item
+    await apiCall('POST', `/accounting/inventory/items/${testData.itemId}/generate-barcode`, {}, true, 'Generate Item Barcode');
+
+    // 6.11 Set Opening Stock by Warehouse
+    if (testData.warehouseId) {
+      await apiCall('POST', `/accounting/inventory/items/${testData.itemId}/opening-stock`, {
+        warehouse_id: testData.warehouseId,
+        opening_quantity: 100,
+        opening_value: 10000
+      }, true, 'Set Opening Stock by Warehouse');
+
+      // 6.12 Get Stock by Warehouse
+      await apiCall('GET', `/accounting/inventory/items/${testData.itemId}/warehouse-stock`, null, true, 'Get Stock by Warehouse');
+    }
+  }
+
+  // 6.13 Bulk Generate Barcodes
+  await apiCall('POST', '/accounting/inventory/items/bulk-generate-barcodes', {
+    item_ids: testData.itemId ? [testData.itemId] : []
+  }, true, 'Bulk Generate Barcodes');
+
+  // 6.14 List Stock Adjustments
+  await apiCall('GET', '/accounting/stock-adjustments', null, true, 'List Stock Adjustments');
+
+  // 6.15 Create Stock Adjustment
+  if (testData.itemId && testData.warehouseId) {
+    await apiCall('POST', '/accounting/stock-adjustments', {
+      adjustment_date: '2024-03-15',
+      warehouse_id: testData.warehouseId,
+      items: [{
+        item_id: testData.itemId,
+        current_quantity: 100,
+        adjusted_quantity: 95,
+        reason: 'Damaged goods'
+      }]
+    }, true, 'Create Stock Adjustment');
+  }
+
+  // 6.16 List Stock Transfers
+  await apiCall('GET', '/accounting/stock-transfers', null, true, 'List Stock Transfers');
+
+  // 6.17 Create Stock Transfer
+  if (testData.itemId && testData.warehouseId) {
+    await apiCall('POST', '/accounting/stock-transfers', {
+      transfer_date: '2024-03-15',
+      from_warehouse_id: testData.warehouseId,
+      to_warehouse_id: testData.warehouseId,
+      items: [{
+        item_id: testData.itemId,
+        quantity: 10
+      }]
+    }, true, 'Create Stock Transfer');
   }
 }
 
-// Test Phase 7: Transaction Processing
+// Test Phase 7: Transaction Processing (Enhanced)
 async function testTransactionProcessing() {
-  console.log('\n💰 PHASE 7: TRANSACTION PROCESSING');
-  console.log('==================================');
+  console.log('\n💰 PHASE 7: TRANSACTION PROCESSING (ENHANCED)');
+  console.log('==============================================');
 
   // 7.1 List Vouchers
   await apiCall('GET', '/accounting/vouchers?page=1&limit=20', null, true, 'List Vouchers');
 
-  // 7.2 Create Sales Invoice
+  // 7.2 Create Generic Voucher
+  const voucherResult = await apiCall('POST', '/accounting/vouchers', {
+    voucher_date: '2024-03-15',
+    voucher_type: 'Journal',
+    narration: 'Test journal entry',
+    entries: [{
+      ledger_id: testData.ledgerId,
+      debit_amount: 1000,
+      credit_amount: 0
+    }]
+  }, true, 'Create Generic Voucher');
+
+  if (voucherResult.success && voucherResult.data.data?.id) {
+    testData.voucherId = voucherResult.data.data.id;
+    console.log(`💰 Voucher ID saved: ${testData.voucherId}`);
+
+    // 7.3 Get Voucher by ID
+    await apiCall('GET', `/accounting/vouchers/${testData.voucherId}`, null, true, 'Get Voucher by ID');
+
+    // 7.4 Update Voucher
+    await apiCall('PUT', `/accounting/vouchers/${testData.voucherId}`, {
+      narration: 'Updated test journal entry'
+    }, true, 'Update Voucher');
+
+    // 7.5 Post Voucher
+    await apiCall('POST', `/accounting/vouchers/${testData.voucherId}/post`, {}, true, 'Post Voucher');
+
+    // 7.6 Cancel Voucher
+    await apiCall('POST', `/accounting/vouchers/${testData.voucherId}/cancel`, {}, true, 'Cancel Voucher');
+  }
+
+  // 7.7 Create Sales Invoice
   if (testData.ledgerId && testData.itemId) {
     const salesResult = await apiCall('POST', '/accounting/invoices/sales', {
       voucher_date: '2024-01-15',
@@ -428,12 +677,27 @@ async function testTransactionProcessing() {
     }, true, 'Create Sales Invoice');
 
     if (salesResult.success && salesResult.data.data?.id) {
-      testData.voucherId = salesResult.data.data.id;
-      console.log(`💰 Voucher ID saved: ${testData.voucherId}`);
+      testData.salesInvoiceId = salesResult.data.data.id;
     }
   }
 
-  // 7.3 Create Payment
+  // 7.8 Create Purchase Invoice
+  if (testData.ledgerId && testData.itemId) {
+    await apiCall('POST', '/accounting/invoices/purchase', {
+      voucher_date: '2024-01-15',
+      party_ledger_id: testData.ledgerId,
+      items: [{
+        item_id: testData.itemId,
+        quantity: 5,
+        rate: 80.00,
+        amount: 400.00
+      }],
+      total_amount: 400.00,
+      narration: 'Test purchase invoice'
+    }, true, 'Create Purchase Invoice');
+  }
+
+  // 7.9 Create Payment
   if (testData.ledgerId) {
     await apiCall('POST', '/accounting/payments', {
       voucher_date: '2024-01-15',
@@ -443,6 +707,56 @@ async function testTransactionProcessing() {
       narration: 'Payment to supplier'
     }, true, 'Create Payment');
   }
+
+  // 7.10 Create Receipt
+  if (testData.ledgerId) {
+    await apiCall('POST', '/accounting/receipts', {
+      voucher_date: '2024-01-15',
+      receipt_ledger_id: testData.ledgerId,
+      party_ledger_id: testData.ledgerId,
+      amount: 300.00,
+      narration: 'Receipt from customer'
+    }, true, 'Create Receipt');
+  }
+
+  // 7.11 Create Journal Entry
+  if (testData.ledgerId) {
+    await apiCall('POST', '/accounting/journals', {
+      voucher_date: '2024-01-15',
+      entries: [{
+        ledger_id: testData.ledgerId,
+        debit_amount: 1000,
+        credit_amount: 0
+      }],
+      narration: 'Test journal entry'
+    }, true, 'Create Journal Entry');
+  }
+
+  // 7.12 Create Contra Entry
+  if (testData.ledgerId) {
+    await apiCall('POST', '/accounting/contra', {
+      voucher_date: '2024-01-15',
+      from_ledger_id: testData.ledgerId,
+      to_ledger_id: testData.ledgerId,
+      amount: 200.00,
+      narration: 'Bank to cash transfer'
+    }, true, 'Create Contra Entry');
+  }
+
+  // 7.13 Get Outstanding Bills
+  await apiCall('GET', '/accounting/outstanding', null, true, 'Get Outstanding Bills');
+
+  // 7.14 Allocate Payment to Bill
+  if (testData.salesInvoiceId) {
+    await apiCall('POST', '/accounting/bills/allocate', {
+      bill_id: testData.salesInvoiceId,
+      payment_voucher_id: testData.voucherId,
+      allocated_amount: 100.00
+    }, true, 'Allocate Payment to Bill');
+  }
+
+  // 7.15 Get Aging Report
+  await apiCall('GET', '/accounting/bills/aging', null, true, 'Get Bills Aging Report');
 }
 
 // Test Phase 8: Reports
@@ -468,10 +782,10 @@ async function testReports() {
   await apiCall('GET', '/reports/stock-summary', null, true, 'Generate Stock Summary');
 }
 
-// Test Phase 9: GST & Compliance
+// Test Phase 9: GST & Compliance (Updated with Sandbox APIs)
 async function testGSTCompliance() {
-  console.log('\n🧾 PHASE 9: GST & COMPLIANCE');
-  console.log('============================');
+  console.log('\n🧾 PHASE 9: GST & COMPLIANCE (SANDBOX APIS)');
+  console.log('============================================');
 
   // 9.1 List GSTINs
   await apiCall('GET', '/gst/gstins', null, true, 'List GSTINs');
@@ -486,22 +800,87 @@ async function testGSTCompliance() {
     is_active: true
   }, true, 'Create GSTIN');
 
-  // 9.3 Validate GSTIN
+  // 9.3 Validate GSTIN (Sandbox API)
   await apiCall('POST', '/gst/validate', {
     gstin: '27ABCDE1234F1Z5'
-  }, true, 'Validate GSTIN');
+  }, true, 'Validate GSTIN via Sandbox');
 
-  // 9.4 Get GST Rates
-  await apiCall('GET', '/gst/rates', null, true, 'Get GST Rates');
+  // 9.4 Get GSTIN Details (Sandbox API)
+  await apiCall('GET', '/gst/details/27ABCDE1234F1Z5', null, true, 'Get GSTIN Details via Sandbox');
 
-  // 9.5 TDS Calculation
+  // 9.5 Get GST Rate by HSN (Sandbox API)
+  await apiCall('GET', '/gst/rate?hsn_code=1001&state=Maharashtra', null, true, 'Get GST Rate by HSN via Sandbox');
+
+  // 9.6 GSTR-2A Reconciliation Job (Sandbox API)
+  await apiCall('POST', '/gst/analytics/gstr2a-reconciliation', {
+    gstin: '27ABCDE1234F1Z5',
+    year: 2024,
+    month: 3,
+    reconciliation_criteria: 'strict'
+  }, true, 'Create GSTR-2A Reconciliation Job');
+
+  // 9.7 Upload Purchase Ledger (Sandbox API)
+  await apiCall('POST', '/gst/analytics/upload-purchase-ledger', {
+    gstin: '27ABCDE1234F1Z5',
+    file_type: 'csv',
+    data: [
+      {
+        invoice_number: 'INV001',
+        invoice_date: '2024-03-15',
+        supplier_gstin: '29AABCU9603R1ZX',
+        taxable_amount: 10000,
+        igst_amount: 1800
+      }
+    ]
+  }, true, 'Upload Purchase Ledger Data');
+
+  // 9.8 TDS Calculation (Sandbox API)
   await apiCall('POST', '/tds/calculate', {
     amount: 10000,
     tds_section: '194C',
     pan_available: true
-  }, true, 'Calculate TDS');
+  }, true, 'Calculate TDS via Sandbox');
 
-  // 9.6 List TDS Records
+  // 9.9 TDS Analytics - Potential Notice (Sandbox API)
+  await apiCall('POST', '/tds/analytics/potential-notice', {
+    quarter: 'Q1',
+    tan: 'ABCD12345E',
+    form: '24Q',
+    financial_year: '2023-24'
+  }, true, 'TDS Potential Notice Analysis');
+
+  // 9.10 TDS Calculator - Non-Salary (Sandbox API)
+  await apiCall('POST', '/tds/calculator/non-salary', {
+    payment_amount: 100000,
+    section: '194C',
+    deductee_pan: 'ABCDE1234F',
+    payment_date: '2024-03-15',
+    nature_of_payment: 'Contract Payment'
+  }, true, 'Calculate Non-Salary TDS');
+
+  // 9.11 TDS Compliance - 206AB Check (Sandbox API)
+  await apiCall('POST', '/tds/compliance/206ab-check', {
+    pan: 'ABCDE1234F',
+    consent: true,
+    reason: 'TDS rate verification'
+  }, true, 'Section 206AB Compliance Check');
+
+  // 9.12 TDS Compliance - CSI Download (Sandbox API)
+  await apiCall('POST', '/tds/compliance/csi-download', {
+    tan: 'ABCD12345E',
+    quarter: 'Q1',
+    financial_year: '2023-24'
+  }, true, 'Download CSI Data');
+
+  // 9.13 TDS Reports - TCS Report (Sandbox API)
+  await apiCall('POST', '/tds/reports/tcs-report', {
+    tan: 'ABCD12345E',
+    quarter: 'Q1',
+    financial_year: '2023-24',
+    report_type: 'summary'
+  }, true, 'Generate TCS Report');
+
+  // 9.14 List TDS Records
   await apiCall('GET', '/tds', null, true, 'List TDS Records');
 }
 
@@ -830,32 +1209,240 @@ async function testReviewAPIs() {
   }
 }
 
-// Test Phase 22: File Management
-async function testFileAPIs() {
-  console.log('\n📁 PHASE 22: FILE MANAGEMENT');
-  console.log('=============================');
+// Test Phase 24: File Management (Enhanced)
+async function testFileManagement() {
+  console.log('\n📁 PHASE 24: FILE MANAGEMENT (ENHANCED)');
+  console.log('=======================================');
 
-  // 22.1 List Files
-  await apiCall('GET', '/files', null, true, 'List Files');
-
-  // Note: File upload requires multipart/form-data, which is complex to test in this script
-  // We'll skip file upload for now but include the list endpoint
+  // 24.1 Upload File (Note: This requires multipart/form-data)
+  // We'll test the endpoint but expect it to fail without proper file data
+  await apiCall('POST', '/files/upload', {
+    // This will fail as we need actual file upload, but tests the endpoint
+  }, true, 'Upload File (Expected to fail without file)');
 }
 
-// Test Phase 23: Income Tax & Finbox
+// Test Phase 25: Tally Import & Export
+async function testTallyIntegration() {
+  console.log('\n📊 PHASE 25: TALLY IMPORT & EXPORT');
+  console.log('==================================');
+
+  // 25.1 Get Tally Import Template
+  await apiCall('GET', '/accounting/tally-import/template', null, true, 'Get Tally Import Template');
+
+  // 25.2 Import Tally Data (Note: This requires file upload)
+  // We'll test the endpoint but expect it to fail without proper file data
+  await apiCall('POST', '/accounting/tally-import', {
+    // This will fail as we need actual file upload, but tests the endpoint
+  }, true, 'Import Tally Data (Expected to fail without file)');
+}
+
+// Test Phase 26: SEO Management
+async function testSEOManagement() {
+  console.log('\n🔍 PHASE 26: SEO MANAGEMENT');
+  console.log('===========================');
+
+  // 26.1 List SEO Pages
+  await apiCall('GET', '/seo', null, false, 'List SEO Pages');
+
+  // 26.2 Get SEO by Path
+  await apiCall('GET', '/seo/home', null, false, 'Get SEO by Path');
+
+  // 26.3 Create SEO (Admin only - expected to fail)
+  await apiCall('POST', '/seo', {
+    path: '/test-page',
+    title: 'Test Page',
+    description: 'Test page description',
+    keywords: 'test, page'
+  }, true, 'Create SEO (Admin only - Expected to fail)');
+
+  // 26.4 Update SEO (Admin only - expected to fail)
+  await apiCall('PUT', '/seo/1', {
+    title: 'Updated Test Page'
+  }, true, 'Update SEO (Admin only - Expected to fail)');
+
+  // 26.5 Delete SEO (Admin only - expected to fail)
+  await apiCall('DELETE', '/seo/1', null, true, 'Delete SEO (Admin only - Expected to fail)');
+}
+
+// Test Phase 27: Cron Job Management
+async function testCronManagement() {
+  console.log('\n⏰ PHASE 27: CRON JOB MANAGEMENT');
+  console.log('===============================');
+
+  // 27.1 Get Cron Status
+  await apiCall('GET', '/admin/cron/status', null, true, 'Get Cron Job Status');
+
+  // 27.2 Trigger Trial Cleanup
+  await apiCall('POST', '/admin/cron/trigger-trial-cleanup', {}, true, 'Trigger Trial Cleanup');
+
+  // 27.3 Stop Cron Job
+  await apiCall('POST', '/admin/cron/jobs/trial-cleanup/stop', {}, true, 'Stop Cron Job');
+
+  // 27.4 Start Cron Job
+  await apiCall('POST', '/admin/cron/jobs/trial-cleanup/start', {}, true, 'Start Cron Job');
+}
+
+// Test Phase 28: Finbox Integration (Enhanced)
+async function testFinboxIntegration() {
+  console.log('\n🏦 PHASE 28: FINBOX INTEGRATION (ENHANCED)');
+  console.log('==========================================');
+
+  // 28.1 Get Credit Score
+  await apiCall('POST', '/finbox/credit-score', {
+    customer_id: 'test_customer_123',
+    phone: '9876543210',
+    consent: true
+  }, true, 'Get Credit Score');
+
+  // 28.2 Get Inclusion Score
+  await apiCall('GET', '/finbox/inclusion-score/test_customer_123', null, true, 'Get Inclusion Score');
+
+  // 28.3 Check Loan Eligibility
+  await apiCall('POST', '/finbox/eligibility', {
+    customer_id: 'test_customer_123',
+    loan_amount: 100000,
+    loan_tenure: 12
+  }, true, 'Check Loan Eligibility');
+
+  // 28.4 Create Finbox User
+  await apiCall('POST', '/finbox/user', {
+    customer_id: 'test_customer_123',
+    phone: '9876543210',
+    email: 'test@example.com',
+    name: 'Test User'
+  }, true, 'Create Finbox User');
+
+  // 28.5 Initiate Bank Statement
+  await apiCall('POST', '/finbox/bank-statement/initiate', {
+    customer_id: 'test_customer_123',
+    bank_name: 'HDFC Bank'
+  }, true, 'Initiate Bank Statement');
+
+  // 28.6 Get Bank Statement Status
+  await apiCall('GET', '/finbox/bank-statement/test_customer_123/status', null, true, 'Get Bank Statement Status');
+
+  // 28.7 Get Bank Statement Analysis
+  await apiCall('GET', '/finbox/bank-statement/test_customer_123/analysis', null, true, 'Get Bank Statement Analysis');
+
+  // 28.8 Get Device Insights
+  await apiCall('POST', '/finbox/device-insights', {
+    customer_id: 'test_customer_123',
+    device_data: {
+      device_id: 'test_device_123',
+      platform: 'android'
+    }
+  }, true, 'Get Device Insights');
+
+  // 28.9 Generate Session Token
+  await apiCall('POST', '/finbox/session', {
+    customer_id: 'test_customer_123'
+  }, true, 'Generate Session Token');
+
+  // 28.10 Save Consent
+  await apiCall('POST', '/finbox/consent', {
+    customer_id: 'test_customer_123',
+    consent_type: 'credit_score',
+    consent_given: true
+  }, true, 'Save Consent');
+
+  // 28.11 Get Consent
+  await apiCall('GET', '/finbox/consent?customer_id=test_customer_123', null, true, 'Get Consent');
+}
+
+// Test Phase 29: HSN Code Management (Enhanced)
+async function testHSNManagement() {
+  console.log('\n🏷️  PHASE 29: HSN CODE MANAGEMENT (ENHANCED)');
+  console.log('=============================================');
+
+  // 29.1 Search HSN Codes
+  await apiCall('GET', '/hsn/search?q=mobile&limit=10', null, true, 'Search HSN Codes');
+
+  // 29.2 Get HSN by Code
+  await apiCall('GET', '/hsn/8517', null, true, 'Get HSN by Code');
+
+  // 29.3 Validate HSN Code
+  await apiCall('GET', '/hsn/8517/validate', null, true, 'Validate HSN Code');
+
+  // 29.4 Get HSN Config Status
+  await apiCall('GET', '/hsn/config/status', null, true, 'Get HSN Config Status');
+}
+
+// Test Phase 23: Income Tax & Advanced Integrations (Sandbox APIs)
 async function testAdvancedIntegrations() {
-  console.log('\n🧮 PHASE 23: ADVANCED INTEGRATIONS');
-  console.log('===================================');
+  console.log('\n🧮 PHASE 23: INCOME TAX & ADVANCED INTEGRATIONS (SANDBOX APIS)');
+  console.log('===============================================================');
 
-  // 23.1 Income Tax Calculation
-  await apiCall('POST', '/income-tax/calculate', {
-    income_amount: 500000,
-    financial_year: '2024-25',
-    age_category: 'below_60'
-  }, true, 'Calculate Income Tax');
+  // 23.1 Income Tax Calculator - Tax P&L (Sandbox API)
+  await apiCall('POST', '/income-tax/calculator/tax-pl', {
+    financial_year: '2023-24',
+    assessee_type: 'Individual',
+    residential_status: 'Resident',
+    income_sources: {
+      salary: { amount: 800000 },
+      other_sources: { amount: 50000 }
+    },
+    deductions: {
+      section_80c: { amount: 150000 },
+      section_80d: { amount: 25000 }
+    }
+  }, true, 'Calculate Income Tax P&L via Sandbox');
 
-  // 23.2 Finbox Credit Score
-  await apiCall('GET', '/finbox/credit-score', null, true, 'Get Credit Score');
+  // 23.2 Income Tax Calculator - Upload Trading Data (Sandbox API)
+  await apiCall('POST', '/income-tax/calculator/upload-trading-data', {
+    financial_year: '2023-24',
+    trading_data: [
+      {
+        security_name: 'RELIANCE',
+        buy_date: '2023-04-01',
+        sell_date: '2023-06-15',
+        buy_price: 2500,
+        sell_price: 2800,
+        quantity: 10
+      }
+    ]
+  }, true, 'Upload Trading Data for Tax Calculation');
+
+  // 23.3 Finbox Credit Score (if available)
+  await apiCall('GET', '/finbox/credit-score', null, true, 'Get Credit Score via Finbox');
+
+  // 23.4 E-Invoice Generation (Sandbox API)
+  await apiCall('POST', '/einvoice/generate', {
+    invoice_number: 'INV001',
+    invoice_date: '2024-03-15',
+    supplier_gstin: '27ABCDE1234F1Z5',
+    buyer_gstin: '29AABCU9603R1ZX',
+    items: [
+      {
+        description: 'Test Product',
+        hsn_code: '8517',
+        quantity: 1,
+        unit_price: 10000,
+        taxable_amount: 10000,
+        igst_rate: 18,
+        igst_amount: 1800
+      }
+    ]
+  }, true, 'Generate E-Invoice via Sandbox');
+
+  // 23.5 E-Way Bill Generation (Sandbox API)
+  await apiCall('POST', '/ewaybill/generate', {
+    invoice_number: 'INV001',
+    invoice_date: '2024-03-15',
+    supplier_gstin: '27ABCDE1234F1Z5',
+    buyer_gstin: '29AABCU9603R1ZX',
+    transport_mode: 'Road',
+    vehicle_number: 'MH12AB1234',
+    distance: 100,
+    items: [
+      {
+        description: 'Test Product',
+        hsn_code: '8517',
+        quantity: 1,
+        taxable_amount: 10000,
+        igst_amount: 1800
+      }
+    ]
+  }, true, 'Generate E-Way Bill via Sandbox');
 }
 async function runComprehensiveTests() {
   console.log('🚀 COMPREHENSIVE BACKEND API TESTING');
@@ -905,6 +1492,54 @@ async function runComprehensiveTests() {
     // Phase 12: Advanced Features
     await testAdvancedFeatures();
 
+    // Phase 13: Admin Portal APIs
+    await testAdminAPIs();
+
+    // Phase 14: Distributor Management
+    await testDistributorAPIs();
+
+    // Phase 15: Salesman Management
+    await testSalesmanAPIs();
+
+    // Phase 16: Target Management
+    await testTargetAPIs();
+
+    // Phase 17: Commission & Payout Management
+    await testCommissionPayoutAPIs();
+
+    // Phase 18: Referral System
+    await testReferralAPIs();
+
+    // Phase 19: Product Attributes
+    await testAttributeAPIs();
+
+    // Phase 20: Blog & Content Management
+    await testBlogAPIs();
+
+    // Phase 22: Review System
+    await testReviewAPIs();
+
+    // Phase 23: Income Tax & Advanced Integrations (Sandbox APIs)
+    await testAdvancedIntegrations();
+
+    // Phase 24: File Management (Enhanced)
+    await testFileManagement();
+
+    // Phase 25: Tally Import & Export
+    await testTallyIntegration();
+
+    // Phase 26: SEO Management
+    await testSEOManagement();
+
+    // Phase 27: Cron Job Management
+    await testCronManagement();
+
+    // Phase 28: Finbox Integration (Enhanced)
+    await testFinboxIntegration();
+
+    // Phase 29: HSN Code Management (Enhanced)
+    await testHSNManagement();
+
   } catch (error) {
     console.log('\n💥 Test execution crashed:', error.message);
   } finally {
@@ -914,39 +1549,70 @@ async function runComprehensiveTests() {
   }
 }
 
-// Show test summary
+// Show test summary with enhanced reporting
 function showSummary() {
   console.log('\n📊 COMPREHENSIVE TEST RESULTS');
   console.log('==============================');
   console.log(`✅ Passed: ${testResults.summary.passed}`);
   console.log(`❌ Failed: ${testResults.summary.failed}`);
   console.log(`📊 Total: ${testResults.summary.total}`);
-  console.log(`⏱️  Duration: ${new Date(testResults.summary.endTime) - new Date(testResults.summary.startTime)}ms`);
+  console.log(`⏱️  Duration: ${testResults.summary.duration}ms`);
+  console.log(`📈 Success Rate: ${testResults.summary.successRate}%`);
 
-  const successRate = ((testResults.summary.passed / testResults.summary.total) * 100).toFixed(1);
-  console.log(`📈 Success Rate: ${successRate}%`);
+  // Show phase-wise breakdown
+  console.log('\n📋 Phase-wise Breakdown:');
+  Object.entries(testResults.summary.phaseBreakdown).forEach(([phase, stats]) => {
+    if (stats.total > 0) {
+      const phaseSuccessRate = ((stats.passed / stats.total) * 100).toFixed(1);
+      console.log(`  ${phase.replace('_', ' ').toUpperCase()}: ${stats.passed}/${stats.total} (${phaseSuccessRate}%)`);
+    }
+  });
+
+  // Show Sandbox API specific results
+  console.log('\n🔗 Sandbox API Results:');
+  const gstSuccess = testResults.sandboxApiResults.gstApis.filter(api => api.success).length;
+  const gstTotal = testResults.sandboxApiResults.gstApis.length;
+  const tdsSuccess = testResults.sandboxApiResults.tdsApis.filter(api => api.success).length;
+  const tdsTotal = testResults.sandboxApiResults.tdsApis.length;
+  const itSuccess = testResults.sandboxApiResults.incomeTaxApis.filter(api => api.success).length;
+  const itTotal = testResults.sandboxApiResults.incomeTaxApis.length;
+
+  console.log(`  GST APIs: ${gstSuccess}/${gstTotal} ${gstTotal > 0 ? `(${((gstSuccess/gstTotal)*100).toFixed(1)}%)` : ''}`);
+  console.log(`  TDS APIs: ${tdsSuccess}/${tdsTotal} ${tdsTotal > 0 ? `(${((tdsSuccess/tdsTotal)*100).toFixed(1)}%)` : ''}`);
+  console.log(`  Income Tax APIs: ${itSuccess}/${itTotal} ${itTotal > 0 ? `(${((itSuccess/itTotal)*100).toFixed(1)}%)` : ''}`);
+
+  // Show API coverage
+  console.log('\n📊 API Coverage Analysis:');
+  console.log(`  Total Endpoints Tested: ${testResults.coverage.totalEndpointsTested}`);
+  console.log(`  Unique Endpoints: ${testResults.coverage.uniqueEndpoints}`);
+  console.log(`  HTTP Methods: GET(${testResults.coverage.httpMethods.GET}) POST(${testResults.coverage.httpMethods.POST}) PUT(${testResults.coverage.httpMethods.PUT}) DELETE(${testResults.coverage.httpMethods.DELETE})`);
 
   // Show failed tests
-  const failedTests = testResults.tests.filter(test => !test.success);
-  if (failedTests.length > 0) {
-    console.log('\n❌ Failed Tests:');
-    failedTests.forEach(test => {
-      console.log(`  - ${test.description} (${test.status}): ${test.error?.message || 'Unknown error'}`);
+  if (testResults.failedTests.length > 0) {
+    console.log('\n❌ Failed Tests (Top 10):');
+    testResults.failedTests.slice(0, 10).forEach(test => {
+      console.log(`  - ${test.description} (${test.status}): ${test.error}`);
+    });
+    if (testResults.failedTests.length > 10) {
+      console.log(`  ... and ${testResults.failedTests.length - 10} more (see JSON report)`);
+    }
+  }
+
+  // Show performance insights
+  console.log('\n⚡ Performance Insights:');
+  console.log(`  Average Response Time: ${testResults.performance.averageResponseTime.toFixed(0)}ms`);
+  
+  if (testResults.performance.slowestTests.length > 0) {
+    console.log('  Slowest APIs (>1s):');
+    testResults.performance.slowestTests.slice(0, 5).forEach(test => {
+      console.log(`    - ${test.description}: ${test.responseTime}ms`);
     });
   }
 
-  // Show key findings
-  console.log('\n🔍 Key Findings:');
-  const authTests = testResults.tests.filter(test => test.endpoint.includes('/auth'));
-  const companyTests = testResults.tests.filter(test => test.endpoint.includes('/companies'));
-  const accountingTests = testResults.tests.filter(test => test.endpoint.includes('/accounting'));
-
-  console.log(`  - Authentication: ${authTests.filter(t => t.success).length}/${authTests.length} passed`);
-  console.log(`  - Company Management: ${companyTests.filter(t => t.success).length}/${companyTests.length} passed`);
-  console.log(`  - Accounting APIs: ${accountingTests.filter(t => t.success).length}/${accountingTests.length} passed`);
-
-  console.log('\n💾 Detailed results saved to: api-test-results.json');
-  console.log('📋 Use this data to identify and fix issues systematically');
+  console.log('\n💾 Report Generated:');
+  console.log('  - api-test-results.json (consolidated results with all data)');
+  console.log('\n📋 Use this report to identify and fix issues systematically');
+  console.log(`🎯 Current API Coverage: ${testResults.coverage.totalEndpointsTested} endpoints tested`);
 }
 
 // Run the comprehensive test

@@ -151,9 +151,8 @@ async function initMasterDatabase() {
     logger.info('  ✓ tenant_master (tenant metadata)');
     logger.info('  ✓ account_groups (shared chart of accounts)');
     logger.info('  ✓ voucher_types (shared voucher types)');
-    logger.info('  ✓ gst_rates (shared GST rates)');
-    logger.info('  ✓ tds_sections (shared TDS sections)');
     logger.info('  ✓ accounting_years (shared accounting periods)');
+    logger.info('  ℹ️  GST rates and TDS sections now fetched from Sandbox API');
 
     // Allow memory to be freed
     if (global.gc) {
@@ -244,26 +243,11 @@ async function seedMasterData() {
       await require('../seeders/masterSeeds').seedVoucherTypes();
     }
 
-    // Seed default GST rates
-    const gstRateCount = await masterModels.GSTRate.count();
-    if (gstRateCount === 0) {
-      logger.info('Seeding default GST rates...');
-      await require('../seeders/masterSeeds').seedGSTRates();
-    }
+    // GST rates and TDS sections removed - now using Sandbox API for live data
+    logger.info('ℹ️  GST rates and TDS sections now fetched from Sandbox API instead of master database');
 
-    // Seed default TDS sections
-    const tdsCount = await masterModels.TDSSection.count();
-    if (tdsCount === 0) {
-      logger.info('Seeding default TDS sections...');
-      await require('../seeders/masterSeeds').seedTDSSections();
-    }
-
-    // Seed starter HSN/SAC master entries
-    const hsnCount = await masterModels.HSNSAC.count();
-    if (hsnCount === 0) {
-      logger.info('Seeding starter HSN/SAC master data...');
-      await require('../seeders/masterSeeds').seedHSNSACMaster();
-    }
+    // HSN/SAC master data removed - now using Sandbox API for live data
+    logger.info('ℹ️  HSN/SAC data now fetched from Sandbox API instead of master database');
 
     logger.info('Master data seeding complete');
   } catch (error) {

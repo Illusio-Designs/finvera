@@ -66,28 +66,19 @@ function calculateGSTWithCess(taxableAmount, gstRate, cessRate, supplierState, p
 }
 
 /**
- * Determine GST rate based on HSN/SAC code
- * Common GST rates in India: 0%, 0.25%, 3%, 5%, 12%, 18%, 28%
+ * Determine GST rate based on HSN/SAC code - DEPRECATED
+ * Use Sandbox API for accurate GST rates instead
  * @param {string} hsnSacCode - HSN or SAC code
  * @param {string} itemType - 'goods' or 'services'
- * @returns {number} GST rate percentage
+ * @returns {number} GST rate percentage (fallback only)
+ * @deprecated Use gstApiService.getGSTRate() with Sandbox API instead
  */
 function getGSTRateByHSN(hsnSacCode, itemType = 'goods') {
-  // Simplified mapping - in production, use a comprehensive HSN/SAC database
-  const hsnPrefix = hsnSacCode ? hsnSacCode.substring(0, 2) : '';
-
-  // Common rates mapping (simplified)
-  const rateMap = {
-    '00': 0, // Nil rated
-    '01': 0.25, // Precious metals
-    '02': 3, // Gold
-    '03': 5, // Common items
-    '04': 12, // Standard items
-    '05': 18, // Most common
-    '06': 28, // Luxury items
-  };
-
-  return rateMap[hsnPrefix] || 18; // Default 18%
+  console.warn('getGSTRateByHSN is deprecated. Use gstApiService.getGSTRate() with Sandbox API for accurate rates.');
+  
+  // Return default 18% as fallback only
+  // In production, always use Sandbox API for accurate rates
+  return 18;
 }
 
 /**

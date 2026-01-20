@@ -62,55 +62,19 @@ async function seedVoucherTypes() {
 }
 
 /**
- * Seed default GST rates
+ * GST rates, TDS sections, and HSN/SAC master data removed - now using Sandbox API for live data
+ * These functions are deprecated and no longer used
  */
-async function seedGSTRates() {
-  const gstRates = [
-    { rate_name: 'GST 0%', cgst_rate: 0, sgst_rate: 0, igst_rate: 0, is_active: true },
-    { rate_name: 'GST 0.25%', cgst_rate: 0.125, sgst_rate: 0.125, igst_rate: 0.25, is_active: true },
-    { rate_name: 'GST 3%', cgst_rate: 1.5, sgst_rate: 1.5, igst_rate: 3, is_active: true },
-    { rate_name: 'GST 5%', cgst_rate: 2.5, sgst_rate: 2.5, igst_rate: 5, is_active: true },
-    { rate_name: 'GST 12%', cgst_rate: 6, sgst_rate: 6, igst_rate: 12, is_active: true },
-    { rate_name: 'GST 18%', cgst_rate: 9, sgst_rate: 9, igst_rate: 18, is_active: true },
-    { rate_name: 'GST 28%', cgst_rate: 14, sgst_rate: 14, igst_rate: 28, is_active: true },
-  ];
-
-  await masterModels.GSTRate.bulkCreate(gstRates, { ignoreDuplicates: true });
-  console.log(`✓ Seeded ${gstRates.length} GST rates`);
-}
 
 /**
- * Seed default TDS sections
+ * GST rates, TDS sections, and HSN/SAC master data removed - now using Sandbox API for live data
+ * These functions are deprecated and no longer used
  */
-async function seedTDSSections() {
-  const tdsSections = [
-    { section_code: '194C', section_name: 'Payment to contractors', default_rate: 1.00, is_active: true },
-    { section_code: '194J', section_name: 'Professional or technical services', default_rate: 10.00, is_active: true },
-    { section_code: '194I', section_name: 'Rent', default_rate: 10.00, is_active: true },
-    { section_code: '194H', section_name: 'Commission or brokerage', default_rate: 5.00, is_active: true },
-    { section_code: '194A', section_name: 'Interest other than on securities', default_rate: 10.00, is_active: true },
-    { section_code: '194D', section_name: 'Insurance commission', default_rate: 5.00, is_active: true },
-    { section_code: '192', section_name: 'Salary', default_rate: 0.00, is_active: true },
-  ];
-
-  await masterModels.TDSSection.bulkCreate(tdsSections, { ignoreDuplicates: true });
-  console.log(`✓ Seeded ${tdsSections.length} TDS sections`);
-}
-
-/**
- * Seed starter HSN/SAC master entries
- * Uses comprehensive seeder with commonly used codes
- * For complete official data, use: node src/scripts/importHSNData.js <csv-file>
- */
-async function seedHSNSACMaster() {
-  const { seedComprehensiveHSNSAC } = require('./hsnMasterData');
-  await seedComprehensiveHSNSAC();
-}
 
 module.exports = {
   seedAccountGroups,
   seedVoucherTypes,
-  seedGSTRates,
-  seedTDSSections,
-  seedHSNSACMaster,
+  // seedGSTRates, // Removed - using Sandbox API
+  // seedTDSSections, // Removed - using Sandbox API
+  // seedHSNSACMaster, // Removed - using Sandbox API
 };

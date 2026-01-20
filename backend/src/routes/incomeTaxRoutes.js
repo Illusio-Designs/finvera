@@ -24,4 +24,12 @@ router.get('/form26as/:pan', incomeTaxController.getForm26AS);
 // Form 16 parsing (OCR)
 router.post('/form16/parse', incomeTaxController.parseForm16);
 
+// Sandbox Income Tax Calculator APIs
+router.post('/calculator/securities/tax-pnl', incomeTaxController.submitTaxPnLJob);
+router.get('/calculator/securities/tax-pnl/:job_id', incomeTaxController.getTaxPnLJobStatus);
+router.post('/calculator/securities/upload-trading-data', incomeTaxController.uploadTradingData);
+router.post('/calculator/capital-gains', incomeTaxController.calculateCapitalGainsTax);
+router.post('/calculator/advance-tax', incomeTaxController.calculateAdvanceTax);
+router.post('/form16/generate', incomeTaxController.generateForm16);
+
 module.exports = router;

@@ -34,7 +34,7 @@ function getFinancialYear(date) {
 class TDSService {
   /**
    * Calculate TDS for a voucher
-   * Uses third-party API if configured, otherwise falls back to local calculation
+   * Uses Sandbox API for TDS calculation
    */
   async calculateTDS(ctx, voucherId, tdsSection, tdsRate) {
     const { tenantModels, company } = ctx;
@@ -50,56 +50,54 @@ class TDSService {
 
     const grossAmount = parseFloat(voucher.total_amount || 0);
     const section = tdsSection || partyLedger.tds_section || '194C';
-    const rate = parseFloat(tdsRate) || parseFloat(partyLedger.tds_rate) || 10;
+    const paymentDate = voucher.voucher_date || new Date();
 
     // Determine quarter and financial year
-    const paymentDate = voucher.voucher_date || new Date();
     const quarter = getQuarter(paymentDate);
     const financialYear = getFinancialYear(paymentDate);
 
-    // Check if third-party API is configured (Sandbox uses API key)
+    // Check if Sandbox API is configured
     const compliance = company?.compliance || {};
     const useThirdParty = compliance.tds_api?.applicable && 
                           compliance.tds_api?.api_key;
 
-    let tdsAmount = (grossAmount * rate) / 100;
-    let netAmount = grossAmount - tdsAmount;
+    let tdsAmount = 0;
+    let netAmount = grossAmount;
+    let effectiveRate = parseFloat(tdsRate) || parseFloat(partyLedger.tds_rate) || 10;
     let apiResponse = null;
 
     if (useThirdParty) {
       try {
         const apiClient = createApiClientFromCompany(company);
         
-        // Prepare payment data for third-party API
+        // Prepare payment data for Sandbox API
         const paymentData = {
+          payment_amount: grossAmount,
           section: section,
-          grossAmount: grossAmount,
-          rate: rate,
-          paymentDate: paymentDate,
-          deductee: {
-            name: partyLedger.ledger_name || partyLedger.name || '',
-            pan: partyLedger.pan || null,
-            gstin: partyLedger.gstin || null,
-          },
-          deductor: {
-            name: company.company_name || company.name || '',
-            pan: company.pan || null,
-            tan: company.tan || null,
-          },
+          deductee_pan: partyLedger.pan || null,
+          payment_date: paymentDate.toISOString().split('T')[0],
+          nature_of_payment: `Payment to ${partyLedger.ledger_name || partyLedger.name || 'Party'}`,
         };
 
-        const result = await apiClient.calculateTDS(paymentData);
+        const result = await apiClient.calculateNonSalaryTDS(paymentData);
         apiResponse = result;
         
-        // Use API response if available
+        // Use API response
         if (result.tdsAmount !== undefined) {
-          tdsAmount = parseFloat(result.tdsAmount);
-          netAmount = parseFloat(result.netAmount || (grossAmount - tdsAmount));
+          tdsAmount = parseFloat(result.tdsAmount || result.tds_amount || 0);
+          netAmount = parseFloat(result.netAmount || result.net_amount || (grossAmount - tdsAmount));
+          effectiveRate = parseFloat(result.effectiveRate || result.effective_rate || effectiveRate);
         }
       } catch (error) {
-        logger.error('Third-party TDS calculation API error:', error);
-        // Fall through to local calculation if API fails
+        logger.error('Sandbox TDS calculation API error:', error);
+        // Fall through to basic calculation if API fails
+        tdsAmount = (grossAmount * effectiveRate) / 100;
+        netAmount = grossAmount - tdsAmount;
       }
+    } else {
+      // Basic calculation without API
+      tdsAmount = (grossAmount * effectiveRate) / 100;
+      netAmount = grossAmount - tdsAmount;
     }
 
     // Create or update TDS detail
@@ -111,7 +109,7 @@ class TDSService {
       voucher_id: voucherId,
       ledger_id: voucher.party_ledger_id,
       section: section,
-      tds_rate: rate,
+      tds_rate: effectiveRate,
       taxable_amount: grossAmount,
       tds_amount: parseFloat(tdsAmount.toFixed(2)),
       quarter: quarter,
@@ -132,6 +130,7 @@ class TDSService {
         grossAmount,
         tdsAmount: parseFloat(tdsAmount.toFixed(2)),
         netAmount: parseFloat(netAmount.toFixed(2)),
+        effectiveRate,
       },
       apiResponse,
     };
@@ -139,24 +138,65 @@ class TDSService {
 
   /**
    * Calculate TDS for a given amount (testing/preview mode)
+   * Uses Sandbox API for accurate TDS calculation
    */
-  async calculateTDSForAmount(ctx, amount, tdsSection = '194C', tdsRate = 10, panAvailable = true) {
+  async calculateTDSForAmount(ctx, amount, tdsSection = '194C', tdsRate = null, panAvailable = true) {
     const { company } = ctx;
 
     const grossAmount = parseFloat(amount || 0);
     const section = tdsSection || '194C';
-    const rate = parseFloat(tdsRate) || 10;
-
-    // Adjust rate based on PAN availability (higher rate if PAN not available)
-    const effectiveRate = panAvailable ? rate : rate * 2;
+    const paymentDate = new Date();
 
     // Determine quarter and financial year
-    const paymentDate = new Date();
     const quarter = getQuarter(paymentDate);
     const financialYear = getFinancialYear(paymentDate);
 
-    let tdsAmount = (grossAmount * effectiveRate) / 100;
-    let netAmount = grossAmount - tdsAmount;
+    // Check if Sandbox API is configured
+    const compliance = company?.compliance || {};
+    const useThirdParty = compliance.tds_api?.applicable && compliance.tds_api?.api_key;
+
+    let tdsAmount = 0;
+    let netAmount = grossAmount;
+    let effectiveRate = parseFloat(tdsRate) || 10;
+    let apiResponse = null;
+
+    if (useThirdParty) {
+      try {
+        const apiClient = createApiClientFromCompany(company);
+        
+        // Prepare payment data for Sandbox API
+        const paymentData = {
+          payment_amount: grossAmount,
+          section: section,
+          deductee_pan: panAvailable ? 'ABCDE1234F' : null, // Sample PAN for testing
+          payment_date: paymentDate.toISOString().split('T')[0],
+          nature_of_payment: 'Test payment for TDS calculation',
+        };
+
+        const result = await apiClient.calculateNonSalaryTDS(paymentData);
+        apiResponse = result;
+        
+        // Use API response
+        if (result.tdsAmount !== undefined) {
+          tdsAmount = parseFloat(result.tdsAmount || result.tds_amount || 0);
+          netAmount = parseFloat(result.netAmount || result.net_amount || (grossAmount - tdsAmount));
+          effectiveRate = parseFloat(result.effectiveRate || result.effective_rate || effectiveRate);
+        }
+      } catch (error) {
+        logger.error('Sandbox TDS calculation API error:', error);
+        // Fall through to basic calculation if API fails
+        // Adjust rate based on PAN availability (higher rate if PAN not available)
+        effectiveRate = panAvailable ? effectiveRate : effectiveRate * 2;
+        tdsAmount = (grossAmount * effectiveRate) / 100;
+        netAmount = grossAmount - tdsAmount;
+      }
+    } else {
+      // Basic calculation without API
+      // Adjust rate based on PAN availability (higher rate if PAN not available)
+      effectiveRate = panAvailable ? effectiveRate : effectiveRate * 2;
+      tdsAmount = (grossAmount * effectiveRate) / 100;
+      netAmount = grossAmount - tdsAmount;
+    }
 
     // Return calculation without saving to database
     return {
@@ -175,7 +215,7 @@ class TDSService {
         netAmount: parseFloat(netAmount.toFixed(2)),
         effectiveRate,
       },
-      apiResponse: null,
+      apiResponse,
     };
   }
 
@@ -409,6 +449,117 @@ class TDSService {
       logger.error('Third-party TDS return status API error:', error);
       throw new Error(`Failed to get TDS return status: ${error.message}`);
     }
+  }
+
+  /**
+   * Create TDS Potential Notice Job using Sandbox API
+   */
+  async createTDSPotentialNoticeJob(ctx, params) {
+    const { company } = ctx;
+    const compliance = company?.compliance || {};
+    const useThirdParty = compliance.tds_api?.applicable && compliance.tds_api?.api_key;
+
+    if (useThirdParty) {
+      try {
+        const apiClient = createApiClientFromCompany(company);
+        const result = await apiClient.createTDSPotentialNoticeJob(params);
+        return {
+          success: true,
+          jobId: result.job_id || result.jobId,
+          message: result.message || 'TDS potential notice job created successfully',
+          details: result,
+        };
+      } catch (error) {
+        logger.error('Third-party TDS potential notice API error:', error);
+        throw new Error(`Failed to create TDS potential notice job: ${error.message}`);
+      }
+    }
+
+    throw new Error('TDS API not configured');
+  }
+
+  /**
+   * Get TDS Analytics Job Status using Sandbox API
+   */
+  async getTDSAnalyticsJobStatus(ctx, jobId) {
+    const { company } = ctx;
+    const compliance = company?.compliance || {};
+    const useThirdParty = compliance.tds_api?.applicable && compliance.tds_api?.api_key;
+
+    if (useThirdParty) {
+      try {
+        const apiClient = createApiClientFromCompany(company);
+        const result = await apiClient.getTDSAnalyticsJobStatus(jobId);
+        return {
+          success: true,
+          status: result.status,
+          progress: result.progress,
+          result: result.result,
+          details: result,
+        };
+      } catch (error) {
+        logger.error('Third-party TDS analytics status API error:', error);
+        throw new Error(`Failed to get TDS analytics job status: ${error.message}`);
+      }
+    }
+
+    throw new Error('TDS API not configured');
+  }
+
+  /**
+   * Calculate Non-Salary TDS using Sandbox API
+   */
+  async calculateNonSalaryTDS(ctx, params) {
+    const { company } = ctx;
+    const compliance = company?.compliance || {};
+    const useThirdParty = compliance.tds_api?.applicable && compliance.tds_api?.api_key;
+
+    if (useThirdParty) {
+      try {
+        const apiClient = createApiClientFromCompany(company);
+        const result = await apiClient.calculateNonSalaryTDS(params);
+        return {
+          success: true,
+          tdsAmount: result.tds_amount || result.tdsAmount,
+          netAmount: result.net_amount || result.netAmount,
+          effectiveRate: result.effective_rate || result.effectiveRate,
+          details: result,
+        };
+      } catch (error) {
+        logger.error('Third-party non-salary TDS calculation API error:', error);
+        throw new Error(`Failed to calculate non-salary TDS: ${error.message}`);
+      }
+    }
+
+    throw new Error('TDS API not configured');
+  }
+
+  /**
+   * Check Section 206AB & 206CCA Compliance using Sandbox API
+   */
+  async check206ABCompliance(ctx, params) {
+    const { company } = ctx;
+    const compliance = company?.compliance || {};
+    const useThirdParty = compliance.tds_api?.applicable && compliance.tds_api?.api_key;
+
+    if (useThirdParty) {
+      try {
+        const apiClient = createApiClientFromCompany(company);
+        const result = await apiClient.check206ABCompliance(params);
+        return {
+          success: true,
+          isCompliant: result.is_compliant || result.isCompliant,
+          higherRate: result.higher_rate || result.higherRate,
+          reason: result.reason,
+          details: result,
+        };
+      } catch (error) {
+        logger.error('Third-party 206AB compliance check API error:', error);
+        throw new Error(`Failed to check 206AB compliance: ${error.message}`);
+      }
+    }
+
+    throw new Error('TDS API not configured');
   }
 }
 

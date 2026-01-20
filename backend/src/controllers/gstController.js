@@ -57,23 +57,29 @@ module.exports = {
 
   async getGSTRates(req, res, next) {
     try {
-      const GSTRate = req.masterModels?.GSTRate;
-      if (!GSTRate) return res.status(500).json({ message: 'GSTRate model not available' });
+      // GST rates are now fetched from Sandbox API only
+      // Use the getGSTRate endpoint with HSN code parameter
+      const { hsn_code, state } = req.query;
+      
+      if (!hsn_code) {
+        return res.status(400).json({ 
+          message: 'HSN code is required. GST rates are now fetched from Sandbox API.' 
+        });
+      }
 
-      const { hsn_sac_code, item_type } = req.query;
-      const where = {
-        is_active: true,
+      const gstApiService = require('../services/gstApiService');
+      const ctx = {
+        company: req.company,
+        tenantModels: req.tenantModels,
+        masterModels: req.masterModels,
       };
 
-      if (hsn_sac_code) where.hsn_sac_code = hsn_sac_code;
-      if (item_type) where.item_type = item_type;
-
-      const rates = await GSTRate.findAll({
-        where,
-        order: [['rate_name', 'ASC']],
+      const result = await gstApiService.getGSTRate(ctx, hsn_code, state || null);
+      res.json({ 
+        success: true, 
+        rates: [result], // Return as array for backward compatibility
+        message: 'GST rate fetched from Sandbox API'
       });
-
-      res.json({ rates });
     } catch (err) {
       next(err);
     }
@@ -81,11 +87,11 @@ module.exports = {
 
   async createGSTRate(req, res, next) {
     try {
-      const GSTRate = req.masterModels?.GSTRate;
-      if (!GSTRate) return res.status(500).json({ message: 'GSTRate model not available' });
-
-      const rate = await GSTRate.create({ ...req.body });
-      res.status(201).json({ rate });
+      // GST rates are now managed by Sandbox API, not stored locally
+      res.status(400).json({ 
+        message: 'GST rates are now managed by Sandbox API. Use HSN code lookup instead.',
+        suggestion: 'Use GET /api/gst/rate?hsn_code=<code> to fetch current GST rates'
+      });
     } catch (err) {
       next(err);
     }
@@ -436,6 +442,90 @@ module.exports = {
 
       const result = await gstApiService.getGSTRate(ctx, hsn_code, state || null);
       res.json({ success: true, ...result });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // ==================== SANDBOX GST ANALYTICS APIs ====================
+
+  /**
+   * Create GSTR-2A Reconciliation Job
+   */
+  async createGSTR2AReconciliation(req, res, next) {
+    try {
+      const { gstin, year, month, reconciliation_criteria = 'strict' } = req.body;
+      
+      if (!gstin || !year || !month) {
+        return res.status(400).json({ message: 'gstin, year, and month are required' });
+      }
+
+      const { createApiClientFromCompany } = require('../services/thirdPartyApiClient');
+      const apiClient = createApiClientFromCompany(req.company);
+      
+      const result = await apiClient.createGSTR2AReconciliationJob({
+        gstin,
+        year: parseInt(year),
+        month: parseInt(month),
+        reconciliation_criteria
+      });
+
+      res.json({
+        success: true,
+        jobId: result.job_id || result.jobId,
+        uploadUrl: result.upload_url || result.uploadUrl,
+        ...result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Get GSTR-2A Reconciliation Job Status
+   */
+  async getGSTR2AReconciliationStatus(req, res, next) {
+    try {
+      const { job_id } = req.params;
+      
+      if (!job_id) {
+        return res.status(400).json({ message: 'job_id is required' });
+      }
+
+      const { createApiClientFromCompany } = require('../services/thirdPartyApiClient');
+      const apiClient = createApiClientFromCompany(req.company);
+      
+      const result = await apiClient.getGSTR2AReconciliationStatus(job_id);
+
+      res.json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Upload Purchase Ledger Data
+   */
+  async uploadPurchaseLedger(req, res, next) {
+    try {
+      const { upload_url, ledger_data } = req.body;
+      
+      if (!upload_url || !ledger_data) {
+        return res.status(400).json({ message: 'upload_url and ledger_data are required' });
+      }
+
+      const { createApiClientFromCompany } = require('../services/thirdPartyApiClient');
+      const apiClient = createApiClientFromCompany(req.company);
+      
+      const result = await apiClient.uploadPurchaseLedgerData(upload_url, ledger_data);
+
+      res.json({
+        success: true,
+        ...result
+      });
     } catch (err) {
       next(err);
     }

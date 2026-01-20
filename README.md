@@ -585,9 +585,10 @@ Build outputs are in the `frontend/dist/` directory:
 - VoucherItem, VoucherLedgerEntry
 - BillWiseDetail, BillAllocation
 
-### GST & Compliance Models (5)
-- GSTIN, GSTRate, GSTRReturn
-- EInvoice, TDSDetail
+### GST & Compliance Models (3)
+- GSTIN, GSTRReturn, EInvoice
+- **Note**: GST rates now fetched from Sandbox API (removed GSTRate model)
+- TDSDetail (TDS sections now fetched from Sandbox API)
 
 ### System Models (1)
 - AuditLog

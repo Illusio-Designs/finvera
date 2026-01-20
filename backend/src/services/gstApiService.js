@@ -90,46 +90,27 @@ class GSTApiService {
     const compliance = company?.compliance || {};
     const useThirdParty = compliance.gst_api?.applicable && compliance.gst_api?.api_key;
 
-    if (useThirdParty) {
-      try {
-        const apiClient = createApiClientFromCompany(company);
-        const result = await apiClient.getGSTRate(hsnCode, state);
-        return {
-          hsnCode: result.hsnCode || result.hsn_code || hsnCode,
-          cgstRate: result.cgstRate || result.cgst_rate || 0,
-          sgstRate: result.sgstRate || result.sgst_rate || 0,
-          igstRate: result.igstRate || result.igst_rate || 0,
-          cessRate: result.cessRate || result.cess_rate || 0,
-          effectiveFrom: result.effectiveFrom || result.effective_from || null,
-          effectiveTo: result.effectiveTo || result.effective_to || null,
-          details: result,
-        };
-      } catch (error) {
-        logger.error('Third-party GST rate API error:', error);
-        // Fall through to local lookup
-      }
+    if (!useThirdParty) {
+      throw new Error('GST API not configured. Please configure Sandbox API credentials.');
     }
 
-    // Fallback to local lookup (from master database)
-    const { Op } = require('sequelize');
-    const masterModels = require('../models/masterModels');
-    
-    const hsn = await masterModels.HSNSAC.findByPk(hsnCode);
-    if (hsn && hsn.gst_rate) {
-      const rate = parseFloat(hsn.gst_rate);
+    try {
+      const apiClient = createApiClientFromCompany(company);
+      const result = await apiClient.getGSTRate(hsnCode, state);
       return {
-        hsnCode,
-        cgstRate: state ? rate / 2 : 0,
-        sgstRate: state ? rate / 2 : 0,
-        igstRate: state ? 0 : rate,
-        cessRate: parseFloat(hsn.cess_rate || 0),
-        effectiveFrom: hsn.effective_from,
-        effectiveTo: null,
-        details: hsn,
+        hsnCode: result.hsnCode || result.hsn_code || hsnCode,
+        cgstRate: result.cgstRate || result.cgst_rate || 0,
+        sgstRate: result.sgstRate || result.sgst_rate || 0,
+        igstRate: result.igstRate || result.igst_rate || 0,
+        cessRate: result.cessRate || result.cess_rate || 0,
+        effectiveFrom: result.effectiveFrom || result.effective_from || null,
+        effectiveTo: result.effectiveTo || result.effective_to || null,
+        details: result,
       };
+    } catch (error) {
+      logger.error('Third-party GST rate API error:', error);
+      throw new Error(`Failed to get GST rate for HSN code ${hsnCode}: ${error.message}`);
     }
-
-    throw new Error('GST rate not found for HSN code');
   }
 
   /**
@@ -182,6 +163,88 @@ class GSTApiService {
       } catch (error) {
         logger.error('Third-party GSTR-3B API error:', error);
         throw new Error(`Failed to generate GSTR-3B: ${error.message}`);
+      }
+    }
+
+    throw new Error('GST API not configured');
+  }
+
+  /**
+   * Create GSTR-2A Reconciliation Job using Sandbox API
+   */
+  async createGSTR2AReconciliation(ctx, params) {
+    const { company } = ctx;
+    const compliance = company?.compliance || {};
+    const useThirdParty = compliance.gst_api?.applicable && compliance.gst_api?.api_key;
+
+    if (useThirdParty) {
+      try {
+        const apiClient = createApiClientFromCompany(company);
+        const result = await apiClient.createGSTR2AReconciliationJob(params);
+        return {
+          success: true,
+          jobId: result.job_id || result.jobId,
+          uploadUrl: result.upload_url || result.uploadUrl,
+          message: result.message || 'GSTR-2A reconciliation job created successfully',
+          details: result,
+        };
+      } catch (error) {
+        logger.error('Third-party GSTR-2A reconciliation API error:', error);
+        throw new Error(`Failed to create GSTR-2A reconciliation job: ${error.message}`);
+      }
+    }
+
+    throw new Error('GST API not configured');
+  }
+
+  /**
+   * Get GSTR-2A Reconciliation Job Status using Sandbox API
+   */
+  async getGSTR2AReconciliationStatus(ctx, jobId) {
+    const { company } = ctx;
+    const compliance = company?.compliance || {};
+    const useThirdParty = compliance.gst_api?.applicable && compliance.gst_api?.api_key;
+
+    if (useThirdParty) {
+      try {
+        const apiClient = createApiClientFromCompany(company);
+        const result = await apiClient.getGSTR2AReconciliationStatus(jobId);
+        return {
+          success: true,
+          status: result.status,
+          progress: result.progress,
+          result: result.result,
+          details: result,
+        };
+      } catch (error) {
+        logger.error('Third-party GSTR-2A reconciliation status API error:', error);
+        throw new Error(`Failed to get GSTR-2A reconciliation status: ${error.message}`);
+      }
+    }
+
+    throw new Error('GST API not configured');
+  }
+
+  /**
+   * Upload Purchase Ledger Data using Sandbox API
+   */
+  async uploadPurchaseLedgerData(ctx, uploadUrl, ledgerData) {
+    const { company } = ctx;
+    const compliance = company?.compliance || {};
+    const useThirdParty = compliance.gst_api?.applicable && compliance.gst_api?.api_key;
+
+    if (useThirdParty) {
+      try {
+        const apiClient = createApiClientFromCompany(company);
+        const result = await apiClient.uploadPurchaseLedgerData(uploadUrl, ledgerData);
+        return {
+          success: true,
+          message: 'Purchase ledger data uploaded successfully',
+          details: result,
+        };
+      } catch (error) {
+        logger.error('Third-party purchase ledger upload API error:', error);
+        throw new Error(`Failed to upload purchase ledger data: ${error.message}`);
       }
     }
 

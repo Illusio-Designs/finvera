@@ -139,5 +139,245 @@ module.exports = {
       next(err);
     }
   },
+
+  // ==================== SANDBOX TDS ANALYTICS APIs ====================
+
+  /**
+   * Create TDS Potential Notice Job
+   */
+  async createTDSPotentialNoticeJob(req, res, next) {
+    try {
+      const { quarter, tan, form, financial_year } = req.body;
+      
+      if (!quarter || !tan || !form || !financial_year) {
+        return res.status(400).json({ message: 'quarter, tan, form, and financial_year are required' });
+      }
+
+      const { createApiClientFromCompany } = require('../services/thirdPartyApiClient');
+      const apiClient = createApiClientFromCompany(req.company);
+      
+      const result = await apiClient.createTDSPotentialNoticeJob({
+        quarter,
+        tan,
+        form,
+        financial_year
+      });
+
+      res.json({
+        success: true,
+        jobId: result.job_id || result.jobId,
+        ...result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Get TDS Analytics Job Status
+   */
+  async getTDSAnalyticsJobStatus(req, res, next) {
+    try {
+      const { job_id } = req.params;
+      
+      if (!job_id) {
+        return res.status(400).json({ message: 'job_id is required' });
+      }
+
+      const { createApiClientFromCompany } = require('../services/thirdPartyApiClient');
+      const apiClient = createApiClientFromCompany(req.company);
+      
+      const result = await apiClient.getTDSAnalyticsJobStatus(job_id);
+
+      res.json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // ==================== SANDBOX TDS CALCULATOR APIs ====================
+
+  /**
+   * Calculate Non-Salary TDS
+   */
+  async calculateNonSalaryTDS(req, res, next) {
+    try {
+      const calculationParams = req.body;
+      
+      if (!calculationParams.payment_amount || !calculationParams.section) {
+        return res.status(400).json({ message: 'payment_amount and section are required' });
+      }
+
+      const { createApiClientFromCompany } = require('../services/thirdPartyApiClient');
+      const apiClient = createApiClientFromCompany(req.company);
+      
+      const result = await apiClient.calculateNonSalaryTDS(calculationParams);
+
+      res.json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // ==================== SANDBOX TDS COMPLIANCE APIs ====================
+
+  /**
+   * Check Section 206AB & 206CCA Compliance
+   */
+  async check206ABCompliance(req, res, next) {
+    try {
+      const { pan, consent, reason } = req.body;
+      
+      if (!pan || consent === undefined) {
+        return res.status(400).json({ message: 'pan and consent are required' });
+      }
+
+      const { createApiClientFromCompany } = require('../services/thirdPartyApiClient');
+      const apiClient = createApiClientFromCompany(req.company);
+      
+      const result = await apiClient.check206ABCompliance({
+        pan,
+        consent,
+        reason
+      });
+
+      res.json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Generate OTP for CSI Download
+   */
+  async generateCSIOTP(req, res, next) {
+    try {
+      const otpParams = req.body;
+      
+      if (!otpParams.tan) {
+        return res.status(400).json({ message: 'tan is required' });
+      }
+
+      const { createApiClientFromCompany } = require('../services/thirdPartyApiClient');
+      const apiClient = createApiClientFromCompany(req.company);
+      
+      const result = await apiClient.generateCSIOTP(otpParams);
+
+      res.json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Download CSI with OTP
+   */
+  async downloadCSI(req, res, next) {
+    try {
+      const downloadParams = req.body;
+      
+      if (!downloadParams.tan || !downloadParams.otp) {
+        return res.status(400).json({ message: 'tan and otp are required' });
+      }
+
+      const { createApiClientFromCompany } = require('../services/thirdPartyApiClient');
+      const apiClient = createApiClientFromCompany(req.company);
+      
+      const result = await apiClient.downloadCSI(downloadParams);
+
+      res.json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // ==================== SANDBOX TDS REPORTS APIs ====================
+
+  /**
+   * Submit TCS Report Job
+   */
+  async submitTCSReportJob(req, res, next) {
+    try {
+      const reportParams = req.body;
+      
+      if (!reportParams.tan || !reportParams.quarter || !reportParams.financial_year) {
+        return res.status(400).json({ message: 'tan, quarter, and financial_year are required' });
+      }
+
+      const { createApiClientFromCompany } = require('../services/thirdPartyApiClient');
+      const apiClient = createApiClientFromCompany(req.company);
+      
+      const result = await apiClient.submitTCSReportJob(reportParams);
+
+      res.json({
+        success: true,
+        jobId: result.job_id || result.jobId,
+        ...result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Get TCS Report Job Status
+   */
+  async getTCSReportJobStatus(req, res, next) {
+    try {
+      const { job_id } = req.params;
+      
+      if (!job_id) {
+        return res.status(400).json({ message: 'job_id is required' });
+      }
+
+      const { createApiClientFromCompany } = require('../services/thirdPartyApiClient');
+      const apiClient = createApiClientFromCompany(req.company);
+      
+      const result = await apiClient.getTCSReportJobStatus(job_id);
+
+      res.json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Search TCS Report Jobs
+   */
+  async searchTCSReportJobs(req, res, next) {
+    try {
+      const searchParams = req.body || {};
+
+      const { createApiClientFromCompany } = require('../services/thirdPartyApiClient');
+      const apiClient = createApiClientFromCompany(req.company);
+      
+      const result = await apiClient.searchTCSReportJobs(searchParams);
+
+      res.json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
 };
 

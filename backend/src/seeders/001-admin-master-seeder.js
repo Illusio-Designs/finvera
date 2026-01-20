@@ -140,33 +140,8 @@ module.exports = {
         await masterModels.VoucherType.bulkCreate(voucherTypes, { ignoreDuplicates: true });
         console.log(`✓ Seeded ${voucherTypes.length} voucher types`);
 
-        // Seed GST Rates
-        const gstRates = [
-          { rate_name: 'GST 0%', cgst_rate: 0, sgst_rate: 0, igst_rate: 0, is_active: true },
-          { rate_name: 'GST 0.25%', cgst_rate: 0.125, sgst_rate: 0.125, igst_rate: 0.25, is_active: true },
-          { rate_name: 'GST 3%', cgst_rate: 1.5, sgst_rate: 1.5, igst_rate: 3, is_active: true },
-          { rate_name: 'GST 5%', cgst_rate: 2.5, sgst_rate: 2.5, igst_rate: 5, is_active: true },
-          { rate_name: 'GST 12%', cgst_rate: 6, sgst_rate: 6, igst_rate: 12, is_active: true },
-          { rate_name: 'GST 18%', cgst_rate: 9, sgst_rate: 9, igst_rate: 18, is_active: true },
-          { rate_name: 'GST 28%', cgst_rate: 14, sgst_rate: 14, igst_rate: 28, is_active: true },
-        ];
-
-        await masterModels.GSTRate.bulkCreate(gstRates, { ignoreDuplicates: true });
-        console.log(`✓ Seeded ${gstRates.length} GST rates`);
-
-        // Seed TDS Sections
-        const tdsSections = [
-          { section_code: '194C', section_name: 'Payment to contractors', default_rate: 1.00, is_active: true },
-          { section_code: '194J', section_name: 'Professional or technical services', default_rate: 10.00, is_active: true },
-          { section_code: '194I', section_name: 'Rent', default_rate: 10.00, is_active: true },
-          { section_code: '194H', section_name: 'Commission or brokerage', default_rate: 5.00, is_active: true },
-          { section_code: '194A', section_name: 'Interest other than on securities', default_rate: 10.00, is_active: true },
-          { section_code: '194D', section_name: 'Insurance commission', default_rate: 5.00, is_active: true },
-          { section_code: '192', section_name: 'Salary', default_rate: 0.00, is_active: true },
-        ];
-
-        await masterModels.TDSSection.bulkCreate(tdsSections, { ignoreDuplicates: true });
-        console.log(`✓ Seeded ${tdsSections.length} TDS sections`);
+        // GST Rates and TDS Sections removed - now using Sandbox API for live data
+        console.log('ℹ️  GST rates and TDS sections now fetched from Sandbox API instead of master database');
 
         console.log('✅ Master database seeding completed');
       } catch (error) {

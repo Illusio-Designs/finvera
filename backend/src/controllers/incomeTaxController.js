@@ -181,4 +181,163 @@ module.exports = {
       next(err);
     }
   },
+
+  // ==================== SANDBOX INCOME TAX CALCULATOR APIs ====================
+
+  /**
+   * Submit Tax P&L Job for Securities
+   */
+  async submitTaxPnLJob(req, res, next) {
+    try {
+      const { input, from, output, to } = req.body;
+      
+      if (!input || !from || !output || !to) {
+        return res.status(400).json({ message: 'input, from, output, and to parameters are required' });
+      }
+
+      const { createApiClientFromCompany } = require('../services/thirdPartyApiClient');
+      const apiClient = createApiClientFromCompany(req.company);
+      
+      const result = await apiClient.submitTaxPnLJob({
+        input,
+        from,
+        output,
+        to
+      });
+
+      res.json({
+        success: true,
+        jobId: result.job_id || result.jobId,
+        uploadUrl: result.upload_url || result.uploadUrl,
+        ...result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Get Tax P&L Job Status
+   */
+  async getTaxPnLJobStatus(req, res, next) {
+    try {
+      const { job_id } = req.params;
+      
+      if (!job_id) {
+        return res.status(400).json({ message: 'job_id is required' });
+      }
+
+      const { createApiClientFromCompany } = require('../services/thirdPartyApiClient');
+      const apiClient = createApiClientFromCompany(req.company);
+      
+      const result = await apiClient.getTaxPnLJobStatus(job_id);
+
+      res.json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Upload Trading Data for Tax Calculation
+   */
+  async uploadTradingData(req, res, next) {
+    try {
+      const { upload_url, trading_data } = req.body;
+      
+      if (!upload_url || !trading_data) {
+        return res.status(400).json({ message: 'upload_url and trading_data are required' });
+      }
+
+      const { createApiClientFromCompany } = require('../services/thirdPartyApiClient');
+      const apiClient = createApiClientFromCompany(req.company);
+      
+      const result = await apiClient.uploadTradingData(upload_url, trading_data);
+
+      res.json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Calculate Capital Gains Tax
+   */
+  async calculateCapitalGainsTax(req, res, next) {
+    try {
+      const calculationParams = req.body;
+      
+      if (!calculationParams.transactions || !calculationParams.financial_year) {
+        return res.status(400).json({ message: 'transactions and financial_year are required' });
+      }
+
+      const { createApiClientFromCompany } = require('../services/thirdPartyApiClient');
+      const apiClient = createApiClientFromCompany(req.company);
+      
+      const result = await apiClient.calculateCapitalGainsTax(calculationParams);
+
+      res.json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Calculate Advance Tax
+   */
+  async calculateAdvanceTax(req, res, next) {
+    try {
+      const calculationParams = req.body;
+      
+      if (!calculationParams.estimated_income || !calculationParams.financial_year) {
+        return res.status(400).json({ message: 'estimated_income and financial_year are required' });
+      }
+
+      const { createApiClientFromCompany } = require('../services/thirdPartyApiClient');
+      const apiClient = createApiClientFromCompany(req.company);
+      
+      const result = await apiClient.calculateAdvanceTax(calculationParams);
+
+      res.json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Generate Form 16
+   */
+  async generateForm16(req, res, next) {
+    try {
+      const form16Params = req.body;
+      
+      if (!form16Params.employee_details || !form16Params.salary_details || !form16Params.financial_year) {
+        return res.status(400).json({ message: 'employee_details, salary_details, and financial_year are required' });
+      }
+
+      const { createApiClientFromCompany } = require('../services/thirdPartyApiClient');
+      const apiClient = createApiClientFromCompany(req.company);
+      
+      const result = await apiClient.generateForm16(form16Params);
+
+      res.json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
 };

@@ -69,39 +69,79 @@ class ThirdPartyApiClient {
   }
 
   /**
+   * Get Sandbox authentication token
+   */
+  async getSandboxAuthToken(serviceConfig) {
+    const { base_url, api_key, api_secret } = serviceConfig;
+    
+    try {
+      const response = await axios.post(`${base_url}/authenticate`, {}, {
+        headers: {
+          'x-api-key': api_key,
+          'x-api-secret': api_secret,
+          'x-api-version': '1.0',
+          'Content-Type': 'application/json'
+        },
+        timeout: 30000
+      });
+
+      if (response.data && response.data.data && response.data.data.access_token) {
+        return response.data.data.access_token;
+      }
+      
+      throw new Error('Invalid authentication response');
+    } catch (error) {
+      logger.error('Sandbox authentication failed:', error.message);
+      throw new Error(`Sandbox authentication failed: ${error.message}`);
+    }
+  }
+
+  /**
    * Make authenticated API request
    */
-  async makeRequest(service, endpoint, method = 'GET', data = null, provider = 'default') {
+  async makeRequest(service, endpoint, method = 'GET', data = null, provider = 'default', queryParams = null) {
     const serviceConfig = this.providers[service]?.[provider];
     if (!serviceConfig) {
       throw new Error(`No configuration found for ${service} service`);
     }
 
-    const { base_url, api_key } = serviceConfig;
-    const token = await this.getAuthToken(service, provider);
-
-    // Sandbox uses Authorization header with API key
+    const { base_url, api_key, api_secret } = serviceConfig;
+    
+    // Sandbox uses JWT authentication
     const isSandbox = base_url?.includes('sandbox.co.in') || base_url?.includes('api.sandbox.co.in');
     // FinBox uses x-api-key header
     const isFinBox = base_url?.includes('finbox.in') || service === 'finbox';
     
+    let headers = {
+      'Content-Type': 'application/json',
+    };
+
+    if (isSandbox && api_key && api_secret) {
+      // Get JWT token for Sandbox
+      const accessToken = await this.getSandboxAuthToken(serviceConfig);
+      headers = {
+        ...headers,
+        'authorization': accessToken,
+        'x-api-key': api_key,
+        'x-api-version': '1.0'
+      };
+    } else if (isFinBox && api_key) {
+      headers['x-api-key'] = api_key;
+    } else if (api_key) {
+      headers['Authorization'] = `Bearer ${api_key}`;
+    }
+    
+    // Build URL with query parameters
+    let url = `${base_url}${endpoint}`;
+    if (queryParams) {
+      const searchParams = new URLSearchParams(queryParams);
+      url += `?${searchParams.toString()}`;
+    }
+    
     const config = {
       method,
-      url: `${base_url}${endpoint}`,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(isFinBox && api_key
-          ? { 'x-api-key': api_key }
-          : isSandbox && api_key
-          ? { Authorization: `Bearer ${api_key}` }
-          : api_key || (typeof token === 'string' && token.length > 50)
-            ? { 'X-API-Key': api_key || token, Authorization: `Bearer ${token}` }
-            : typeof token === 'string' 
-              ? { Authorization: `Bearer ${token}` }
-              : token?.access_token 
-                ? { Authorization: `Bearer ${token.access_token}` }
-                : {}),
-      },
+      url,
+      headers,
       timeout: 30000,
     };
 
@@ -200,28 +240,105 @@ class ThirdPartyApiClient {
    * Provider: Sandbox only
    */
   async validateGSTIN(gstin, provider = 'sandbox') {
-    const endpoint = '/api/v1/gst/kyc/gstin/validate';
+    const endpoint = '/gst/compliance/public/gstin/search';
     return this.makeRequest('gst', endpoint, 'POST', { gstin }, provider);
   }
 
   async getGSTINDetails(gstin, provider = 'sandbox') {
-    const endpoint = `/api/v1/gst/kyc/gstin/${gstin}`;
-    return this.makeRequest('gst', endpoint, 'GET', null, provider);
+    const endpoint = '/gst/compliance/public/gstin/search';
+    return this.makeRequest('gst', endpoint, 'POST', { gstin }, provider);
   }
 
   async getGSTRate(hsnCode, state, provider = 'sandbox') {
-    const endpoint = '/api/v1/gst/tax-lookup/rate';
+    const endpoint = '/gst/compliance/public/hsn/rates';
     return this.makeRequest('gst', endpoint, 'POST', { hsn_code: hsnCode, state }, provider);
   }
 
   async generateGSTR1(gstr1Data, provider = 'sandbox') {
-    const endpoint = '/api/v1/gst/compliance/returns/gstr1';
+    const endpoint = '/gst/compliance/returns/gstr1';
     return this.makeRequest('gst', endpoint, 'POST', gstr1Data, provider);
   }
 
   async generateGSTR3B(gstr3bData, provider = 'sandbox') {
-    const endpoint = '/api/v1/gst/compliance/returns/gstr3b';
+    const endpoint = '/gst/compliance/returns/gstr3b';
     return this.makeRequest('gst', endpoint, 'POST', gstr3bData, provider);
+  }
+
+  // ==================== GST ANALYTICS APIs ====================
+
+  /**
+   * Create GSTR-2A Reconciliation Job
+   */
+  async createGSTR2AReconciliationJob(params, provider = 'sandbox') {
+    const { gstin, year, month, reconciliation_criteria = 'strict' } = params;
+    
+    const requestData = {
+      '@entity': 'in.co.sandbox.gst.analytics.gstr-2a_reconciliation.request',
+      gstin,
+      year,
+      month,
+      reconciliation_criteria
+    };
+
+    const endpoint = '/gst/analytics/gstr-2a-reconciliation';
+    return this.makeRequest('gst', endpoint, 'POST', requestData, provider);
+  }
+
+  /**
+   * Get GSTR-2A Reconciliation Job Status
+   */
+  async getGSTR2AReconciliationStatus(jobId, provider = 'sandbox') {
+    const endpoint = `/gst/analytics/gstr-2a-reconciliation/${jobId}`;
+    return this.makeRequest('gst', endpoint, 'GET', null, provider);
+  }
+
+  /**
+   * Upload Purchase Ledger Data to S3
+   */
+  async uploadPurchaseLedgerData(uploadUrl, ledgerData, provider = 'sandbox') {
+    const workbookData = {
+      name: 'purchase_ledger_workbook',
+      '@entity': 'workbook',
+      sheets: [
+        {
+          name: 'invoice_sheet',
+          '@entity': 'sheet',
+          blocks: [
+            {
+              name: 'purchase_invoice_table',
+              '@entity': 'table',
+              header: [
+                'supplier_name', 'supplier_gstin', 'invoice_number', 'invoice_date_epoch',
+                'irn', 'place_of_supply', 'sub_total', 'gst_rate', 'cgst', 'sgst', 'igst', 'cess', 'total'
+              ],
+              rows: ledgerData.invoices || []
+            }
+          ]
+        },
+        {
+          name: 'note_sheet',
+          '@entity': 'sheet',
+          blocks: [
+            {
+              name: 'debit_note_table',
+              '@entity': 'table',
+              header: [
+                'supplier_name', 'supplier_gstin', 'note_number', 'note_date_epoch',
+                'irn', 'place_of_supply', 'sub_total', 'gst_rate', 'cgst', 'sgst', 'igst', 'cess', 'total'
+              ],
+              rows: ledgerData.debitNotes || []
+            }
+          ]
+        }
+      ]
+    };
+
+    // Direct upload to S3 URL
+    const response = await axios.put(uploadUrl, workbookData, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    return { success: true, status: response.status };
   }
 
   /**
@@ -229,28 +346,147 @@ class ThirdPartyApiClient {
    * Provider: Sandbox only
    */
   async prepareTDSReturn(returnData, formType = '24Q', provider = 'sandbox') {
-    const endpoint = `/api/v1/tds/returns/${formType}/prepare`;
+    const endpoint = `/tds/returns/${formType}/prepare`;
     return this.makeRequest('tds', endpoint, 'POST', returnData, provider);
   }
 
   async fileTDSReturn(returnData, formType = '24Q', provider = 'sandbox') {
-    const endpoint = `/api/v1/tds/returns/${formType}/file`;
+    const endpoint = `/tds/returns/${formType}/file`;
     return this.makeRequest('tds', endpoint, 'POST', returnData, provider);
   }
 
   async generateForm16A(tdsDetailId, provider = 'sandbox') {
-    const endpoint = `/api/v1/tds/certificates/form16a/${tdsDetailId}`;
+    const endpoint = `/tds/certificates/form16a/${tdsDetailId}`;
     return this.makeRequest('tds', endpoint, 'GET', null, provider);
   }
 
   async getTDSReturnStatus(returnId, formType = '24Q', provider = 'sandbox') {
-    const endpoint = `/api/v1/tds/returns/${formType}/${returnId}/status`;
+    const endpoint = `/tds/returns/${formType}/${returnId}/status`;
     return this.makeRequest('tds', endpoint, 'GET', null, provider);
   }
 
   async calculateTDS(paymentData, provider = 'sandbox') {
-    const endpoint = '/api/v1/tds/calculate';
+    const endpoint = '/tds/calculator/non-salary';
     return this.makeRequest('tds', endpoint, 'POST', paymentData, provider);
+  }
+
+  // ==================== TDS ANALYTICS APIs ====================
+
+  /**
+   * Create TDS Potential Notice Job
+   */
+  async createTDSPotentialNoticeJob(params, provider = 'sandbox') {
+    const { quarter, tan, form, financial_year } = params;
+    
+    const requestData = {
+      '@entity': 'in.co.sandbox.tds.analytics.potential_notice.request',
+      quarter,
+      tan,
+      form,
+      financial_year
+    };
+
+    const endpoint = '/tds/analytics/potential-notices';
+    return this.makeRequest('tds', endpoint, 'POST', requestData, provider);
+  }
+
+  /**
+   * Get TDS Analytics Job Status
+   */
+  async getTDSAnalyticsJobStatus(jobId, provider = 'sandbox') {
+    const endpoint = `/tds/analytics/potential-notices/${jobId}`;
+    return this.makeRequest('tds', endpoint, 'GET', null, provider);
+  }
+
+  // ==================== TDS CALCULATOR APIs ====================
+
+  /**
+   * Calculate TDS for Non-Salary Payments
+   */
+  async calculateNonSalaryTDS(params, provider = 'sandbox') {
+    const requestData = {
+      '@entity': 'in.co.sandbox.tds.calculator.non_salary.request',
+      ...params
+    };
+
+    const endpoint = '/tds/calculator/non-salary';
+    return this.makeRequest('tds', endpoint, 'POST', requestData, provider);
+  }
+
+  // ==================== TDS COMPLIANCE APIs ====================
+
+  /**
+   * Check Section 206AB & 206CCA Compliance
+   */
+  async check206ABCompliance(params, provider = 'sandbox') {
+    const { pan, consent, reason } = params;
+    
+    const requestData = {
+      '@entity': 'in.co.sandbox.tds.compliance.206ab_check.request',
+      pan,
+      consent,
+      reason
+    };
+
+    const endpoint = '/tds/compliance/206ab/check';
+    return this.makeRequest('tds', endpoint, 'POST', requestData, provider);
+  }
+
+  /**
+   * Generate OTP for CSI Download
+   */
+  async generateCSIOTP(params, provider = 'sandbox') {
+    const requestData = {
+      '@entity': 'in.co.sandbox.tds.compliance.deductors.otp.request',
+      ...params
+    };
+
+    const endpoint = '/tds/compliance/csi/otp';
+    return this.makeRequest('tds', endpoint, 'POST', requestData, provider);
+  }
+
+  /**
+   * Download CSI with OTP
+   */
+  async downloadCSI(params, provider = 'sandbox') {
+    const endpoint = '/tds/compliance/csi/download';
+    return this.makeRequest('tds', endpoint, 'POST', params, provider);
+  }
+
+  // ==================== TDS REPORTS APIs ====================
+
+  /**
+   * Submit TCS Report Job
+   */
+  async submitTCSReportJob(params, provider = 'sandbox') {
+    const requestData = {
+      '@entity': 'in.co.sandbox.tcs.reports.request',
+      ...params
+    };
+
+    const endpoint = '/tcs/reports/collectors/tcsrs';
+    return this.makeRequest('tds', endpoint, 'POST', requestData, provider);
+  }
+
+  /**
+   * Get TCS Report Job Status
+   */
+  async getTCSReportJobStatus(jobId, provider = 'sandbox') {
+    const endpoint = '/tcs/reports/collectors/tcsrs';
+    return this.makeRequest('tds', endpoint, 'GET', null, provider, { job_id: jobId });
+  }
+
+  /**
+   * Search TCS Report Jobs
+   */
+  async searchTCSReportJobs(params = {}, provider = 'sandbox') {
+    const requestData = {
+      '@entity': 'in.co.sandbox.tcs.reports.jobs.search',
+      ...params
+    };
+
+    const endpoint = '/tcs/reports/collectors/tcsrs/search';
+    return this.makeRequest('tds', endpoint, 'POST', requestData, provider);
   }
 
   /**
@@ -258,33 +494,126 @@ class ThirdPartyApiClient {
    * Provider: Sandbox only
    */
   async calculateIncomeTax(taxData, provider = 'sandbox') {
-    const endpoint = '/api/v1/income-tax/calculate';
+    const endpoint = '/it/calculator/income-tax';
     return this.makeRequest('income_tax', endpoint, 'POST', taxData, provider);
   }
 
   async prepareITR(itrData, formType = 'ITR-1', provider = 'sandbox') {
-    const endpoint = `/api/v1/income-tax/itr/${formType}/prepare`;
+    const endpoint = `/it/itr/${formType}/prepare`;
     return this.makeRequest('income_tax', endpoint, 'POST', itrData, provider);
   }
 
   async fileITR(itrData, formType = 'ITR-1', provider = 'sandbox') {
-    const endpoint = `/api/v1/income-tax/itr/${formType}/file`;
+    const endpoint = `/it/itr/${formType}/file`;
     return this.makeRequest('income_tax', endpoint, 'POST', itrData, provider);
   }
 
   async getITRStatus(returnId, formType = 'ITR-1', provider = 'sandbox') {
-    const endpoint = `/api/v1/income-tax/itr/${formType}/${returnId}/status`;
+    const endpoint = `/it/itr/${formType}/${returnId}/status`;
     return this.makeRequest('income_tax', endpoint, 'GET', null, provider);
   }
 
   async getForm26AS(pan, financialYear, provider = 'sandbox') {
-    const endpoint = `/api/v1/income-tax/form26as/${pan}`;
+    const endpoint = `/it/form26as/${pan}`;
     return this.makeRequest('income_tax', endpoint, 'POST', { financial_year: financialYear }, provider);
   }
 
   async parseForm16(form16Data, provider = 'sandbox') {
-    const endpoint = '/api/v1/income-tax/form16/parse';
+    const endpoint = '/it/form16/parse';
     return this.makeRequest('income_tax', endpoint, 'POST', form16Data, provider);
+  }
+
+  // ==================== INCOME TAX CALCULATOR APIs ====================
+
+  /**
+   * Submit Tax P&L Job for Securities
+   */
+  async submitTaxPnLJob(params, provider = 'sandbox') {
+    const { input, from, output, to } = params;
+    
+    const endpoint = `/it/calculator/securities/domestic/tax-pnl?input=${input}&from=${from}&output=${output}&to=${to}`;
+    return this.makeRequest('income_tax', endpoint, 'POST', {}, provider);
+  }
+
+  /**
+   * Get Tax P&L Job Status
+   */
+  async getTaxPnLJobStatus(jobId, provider = 'sandbox') {
+    const endpoint = `/it/calculator/securities/domestic/tax-pnl?job_id=${jobId}`;
+    return this.makeRequest('income_tax', endpoint, 'GET', null, provider);
+  }
+
+  /**
+   * Upload Trading Data for Tax Calculation
+   */
+  async uploadTradingData(uploadUrl, tradingData, provider = 'sandbox') {
+    // Format trading data according to expected structure
+    const formattedData = {
+      trades: tradingData.map(trade => ({
+        trade_date: trade.trade_date,
+        settlement_date: trade.settlement_date,
+        stock_symbol: trade.stock_symbol,
+        isin: trade.isin,
+        company_name: trade.company_name,
+        trade_type: trade.trade_type, // BUY/SELL
+        quantity: trade.quantity,
+        price: trade.price,
+        brokerage: trade.brokerage || 0,
+        stt: trade.stt || 0,
+        exchange_charges: trade.exchange_charges || 0,
+        gst: trade.gst || 0,
+        sebi_charges: trade.sebi_charges || 0,
+        stamp_duty: trade.stamp_duty || 0,
+        total_charges: trade.total_charges || 0,
+        net_amount: trade.net_amount
+      }))
+    };
+
+    // Direct upload to S3 URL
+    const response = await axios.put(uploadUrl, formattedData, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    return { success: true, status: response.status };
+  }
+
+  /**
+   * Calculate Capital Gains Tax
+   */
+  async calculateCapitalGainsTax(params, provider = 'sandbox') {
+    const requestData = {
+      '@entity': 'in.co.sandbox.it.calculator.capital_gains.request',
+      ...params
+    };
+
+    const endpoint = '/it/calculator/capital-gains';
+    return this.makeRequest('income_tax', endpoint, 'POST', requestData, provider);
+  }
+
+  /**
+   * Calculate Advance Tax
+   */
+  async calculateAdvanceTax(params, provider = 'sandbox') {
+    const requestData = {
+      '@entity': 'in.co.sandbox.it.calculator.advance_tax.request',
+      ...params
+    };
+
+    const endpoint = '/it/calculator/advance-tax';
+    return this.makeRequest('income_tax', endpoint, 'POST', requestData, provider);
+  }
+
+  /**
+   * Generate Form 16
+   */
+  async generateForm16(params, provider = 'sandbox') {
+    const requestData = {
+      '@entity': 'in.co.sandbox.it.form16.request',
+      ...params
+    };
+
+    const endpoint = '/it/form16/generate';
+    return this.makeRequest('income_tax', endpoint, 'POST', requestData, provider);
   }
 
   /**
@@ -428,7 +757,7 @@ class ThirdPartyApiClient {
  * 
  * Provider: Sandbox only (https://api.sandbox.co.in)
  * - All services use Sandbox as the only provider
- * - Single API key for all tax compliance services
+ * - Single API key and secret for all tax compliance services
  * - E-Invoice, E-Way Bill, HSN, GST, TDS, Income Tax (ITR) APIs
  */
 function createApiClientFromCompany(company) {
@@ -436,48 +765,59 @@ function createApiClientFromCompany(company) {
   
   // Force Sandbox provider for all services
   const provider = 'sandbox';
-  const sandboxBaseUrl = 'https://api.sandbox.co.in';
+  const sandboxBaseUrl = process.env.SANDBOX_BASE_URL || 'https://api.sandbox.co.in';
+  const testSandboxBaseUrl = process.env.SANDBOX_TEST_URL || 'https://test-api.sandbox.co.in';
+  
+  // Use test environment if specified
+  const environment = process.env.SANDBOX_ENVIRONMENT || 'test';
+  const baseUrl = environment === 'live' ? sandboxBaseUrl : testSandboxBaseUrl;
   
   const config = {
     einvoice: {
       [provider]: compliance.e_invoice?.applicable ? {
-        base_url: compliance.e_invoice.base_url || process.env.EINVOICE_API_URL || sandboxBaseUrl,
-        api_key: compliance.e_invoice.api_key,
+        base_url: compliance.e_invoice.base_url || baseUrl,
+        api_key: compliance.e_invoice.api_key || process.env.SANDBOX_API_KEY,
+        api_secret: compliance.e_invoice.api_secret || process.env.SANDBOX_API_SECRET,
         provider: provider,
       } : null,
     },
     ewaybill: {
       [provider]: compliance.e_way_bill?.applicable ? {
-        base_url: compliance.e_way_bill.base_url || process.env.EWAYBILL_API_URL || sandboxBaseUrl,
-        api_key: compliance.e_way_bill.api_key,
+        base_url: compliance.e_way_bill.base_url || baseUrl,
+        api_key: compliance.e_way_bill.api_key || process.env.SANDBOX_API_KEY,
+        api_secret: compliance.e_way_bill.api_secret || process.env.SANDBOX_API_SECRET,
         provider: provider,
       } : null,
     },
     hsn: {
       [provider]: compliance.hsn_api?.applicable && compliance.hsn_api?.api_key ? {
-        base_url: compliance.hsn_api.base_url || process.env.HSN_API_URL || sandboxBaseUrl,
-        api_key: compliance.hsn_api.api_key,
+        base_url: compliance.hsn_api.base_url || baseUrl,
+        api_key: compliance.hsn_api.api_key || process.env.SANDBOX_API_KEY,
+        api_secret: compliance.hsn_api.api_secret || process.env.SANDBOX_API_SECRET,
         provider: provider,
       } : null,
     },
     gst: {
       [provider]: compliance.gst_api?.applicable && compliance.gst_api?.api_key ? {
-        base_url: compliance.gst_api.base_url || process.env.GST_API_URL || sandboxBaseUrl,
-        api_key: compliance.gst_api.api_key,
+        base_url: compliance.gst_api.base_url || baseUrl,
+        api_key: compliance.gst_api.api_key || process.env.SANDBOX_API_KEY,
+        api_secret: compliance.gst_api.api_secret || process.env.SANDBOX_API_SECRET,
         provider: provider,
       } : null,
     },
     tds: {
       [provider]: compliance.tds_api?.applicable && compliance.tds_api?.api_key ? {
-        base_url: compliance.tds_api.base_url || process.env.TDS_API_URL || sandboxBaseUrl,
-        api_key: compliance.tds_api.api_key,
+        base_url: compliance.tds_api.base_url || baseUrl,
+        api_key: compliance.tds_api.api_key || process.env.SANDBOX_API_KEY,
+        api_secret: compliance.tds_api.api_secret || process.env.SANDBOX_API_SECRET,
         provider: provider,
       } : null,
     },
     income_tax: {
       [provider]: compliance.income_tax_api?.applicable && compliance.income_tax_api?.api_key ? {
-        base_url: compliance.income_tax_api.base_url || process.env.INCOME_TAX_API_URL || sandboxBaseUrl,
-        api_key: compliance.income_tax_api.api_key,
+        base_url: compliance.income_tax_api.base_url || baseUrl,
+        api_key: compliance.income_tax_api.api_key || process.env.SANDBOX_API_KEY,
+        api_secret: compliance.income_tax_api.api_secret || process.env.SANDBOX_API_SECRET,
         provider: provider,
       } : null,
     },

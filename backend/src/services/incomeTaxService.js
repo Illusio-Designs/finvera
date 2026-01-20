@@ -332,6 +332,116 @@ class IncomeTaxService {
       throw new Error(`Failed to parse Form 16: ${error.message}`);
     }
   }
+
+  /**
+   * Submit Tax P&L Job for Securities using Sandbox API
+   */
+  async submitTaxPnLJob(ctx, params) {
+    const { company } = ctx;
+    const compliance = company?.compliance || {};
+    const useThirdParty = compliance.income_tax_api?.applicable && compliance.income_tax_api?.api_key;
+
+    if (useThirdParty) {
+      try {
+        const apiClient = createApiClientFromCompany(company);
+        const result = await apiClient.submitTaxPnLJob(params);
+        return {
+          success: true,
+          jobId: result.job_id || result.jobId,
+          uploadUrl: result.upload_url || result.uploadUrl,
+          message: result.message || 'Tax P&L job created successfully',
+          details: result,
+        };
+      } catch (error) {
+        logger.error('Third-party Tax P&L job API error:', error);
+        throw new Error(`Failed to submit Tax P&L job: ${error.message}`);
+      }
+    }
+
+    throw new Error('Income Tax API not configured');
+  }
+
+  /**
+   * Get Tax P&L Job Status using Sandbox API
+   */
+  async getTaxPnLJobStatus(ctx, jobId) {
+    const { company } = ctx;
+    const compliance = company?.compliance || {};
+    const useThirdParty = compliance.income_tax_api?.applicable && compliance.income_tax_api?.api_key;
+
+    if (useThirdParty) {
+      try {
+        const apiClient = createApiClientFromCompany(company);
+        const result = await apiClient.getTaxPnLJobStatus(jobId);
+        return {
+          success: true,
+          status: result.status,
+          progress: result.progress,
+          result: result.result,
+          details: result,
+        };
+      } catch (error) {
+        logger.error('Third-party Tax P&L job status API error:', error);
+        throw new Error(`Failed to get Tax P&L job status: ${error.message}`);
+      }
+    }
+
+    throw new Error('Income Tax API not configured');
+  }
+
+  /**
+   * Upload Trading Data using Sandbox API
+   */
+  async uploadTradingData(ctx, uploadUrl, tradingData) {
+    const { company } = ctx;
+    const compliance = company?.compliance || {};
+    const useThirdParty = compliance.income_tax_api?.applicable && compliance.income_tax_api?.api_key;
+
+    if (useThirdParty) {
+      try {
+        const apiClient = createApiClientFromCompany(company);
+        const result = await apiClient.uploadTradingData(uploadUrl, tradingData);
+        return {
+          success: true,
+          message: 'Trading data uploaded successfully',
+          details: result,
+        };
+      } catch (error) {
+        logger.error('Third-party trading data upload API error:', error);
+        throw new Error(`Failed to upload trading data: ${error.message}`);
+      }
+    }
+
+    throw new Error('Income Tax API not configured');
+  }
+
+  /**
+   * Calculate Capital Gains Tax using Sandbox API
+   */
+  async calculateCapitalGainsTax(ctx, params) {
+    const { company } = ctx;
+    const compliance = company?.compliance || {};
+    const useThirdParty = compliance.income_tax_api?.applicable && compliance.income_tax_api?.api_key;
+
+    if (useThirdParty) {
+      try {
+        const apiClient = createApiClientFromCompany(company);
+        const result = await apiClient.calculateCapitalGainsTax(params);
+        return {
+          success: true,
+          shortTermGains: result.short_term_gains || result.shortTermGains,
+          longTermGains: result.long_term_gains || result.longTermGains,
+          totalTax: result.total_tax || result.totalTax,
+          details: result,
+        };
+      } catch (error) {
+        logger.error('Third-party capital gains tax calculation API error:', error);
+        throw new Error(`Failed to calculate capital gains tax: ${error.message}`);
+      }
+    }
+
+    throw new Error('Income Tax API not configured');
+  }
 }
 
 module.exports = new IncomeTaxService();

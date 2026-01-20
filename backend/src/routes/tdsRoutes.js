@@ -16,5 +16,22 @@ router.post('/return', tdsController.generateReturn);
 router.get('/return/:return_id/status', tdsController.getReturnStatus);
 router.get('/certificate/:id', tdsController.generateCertificate);
 
+// Sandbox TDS Analytics APIs
+router.post('/analytics/potential-notices', tdsController.createTDSPotentialNoticeJob);
+router.get('/analytics/potential-notices/:job_id', tdsController.getTDSAnalyticsJobStatus);
+
+// Sandbox TDS Calculator APIs
+router.post('/calculator/non-salary', tdsController.calculateNonSalaryTDS);
+
+// Sandbox TDS Compliance APIs
+router.post('/compliance/206ab/check', tdsController.check206ABCompliance);
+router.post('/compliance/csi/otp', tdsController.generateCSIOTP);
+router.post('/compliance/csi/download', tdsController.downloadCSI);
+
+// Sandbox TDS Reports APIs
+router.post('/reports/tcs', tdsController.submitTCSReportJob);
+router.get('/reports/tcs/:job_id', tdsController.getTCSReportJobStatus);
+router.post('/reports/tcs/search', tdsController.searchTCSReportJobs);
+
 module.exports = router;
 

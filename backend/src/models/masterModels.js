@@ -270,81 +270,7 @@ models.VoucherType = masterSequelize.define('VoucherType', {
   timestamps: true,
 });
 
-// GST Rate Model (SHARED - GST rates are same for all tenants)
-models.GSTRate = masterSequelize.define('GSTRate', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true,
-  },
-  rate_name: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-    comment: 'E.g., GST 5%, GST 12%, GST 18%, GST 28%',
-  },
-  cgst_rate: {
-    type: DataTypes.DECIMAL(5, 2),
-    allowNull: false,
-  },
-  sgst_rate: {
-    type: DataTypes.DECIMAL(5, 2),
-    allowNull: false,
-  },
-  igst_rate: {
-    type: DataTypes.DECIMAL(5, 2),
-    allowNull: false,
-  },
-  cess_rate: {
-    type: DataTypes.DECIMAL(5, 2),
-    defaultValue: 0.00,
-  },
-  is_active: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true,
-  },
-  effective_from: {
-    type: DataTypes.DATE,
-  },
-  effective_to: {
-    type: DataTypes.DATE,
-  },
-}, {
-  tableName: 'gst_rates',
-  timestamps: true,
-});
-
-// TDS Section Model (SHARED - TDS sections are same for all)
-models.TDSSection = masterSequelize.define('TDSSection', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true,
-  },
-  section_code: {
-    type: DataTypes.STRING(20),
-    allowNull: false,
-    unique: true,
-    comment: 'E.g., 194C, 194J, 194I',
-  },
-  section_name: {
-    type: DataTypes.STRING(100),
-    allowNull: false,
-  },
-  default_rate: {
-    type: DataTypes.DECIMAL(5, 2),
-    allowNull: false,
-  },
-  description: {
-    type: DataTypes.TEXT,
-  },
-  is_active: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true,
-  },
-}, {
-  tableName: 'tds_sections',
-  timestamps: true,
-});
+// GST Rate and TDS Section models removed - now using Sandbox API for live data
 
 // Accounting Year Template (SHARED)
 models.AccountingYear = masterSequelize.define('AccountingYear', {
@@ -442,8 +368,7 @@ async function syncMasterModels() {
 
   await models.AccountGroup.sync({ alter: false });
   await models.VoucherType.sync({ alter: false });
-  await models.GSTRate.sync({ alter: false });
-  await models.TDSSection.sync({ alter: false });
+  // GST Rate and TDS Section models removed - using Sandbox API
   await models.AccountingYear.sync({ alter: false });
   
   // Create subscription_plans table in master DB if it doesn't exist (needed for Subscription FK)
