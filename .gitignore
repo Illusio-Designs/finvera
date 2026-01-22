@@ -1,0 +1,257 @@
+# Root .gitignore for Finvera Project
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE and Editor files
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+.atom/
+.brackets.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+.nyc_output
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+# Temporary folders
+tmp/
+temp/
+
+# Build outputs
+build/
+dist/
+out/
+
+# Electron Desktop App builds
+frontend/dist-electron/
+frontend/release/
+frontend/app/dist/
+frontend/app/build/
+frontend/electron-builder-output/
+*.dmg
+*.exe
+*.AppImage
+*.deb
+*.rpm
+*.snap
+*.msi
+*.pkg
+
+# Backend specific
+backend/node_modules/
+backend/dist/
+backend/build/
+backend/uploads/temp/
+backend/uploads/tmp/
+backend/logs/*.log
+
+# Frontend specific
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/dist/
+
+# Deployment
+.vercel
+.netlify
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Archive files
+*.zip
+*.tar.gz
+*.rar
+
+# Security and sensitive files
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_rsa.pub
+.ssh/
+secrets/
+credentials/
+config/secrets.json
+config/keys.json
+
+# FTP and deployment configs
+.ftpconfig
+deploy-temp/
+.deploy/
+
+# Cache directories
+.cache/
+.parcel-cache/
+
+# Documentation build
+docs/_build/
+
+# Python (if any Python scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Java (if any Java components)
+*.class
+*.jar
+*.war
+*.ear
+
+# Mobile development
+*.apk
+*.ipa
+*.app
+
+# Testing
+test-results/
+playwright-report/
+test-results.xml
+
+# Monitoring and analytics
+.sentry/
+
+# Local development
+.local/
+local/
+
+# Project specific temporary files
+*.tmp
+*.temp
+.scratch/
+
+# Auto-generated documentation
+api-docs/
+docs/generated/
+
+# Performance profiling
+*.prof
+profile/
+
+# Benchmark results
+benchmark/
+
+# Code coverage reports
+coverage.xml
+coverage.json
+lcov.info
+
+# Storybook
+storybook-static/
+
+# Chromatic
+chromatic-build/
+
+# Webpack Bundle Analyzer
+.webpack-bundle-analyzer/
+
+# Next.js analyzer
+.next-analyzer/
+
+# PM2 ecosystem files (if using PM2)
+ecosystem.config.js.backup
+
+# Docker
+.dockerignore.backup
+docker-compose.override.yml
+
+# Kubernetes
+*.kubeconfig
+
+# Terraform (if using infrastructure as code)
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Ansible (if using for deployment)
+*.retry
+
+# Local configuration overrides
+config.local.js
+config.local.json
+settings.local.json
+
+# Development notes (uncomment if you want to ignore)
+# NOTES.md
+# TODO.md
+# CHANGELOG-local.md

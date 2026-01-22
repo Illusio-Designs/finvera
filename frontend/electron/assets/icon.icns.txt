@@ -1,0 +1,4 @@
+# Icon Placeholder
+# This file needs to be replaced with the actual converted icon
+# Generated from: E:\Agency\kkFileView\finvera\frontend\electron\assets\icon.svg
+# Target format: ICNS (multi-size)

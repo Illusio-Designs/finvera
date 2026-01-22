@@ -3,6 +3,64 @@ import Cookies from "js-cookie";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+// Role-based access control helper
+const checkPermission = (requiredRole) => {
+  const user = JSON.parse(Cookies.get("user") || "{}");
+  const userRole = user.role;
+  
+  const roleHierarchy = {
+    'super_admin': 5,
+    'admin': 4,
+    'manager': 3,
+    'user': 2,
+    'client': 1
+  };
+  
+  const userLevel = roleHierarchy[userRole] || 0;
+  const requiredLevel = roleHierarchy[requiredRole] || 0;
+  
+  return userLevel >= requiredLevel;
+};
+
+// Enhanced error handler for permission-based failures
+const handlePermissionError = (error, requiredRole) => {
+  if (error.response?.status === 403) {
+    throw new Error(`Insufficient permissions. Required role: ${requiredRole}`);
+  }
+  throw error;
+};
+
+// API Error Handler with detailed error messages
+const handleApiError = (error, context = '') => {
+  if (error.response) {
+    const { status, data } = error.response;
+    const message = data?.message || data?.error || `Request failed with status ${status}`;
+    
+    switch (status) {
+      case 400:
+        throw new Error(`Bad Request: ${message}${context ? ` (${context})` : ''}`);
+      case 401:
+        throw new Error('Authentication required. Please login again.');
+      case 403:
+        throw new Error(`Access denied: ${message}`);
+      case 404:
+        throw new Error(`Resource not found: ${message}`);
+      case 409:
+        throw new Error(`Conflict: ${message}`);
+      case 500:
+        throw new Error(`Server error: ${message}`);
+      default:
+        throw new Error(`API Error (${status}): ${message}`);
+    }
+  }
+  
+  if (error.request) {
+    throw new Error('Network error: Unable to reach server');
+  }
+  
+  throw new Error(error.message || 'Unknown error occurred');
+};
+
 // Create axios instance
 const api = axios.create({
   baseURL: API_URL,
@@ -218,12 +276,26 @@ export const accountingAPI = {
       list: (params) => api.get("/accounting/inventory/items", { params }),
       create: (data) => api.post("/accounting/inventory/items", data),
       get: (id) => api.get(`/accounting/inventory/items/${id}`),
-      update: (id, data) => api.put(`/accounting/inventory/items/${id}`, data),
+      update: (id, data) => {
+        // Ensure tenant_id is included if available
+        const companyId = Cookies.get("companyId");
+        if (companyId && !data.tenant_id) {
+          data.tenant_id = companyId;
+        }
+        return api.put(`/accounting/inventory/items/${id}`, data);
+      },
       delete: (id) => api.delete(`/accounting/inventory/items/${id}`),
       generateBarcode: (id) => api.post(`/accounting/inventory/items/${id}/generate-barcode`),
       bulkGenerateBarcodes: (data) => api.post("/accounting/inventory/items/bulk-generate-barcodes", data),
       getWarehouseStock: (id, params) => api.get(`/accounting/inventory/items/${id}/warehouse-stock`, { params }),
-      setOpeningStock: (id, data) => api.post(`/accounting/inventory/items/${id}/opening-stock`, data),
+      setOpeningStock: (id, data) => {
+        // Ensure tenant_id is included for opening stock
+        const companyId = Cookies.get("companyId");
+        if (companyId && !data.tenant_id) {
+          data.tenant_id = companyId;
+        }
+        return api.post(`/accounting/inventory/items/${id}/opening-stock`, data);
+      },
     },
   },
   
@@ -346,20 +418,73 @@ export const tdsAPI = {
   
   // Sandbox TDS Analytics APIs
   analytics: {
-    createPotentialNoticeJob: (data) => api.post("/tds/analytics/potential-notices", data),
+    createPotentialNoticeJob: (data) => {
+      // Fix financial year format and ensure required fields
+      const payload = {
+        quarter: data.quarter,
+        tan: data.tan,
+        form: data.form || '24Q',
+        financial_year: data.financial_year || '2024-25', // Use correct format
+        ...data
+      };
+      return api.post("/tds/analytics/potential-notices", payload);
+    },
     getJobStatus: (jobId) => api.get(`/tds/analytics/potential-notices/${jobId}`),
   },
   
   // Sandbox TDS Calculator APIs
   calculator: {
-    calculateNonSalary: (data) => api.post("/tds/calculator/non-salary", data),
+    calculateNonSalary: (data) => {
+      // Ensure all required fields are present
+      const payload = {
+        payment_amount: data.payment_amount,
+        credit_amount: data.credit_amount || data.payment_amount,
+        nature_of_payment: data.nature_of_payment,
+        deductee_pan: data.deductee_pan,
+        deductee_type: data.deductee_type || 'individual', // Required field that was missing
+        pan_available: data.pan_available || 'yes',
+        section: data.section,
+        residential_status: data.residential_status || 'resident',
+        financial_year: data.financial_year || '2024-25',
+        ...data
+      };
+      return api.post("/tds/calculator/non-salary", payload);
+    },
   },
   
   // Sandbox TDS Compliance APIs
   compliance: {
-    check206AB: (data) => api.post("/tds/compliance/206ab/check", data),
-    generateCSIOTP: (data) => api.post("/tds/compliance/csi/otp", data),
-    downloadCSI: (data) => api.post("/tds/compliance/csi/download", data),
+    check206AB: (data) => {
+      // Ensure proper request body structure
+      const payload = {
+        pan: data.pan,
+        consent: data.consent || true,
+        reason: data.reason || 'TDS rate verification',
+        ...data
+      };
+      return api.post("/tds/compliance/206ab/check", payload);
+    },
+    generateCSIOTP: (data) => {
+      // Ensure proper request body structure
+      const payload = {
+        tan: data.tan,
+        quarter: data.quarter,
+        financial_year: data.financial_year || '2024-25',
+        ...data
+      };
+      return api.post("/tds/compliance/csi/otp", payload);
+    },
+    downloadCSI: (data) => {
+      // Ensure proper request body structure
+      const payload = {
+        tan: data.tan,
+        quarter: data.quarter,
+        financial_year: data.financial_year || '2024-25',
+        otp: data.otp,
+        ...data
+      };
+      return api.post("/tds/compliance/csi/download", payload);
+    },
   },
   
   // Sandbox TDS Reports APIs
@@ -473,12 +598,24 @@ export const reportsAPI = {
 // E-Invoice API
 export const eInvoiceAPI = {
   list: () => api.get("/einvoice"),
-  generate: (data) => api.post("/einvoice/generate", data),
+  generate: (data) => {
+    // Ensure voucher_id is present
+    if (!data.voucher_id) {
+      throw new Error('voucher_id is required for E-Invoice generation');
+    }
+    return api.post("/einvoice/generate", data);
+  },
   get: (voucherId) => api.get(`/einvoice/voucher/${voucherId}`),
   getByVoucher: (voucherId) => api.get(`/einvoice/voucher/${voucherId}`),
   cancel: (voucherId) => api.post(`/einvoice/cancel/${voucherId}`),
   cancelIRN: (voucherId) => api.post(`/einvoice/cancel/${voucherId}`),
-  generateIRN: (data) => api.post("/einvoice/generate", data),
+  generateIRN: (data) => {
+    // Ensure voucher_id is present
+    if (!data.voucher_id) {
+      throw new Error('voucher_id is required for IRN generation');
+    }
+    return api.post("/einvoice/generate", data);
+  },
   getStatus: (voucherId) => api.get(`/einvoice/status/${voucherId}`),
   downloadPDF: (voucherId) => api.get(`/einvoice/pdf/${voucherId}`, { responseType: 'blob' }),
 };
@@ -486,7 +623,13 @@ export const eInvoiceAPI = {
 // E-Way Bill API
 export const eWayBillAPI = {
   list: () => api.get("/ewaybill"),
-  generate: (data) => api.post("/ewaybill/generate", data),
+  generate: (data) => {
+    // Ensure voucher_id is present
+    if (!data.voucher_id) {
+      throw new Error('voucher_id is required for E-Way Bill generation');
+    }
+    return api.post("/ewaybill/generate", data);
+  },
   get: (voucherId) => api.get(`/ewaybill/voucher/${voucherId}`),
   getByVoucher: (voucherId) => api.get(`/ewaybill/voucher/${voucherId}`),
   cancel: (voucherId) => api.post(`/ewaybill/cancel/${voucherId}`),
@@ -525,9 +668,25 @@ export const gstAPI = {
   
   // Sandbox GST Analytics APIs
   analytics: {
-    createGSTR2AReconciliation: (data) => api.post("/gst/analytics/gstr2a-reconciliation", data),
+    createGSTR2AReconciliation: (data) => {
+      // Ensure proper request structure
+      const payload = {
+        gstin: data.gstin,
+        year: data.year,
+        month: data.month,
+        reconciliation_criteria: data.reconciliation_criteria || 'strict',
+        ...data
+      };
+      return api.post("/gst/analytics/gstr2a-reconciliation", payload);
+    },
     getGSTR2AReconciliationStatus: (jobId) => api.get(`/gst/analytics/gstr2a-reconciliation/${jobId}`),
-    uploadPurchaseLedger: (data) => api.post("/gst/analytics/upload-purchase-ledger", data),
+    uploadPurchaseLedger: (data) => {
+      // Ensure required fields are present
+      if (!data.upload_url || !data.ledger_data) {
+        throw new Error('upload_url and ledger_data are required');
+      }
+      return api.post("/gst/analytics/upload-purchase-ledger", data);
+    },
   },
   
   // Backward compatibility
@@ -542,8 +701,16 @@ export const gstAPI = {
 
 // HSN API
 export const hsnAPI = {
-  search: (params) => api.get("/hsn/search", { params }),
-  getByCode: (code) => api.get(`/hsn/${code}`),
+  search: (params) => {
+    // Use AWS signature helper for premium endpoints
+    const { makeSecureApiCall } = require('./awsSignatureHelper');
+    return makeSecureApiCall(() => api.get("/hsn/search", { params }));
+  },
+  getByCode: (code) => {
+    // Use AWS signature helper for premium endpoints
+    const { makeSecureApiCall } = require('./awsSignatureHelper');
+    return makeSecureApiCall(() => api.get(`/hsn/${code}`));
+  },
   validate: (code) => api.get(`/hsn/${code}/validate`),
   getConfigStatus: () => api.get("/hsn/config/status"),
   list: (params) => api.get("/hsn", { params }), // Backward compatibility
@@ -567,6 +734,7 @@ export const incomeTaxAPI = {
     },
     calculateCapitalGains: (data) => api.post("/income-tax/calculator/capital-gains", data),
     calculateAdvanceTax: (data) => api.post("/income-tax/calculator/advance-tax", data),
+    calculateTaxPnL: (data) => api.post("/income-tax/calculator/tax-pl", data),
   },
   
   // Form 16 generation
@@ -601,17 +769,48 @@ export const fileAPI = {
 
 // Finbox API (for loan services)
 export const finboxAPI = {
-  getCreditScore: (data) => api.post("/finbox/credit-score", data),
+  getCreditScore: (data) => {
+    // Ensure PAN is present
+    if (!data.pan) {
+      throw new Error('PAN is required for credit score check');
+    }
+    const payload = {
+      customer_id: data.customer_id,
+      pan: data.pan,
+      consent: data.consent || true,
+      ...data
+    };
+    return api.post("/finbox/credit-score", payload);
+  },
   getInclusionScore: (customerId) => api.get(`/finbox/inclusion-score/${customerId}`),
   checkLoanEligibility: (data) => api.post("/finbox/eligibility", data),
   createUser: (data) => api.post("/finbox/user", data),
   initiateBankStatement: (data) => api.post("/finbox/bank-statement/initiate", data),
   getBankStatementStatus: (customerId) => api.get(`/finbox/bank-statement/${customerId}/status`),
   getBankStatementAnalysis: (customerId) => api.get(`/finbox/bank-statement/${customerId}/analysis`),
-  getDeviceInsights: (data) => api.post("/finbox/device-insights", data),
+  getDeviceInsights: (data) => {
+    // Ensure required fields are present
+    if (!data.version) {
+      throw new Error('version is required for device insights');
+    }
+    const payload = {
+      customer_id: data.customer_id,
+      version: data.version,
+      salt: data.salt,
+      device_data: data.device_data || {},
+      ...data
+    };
+    return api.post("/finbox/device-insights", payload);
+  },
   generateSessionToken: (data) => api.post("/finbox/session", data),
-  saveConsent: (data) => api.post("/finbox/consent", data),
-  getConsent: () => api.get("/finbox/consent"),
+  saveConsent: (data) => {
+    // Ensure all consent fields are present
+    if (!data.customer_id || !data.consent_type || data.consent_given === undefined) {
+      throw new Error('customer_id, consent_type, and consent_given are required');
+    }
+    return api.post("/finbox/consent", data);
+  },
+  getConsent: (params) => api.get("/finbox/consent", { params }),
   // Backward compatibility
   checkEligibility: (data) => api.post("/finbox/eligibility", data),
 };
@@ -657,63 +856,331 @@ export const branchAPI = {
 
 export default api;
 
-// Admin API placeholders for client-only builds
-// These are not implemented in the client-only version
+// Admin API - Full implementation matching backend comprehensive test
 export const adminAPI = {
+  // Dashboard
+  dashboard: {
+    getStats: () => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.get("/admin/dashboard").catch(error => handlePermissionError(error, 'admin'));
+    },
+  },
+  
+  // Distributors Management
   distributors: {
-    list: () => Promise.resolve({ data: [] }),
-    create: () => Promise.resolve({}),
-    update: () => Promise.resolve({}),
-    delete: () => Promise.resolve({}),
+    list: (params) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.get("/admin/distributors", { params }).catch(error => handlePermissionError(error, 'admin'));
+    },
+    create: (data) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.post("/admin/distributors", data).catch(error => handlePermissionError(error, 'admin'));
+    },
+    get: (id) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.get(`/admin/distributors/${id}`).catch(error => handlePermissionError(error, 'admin'));
+    },
+    update: (id, data) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.put(`/admin/distributors/${id}`, data).catch(error => handlePermissionError(error, 'admin'));
+    },
+    delete: (id) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.delete(`/admin/distributors/${id}`).catch(error => handlePermissionError(error, 'admin'));
+    },
+    getPerformance: (id, params) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.get(`/admin/distributors/${id}/performance`, { params }).catch(error => handlePermissionError(error, 'admin'));
+    },
   },
-  commissionPayouts: {
-    list: () => Promise.resolve({ data: [] }),
+  
+  // Salesmen Management
+  salesmen: {
+    list: (params) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.get("/admin/salesmen", { params }).catch(error => handlePermissionError(error, 'admin'));
+    },
+    create: (data) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.post("/admin/salesmen", data).catch(error => handlePermissionError(error, 'admin'));
+    },
+    get: (id) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.get(`/admin/salesmen/${id}`).catch(error => handlePermissionError(error, 'admin'));
+    },
+    update: (id, data) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.put(`/admin/salesmen/${id}`, data).catch(error => handlePermissionError(error, 'admin'));
+    },
+    delete: (id) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.delete(`/admin/salesmen/${id}`).catch(error => handlePermissionError(error, 'admin'));
+    },
+    getPerformance: (id, params) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.get(`/admin/salesmen/${id}/performance`, { params }).catch(error => handlePermissionError(error, 'admin'));
+    },
+    getLeads: (id, params) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.get(`/admin/salesmen/${id}/leads`, { params }).catch(error => handlePermissionError(error, 'admin'));
+    },
   },
-  referrals: {
-    list: () => Promise.resolve({ data: [] }),
+  
+  // Targets Management
+  targets: {
+    list: (params) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.get("/admin/targets", { params }).catch(error => handlePermissionError(error, 'admin'));
+    },
+    create: (data) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.post("/admin/targets", data).catch(error => handlePermissionError(error, 'admin'));
+    },
+    get: (id) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.get(`/admin/targets/${id}`).catch(error => handlePermissionError(error, 'admin'));
+    },
+    update: (id, data) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.put(`/admin/targets/${id}`, data).catch(error => handlePermissionError(error, 'admin'));
+    },
+    delete: (id) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.delete(`/admin/targets/${id}`).catch(error => handlePermissionError(error, 'admin'));
+    },
+    recalculate: (id) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.post(`/admin/targets/${id}/recalculate`).catch(error => handlePermissionError(error, 'admin'));
+    },
+    recalculateAll: (data) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.post("/admin/targets/recalculate/all", data).catch(error => handlePermissionError(error, 'admin'));
+    },
+    getForDistributor: (distributorId, params) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.get(`/admin/targets/distributor/${distributorId}`, { params }).catch(error => handlePermissionError(error, 'admin'));
+    },
+    getForSalesman: (salesmanId, params) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.get(`/admin/targets/salesman/${salesmanId}`, { params }).catch(error => handlePermissionError(error, 'admin'));
+    },
+  },
+  
+  // Commission & Payouts
+  commissions: {
+    list: (params) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.get("/admin/commissions", { params }).catch(error => handlePermissionError(error, 'admin'));
+    },
   },
   payouts: {
-    list: () => Promise.resolve({ data: [] }),
+    list: (params) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.get("/admin/payouts", { params }).catch(error => handlePermissionError(error, 'admin'));
+    },
   },
-  salesmen: {
-    list: () => Promise.resolve({ data: [] }),
-    create: () => Promise.resolve({}),
-    update: () => Promise.resolve({}),
-    delete: () => Promise.resolve({}),
+  commissionPayouts: {
+    list: (params) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.get("/admin/commissions-payouts", { params }).catch(error => handlePermissionError(error, 'admin'));
+    },
   },
-  support: {
-    list: () => Promise.resolve({ data: [] }),
+  
+  // Referrals Management
+  referrals: {
+    list: (params) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.get("/referrals", { params }).catch(error => handlePermissionError(error, 'admin'));
+    },
+    getStats: () => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.get("/referrals/stats").catch(error => handlePermissionError(error, 'admin'));
+    },
   },
-  targets: {
-    list: () => Promise.resolve({ data: [] }),
-    create: () => Promise.resolve({}),
-    update: () => Promise.resolve({}),
-    delete: () => Promise.resolve({}),
-  },
+  
+  // Tenants Management
   tenants: {
-    list: () => Promise.resolve({ data: [] }),
-    create: () => Promise.resolve({}),
-    update: () => Promise.resolve({}),
-    delete: () => Promise.resolve({}),
+    list: (params) => {
+      if (!checkPermission('super_admin')) {
+        throw new Error('Super admin access required');
+      }
+      return api.get("/admin/tenants", { params }).catch(error => handlePermissionError(error, 'super_admin'));
+    },
+    get: (id) => {
+      if (!checkPermission('super_admin')) {
+        throw new Error('Super admin access required');
+      }
+      return api.get(`/admin/tenants/${id}`).catch(error => handlePermissionError(error, 'super_admin'));
+    },
+    create: (data) => {
+      if (!checkPermission('super_admin')) {
+        throw new Error('Super admin access required');
+      }
+      return api.post("/admin/tenants", data).catch(error => handlePermissionError(error, 'super_admin'));
+    },
+    update: (id, data) => {
+      if (!checkPermission('super_admin')) {
+        throw new Error('Super admin access required');
+      }
+      return api.put(`/admin/tenants/${id}`, data).catch(error => handlePermissionError(error, 'super_admin'));
+    },
+    delete: (id) => {
+      if (!checkPermission('super_admin')) {
+        throw new Error('Super admin access required');
+      }
+      return api.delete(`/admin/tenants/${id}`).catch(error => handlePermissionError(error, 'super_admin'));
+    },
   },
+  
+  // Users Management
   users: {
-    list: () => Promise.resolve({ data: [] }),
+    list: (params) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.get("/admin/users", { params }).catch(error => handlePermissionError(error, 'admin'));
+    },
   },
-  dashboard: {
-    getStats: () => Promise.resolve({ data: {} }),
+  
+  // Support Management
+  support: {
+    list: (params) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.get("/support/tickets", { params }).catch(error => handlePermissionError(error, 'admin'));
+    },
+    get: (id) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.get(`/support/tickets/${id}`).catch(error => handlePermissionError(error, 'admin'));
+    },
+    assign: (id, data) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.put(`/support/tickets/${id}/assign`, data).catch(error => handlePermissionError(error, 'admin'));
+    },
+    updateStatus: (id, data) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.put(`/support/tickets/${id}/status`, data).catch(error => handlePermissionError(error, 'admin'));
+    },
+    getAgentReviews: (agentId, params) => {
+      if (!checkPermission('admin')) {
+        throw new Error('Admin access required');
+      }
+      return api.get(`/support/agents/${agentId}/reviews`, { params }).catch(error => handlePermissionError(error, 'admin'));
+    },
+  },
+  
+  // Cron Job Management
+  cron: {
+    getStatus: () => {
+      if (!checkPermission('super_admin')) {
+        throw new Error('Super admin access required');
+      }
+      return api.get("/admin/cron/status").catch(error => handlePermissionError(error, 'super_admin'));
+    },
+    triggerTrialCleanup: () => {
+      if (!checkPermission('super_admin')) {
+        throw new Error('Super admin access required');
+      }
+      return api.post("/admin/cron/trigger-trial-cleanup").catch(error => handlePermissionError(error, 'super_admin'));
+    },
+    stopJob: (jobName) => {
+      if (!checkPermission('super_admin')) {
+        throw new Error('Super admin access required');
+      }
+      return api.post(`/admin/cron/jobs/${jobName}/stop`).catch(error => handlePermissionError(error, 'super_admin'));
+    },
+    startJob: (jobName) => {
+      if (!checkPermission('super_admin')) {
+        throw new Error('Super admin access required');
+      }
+      return api.post(`/admin/cron/jobs/${jobName}/start`).catch(error => handlePermissionError(error, 'super_admin'));
+    },
   },
 };
 
 export const blogAPI = {
-  list: () => Promise.resolve({ data: [] }),
-  create: () => Promise.resolve({}),
-  update: () => Promise.resolve({}),
-  delete: () => Promise.resolve({}),
+  list: (params) => api.get("/blogs", { params }),
+  get: (id) => api.get(`/blogs/${id}`),
+  create: (data) => api.post("/blogs", data),
+  update: (id, data) => api.put(`/blogs/${id}`, data),
+  delete: (id) => api.delete(`/blogs/${id}`),
+  
+  // Blog Categories
+  categories: {
+    list: (params) => api.get("/blog-categories", { params }),
+    create: (data) => api.post("/blog-categories", data),
+    update: (id, data) => api.put(`/blog-categories/${id}`, data),
+    delete: (id) => api.delete(`/blog-categories/${id}`),
+  },
 };
 
 export const seoAPI = {
-  list: () => Promise.resolve({ data: [] }),
-  create: () => Promise.resolve({}),
-  update: () => Promise.resolve({}),
-  delete: () => Promise.resolve({}),
+  list: (params) => api.get("/seo", { params }),
+  get: (path) => api.get(`/seo/${path}`),
+  create: (data) => api.post("/seo", data),
+  update: (id, data) => api.put(`/seo/${id}`, data),
+  delete: (id) => api.delete(`/seo/${id}`),
 };

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import ClientLayout from '../../components/layouts/ClientLayout';
@@ -69,9 +69,9 @@ export default function BranchesPage() {
     if (selectedCompany) {
       fetchBranches();
     }
-  }, [selectedCompany]);
+  }, [selectedCompany, fetchBranches]);
 
-  const fetchBranches = async () => {
+  const fetchBranches = useCallback(async () => {
     if (!selectedCompany) return;
     try {
       const response = await branchAPI.list(selectedCompany);
@@ -80,7 +80,7 @@ export default function BranchesPage() {
       console.error('Error fetching branches:', error);
       toast.error('Failed to load branches');
     }
-  };
+  }, [selectedCompany]);
 
   const resetForm = () => {
     setFormData({

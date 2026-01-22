@@ -4,6 +4,10 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Enable static export for Electron
+  output: process.env.NODE_ENV === 'production' && process.env.ELECTRON_BUILD ? 'export' : undefined,
+  trailingSlash: true,
+  distDir: process.env.ELECTRON_BUILD ? 'out' : '.next',
   env: {
     API_URL: process.env.API_URL,
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
@@ -12,6 +16,10 @@ const nextConfig = {
     NEXT_PUBLIC_MAIN_DOMAIN: process.env.NEXT_PUBLIC_MAIN_DOMAIN,
   },
   async rewrites() {
+    // Skip rewrites for Electron build
+    if (process.env.ELECTRON_BUILD) {
+      return [];
+    }
     return [
       {
         source: '/api/:path*',

@@ -6,12 +6,12 @@ const logger = require('../utils/logger');
  * Third-Party API Client
  * Handles integration with Sandbox API for HSN, GST, E-Invoice, E-Way Bill, and TDS
  * Uses Sandbox as the only provider for all tax compliance services
- * Falls back to mock responses when credentials are invalid (development/test mode)
  * 
  * Provider: Sandbox (https://api.sandbox.co.in)
  * - Comprehensive tax compliance platform
  * - Single API key for all services
  * - E-Invoice, E-Way Bill, HSN, GST, TDS APIs
+ * - AWS Signature V4 authentication for premium endpoints
  */
 class ThirdPartyApiClient {
   constructor(config = {}) {
@@ -324,21 +324,11 @@ class ThirdPartyApiClient {
    * Provider: Sandbox only
    */
   async searchHSN(query, filters = {}, provider = 'sandbox') {
-    // Check if we should use mock responses
-    if (MockSandboxService.shouldUseMockResponses()) {
-      return MockSandboxService.mockSearchHSN(query, filters.limit);
-    }
-    
     const endpoint = '/api/v1/gst/tax-lookup/hsn/search';
     return this.makeRequest('hsn', endpoint, 'POST', { query, ...filters }, provider);
   }
 
   async getHSNByCode(code, provider = 'sandbox') {
-    // Check if we should use mock responses
-    if (MockSandboxService.shouldUseMockResponses()) {
-      return MockSandboxService.mockGetHSNByCode(code);
-    }
-    
     // Try standard authentication first
     try {
       const endpoint = `/api/v1/gst/tax-lookup/hsn/${code}`;
@@ -354,41 +344,7 @@ class ThirdPartyApiClient {
     }
   }
 
-  async searchHSN(query, provider = 'sandbox') {
-    // Check if we should use mock responses
-    if (MockSandboxService.shouldUseMockResponses()) {
-      return MockSandboxService.mockSearchHSN(query);
-    }
-    
-    // Try standard authentication first
-    try {
-      const endpoint = '/api/v1/gst/tax-lookup/hsn/search';
-      return await this.makeRequest('hsn', endpoint, 'POST', { query }, provider);
-    } catch (error) {
-      // If standard auth fails, try AWS Signature V4
-      if (error.message.includes('Authorization header requires') || error.message.includes('Insufficient privilege')) {
-        logger.info('Retrying HSN search with AWS Signature V4 authentication');
-        const endpoint = '/gst/public/hsn/search';
-        return await this.makeRequest('hsn', endpoint, 'POST', { hsn_code: query }, provider, null, true);
-      }
-      throw error;
-    }
-  }
-
   async validateHSN(code, provider = 'sandbox') {
-    // Check if we should use mock responses
-    if (MockSandboxService.shouldUseMockResponses()) {
-      const result = MockSandboxService.mockGetHSNByCode(code);
-      return {
-        success: result.success,
-        valid: result.success,
-        code: code,
-        message: result.message,
-        details: result.data,
-        source: 'mock'
-      };
-    }
-    
     const endpoint = `/api/v1/gst/tax-lookup/hsn/${code}/validate`;
     return this.makeRequest('hsn', endpoint, 'GET', null, provider);
   }
@@ -398,51 +354,26 @@ class ThirdPartyApiClient {
    * Provider: Sandbox only
    */
   async validateGSTIN(gstin, provider = 'sandbox') {
-    // Check if we should use mock responses
-    if (MockSandboxService.shouldUseMockResponses()) {
-      return MockSandboxService.mockValidateGSTIN(gstin);
-    }
-    
     const endpoint = '/gst/compliance/public/gstin/search';
     return this.makeRequest('gst', endpoint, 'POST', { gstin }, provider);
   }
 
   async getGSTINDetails(gstin, provider = 'sandbox') {
-    // Check if we should use mock responses
-    if (MockSandboxService.shouldUseMockResponses()) {
-      return MockSandboxService.mockGetGSTINDetails(gstin);
-    }
-    
     const endpoint = '/gst/compliance/public/gstin/search';
     return this.makeRequest('gst', endpoint, 'POST', { gstin }, provider);
   }
 
   async getGSTRate(hsnCode, state, provider = 'sandbox') {
-    // Check if we should use mock responses
-    if (MockSandboxService.shouldUseMockResponses()) {
-      return MockSandboxService.mockGetGSTRate(hsnCode, state);
-    }
-    
     const endpoint = '/gst/compliance/public/hsn/rates';
     return this.makeRequest('gst', endpoint, 'POST', { hsn_code: hsnCode, state }, provider);
   }
 
   async generateGSTR1(gstr1Data, provider = 'sandbox') {
-    // Check if we should use mock responses
-    if (MockSandboxService.shouldUseMockResponses()) {
-      return MockSandboxService.mockGenerateGSTR1(gstr1Data);
-    }
-    
     const endpoint = '/gst/compliance/returns/gstr1';
     return this.makeRequest('gst', endpoint, 'POST', gstr1Data, provider);
   }
 
   async generateGSTR3B(gstr3bData, provider = 'sandbox') {
-    // Check if we should use mock responses
-    if (MockSandboxService.shouldUseMockResponses()) {
-      return MockSandboxService.mockGenerateGSTR3B(gstr3bData);
-    }
-    
     const endpoint = '/gst/compliance/returns/gstr3b';
     return this.makeRequest('gst', endpoint, 'POST', gstr3bData, provider);
   }
@@ -549,11 +480,6 @@ class ThirdPartyApiClient {
   }
 
   async calculateTDS(paymentData, provider = 'sandbox') {
-    // Check if we should use mock responses
-    if (MockSandboxService.shouldUseMockResponses()) {
-      return MockSandboxService.mockCalculateTDS(paymentData);
-    }
-    
     // Try standard authentication first
     try {
       const endpoint = '/tds/calculator/non-salary';
@@ -574,11 +500,6 @@ class ThirdPartyApiClient {
    * Calculate TDS for Non-Salary Payments with AWS Signature V4 fallback
    */
   async calculateNonSalaryTDS(params, provider = 'sandbox') {
-    // Check if we should use mock responses
-    if (MockSandboxService.shouldUseMockResponses()) {
-      return MockSandboxService.mockCalculateTDS(params);
-    }
-    
     const requestData = {
       '@entity': 'in.co.sandbox.tds.calculator.non_salary.request',
       payment_amount: params.payment_amount,
@@ -612,17 +533,6 @@ class ThirdPartyApiClient {
    * Create TDS Potential Notice Job
    */
   async createTDSPotentialNoticeJob(params, provider = 'sandbox') {
-    // Check if we should use mock responses
-    if (MockSandboxService.shouldUseMockResponses()) {
-      return {
-        success: true,
-        job_id: 'mock_job_' + Date.now(),
-        status: 'completed',
-        message: 'TDS potential notice analysis completed (mock response)',
-        source: 'mock'
-      };
-    }
-    
     const { quarter, tan, form, financial_year } = params;
     
     const requestData = {
@@ -641,22 +551,6 @@ class ThirdPartyApiClient {
    * Get TDS Analytics Job Status
    */
   async getTDSAnalyticsJobStatus(jobId, provider = 'sandbox') {
-    // Check if we should use mock responses
-    if (MockSandboxService.shouldUseMockResponses()) {
-      return {
-        success: true,
-        job_id: jobId,
-        status: 'completed',
-        result: {
-          potential_notices: 0,
-          compliance_score: 95,
-          recommendations: ['All TDS filings are up to date']
-        },
-        message: 'TDS analytics job completed (mock response)',
-        source: 'mock'
-      };
-    }
-    
     const endpoint = `/tds/analytics/potential-notices/${jobId}`;
     return this.makeRequest('tds', endpoint, 'GET', null, provider);
   }

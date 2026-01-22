@@ -9,7 +9,7 @@ import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import Badge from '../../../components/ui/Badge';
 import { tdsAPI } from '../../../lib/api';
 import toast, { Toaster } from 'react-hot-toast';
-import { FiRefreshCw, FiAlertTriangle, FiCalculator, FiShield, FiFileText } from 'react-icons/fi';
+import { FiRefreshCw, FiAlertTriangle, FiDollarSign, FiShield, FiFileText } from 'react-icons/fi';
 
 export default function TDSAnalyticsPage() {
   const [loading, setLoading] = useState(false);
@@ -195,7 +195,7 @@ export default function TDSAnalyticsPage() {
 
   const tabs = [
     { id: 'potential-notices', label: 'Potential Notices', icon: FiAlertTriangle },
-    { id: 'calculator', label: 'TDS Calculator', icon: FiCalculator },
+    { id: 'calculator', label: 'TDS Calculator', icon: FiDollarSign },
     { id: 'compliance', label: 'Compliance Check', icon: FiShield },
     { id: 'reports', label: 'TCS Reports', icon: FiFileText },
   ];
@@ -432,7 +432,7 @@ export default function TDSAnalyticsPage() {
                         </>
                       ) : (
                         <>
-                          <FiCalculator className="h-4 w-4 mr-2" />
+                          <FiDollarSign className="h-4 w-4 mr-2" />
                           Calculate TDS
                         </>
                       )}

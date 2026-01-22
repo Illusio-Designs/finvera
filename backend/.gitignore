@@ -1,20 +1,176 @@
+# Dependencies
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment variables
 .env
-.env.production
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+# Uploads and temporary files
 uploads/
+uploads/temp/
+uploads/tmp/
+temp/
+tmp/
+
+# Logs
 *.log
+logs/
+combined.log
+error.log
+access.log
+debug.log
+trial-cleanup.log
+
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build outputs
+dist/
+build/
+out/
+
+# Coverage reports
+coverage/
+.nyc_output/
+*.lcov
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+database.db
+test.db
+
+# Backup files
+*.bak
+*.backup
+*.old
 
 # FTP deployment
 .ftpconfig
 deploy-temp/
-dist/
-coverage/
-.nyc_output/
 
 # SSH Keys and sensitive files
 *.pem
 *.key
-!finvera-keypair.pem
+*.p12
+*.pfx
 id_rsa
 id_rsa.pub
+.ssh/
+secrets/
+credentials/
+
+# Keep specific keys if needed (uncomment if required)
+# !finvera-keypair.pem
+
+# API documentation
+api-docs/
+swagger-output.json
+
+# Testing
+test-results/
+.jest/
+jest-coverage/
+
+# Monitoring and profiling
+.clinic/
+*.heapsnapshot
+*.cpuprofile
+
+# PM2
+.pm2/
+ecosystem.config.js.backup
+
+# Docker
+.dockerignore.backup
+docker-compose.override.yml
+
+# Sequelize
+migrations/backup/
+seeders/backup/
+
+# Cache
+.cache/
+redis-dump.rdb
+
+# Temporary development files
+*.tmp
+*.temp
+.scratch/
+
+# Local configuration overrides
+config.local.js
+config.local.json
+
+# Archive files
+*.zip
+*.tar.gz
+*.rar
+
+# Security scans
+.snyk
+
+# Dependency vulnerability reports
+audit-report.json
+
+# Performance monitoring
+newrelic_agent.log
+
+# Application specific
+session-store/
+file-uploads/
+processed-files/
+
+# Development notes (uncomment if you want to ignore)
+# NOTES.md
+# TODO.md
+# API-CHANGES.md

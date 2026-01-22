@@ -2,8 +2,12 @@
  * Email validation
  */
 export const validateEmail = (email) => {
+  if (!email) return { valid: false, message: 'Email is required' };
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
+  if (!re.test(email)) {
+    return { valid: false, message: 'Please enter a valid email address' };
+  }
+  return { valid: true };
 };
 
 /**
@@ -141,3 +145,255 @@ export const validateHSNSAC = (code) => {
 // Import formatDate for date validation
 import { formatDate } from './formatters';
 
+/**
+ * Company name validation
+ */
+export const validateCompanyName = (name) => {
+  if (!name) return { valid: false, message: 'Company name is required' };
+  if (name.length < 2) {
+    return { valid: false, message: 'Company name must be at least 2 characters long' };
+  }
+  if (name.length > 100) {
+    return { valid: false, message: 'Company name must be less than 100 characters' };
+  }
+  return { valid: true };
+};
+
+/**
+ * Full name validation
+ */
+export const validateFullName = (name) => {
+  if (!name) return { valid: false, message: 'Full name is required' };
+  if (name.length < 2) {
+    return { valid: false, message: 'Full name must be at least 2 characters long' };
+  }
+  if (name.length > 50) {
+    return { valid: false, message: 'Full name must be less than 50 characters' };
+  }
+  if (!/^[a-zA-Z\s.'-]+$/.test(name)) {
+    return { valid: false, message: 'Full name can only contain letters, spaces, dots, hyphens, and apostrophes' };
+  }
+  return { valid: true };
+};
+
+/**
+ * Amount validation
+ */
+export const validateAmount = (amount, min = 0, max = null) => {
+  if (amount === null || amount === undefined || amount === '') {
+    return { valid: false, message: 'Amount is required' };
+  }
+  const num = parseFloat(amount);
+  if (isNaN(num)) {
+    return { valid: false, message: 'Must be a valid amount' };
+  }
+  if (num < min) {
+    return { valid: false, message: `Amount must be at least ${min}` };
+  }
+  if (max !== null && num > max) {
+    return { valid: false, message: `Amount must be at most ${max}` };
+  }
+  return { valid: true };
+};
+
+/**
+ * Percentage validation
+ */
+export const validatePercentage = (value, min = 0, max = 100) => {
+  if (value === null || value === undefined || value === '') {
+    return { valid: false, message: 'Percentage is required' };
+  }
+  const num = parseFloat(value);
+  if (isNaN(num)) {
+    return { valid: false, message: 'Must be a valid percentage' };
+  }
+  if (num < min) {
+    return { valid: false, message: `Percentage must be at least ${min}%` };
+  }
+  if (num > max) {
+    return { valid: false, message: `Percentage must be at most ${max}%` };
+  }
+  return { valid: true };
+};
+
+/**
+ * Ledger name validation
+ */
+export const validateLedgerName = (name) => {
+  if (!name) return { valid: false, message: 'Ledger name is required' };
+  if (name.length < 2) {
+    return { valid: false, message: 'Ledger name must be at least 2 characters long' };
+  }
+  if (name.length > 100) {
+    return { valid: false, message: 'Ledger name must be less than 100 characters' };
+  }
+  return { valid: true };
+};
+
+/**
+ * Voucher number validation
+ */
+export const validateVoucherNumber = (number) => {
+  if (!number) return { valid: false, message: 'Voucher number is required' };
+  if (number.length < 1) {
+    return { valid: false, message: 'Voucher number is required' };
+  }
+  if (number.length > 50) {
+    return { valid: false, message: 'Voucher number must be less than 50 characters' };
+  }
+  return { valid: true };
+};
+
+/**
+ * Item name validation
+ */
+export const validateItemName = (name) => {
+  if (!name) return { valid: false, message: 'Item name is required' };
+  if (name.length < 2) {
+    return { valid: false, message: 'Item name must be at least 2 characters long' };
+  }
+  if (name.length > 100) {
+    return { valid: false, message: 'Item name must be less than 100 characters' };
+  }
+  return { valid: true };
+};
+
+/**
+ * Quantity validation
+ */
+export const validateQuantity = (quantity, min = 0) => {
+  if (quantity === null || quantity === undefined || quantity === '') {
+    return { valid: false, message: 'Quantity is required' };
+  }
+  const num = parseFloat(quantity);
+  if (isNaN(num)) {
+    return { valid: false, message: 'Must be a valid quantity' };
+  }
+  if (num <= min) {
+    return { valid: false, message: `Quantity must be greater than ${min}` };
+  }
+  return { valid: true };
+};
+
+/**
+ * Rate validation
+ */
+export const validateRate = (rate, min = 0) => {
+  if (rate === null || rate === undefined || rate === '') {
+    return { valid: false, message: 'Rate is required' };
+  }
+  const num = parseFloat(rate);
+  if (isNaN(num)) {
+    return { valid: false, message: 'Must be a valid rate' };
+  }
+  if (num < min) {
+    return { valid: false, message: `Rate must be at least ${min}` };
+  }
+  return { valid: true };
+};
+
+/**
+ * Address validation
+ */
+export const validateAddress = (address) => {
+  if (!address) return { valid: false, message: 'Address is required' };
+  if (address.length < 10) {
+    return { valid: false, message: 'Address must be at least 10 characters long' };
+  }
+  if (address.length > 200) {
+    return { valid: false, message: 'Address must be less than 200 characters' };
+  }
+  return { valid: true };
+};
+
+/**
+ * Pincode validation (6 digits)
+ */
+export const validatePincode = (pincode) => {
+  if (!pincode) return { valid: false, message: 'Pincode is required' };
+  if (!/^\d{6}$/.test(pincode)) {
+    return { valid: false, message: 'Pincode must be 6 digits' };
+  }
+  return { valid: true };
+};
+
+/**
+ * State validation
+ */
+export const validateState = (state) => {
+  if (!state) return { valid: false, message: 'State is required' };
+  if (state.length < 2) {
+    return { valid: false, message: 'State name must be at least 2 characters long' };
+  }
+  return { valid: true };
+};
+
+/**
+ * City validation
+ */
+export const validateCity = (city) => {
+  if (!city) return { valid: false, message: 'City is required' };
+  if (city.length < 2) {
+    return { valid: false, message: 'City name must be at least 2 characters long' };
+  }
+  return { valid: true };
+};
+
+/**
+ * Bank account number validation
+ */
+export const validateBankAccount = (accountNumber) => {
+  if (!accountNumber) return { valid: false, message: 'Bank account number is required' };
+  if (!/^\d{9,18}$/.test(accountNumber)) {
+    return { valid: false, message: 'Bank account number must be 9-18 digits' };
+  }
+  return { valid: true };
+};
+
+/**
+ * IFSC code validation
+ */
+export const validateIFSC = (ifsc) => {
+  if (!ifsc) return { valid: false, message: 'IFSC code is required' };
+  if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) {
+    return { valid: false, message: 'Invalid IFSC code format' };
+  }
+  return { valid: true };
+};
+
+/**
+ * Form validation helper
+ */
+export const validateForm = (data, validationRules) => {
+  const errors = {};
+  let isValid = true;
+
+  Object.keys(validationRules).forEach(field => {
+    const rules = validationRules[field];
+    const value = data[field];
+
+    for (const rule of rules) {
+      const result = rule(value);
+      if (!result.valid) {
+        errors[field] = result.message;
+        isValid = false;
+        break; // Stop at first error for this field
+      }
+    }
+  });
+
+  return { isValid, errors };
+};
+
+/**
+ * Real-time field validation
+ */
+export const validateField = (value, validators) => {
+  for (const validator of validators) {
+    const result = validator(value);
+    if (!result.valid) {
+      return result;
+    }
+  }
+  return { valid: true };
+};

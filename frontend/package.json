@@ -1,14 +1,32 @@
 {
-  "name": "finvera-frontend",
+  "name": "finvera-client",
   "version": "1.0.0",
-  "description": "Finvera Multi-Tenant Accounting SaaS Frontend",
+  "description": "Finvera Client - Modern Desktop Accounting & GST Software",
+  "author": {
+    "name": "Finvera Solutions",
+    "email": "support@finvera.com",
+    "url": "https://finvera.com"
+  },
+  "main": "electron/main.js",
+  "homepage": "./",
   "private": true,
   "scripts": {
     "dev": "cross-env NEXT_TELEMETRY_DISABLED=1 next dev -p 3001",
     "dev:turbo": "cross-env NEXT_TELEMETRY_DISABLED=1 next dev --turbo -p 3001",
+    "dev:electron": "cross-env NEXT_TELEMETRY_DISABLED=1 next dev -p 3002",
     "build": "next build",
     "start": "next start -p 3001",
-    "lint": "next lint"
+    "start:electron": "next start -p 3002",
+    "lint": "next lint",
+    "electron": "electron .",
+    "electron:dev": "node scripts/dev-electron.js",
+    "electron:build": "node scripts/build-electron.js",
+    "electron:deploy": "node scripts/deploy-electron.js",
+    "electron:dist": "cross-env ELECTRON_BUILD=true NODE_ENV=production npm run build && electron-builder",
+    "electron:pack": "cross-env ELECTRON_BUILD=true NODE_ENV=production npm run build && electron-builder --dir",
+    "electron:setup": "node scripts/setup-electron.js",
+    "generate:icons": "node scripts/generate-icons.js",
+    "update:version": "node scripts/update-version.js"
   },
   "dependencies": {
     "axios": "^1.7.0",
@@ -30,9 +48,75 @@
   "devDependencies": {
     "autoprefixer": "^10.4.19",
     "cross-env": "^10.1.0",
+    "electron": "^40.0.0",
+    "electron-builder": "^24.9.1",
+    "electron-is-dev": "^2.0.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "^15.1.0",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3"
+  },
+  "build": {
+    "appId": "com.finvera.client",
+    "productName": "Finvera Client",
+    "copyright": "Copyright © 2025 Finvera Solutions",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "out/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "out",
+        "to": "app",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.business",
+      "darkModeSupport": true,
+      "hardenedRuntime": true,
+      "entitlements": "electron/entitlements.mac.plist",
+      "entitlementsInherit": "electron/entitlements.mac.plist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "dir"
+        }
+      ],
+      "publisherName": "Finvera Solutions"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Office"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }

@@ -4,10 +4,17 @@ import PageLayout from '../../components/layouts/PageLayout';
 import DataTable from '../../components/tables/DataTable';
 import Card from '../../components/ui/Card';
 import { useTable } from '../../hooks/useTable';
-import { gstAPI } from '../../lib/api';
+import { useState, useEffect } from 'react';
 
 export default function GSTRatesList() {
-  const { data, loading, pagination, handlePageChange, handleSort, sort } = useTable(gstAPI.rates.list, {});
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Since GST rates API was removed, we'll show a placeholder message
+  useEffect(() => {
+    setLoading(false);
+    setData([]);
+  }, []);
 
   const columns = [
     { key: 'hsn_sac_code', label: 'HSN/SAC', sortable: true },
@@ -27,17 +34,15 @@ export default function GSTRatesList() {
           ]}
         >
           <Card className="shadow-sm border border-gray-200">
-            <DataTable
-              columns={columns}
-              data={data?.data || data || []}
-              loading={loading}
-              pagination={pagination}
-              onPageChange={handlePageChange}
-              onSort={handleSort}
-              sortField={sort.field}
-              sortOrder={sort.order}
-              searchable
-            />
+            <div className="p-6 text-center">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">GST Rates</h3>
+              <p className="text-gray-600 mb-4">
+                GST rates are now fetched from live government APIs for accuracy.
+              </p>
+              <p className="text-sm text-gray-500">
+                Use the HSN/SAC lookup in voucher creation to get current GST rates.
+              </p>
+            </div>
           </Card>
         </PageLayout>
       </ClientLayout>

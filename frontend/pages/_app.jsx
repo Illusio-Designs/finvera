@@ -1,19 +1,33 @@
 import '../styles/globals.css';
 import { AuthProvider } from '../contexts/AuthContext';
 import { WebSocketProvider } from '../contexts/WebSocketContext';
+import ElectronWrapper from '../components/electron/ElectronWrapper';
 import Head from 'next/head';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { initDesktopNotifications } from '../lib/desktopNotificationService';
 import { preloadSounds } from '../lib/soundService';
 
 export default function App({ Component, pageProps }) {
+  const [isElectron, setIsElectron] = useState(false);
+
   useEffect(() => {
+    // Check if running in Electron
+    setIsElectron(typeof window !== 'undefined' && window.electronAPI);
+    
     // Initialize desktop notifications
     initDesktopNotifications();
     
     // Preload notification sounds
     preloadSounds();
   }, []);
+
+  const AppContent = () => (
+    <AuthProvider>
+      <WebSocketProvider>
+        <Component {...pageProps} />
+      </WebSocketProvider>
+    </AuthProvider>
+  );
 
   return (
     <>
@@ -41,11 +55,14 @@ export default function App({ Component, pageProps }) {
           }
         `}} />
       </Head>
-      <AuthProvider>
-        <WebSocketProvider>
-          <Component {...pageProps} />
-        </WebSocketProvider>
-      </AuthProvider>
+      
+      {isElectron ? (
+        <ElectronWrapper>
+          <AppContent />
+        </ElectronWrapper>
+      ) : (
+        <AppContent />
+      )}
     </>
   );
 }

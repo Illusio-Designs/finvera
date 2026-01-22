@@ -1,0 +1,30 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Modern square background with rounded corners -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="iconGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f1f5f9;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Square background with rounded corners (like macOS icons) -->
+  <rect width="512" height="512" rx="90" ry="90" fill="url(#bgGradient)" />
+  
+  <!-- Inner shadow effect -->
+  <rect x="8" y="8" width="496" height="496" rx="82" ry="82" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
+  
+  <!-- Main "F" letter -->
+  <text x="256" y="340" font-family="Arial, sans-serif" font-size="280" font-weight="bold" text-anchor="middle" fill="url(#iconGradient)">F</text>
+  
+  <!-- Accent elements -->
+  <rect x="140" y="120" width="232" height="12" rx="6" fill="rgba(255,255,255,0.8)"/>
+  <rect x="140" y="380" width="232" height="12" rx="6" fill="rgba(255,255,255,0.6)"/>
+  
+  <!-- Small accent dot -->
+  <circle cx="400" cy="140" r="8" fill="rgba(255,255,255,0.9)"/>
+</svg>
