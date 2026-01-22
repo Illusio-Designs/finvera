@@ -80,7 +80,7 @@ module.exports = {
       }
 
       // Generate item_key from item_code or item_name
-      const itemKey = (item_code || item_name).trim().toLowerCase();
+      const itemKey = String(item_code || item_name).trim().toLowerCase();
 
       // Check if item with same key already exists
       const existing = await req.tenantModels.InventoryItem.findOne({
@@ -196,7 +196,7 @@ module.exports = {
 
       // Regenerate item_key if item_code or item_name changed
       if (item_code !== undefined || item_name !== undefined) {
-        const newItemKey = (updateData.item_code || updateData.item_name || item.item_code || item.item_name)
+        const newItemKey = String(updateData.item_code || updateData.item_name || item.item_code || item.item_name)
           .trim()
           .toLowerCase();
         
@@ -425,6 +425,7 @@ module.exports = {
         defaults: {
           inventory_item_id: id,
           warehouse_id: warehouse_id,
+          tenant_id: req.user.tenant_id, // Add missing tenant_id
           quantity: qty,
           avg_cost: cost,
         },
@@ -441,6 +442,7 @@ module.exports = {
       await req.tenantModels.StockMovement.create({
         inventory_item_id: id,
         warehouse_id: warehouse_id,
+        tenant_id: req.user.tenant_id, // Add missing tenant_id
         voucher_id: null,
         movement_type: 'IN',
         quantity: qty,
@@ -497,6 +499,7 @@ module.exports = {
         include: [
           {
             model: req.tenantModels.Warehouse,
+            as: 'warehouse', // Use the alias defined in the association
             attributes: ['id', 'warehouse_name', 'warehouse_code'],
             required: false, // Left join - don't fail if warehouse doesn't exist
           },
@@ -505,8 +508,8 @@ module.exports = {
 
       const data = warehouseStocks.map((ws) => ({
         warehouse_id: ws.warehouse_id,
-        warehouse_name: ws.Warehouse?.warehouse_name,
-        warehouse_code: ws.Warehouse?.warehouse_code,
+        warehouse_name: ws.warehouse?.warehouse_name,
+        warehouse_code: ws.warehouse?.warehouse_code,
         quantity: parseFloat(ws.quantity) || 0,
         avg_cost: parseFloat(ws.avg_cost) || 0,
         stock_value: (parseFloat(ws.quantity) || 0) * (parseFloat(ws.avg_cost) || 0),

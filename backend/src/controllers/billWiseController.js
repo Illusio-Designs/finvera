@@ -17,8 +17,8 @@ module.exports = {
       const bills = await req.tenantModels.BillWiseDetail.findAll({
         where,
         include: [
-          { model: req.tenantModels.Voucher, attributes: ['voucher_number', 'voucher_date'] },
-          { model: req.tenantModels.Ledger, attributes: ['ledger_name', 'ledger_code'] },
+          { model: req.tenantModels.Voucher, as: 'voucher', attributes: ['voucher_number', 'voucher_date'] },
+          { model: req.tenantModels.Ledger, as: 'ledger', attributes: ['ledger_name', 'ledger_code'] },
         ],
         order: [['due_date', 'ASC']],
       });
@@ -132,7 +132,7 @@ module.exports = {
 
       const bills = await req.tenantModels.BillWiseDetail.findAll({
         where,
-        include: [{ model: req.tenantModels.Ledger, attributes: ['ledger_name'] }],
+        include: [{ model: req.tenantModels.Ledger, as: 'ledger', attributes: ['ledger_name'] }],
       });
 
       const today = as_on_date ? new Date(as_on_date) : new Date();

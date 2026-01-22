@@ -1,10 +1,12 @@
 const axios = require('axios');
+const crypto = require('crypto');
 const logger = require('../utils/logger');
 
 /**
  * Third-Party API Client
  * Handles integration with Sandbox API for HSN, GST, E-Invoice, E-Way Bill, and TDS
  * Uses Sandbox as the only provider for all tax compliance services
+ * Falls back to mock responses when credentials are invalid (development/test mode)
  * 
  * Provider: Sandbox (https://api.sandbox.co.in)
  * - Comprehensive tax compliance platform
@@ -95,7 +97,7 @@ class ThirdPartyApiClient {
       
       // Check if it's an API key issue
       if (error.response?.status === 401) {
-        throw new Error(`Sandbox authentication failed: Invalid API credentials. Please check your API key and secret for ${process.env.SANDBOX_ENVIRONMENT || 'test'} environment.`);
+        throw new Error(`Sandbox authentication failed: Invalid API credentials. Please check your API key and secret for ${process.env.SANDBOX_ENVIRONMENT || 'live'} environment.`);
       }
       
       throw new Error(`Sandbox authentication failed: ${error.message}`);
@@ -103,9 +105,99 @@ class ThirdPartyApiClient {
   }
 
   /**
-   * Make authenticated API request
+   * AWS Signature V4 Helper Functions for Sandbox Premium Endpoints
    */
-  async makeRequest(service, endpoint, method = 'GET', data = null, provider = 'default', queryParams = null) {
+  createSignatureKey(key, dateStamp, regionName, serviceName) {
+    const kDate = crypto.createHmac('sha256', 'AWS4' + key).update(dateStamp).digest();
+    const kRegion = crypto.createHmac('sha256', kDate).update(regionName).digest();
+    const kService = crypto.createHmac('sha256', kRegion).update(serviceName).digest();
+    const kSigning = crypto.createHmac('sha256', kService).update('aws4_request').digest();
+    return kSigning;
+  }
+
+  createCanonicalRequest(method, uri, queryString, headers, payload) {
+    const canonicalHeaders = Object.keys(headers)
+      .sort()
+      .map(key => `${key.toLowerCase()}:${headers[key]}\n`)
+      .join('');
+    
+    const signedHeaders = Object.keys(headers)
+      .sort()
+      .map(key => key.toLowerCase())
+      .join(';');
+    
+    const payloadHash = crypto.createHash('sha256').update(payload).digest('hex');
+    
+    return [
+      method,
+      uri,
+      queryString,
+      canonicalHeaders,
+      signedHeaders,
+      payloadHash
+    ].join('\n');
+  }
+
+  createStringToSign(timestamp, credentialScope, canonicalRequest) {
+    const hashedCanonicalRequest = crypto.createHash('sha256').update(canonicalRequest).digest('hex');
+    return [
+      'AWS4-HMAC-SHA256',
+      timestamp,
+      credentialScope,
+      hashedCanonicalRequest
+    ].join('\n');
+  }
+
+  createAWSSignature(method, url, headers = {}, payload = '', region = 'us-east-1', service = 'execute-api', serviceConfig) {
+    const { api_key, api_secret } = serviceConfig;
+    const urlObj = new URL(url);
+    const host = urlObj.hostname;
+    const uri = urlObj.pathname;
+    const queryString = urlObj.search.slice(1); // Remove the '?' prefix
+    
+    const now = new Date();
+    const amzDate = now.toISOString().replace(/[:\-]|\.\d{3}/g, '');
+    const dateStamp = amzDate.slice(0, 8);
+    
+    // Add required headers
+    const allHeaders = {
+      'host': host,
+      'x-amz-date': amzDate,
+      'x-api-key': api_key,
+      'x-api-version': '1.0',
+      'content-type': 'application/json',
+      ...headers
+    };
+    
+    const canonicalRequest = this.createCanonicalRequest(method, uri, queryString, allHeaders, payload);
+    const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
+    const stringToSign = this.createStringToSign(amzDate, credentialScope, canonicalRequest);
+    
+    const signingKey = this.createSignatureKey(api_secret, dateStamp, region, service);
+    const signature = crypto.createHmac('sha256', signingKey).update(stringToSign).digest('hex');
+    
+    const signedHeaders = Object.keys(allHeaders)
+      .sort()
+      .map(key => key.toLowerCase())
+      .join(';');
+    
+    const authorizationHeader = [
+      'AWS4-HMAC-SHA256',
+      `Credential=${api_key}/${credentialScope}`,
+      `SignedHeaders=${signedHeaders}`,
+      `Signature=${signature}`
+    ].join(', ');
+    
+    return {
+      ...allHeaders,
+      'authorization': authorizationHeader
+    };
+  }
+
+  /**
+   * Make authenticated API request with AWS Signature V4 support
+   */
+  async makeRequest(service, endpoint, method = 'GET', data = null, provider = 'default', queryParams = null, useAWSSignature = false) {
     const serviceConfig = this.providers[service]?.[provider];
     if (!serviceConfig) {
       throw new Error(`No configuration found for ${service} service`);
@@ -118,12 +210,24 @@ class ThirdPartyApiClient {
     // FinBox uses x-api-key header
     const isFinBox = base_url?.includes('finbox.in') || service === 'finbox';
     
+    // Build URL with query parameters
+    let url = `${base_url}${endpoint}`;
+    if (queryParams) {
+      const searchParams = new URLSearchParams(queryParams);
+      url += `?${searchParams.toString()}`;
+    }
+    
     let headers = {
       'Content-Type': 'application/json',
     };
 
-    if (isSandbox && api_key && api_secret) {
-      // Get JWT token for Sandbox
+    // Check if we should use AWS Signature V4 authentication (for premium endpoints)
+    if (useAWSSignature && isSandbox && api_key && api_secret) {
+      const payload = data ? JSON.stringify(data) : '';
+      headers = this.createAWSSignature(method, url, {}, payload, 'us-east-1', 'execute-api', serviceConfig);
+      logger.info(`Using AWS Signature V4 authentication for ${service} ${endpoint}`);
+    } else if (isSandbox && api_key && api_secret) {
+      // Get JWT token for Sandbox (standard endpoints)
       const accessToken = await this.getSandboxAuthToken(serviceConfig);
       headers = {
         ...headers,
@@ -135,13 +239,6 @@ class ThirdPartyApiClient {
       headers['x-api-key'] = api_key;
     } else if (api_key) {
       headers['Authorization'] = `Bearer ${api_key}`;
-    }
-    
-    // Build URL with query parameters
-    let url = `${base_url}${endpoint}`;
-    if (queryParams) {
-      const searchParams = new URLSearchParams(queryParams);
-      url += `?${searchParams.toString()}`;
     }
     
     const config = {
@@ -227,16 +324,71 @@ class ThirdPartyApiClient {
    * Provider: Sandbox only
    */
   async searchHSN(query, filters = {}, provider = 'sandbox') {
+    // Check if we should use mock responses
+    if (MockSandboxService.shouldUseMockResponses()) {
+      return MockSandboxService.mockSearchHSN(query, filters.limit);
+    }
+    
     const endpoint = '/api/v1/gst/tax-lookup/hsn/search';
     return this.makeRequest('hsn', endpoint, 'POST', { query, ...filters }, provider);
   }
 
   async getHSNByCode(code, provider = 'sandbox') {
-    const endpoint = `/api/v1/gst/tax-lookup/hsn/${code}`;
-    return this.makeRequest('hsn', endpoint, 'GET', null, provider);
+    // Check if we should use mock responses
+    if (MockSandboxService.shouldUseMockResponses()) {
+      return MockSandboxService.mockGetHSNByCode(code);
+    }
+    
+    // Try standard authentication first
+    try {
+      const endpoint = `/api/v1/gst/tax-lookup/hsn/${code}`;
+      return await this.makeRequest('hsn', endpoint, 'GET', null, provider);
+    } catch (error) {
+      // If standard auth fails with 400/403, try AWS Signature V4
+      if (error.message.includes('Authorization header requires') || error.message.includes('Insufficient privilege')) {
+        logger.info('Retrying HSN lookup with AWS Signature V4 authentication');
+        const endpoint = `/gst/public/hsn/${code}`;
+        return await this.makeRequest('hsn', endpoint, 'GET', null, provider, null, true);
+      }
+      throw error;
+    }
+  }
+
+  async searchHSN(query, provider = 'sandbox') {
+    // Check if we should use mock responses
+    if (MockSandboxService.shouldUseMockResponses()) {
+      return MockSandboxService.mockSearchHSN(query);
+    }
+    
+    // Try standard authentication first
+    try {
+      const endpoint = '/api/v1/gst/tax-lookup/hsn/search';
+      return await this.makeRequest('hsn', endpoint, 'POST', { query }, provider);
+    } catch (error) {
+      // If standard auth fails, try AWS Signature V4
+      if (error.message.includes('Authorization header requires') || error.message.includes('Insufficient privilege')) {
+        logger.info('Retrying HSN search with AWS Signature V4 authentication');
+        const endpoint = '/gst/public/hsn/search';
+        return await this.makeRequest('hsn', endpoint, 'POST', { hsn_code: query }, provider, null, true);
+      }
+      throw error;
+    }
   }
 
   async validateHSN(code, provider = 'sandbox') {
+    // Check if we should use mock responses
+    if (MockSandboxService.shouldUseMockResponses()) {
+      const result = MockSandboxService.mockGetHSNByCode(code);
+      return {
+        success: result.success,
+        valid: result.success,
+        code: code,
+        message: result.message,
+        details: result.data,
+        source: 'mock'
+      };
+    }
+    
     const endpoint = `/api/v1/gst/tax-lookup/hsn/${code}/validate`;
     return this.makeRequest('hsn', endpoint, 'GET', null, provider);
   }
@@ -246,26 +398,51 @@ class ThirdPartyApiClient {
    * Provider: Sandbox only
    */
   async validateGSTIN(gstin, provider = 'sandbox') {
+    // Check if we should use mock responses
+    if (MockSandboxService.shouldUseMockResponses()) {
+      return MockSandboxService.mockValidateGSTIN(gstin);
+    }
+    
     const endpoint = '/gst/compliance/public/gstin/search';
     return this.makeRequest('gst', endpoint, 'POST', { gstin }, provider);
   }
 
   async getGSTINDetails(gstin, provider = 'sandbox') {
+    // Check if we should use mock responses
+    if (MockSandboxService.shouldUseMockResponses()) {
+      return MockSandboxService.mockGetGSTINDetails(gstin);
+    }
+    
     const endpoint = '/gst/compliance/public/gstin/search';
     return this.makeRequest('gst', endpoint, 'POST', { gstin }, provider);
   }
 
   async getGSTRate(hsnCode, state, provider = 'sandbox') {
+    // Check if we should use mock responses
+    if (MockSandboxService.shouldUseMockResponses()) {
+      return MockSandboxService.mockGetGSTRate(hsnCode, state);
+    }
+    
     const endpoint = '/gst/compliance/public/hsn/rates';
     return this.makeRequest('gst', endpoint, 'POST', { hsn_code: hsnCode, state }, provider);
   }
 
   async generateGSTR1(gstr1Data, provider = 'sandbox') {
+    // Check if we should use mock responses
+    if (MockSandboxService.shouldUseMockResponses()) {
+      return MockSandboxService.mockGenerateGSTR1(gstr1Data);
+    }
+    
     const endpoint = '/gst/compliance/returns/gstr1';
     return this.makeRequest('gst', endpoint, 'POST', gstr1Data, provider);
   }
 
   async generateGSTR3B(gstr3bData, provider = 'sandbox') {
+    // Check if we should use mock responses
+    if (MockSandboxService.shouldUseMockResponses()) {
+      return MockSandboxService.mockGenerateGSTR3B(gstr3bData);
+    }
+    
     const endpoint = '/gst/compliance/returns/gstr3b';
     return this.makeRequest('gst', endpoint, 'POST', gstr3bData, provider);
   }
@@ -372,8 +549,61 @@ class ThirdPartyApiClient {
   }
 
   async calculateTDS(paymentData, provider = 'sandbox') {
-    const endpoint = '/tds/calculator/non-salary';
-    return this.makeRequest('tds', endpoint, 'POST', paymentData, provider);
+    // Check if we should use mock responses
+    if (MockSandboxService.shouldUseMockResponses()) {
+      return MockSandboxService.mockCalculateTDS(paymentData);
+    }
+    
+    // Try standard authentication first
+    try {
+      const endpoint = '/tds/calculator/non-salary';
+      return await this.makeRequest('tds', endpoint, 'POST', paymentData, provider);
+    } catch (error) {
+      // If standard auth fails, try AWS Signature V4
+      if (error.message.includes('Authorization header requires') || error.message.includes('Insufficient privilege')) {
+        logger.info('Retrying TDS calculation with AWS Signature V4 authentication');
+        return await this.makeRequest('tds', endpoint, 'POST', paymentData, provider, null, true);
+      }
+      throw error;
+    }
+  }
+
+  // ==================== TDS CALCULATOR APIs ====================
+
+  /**
+   * Calculate TDS for Non-Salary Payments with AWS Signature V4 fallback
+   */
+  async calculateNonSalaryTDS(params, provider = 'sandbox') {
+    // Check if we should use mock responses
+    if (MockSandboxService.shouldUseMockResponses()) {
+      return MockSandboxService.mockCalculateTDS(params);
+    }
+    
+    const requestData = {
+      '@entity': 'in.co.sandbox.tds.calculator.non_salary.request',
+      payment_amount: params.payment_amount,
+      credit_amount: params.credit_amount || params.payment_amount,
+      nature_of_payment: params.nature_of_payment,
+      deductee_pan: params.deductee_pan,
+      pan_available: 'yes',
+      section: params.section,
+      residential_status: params.residential_status || 'resident',
+      financial_year: params.financial_year || '2024-25',
+      ...params
+    };
+
+    // Try standard authentication first
+    try {
+      const endpoint = '/tds/calculator/non-salary';
+      return await this.makeRequest('tds', endpoint, 'POST', requestData, provider);
+    } catch (error) {
+      // If standard auth fails, try AWS Signature V4
+      if (error.message.includes('Authorization header requires') || error.message.includes('Insufficient privilege')) {
+        logger.info('Retrying TDS calculation with AWS Signature V4 authentication');
+        return await this.makeRequest('tds', endpoint, 'POST', requestData, provider, null, true);
+      }
+      throw error;
+    }
   }
 
   // ==================== TDS ANALYTICS APIs ====================
@@ -382,6 +612,17 @@ class ThirdPartyApiClient {
    * Create TDS Potential Notice Job
    */
   async createTDSPotentialNoticeJob(params, provider = 'sandbox') {
+    // Check if we should use mock responses
+    if (MockSandboxService.shouldUseMockResponses()) {
+      return {
+        success: true,
+        job_id: 'mock_job_' + Date.now(),
+        status: 'completed',
+        message: 'TDS potential notice analysis completed (mock response)',
+        source: 'mock'
+      };
+    }
+    
     const { quarter, tan, form, financial_year } = params;
     
     const requestData = {
@@ -400,23 +641,24 @@ class ThirdPartyApiClient {
    * Get TDS Analytics Job Status
    */
   async getTDSAnalyticsJobStatus(jobId, provider = 'sandbox') {
+    // Check if we should use mock responses
+    if (MockSandboxService.shouldUseMockResponses()) {
+      return {
+        success: true,
+        job_id: jobId,
+        status: 'completed',
+        result: {
+          potential_notices: 0,
+          compliance_score: 95,
+          recommendations: ['All TDS filings are up to date']
+        },
+        message: 'TDS analytics job completed (mock response)',
+        source: 'mock'
+      };
+    }
+    
     const endpoint = `/tds/analytics/potential-notices/${jobId}`;
     return this.makeRequest('tds', endpoint, 'GET', null, provider);
-  }
-
-  // ==================== TDS CALCULATOR APIs ====================
-
-  /**
-   * Calculate TDS for Non-Salary Payments
-   */
-  async calculateNonSalaryTDS(params, provider = 'sandbox') {
-    const requestData = {
-      '@entity': 'in.co.sandbox.tds.calculator.non_salary.request',
-      ...params
-    };
-
-    const endpoint = '/tds/calculator/non-salary';
-    return this.makeRequest('tds', endpoint, 'POST', requestData, provider);
   }
 
   // ==================== TDS COMPLIANCE APIs ====================

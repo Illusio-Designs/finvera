@@ -12,6 +12,7 @@ const path = require('path');
 
 const BASE_URL = 'http://localhost:3000/api';
 let testData = {
+  // Tenant user credentials
   accessToken: '',
   refreshToken: '',
   userId: '',
@@ -25,7 +26,15 @@ let testData = {
   warehouseId: '',
   ticketId: '',
   notificationId: '',
-  planId: ''
+  planId: '',
+  
+  // Admin user credentials
+  adminAccessToken: '',
+  adminRefreshToken: '',
+  adminUserId: '',
+  distributorId: '',
+  salesmanId: '',
+  targetId: ''
 };
 
 let testResults = {
@@ -40,7 +49,7 @@ let testResults = {
 };
 
 // Helper function to make API calls
-async function apiCall(method, endpoint, data = null, useAuth = false, description = '') {
+async function apiCall(method, endpoint, data = null, useAuth = false, description = '', useAdminAuth = false) {
   const testStart = Date.now();
   const testInfo = {
     method,
@@ -68,10 +77,13 @@ async function apiCall(method, endpoint, data = null, useAuth = false, descripti
       config.headers['Content-Type'] = 'application/json';
     }
 
-    if (useAuth && testData.accessToken) {
-      config.headers['Authorization'] = `Bearer ${testData.accessToken}`;
-      // Debug: Log the exact header being sent
-      console.log(`🔑 Auth header: Authorization: Bearer ${testData.accessToken.substring(0, 30)}...`);
+    if (useAuth) {
+      const token = useAdminAuth ? testData.adminAccessToken : testData.accessToken;
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+        // Debug: Log the exact header being sent
+        console.log(`🔑 Auth header (${useAdminAuth ? 'Admin' : 'Tenant'}): Authorization: Bearer ${token.substring(0, 30)}...`);
+      }
     }
 
     // For GET requests, don't set Content-Type
@@ -81,8 +93,11 @@ async function apiCall(method, endpoint, data = null, useAuth = false, descripti
 
     console.log(`\n🧪 ${description}`);
     console.log(`📡 ${method} ${endpoint}`);
-    if (useAuth && testData.accessToken) {
-      console.log(`🔑 Using auth token: ${testData.accessToken.substring(0, 20)}...`);
+    if (useAuth) {
+      const token = useAdminAuth ? testData.adminAccessToken : testData.accessToken;
+      if (token) {
+        console.log(`🔑 Using ${useAdminAuth ? 'admin' : 'tenant'} auth token: ${token.substring(0, 20)}...`);
+      }
     }
 
     const response = await axios(config);
@@ -386,8 +401,8 @@ async function testCompanySetup() {
     pincode: '400001',
     contact_number: '9876543210',
     email: 'company@test.com',
-    pan: 'ABCDE1234F',
-    gstin: '27ABCDE1234F1Z5',
+    pan: 'ABKPZ9119Q',
+    gstin: '24ABKPZ9119Q1ZL',
     financial_year_start: '2024-04-01',
     financial_year_end: '2025-03-31',
     currency: 'INR',
@@ -610,7 +625,7 @@ async function testInventoryManagement() {
     unit: 'Pcs',
     purchase_rate: 100.00,
     sales_rate: 150.00,
-    hsn_code: '8517'
+    hsn_sac_code: '8517'
   }, true, 'Create Inventory Item');
 
   if (itemResult.success && itemResult.data.data?.id) {
@@ -623,7 +638,8 @@ async function testInventoryManagement() {
     // 6.9 Update Item
     await apiCall('PUT', `/accounting/inventory/items/${testData.itemId}`, {
       item_name: 'Updated Test Product',
-      sales_rate: 175.00
+      hsn_sac_code: '25030010',
+      gst_rate: 18.00
     }, true, 'Update Inventory Item');
 
     // 6.10 Generate Barcode for Item
@@ -633,8 +649,8 @@ async function testInventoryManagement() {
     if (testData.warehouseId) {
       await apiCall('POST', `/accounting/inventory/items/${testData.itemId}/opening-stock`, {
         warehouse_id: testData.warehouseId,
-        opening_quantity: 100,
-        opening_value: 10000
+        quantity: 100,
+        avg_cost: 100.00
       }, true, 'Set Opening Stock by Warehouse');
 
       // 6.12 Get Stock by Warehouse
@@ -776,18 +792,18 @@ async function testGSTCompliance() {
 
   // 9.3 Validate GSTIN (Sandbox API)
   await apiCall('POST', '/gst/validate', {
-    gstin: '27ABCDE1234F1Z5'
+    gstin: '24ABKPZ9119Q1ZL'
   }, true, 'Validate GSTIN via Sandbox');
 
   // 9.4 Get GSTIN Details (Sandbox API)
-  await apiCall('GET', '/gst/details/27ABCDE1234F1Z5', null, true, 'Get GSTIN Details via Sandbox');
+  await apiCall('GET', '/gst/details/24ABKPZ9119Q1ZL', null, true, 'Get GSTIN Details via Sandbox');
 
   // 9.5 Get GST Rate by HSN (Sandbox API)
-  await apiCall('GET', '/gst/rate?hsn_code=1001&state=Maharashtra', null, true, 'Get GST Rate by HSN via Sandbox');
+  await apiCall('GET', '/gst/rate?hsn_code=25030010&state=Gujarat', null, true, 'Get GST Rate by HSN via Sandbox');
 
   // 9.6 GSTR-2A Reconciliation Job (Sandbox API)
   await apiCall('POST', '/gst/analytics/gstr2a-reconciliation', {
-    gstin: '27ABCDE1234F1Z5',
+    gstin: '24ABKPZ9119Q1ZL',
     year: 2024,
     month: 3,
     reconciliation_criteria: 'strict'
@@ -795,7 +811,7 @@ async function testGSTCompliance() {
 
   // 9.7 Upload Purchase Ledger (Sandbox API)
   await apiCall('POST', '/gst/analytics/upload-purchase-ledger', {
-    gstin: '27ABCDE1234F1Z5',
+    gstin: '24ABKPZ9119Q1ZL',
     file_type: 'csv',
     data: [
       {
@@ -816,7 +832,7 @@ async function testGSTCompliance() {
   }, true, 'Calculate TDS via Sandbox');
 
   // 9.9 TDS Analytics - Potential Notice (Sandbox API)
-  await apiCall('POST', '/tds/analytics/potential-notice', {
+  await apiCall('POST', '/tds/analytics/potential-notices', {
     quarter: 'Q1',
     tan: 'ABCD12345E',
     form: '24Q',
@@ -827,14 +843,14 @@ async function testGSTCompliance() {
   await apiCall('POST', '/tds/calculator/non-salary', {
     payment_amount: 100000,
     section: '194C',
-    deductee_pan: 'ABCDE1234F',
+    deductee_pan: 'ABKPZ9119Q',
     payment_date: '2024-03-15',
     nature_of_payment: 'Contract Payment'
   }, true, 'Calculate Non-Salary TDS');
 
   // 9.11 TDS Compliance - 206AB Check (Sandbox API)
   await apiCall('POST', '/tds/compliance/206ab/check', {
-    pan: 'ABCDE1234F',
+    pan: 'ABKPZ9119Q',
     consent: true,
     reason: 'TDS rate verification'
   }, true, 'Section 206AB Compliance Check');
@@ -892,14 +908,14 @@ async function testGSTCompliance() {
 
   // 9.22 Generate GSTR-1
   await apiCall('POST', '/gst/returns/gstr1', {
-    gstin: '27ABCDE1234F1Z5',
-    return_period: '032024'
+    gstin: '24ABKPZ9119Q1ZL',
+    period: '032024'
   }, true, 'Generate GSTR-1');
 
   // 9.23 Generate GSTR-3B
   await apiCall('POST', '/gst/returns/gstr3b', {
-    gstin: '27ABCDE1234F1Z5',
-    return_period: '032024'
+    gstin: '24ABKPZ9119Q1ZL',
+    period: '032024'
   }, true, 'Generate GSTR-3B');
 
   // 9.24 Update GSTIN
@@ -1079,20 +1095,58 @@ async function testAdvancedFeatures() {
   await apiCall('GET', '/ewaybill', null, true, 'List E-Way Bills');
 }
 
+// Admin Authentication Function
+async function authenticateAdmin() {
+  console.log('\n🔐 ADMIN AUTHENTICATION');
+  console.log('========================');
+  
+  const adminLoginResult = await apiCall('POST', '/auth/login', {
+    email: 'rishi@finvera.com',
+    password: 'Rishi@1995'
+  }, false, 'Admin Login');
+
+  if (adminLoginResult.success && adminLoginResult.data) {
+    // The admin login response has data nested under 'data' property
+    const responseData = adminLoginResult.data;
+    
+    testData.adminAccessToken = responseData.accessToken;
+    testData.adminRefreshToken = responseData.refreshToken;
+    testData.adminUserId = responseData.user?.id;
+    
+    console.log(`✅ Admin authenticated successfully`);
+    console.log(`👤 Admin User ID: ${testData.adminUserId}`);
+    console.log(`🔑 Admin Token: ${testData.adminAccessToken?.substring(0, 20)}...`);
+    
+    // Verify we have the required data
+    if (testData.adminAccessToken && testData.adminUserId) {
+      return true;
+    } else {
+      console.log(`❌ Admin authentication failed - missing token or user ID`);
+      console.log(`Access Token: ${testData.adminAccessToken ? 'Present' : 'Missing'}`);
+      console.log(`User ID: ${testData.adminUserId ? 'Present' : 'Missing'}`);
+      return false;
+    }
+  } else {
+    console.log(`❌ Admin authentication failed`);
+    console.log(`Login result:`, adminLoginResult);
+    return false;
+  }
+}
+
 // Test Phase 13: Admin Portal APIs
 async function testAdminAPIs() {
   console.log('\n👑 PHASE 13: ADMIN PORTAL APIS');
   console.log('==============================');
 
   // 13.1 Admin Dashboard
-  await apiCall('GET', '/admin/dashboard', null, true, 'Admin Dashboard');
+  await apiCall('GET', '/admin/dashboard', null, true, 'Admin Dashboard', true);
 
   // 13.2 List Tenants
-  await apiCall('GET', '/admin/tenants', null, true, 'List Tenants');
+  await apiCall('GET', '/admin/tenants', null, true, 'List Tenants', true);
 
   // 13.3 Get Tenant by ID
   if (testData.tenantId) {
-    await apiCall('GET', `/admin/tenants/${testData.tenantId}`, null, true, 'Get Tenant by ID');
+    await apiCall('GET', `/admin/tenants/${testData.tenantId}`, null, true, 'Get Tenant by ID', true);
   }
 }
 
@@ -1102,7 +1156,7 @@ async function testDistributorAPIs() {
   console.log('===================================');
 
   // 14.1 List Distributors
-  await apiCall('GET', '/admin/distributors', null, true, 'List Distributors');
+  await apiCall('GET', '/admin/distributors', null, true, 'List Distributors', true);
 
   // 14.2 Create Distributor
   const distributorResult = await apiCall('POST', '/admin/distributors', {
@@ -1115,23 +1169,23 @@ async function testDistributorAPIs() {
     city: 'Mumbai',
     state: 'Maharashtra',
     pincode: '400001'
-  }, true, 'Create Distributor');
+  }, true, 'Create Distributor', true);
 
   if (distributorResult.success && distributorResult.data?.data?.id) {
     testData.distributorId = distributorResult.data.data.id;
     console.log(`🏢 Distributor ID saved: ${testData.distributorId}`);
 
     // 14.3 Get Distributor by ID
-    await apiCall('GET', `/admin/distributors/${testData.distributorId}`, null, true, 'Get Distributor by ID');
+    await apiCall('GET', `/admin/distributors/${testData.distributorId}`, null, true, 'Get Distributor by ID', true);
 
     // 14.4 Update Distributor
     await apiCall('PUT', `/admin/distributors/${testData.distributorId}`, {
       company_name: 'Updated Distributor Ltd',
       phone: '9999999999'
-    }, true, 'Update Distributor');
+    }, true, 'Update Distributor', true);
 
     // 14.5 Get Distributor Performance
-    await apiCall('GET', `/admin/distributors/${testData.distributorId}/performance`, null, true, 'Get Distributor Performance');
+    await apiCall('GET', `/admin/distributors/${testData.distributorId}/performance`, null, true, 'Get Distributor Performance', true);
   }
 }
 
@@ -1141,7 +1195,7 @@ async function testSalesmanAPIs() {
   console.log('=================================');
 
   // 15.1 List Salesmen
-  await apiCall('GET', '/admin/salesmen', null, true, 'List Salesmen');
+  await apiCall('GET', '/admin/salesmen', null, true, 'List Salesmen', true);
 
   // 15.2 Create Salesman
   const salesmanResult = await apiCall('POST', '/admin/salesmen', {
@@ -1154,26 +1208,26 @@ async function testSalesmanAPIs() {
     state: 'Maharashtra',
     pincode: '400001',
     distributor_id: testData.distributorId
-  }, true, 'Create Salesman');
+  }, true, 'Create Salesman', true);
 
   if (salesmanResult.success && salesmanResult.data?.data?.id) {
     testData.salesmanId = salesmanResult.data.data.id;
     console.log(`👨‍💼 Salesman ID saved: ${testData.salesmanId}`);
 
     // 15.3 Get Salesman by ID
-    await apiCall('GET', `/admin/salesmen/${testData.salesmanId}`, null, true, 'Get Salesman by ID');
+    await apiCall('GET', `/admin/salesmen/${testData.salesmanId}`, null, true, 'Get Salesman by ID', true);
 
     // 15.4 Update Salesman
     await apiCall('PUT', `/admin/salesmen/${testData.salesmanId}`, {
       full_name: 'Updated Salesman',
       phone: '9999999999'
-    }, true, 'Update Salesman');
+    }, true, 'Update Salesman', true);
 
     // 15.5 Get Salesman Performance
-    await apiCall('GET', `/admin/salesmen/${testData.salesmanId}/performance`, null, true, 'Get Salesman Performance');
+    await apiCall('GET', `/admin/salesmen/${testData.salesmanId}/performance`, null, true, 'Get Salesman Performance', true);
 
     // 15.6 Get Salesman Leads
-    await apiCall('GET', `/admin/salesmen/${testData.salesmanId}/leads`, null, true, 'Get Salesman Leads');
+    await apiCall('GET', `/admin/salesmen/${testData.salesmanId}/leads`, null, true, 'Get Salesman Leads', true);
   }
 }
 
@@ -1183,7 +1237,7 @@ async function testTargetAPIs() {
   console.log('==============================');
 
   // 16.1 List Targets
-  await apiCall('GET', '/admin/targets', null, true, 'List Targets');
+  await apiCall('GET', '/admin/targets', null, true, 'List Targets', true);
 
   // 16.2 Create Target
   if (testData.salesmanId) {
@@ -1195,44 +1249,44 @@ async function testTargetAPIs() {
       target_month: 12,
       target_amount: 100000,
       target_quantity: 50
-    }, true, 'Create Target');
+    }, true, 'Create Target', true);
 
     if (targetResult.success && targetResult.data?.data?.id) {
       testData.targetId = targetResult.data.data.id;
       console.log(`🎯 Target ID saved: ${testData.targetId}`);
 
       // 16.3 Get Target by ID
-      await apiCall('GET', `/admin/targets/${testData.targetId}`, null, true, 'Get Target by ID');
+      await apiCall('GET', `/admin/targets/${testData.targetId}`, null, true, 'Get Target by ID', true);
 
       // 16.4 Update Target
       await apiCall('PUT', `/admin/targets/${testData.targetId}`, {
         target_amount: 150000,
         target_quantity: 75
-      }, true, 'Update Target');
+      }, true, 'Update Target', true);
 
       // 16.5 Recalculate Target Achievement
-      await apiCall('POST', `/admin/targets/${testData.targetId}/recalculate`, {}, true, 'Recalculate Target Achievement');
+      await apiCall('POST', `/admin/targets/${testData.targetId}/recalculate`, {}, true, 'Recalculate Target Achievement', true);
 
       // 16.6 Delete Target
-      await apiCall('DELETE', `/admin/targets/${testData.targetId}`, null, true, 'Delete Target');
+      await apiCall('DELETE', `/admin/targets/${testData.targetId}`, null, true, 'Delete Target', true);
     }
   }
 
   // 16.7 Get Targets for Distributor
   if (testData.distributorId) {
-    await apiCall('GET', `/admin/targets/distributor/${testData.distributorId}`, null, true, 'Get Targets for Distributor');
+    await apiCall('GET', `/admin/targets/distributor/${testData.distributorId}`, null, true, 'Get Targets for Distributor', true);
   }
 
   // 16.8 Get Targets for Salesman
   if (testData.salesmanId) {
-    await apiCall('GET', `/admin/targets/salesman/${testData.salesmanId}`, null, true, 'Get Targets for Salesman');
+    await apiCall('GET', `/admin/targets/salesman/${testData.salesmanId}`, null, true, 'Get Targets for Salesman', true);
   }
 
   // 16.9 Recalculate All Targets
   await apiCall('POST', '/admin/targets/recalculate/all', {
     target_year: 2024,
     target_month: 12
-  }, true, 'Recalculate All Targets');
+  }, true, 'Recalculate All Targets', true);
 }
 
 // Test Phase 17: Commission & Payout Management
@@ -1241,13 +1295,13 @@ async function testCommissionPayoutAPIs() {
   console.log('===========================================');
 
   // 17.1 List Commissions
-  await apiCall('GET', '/admin/commissions', null, true, 'List Commissions');
+  await apiCall('GET', '/admin/commissions', null, true, 'List Commissions', true);
 
   // 17.2 List Payouts
-  await apiCall('GET', '/admin/payouts', null, true, 'List Payouts');
+  await apiCall('GET', '/admin/payouts', null, true, 'List Payouts', true);
 
   // 17.3 Commission Payouts Summary
-  await apiCall('GET', '/admin/commissions-payouts', null, true, 'Commission Payouts Summary');
+  await apiCall('GET', '/admin/commissions-payouts', null, true, 'Commission Payouts Summary', true);
 }
 
 // Test Phase 18: Referral System
@@ -1408,16 +1462,16 @@ async function testCronManagement() {
   console.log('===============================');
 
   // 27.1 Get Cron Status
-  await apiCall('GET', '/admin/cron/status', null, true, 'Get Cron Job Status');
+  await apiCall('GET', '/admin/cron/status', null, true, 'Get Cron Job Status', true);
 
   // 27.2 Trigger Trial Cleanup
-  await apiCall('POST', '/admin/cron/trigger-trial-cleanup', {}, true, 'Trigger Trial Cleanup');
+  await apiCall('POST', '/admin/cron/trigger-trial-cleanup', {}, true, 'Trigger Trial Cleanup', true);
 
   // 27.3 Stop Cron Job
-  await apiCall('POST', '/admin/cron/jobs/trial-cleanup/stop', {}, true, 'Stop Cron Job');
+  await apiCall('POST', '/admin/cron/jobs/trial-cleanup/stop', {}, true, 'Stop Cron Job', true);
 
   // 27.4 Start Cron Job
-  await apiCall('POST', '/admin/cron/jobs/trial-cleanup/start', {}, true, 'Start Cron Job');
+  await apiCall('POST', '/admin/cron/jobs/trial-cleanup/start', {}, true, 'Start Cron Job', true);
 }
 
 // Test Phase 28: Finbox Integration (Enhanced)
@@ -1547,12 +1601,12 @@ async function testAdvancedIntegrations() {
   await apiCall('POST', '/einvoice/generate', {
     invoice_number: 'INV001',
     invoice_date: '2024-03-15',
-    supplier_gstin: '27ABCDE1234F1Z5',
+    supplier_gstin: '24ABKPZ9119Q1ZL',
     buyer_gstin: '29AABCU9603R1ZX',
     items: [
       {
         description: 'Test Product',
-        hsn_code: '8517',
+        hsn_code: '25030010',
         quantity: 1,
         unit_price: 10000,
         taxable_amount: 10000,
@@ -1566,7 +1620,7 @@ async function testAdvancedIntegrations() {
   await apiCall('POST', '/ewaybill/generate', {
     invoice_number: 'INV001',
     invoice_date: '2024-03-15',
-    supplier_gstin: '27ABCDE1234F1Z5',
+    supplier_gstin: '24ABKPZ9119Q1ZL',
     buyer_gstin: '29AABCU9603R1ZX',
     transport_mode: 'Road',
     vehicle_number: 'MH12AB1234',
@@ -1574,7 +1628,7 @@ async function testAdvancedIntegrations() {
     items: [
       {
         description: 'Test Product',
-        hsn_code: '8517',
+        hsn_code: '25030010',
         quantity: 1,
         taxable_amount: 10000,
         igst_amount: 1800
@@ -1630,13 +1684,20 @@ async function runComprehensiveTests() {
     await testSubscriptionsPricing();
     await testAdvancedFeatures();
 
-    // Phase 13-18: Admin Portal APIs (may require admin role)
-    await testAdminAPIs();
-    await testDistributorAPIs();
-    await testSalesmanAPIs();
-    await testTargetAPIs();
-    await testCommissionPayoutAPIs();
-    await testReferralAPIs();
+    // Phase 13-18: Admin Portal APIs (requires admin authentication)
+    console.log('\n🔐 Authenticating admin user for admin portal tests...');
+    const adminAuthSuccess = await authenticateAdmin();
+    
+    if (adminAuthSuccess) {
+      await testAdminAPIs();
+      await testDistributorAPIs();
+      await testSalesmanAPIs();
+      await testTargetAPIs();
+      await testCommissionPayoutAPIs();
+      await testReferralAPIs();
+    } else {
+      console.log('\n⚠️  Admin authentication failed. Skipping admin portal tests.');
+    }
 
     // Phase 19-21: Product & Content Management
     await testAttributeAPIs();

@@ -323,7 +323,7 @@ module.exports = (sequelize) => {
     warehouse_id: DataTypes.UUID,
     voucher_id: DataTypes.UUID,
     movement_type: {
-      type: DataTypes.ENUM('in', 'out', 'adjustment', 'transfer'),
+      type: DataTypes.ENUM('IN', 'OUT', 'ADJUSTMENT', 'TRANSFER'),
       allowNull: false,
     },
     quantity: {
@@ -332,6 +332,10 @@ module.exports = (sequelize) => {
     },
     rate: {
       type: DataTypes.DECIMAL(15, 4),
+      defaultValue: 0,
+    },
+    amount: {
+      type: DataTypes.DECIMAL(15, 2),
       defaultValue: 0,
     },
     reference_number: DataTypes.STRING,
@@ -395,7 +399,7 @@ module.exports = (sequelize) => {
       type: DataTypes.UUID,
       allowNull: false,
     },
-    quantity_on_hand: {
+    quantity: {
       type: DataTypes.DECIMAL(15, 3),
       defaultValue: 0,
     },
@@ -552,6 +556,8 @@ module.exports = (sequelize) => {
       type: DataTypes.DECIMAL(15, 2),
       defaultValue: 0,
     },
+    quarter: DataTypes.STRING, // Add missing quarter field
+    financial_year: DataTypes.STRING, // Add missing financial_year field
     tenant_id: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -632,6 +638,10 @@ module.exports = (sequelize) => {
       defaultValue: false,
     },
     consent_date: DataTypes.DATE,
+    is_active: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
     tenant_id: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -701,8 +711,12 @@ module.exports = (sequelize) => {
   models.InventoryItem.hasMany(models.InventoryItem, { as: 'Variants', foreignKey: 'parent_item_id' });
 
   // NEW: Product Attribute Associations
-  models.ProductAttribute.hasMany(models.ProductAttributeValue, { foreignKey: 'product_attribute_id', as: 'values', onDelete: 'CASCADE' });
-  models.ProductAttributeValue.belongsTo(models.ProductAttribute, { foreignKey: 'product_attribute_id', as: 'attribute' });
+  if (models.ProductAttribute.associate) {
+    models.ProductAttribute.associate(models);
+  }
+  if (models.ProductAttributeValue.associate) {
+    models.ProductAttributeValue.associate(models);
+  }
 
   models.FinBoxConsent.belongsTo(models.User, { foreignKey: 'user_id' });
 

@@ -359,9 +359,10 @@ module.exports = {
         inventory_item_id: { type: Sequelize.UUID, allowNull: false },
         warehouse_id: { type: Sequelize.UUID, allowNull: true },
         voucher_id: { type: Sequelize.UUID, allowNull: true },
-        movement_type: { type: Sequelize.ENUM('in', 'out', 'adjustment', 'transfer'), allowNull: false },
+        movement_type: { type: Sequelize.ENUM('IN', 'OUT', 'ADJUSTMENT', 'TRANSFER'), allowNull: false }, // Fixed: uppercase enum values
         quantity: { type: Sequelize.DECIMAL(15, 3), allowNull: false },
         rate: { type: Sequelize.DECIMAL(15, 4), defaultValue: 0 },
+        amount: { type: Sequelize.DECIMAL(15, 2), defaultValue: 0 }, // Added: missing amount column
         reference_number: { type: Sequelize.STRING, allowNull: true },
         narration: { type: Sequelize.TEXT, allowNull: true },
         movement_date: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
@@ -374,6 +375,36 @@ module.exports = {
       console.log('✓ Created table stock_movements');
     } else {
       console.log('ℹ️  Table stock_movements already exists');
+      
+      // Add missing amount column if it doesn't exist
+      await addColumnIfNotExists('stock_movements', 'amount', {
+        type: Sequelize.DECIMAL(15, 2),
+        defaultValue: 0,
+      });
+      
+      // Fix movement_type enum values if needed
+      try {
+        const [enumInfo] = await queryInterface.sequelize.query(`
+          SELECT COLUMN_TYPE 
+          FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_NAME = 'stock_movements' 
+          AND COLUMN_NAME = 'movement_type'
+          AND TABLE_SCHEMA = DATABASE()
+        `);
+        
+        if (enumInfo.length > 0) {
+          const currentEnum = enumInfo[0].COLUMN_TYPE;
+          if (currentEnum.includes("'in'") || currentEnum.includes("'out'")) {
+            await queryInterface.changeColumn('stock_movements', 'movement_type', {
+              type: Sequelize.ENUM('IN', 'OUT', 'ADJUSTMENT', 'TRANSFER'),
+              allowNull: false,
+            });
+            console.log('✓ Updated movement_type enum values to uppercase in stock_movements');
+          }
+        }
+      } catch (error) {
+        console.log('⚠️  Could not update movement_type enum in stock_movements:', error.message);
+      }
     }
 
     // WAREHOUSE_STOCKS TABLE
@@ -383,7 +414,7 @@ module.exports = {
         id: { type: Sequelize.UUID, defaultValue: Sequelize.UUIDV4, primaryKey: true },
         warehouse_id: { type: Sequelize.UUID, allowNull: false },
         inventory_item_id: { type: Sequelize.UUID, allowNull: false },
-        quantity_on_hand: { type: Sequelize.DECIMAL(15, 3), defaultValue: 0 },
+        quantity: { type: Sequelize.DECIMAL(15, 3), defaultValue: 0 }, // Fixed: use 'quantity' instead of 'quantity_on_hand'
         avg_cost: { type: Sequelize.DECIMAL(15, 4), defaultValue: 0 },
         last_updated: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
         tenant_id: { type: Sequelize.STRING, allowNull: false },
@@ -395,6 +426,17 @@ module.exports = {
       console.log('✓ Created table warehouse_stocks');
     } else {
       console.log('ℹ️  Table warehouse_stocks already exists');
+      
+      // Fix existing table: rename quantity_on_hand to quantity if needed
+      try {
+        const tableDesc = await queryInterface.describeTable('warehouse_stocks');
+        if (tableDesc.quantity_on_hand && !tableDesc.quantity) {
+          await queryInterface.renameColumn('warehouse_stocks', 'quantity_on_hand', 'quantity');
+          console.log('✓ Renamed quantity_on_hand to quantity in warehouse_stocks');
+        }
+      } catch (error) {
+        console.log('⚠️  Could not rename column in warehouse_stocks:', error.message);
+      }
     }
 
     // AUDIT_LOGS TABLE
@@ -567,6 +609,8 @@ module.exports = {
         tds_section: { type: Sequelize.STRING, allowNull: false },
         tds_rate: { type: Sequelize.DECIMAL(6, 2), allowNull: false },
         tds_amount: { type: Sequelize.DECIMAL(15, 2), defaultValue: 0 },
+        quarter: { type: Sequelize.STRING, allowNull: true }, // Added: missing quarter column
+        financial_year: { type: Sequelize.STRING, allowNull: true }, // Added: missing financial_year column
         deductee_pan: { type: Sequelize.STRING, allowNull: true },
         certificate_number: { type: Sequelize.STRING, allowNull: true },
         tenant_id: { type: Sequelize.STRING, allowNull: false },
@@ -578,6 +622,17 @@ module.exports = {
       console.log('✓ Created table tds_details');
     } else {
       console.log('ℹ️  Table tds_details already exists');
+      
+      // Add missing columns if they don't exist
+      await addColumnIfNotExists('tds_details', 'quarter', {
+        type: Sequelize.STRING,
+        allowNull: true,
+      });
+      
+      await addColumnIfNotExists('tds_details', 'financial_year', {
+        type: Sequelize.STRING,
+        allowNull: true,
+      });
     }
 
     // EINVOICES TABLE
@@ -636,6 +691,7 @@ module.exports = {
         user_id: { type: Sequelize.UUID, allowNull: false, references: { model: 'users', key: 'id' }, onDelete: 'CASCADE' },
         consent_given: { type: Sequelize.BOOLEAN, defaultValue: false },
         consent_date: { type: Sequelize.DATE, allowNull: true },
+        is_active: { type: Sequelize.BOOLEAN, defaultValue: true }, // Added: missing is_active column
         consent_type: { type: Sequelize.STRING, allowNull: true },
         consent_data: { type: Sequelize.JSON, allowNull: true },
         tenant_id: { type: Sequelize.STRING, allowNull: false },
@@ -647,6 +703,12 @@ module.exports = {
       console.log('✓ Created table finbox_consents');
     } else {
       console.log('ℹ️  Table finbox_consents already exists');
+      
+      // Add missing is_active column if it doesn't exist
+      await addColumnIfNotExists('finbox_consents', 'is_active', {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true,
+      });
     }
 
     console.log('✅ All tenant tables created successfully');

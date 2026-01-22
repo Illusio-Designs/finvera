@@ -19,10 +19,13 @@ module.exports = {
         include: [
           {
             model: req.tenantModels.InventoryItem,
+            as: 'item', // Use the correct alias defined in the association
             attributes: ['id', 'item_name', 'item_code'],
+            required: false,
           },
           {
             model: req.tenantModels.Warehouse,
+            as: 'warehouse', // Use the correct alias defined in the association
             attributes: ['id', 'warehouse_name', 'warehouse_code'],
             required: false,
           },
@@ -61,12 +64,12 @@ module.exports = {
             transfers.push({
               id: outMovement.id, // Use out movement ID
               date: outMovement.createdAt,
-              item_name: outMovement.InventoryItem?.item_name,
-              item_code: outMovement.InventoryItem?.item_code,
+              item_name: outMovement.item?.item_name,
+              item_code: outMovement.item?.item_code,
               from_warehouse_id: outMovement.warehouse_id,
-              from_warehouse_name: outMovement.Warehouse?.warehouse_name,
+              from_warehouse_name: outMovement.warehouse?.warehouse_name,
               to_warehouse_id: inMovement.warehouse_id,
-              to_warehouse_name: inMovement.Warehouse?.warehouse_name,
+              to_warehouse_name: inMovement.warehouse?.warehouse_name,
               quantity: Math.abs(parseFloat(outMovement.quantity)),
               rate: parseFloat(outMovement.rate) || 0,
               narration: outMovement.narration,

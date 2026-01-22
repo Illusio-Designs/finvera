@@ -23,10 +23,13 @@ module.exports = {
         include: [
           {
             model: req.tenantModels.InventoryItem,
+            as: 'item', // Use the correct alias defined in the association
             attributes: ['id', 'item_name', 'item_code'],
+            required: false,
           },
           {
             model: req.tenantModels.Warehouse,
+            as: 'warehouse', // Use the alias defined in the association
             attributes: ['id', 'warehouse_name', 'warehouse_code'],
             required: false,
           },
@@ -39,10 +42,10 @@ module.exports = {
       const data = rows.map((movement) => ({
         id: movement.id,
         date: movement.createdAt,
-        item_name: movement.InventoryItem?.item_name,
-        item_code: movement.InventoryItem?.item_code,
-        warehouse_name: movement.Warehouse?.warehouse_name,
-        warehouse_code: movement.Warehouse?.warehouse_code,
+        item_name: movement.item?.item_name,
+        item_code: movement.item?.item_code,
+        warehouse_name: movement.warehouse?.warehouse_name,
+        warehouse_code: movement.warehouse?.warehouse_code,
         quantity: parseFloat(movement.quantity) || 0,
         rate: parseFloat(movement.rate) || 0,
         amount: parseFloat(movement.amount) || 0,

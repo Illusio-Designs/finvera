@@ -129,7 +129,7 @@ module.exports = {
           voucher_type: 'Sales',
         },
         include: [
-          { model: req.tenantModels.VoucherItem },
+          { model: req.tenantModels.VoucherItem, as: 'items' },
           { model: req.tenantModels.Ledger, as: 'partyLedger' },
         ],
       });
@@ -160,7 +160,7 @@ module.exports = {
         const invoiceItems = [];
         let invoiceTotalTaxable = 0;
         
-        (voucher.voucher_items || []).forEach((item, itemIndex) => {
+        (voucher.items || []).forEach((item, itemIndex) => {
           const taxableValue = toNum(item.taxable_amount, 0);
           const cgst = toNum(item.cgst_amount, 0);
           const sgst = toNum(item.sgst_amount, 0);
@@ -262,7 +262,8 @@ module.exports = {
 
       const gstinRow = gstin ? await req.tenantModels.GSTIN.findOne({ where: { gstin } }) : null;
       const gstrReturn = await req.tenantModels.GSTRReturn.create({
-        gstin_id: gstinRow?.id || null,
+        gstin: gstin, // Use gstin instead of gstin_id
+        tenant_id: req.user.tenant_id, // Add missing tenant_id
         return_type: 'GSTR1',
         return_period: period,
         financial_year: fyFromPeriod(period),
@@ -295,13 +296,31 @@ module.exports = {
   async generateGSTR3B(req, res, next) {
     try {
       const { gstin, period } = req.body;
+      
+      // Validate required fields
+      if (!gstin) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Validation error',
+          errors: [{ field: 'gstin', message: 'GSTIN is required' }]
+        });
+      }
+      
+      if (!period) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Validation error',
+          errors: [{ field: 'period', message: 'Period is required' }]
+        });
+      }
+      
       const [month, year] = String(period).split('-').map((s) => parseInt(s, 10));
       const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 0, 23, 59, 59);
 
-      const gstinRow = gstin ? await req.tenantModels.GSTIN.findOne({ where: { gstin } }) : null;
+      const gstinRow = await req.tenantModels.GSTIN.findOne({ where: { gstin } });
       const gstr1 = await req.tenantModels.GSTRReturn.findOne({
-        where: { gstin_id: gstinRow?.id || null, return_type: 'GSTR1', return_period: period },
+        where: { gstin: gstin, return_type: 'GSTR1', return_period: period }, // Use gstin instead of gstin_id
       });
 
       const purchaseVouchers = await req.tenantModels.Voucher.findAll({
@@ -310,7 +329,7 @@ module.exports = {
           status: 'posted',
           voucher_type: 'Purchase',
         },
-        include: [{ model: req.tenantModels.VoucherItem }],
+        include: [{ model: req.tenantModels.VoucherItem, as: 'items' }],
       });
 
       let totalInputCGST = 0;
@@ -319,7 +338,7 @@ module.exports = {
       let totalInputCess = 0;
 
       purchaseVouchers.forEach((voucher) => {
-        (voucher.voucher_items || []).forEach((item) => {
+        (voucher.items || []).forEach((item) => {
           totalInputCGST += toNum(item.cgst_amount, 0);
           totalInputSGST += toNum(item.sgst_amount, 0);
           totalInputIGST += toNum(item.igst_amount, 0);
@@ -364,7 +383,8 @@ module.exports = {
       const netCess = Math.max(0, totalOutputCess - totalInputCess);
 
       const gstrReturn = await req.tenantModels.GSTRReturn.create({
-        gstin_id: gstinRow?.id || null,
+        gstin: gstin, // Use gstin instead of gstin_id
+        tenant_id: req.user.tenant_id, // Add missing tenant_id
         return_type: 'GSTR3B',
         return_period: period,
         financial_year: fyFromPeriod(period),
