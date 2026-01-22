@@ -3,7 +3,6 @@ import Card from '../../ui/Card';
 import EmptyState from '../../ui/EmptyState';
 import LoadingSpinner from '../../ui/LoadingSpinner';
 import ProgressBar from '../../ui/ProgressBar';
-import Skeleton from '../../ui/Skeleton';
 import Tooltip from '../../ui/Tooltip';
 import Popover from '../../ui/Popover';
 import Accordion from '../../ui/Accordion';
@@ -28,7 +27,7 @@ export function LoadingSkeleton({ rows = 4 }) {
   return (
     <div className="space-y-3">
       {Array.from({ length: rows }).map((_, i) => (
-        <Skeleton key={i} className="h-10 w-full" />
+        <div key={i} className="h-10 w-full animate-pulse rounded-md bg-gray-200" />
       ))}
     </div>
   );

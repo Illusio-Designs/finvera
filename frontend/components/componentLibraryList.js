@@ -146,7 +146,6 @@ export const componentLibraryList = [
       { name: 'Data Table with Sorting', path: 'components/tables/DataTable.jsx', export: 'default', status: 'existing' },
       { name: 'Pagination Controls', path: 'components/tables/Pagination.jsx', export: 'default', status: 'existing' },
       { name: 'Empty State Placeholder', path: 'components/ui/EmptyState.jsx', export: 'default', status: 'existing' },
-      { name: 'Loading Skeleton', path: 'components/ui/Skeleton.jsx', export: 'default', status: 'new' },
       { name: 'Progress Bar', path: 'components/ui/ProgressBar.jsx', export: 'default', status: 'new' },
       { name: 'Status Badge/Chip', path: 'components/ui/Badge.jsx', export: 'default', status: 'existing' },
       { name: 'Avatar with Initials Fallback', path: 'components/ui/Avatar.jsx', export: 'default', status: 'new' },

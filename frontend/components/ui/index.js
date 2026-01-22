@@ -17,7 +17,6 @@ export { default as Checkbox } from './Checkbox';
 export { default as ToggleSwitch } from './ToggleSwitch';
 export { default as RadioGroup } from './RadioGroup';
 export { default as ProgressBar } from './ProgressBar';
-export { default as Skeleton } from './Skeleton';
 export { default as Avatar } from './Avatar';
 export { default as Tabs } from './Tabs';
 export { default as IconButton } from './IconButton';
