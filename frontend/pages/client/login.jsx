@@ -10,6 +10,7 @@ import FormPasswordInput from '../../components/forms/FormPasswordInput';
 import FormSelect from '../../components/forms/FormSelect';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
+import ElectronWindowControls from '../../components/electron/ElectronWindowControls';
 
 export default function ClientLogin() {
   const [email, setEmail] = useState('');
@@ -106,6 +107,9 @@ export default function ClientLogin() {
 
   return (
     <div className="h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      {/* Electron Window Controls */}
+      <ElectronWindowControls className="fixed top-4 right-4 z-50" />
+      
       <Toaster />
       <div className="max-w-md w-full">
         <Card className="p-6 max-h-[90vh] overflow-y-auto">

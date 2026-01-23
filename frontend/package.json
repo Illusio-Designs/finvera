@@ -70,7 +70,14 @@
       "package.json"
     ],
     "win": {
-      "target": "portable"
+      "target": "portable",
+      "icon": "public/Fav Icon/Fav_White_PNG@4x.png"
+    },
+    "mac": {
+      "icon": "public/Fav Icon/Fav_White_PNG@4x.png"
+    },
+    "linux": {
+      "icon": "public/Fav Icon/Fav_White_PNG@4x.png"
     },
     "portable": {
       "artifactName": "Finvera-Client-${version}.exe"

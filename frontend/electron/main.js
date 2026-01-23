@@ -6,6 +6,9 @@ const isDev = process.env.ELECTRON_IS_DEV === 'true' || process.env.NODE_ENV ===
 let mainWindow;
 
 function createWindow() {
+  const iconPath = path.resolve(__dirname, '../public/Fav Icon/Fav_White_PNG@4x.png');
+  console.log('🎨 Using icon path:', iconPath);
+  
   // Create the browser window
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -19,7 +22,7 @@ function createWindow() {
       webSecurity: true,
       preload: path.join(__dirname, 'preload.js')
     },
-    icon: path.join(__dirname, 'assets/icon.png'),
+    icon: iconPath,
     show: false, // Don't show until ready
     frame: false, // Remove title bar
     titleBarStyle: 'hidden' // Hide title bar completely
@@ -176,7 +179,7 @@ function setupIPC() {
         new Notification({
           title,
           body,
-          icon: path.join(__dirname, 'assets/icon.png')
+          icon: path.join(__dirname, '../public/Fav Icon/Fav_White_PNG@4x.png')
         }).show();
       }
     }

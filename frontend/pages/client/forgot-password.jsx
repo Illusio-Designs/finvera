@@ -5,6 +5,7 @@ import Link from 'next/link';
 import FormInput from '../../components/forms/FormInput';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
+import ElectronWindowControls from '../../components/electron/ElectronWindowControls';
 import { authAPI } from '../../lib/api';
 
 export default function ForgotPassword() {
@@ -39,6 +40,9 @@ export default function ForgotPassword() {
 
   return (
     <div className="h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      {/* Electron Window Controls */}
+      <ElectronWindowControls className="fixed top-4 right-4 z-50" />
+      
       <Toaster />
       <div className="max-w-md w-full">
         <Card className="p-6 max-h-[90vh] overflow-y-auto">

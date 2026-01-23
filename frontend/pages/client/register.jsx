@@ -7,6 +7,7 @@ import FormInput from '../../components/forms/FormInput';
 import FormPasswordInput from '../../components/forms/FormPasswordInput';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
+import ElectronWindowControls from '../../components/electron/ElectronWindowControls';
 import { pricingAPI } from '../../lib/api';
 import { validateGSTIN } from '../../lib/formatters';
 
@@ -96,6 +97,9 @@ export default function ClientRegister() {
 
   return (
     <div className="h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4 sm:px-6 lg:px-8 overflow-hidden py-2">
+      {/* Electron Window Controls */}
+      <ElectronWindowControls className="fixed top-4 right-4 z-50" />
+      
       <Toaster />
       <div className="max-w-md w-full">
         <Card className="p-3 max-h-[98vh] overflow-y-auto">
