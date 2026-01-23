@@ -1,33 +1,24 @@
 {
-  "name": "finvera-client",
+  "name": "finvera-desktop",
   "version": "1.0.0",
-  "description": "Finvera Client - Modern Desktop Accounting & GST Software",
+  "description": "Finvera - Complete GST & Accounting Desktop Software",
   "author": {
     "name": "Finvera Solutions",
-    "email": "support@finvera.com",
-    "url": "https://finvera.com"
+    "email": "support@finvera.com"
   },
   "main": "electron/main.js",
   "homepage": "./",
   "private": true,
   "scripts": {
     "dev": "cross-env NEXT_TELEMETRY_DISABLED=1 next dev -p 3001",
-    "dev:turbo": "cross-env NEXT_TELEMETRY_DISABLED=1 next dev --turbo -p 3001",
     "dev:electron": "cross-env NEXT_TELEMETRY_DISABLED=1 next dev -p 3002",
     "build": "next build",
     "start": "next start -p 3001",
-    "start:electron": "next start -p 3002",
-    "lint": "next lint",
     "electron": "electron .",
     "electron:dev": "node scripts/dev-electron.js",
     "electron:build": "node scripts/build-electron.js",
-    "electron:deploy": "node scripts/deploy-electron.js",
-    "electron:dist": "cross-env ELECTRON_BUILD=true NODE_ENV=production npm run build && electron-builder",
-    "electron:pack": "cross-env ELECTRON_BUILD=true NODE_ENV=production npm run build && electron-builder --dir",
-    "electron:setup": "node scripts/setup-electron.js",
-    "generate:icons": "node scripts/generate-icons.js",
-    "update:version": "node scripts/update-version.js",
-    "create:cert": "powershell -ExecutionPolicy Bypass -File scripts/create-test-certificate.ps1"
+    "electron:build-unsigned": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false npm run build && node scripts/build-electron-unsigned.js",
+    "electron:dist": "cross-env ELECTRON_BUILD=true NODE_ENV=production npm run build && electron-builder"
   },
   "dependencies": {
     "axios": "^1.7.0",
@@ -58,8 +49,8 @@
     "tailwindcss": "^3.4.3"
   },
   "build": {
-    "appId": "com.finvera.client",
-    "productName": "Finvera Client",
+    "appId": "com.finvera.desktop",
+    "productName": "Finvera",
     "copyright": "Copyright © 2025 Finvera Solutions",
     "directories": {
       "output": "dist-electron"
@@ -71,16 +62,16 @@
     ],
     "win": {
       "target": "portable",
-      "icon": "public/Fav Icon/Fav_White_PNG@4x.png"
-    },
-    "mac": {
-      "icon": "public/Fav Icon/Fav_White_PNG@4x.png"
-    },
-    "linux": {
-      "icon": "public/Fav Icon/Fav_White_PNG@4x.png"
+      "icon": "public/Fav Icon/Fav_White_PNG@4x.png",
+      "certificateFile": "electron/assets/finvera-test-cert.pfx",
+      "certificatePassword": "finvera123",
+      "signingHashAlgorithms": [
+        "sha256"
+      ],
+      "signDlls": false
     },
     "portable": {
-      "artifactName": "Finvera-Client-${version}.exe"
+      "artifactName": "Finvera-${version}.exe"
     },
     "compression": "store",
     "removePackageScripts": true,
@@ -88,6 +79,7 @@
     "nodeGypRebuild": false,
     "electronDownload": {
       "cache": "./electron-cache"
-    }
+    },
+    "forceCodeSigning": false
   }
 }
