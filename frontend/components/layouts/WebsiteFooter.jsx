@@ -55,8 +55,8 @@ export default function WebsiteFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/pricing" className="text-primary-200 hover:text-white transition">
-                  Pricing
+                <Link href="/plans" className="text-primary-200 hover:text-white transition">
+                  Plans
                 </Link>
               </li>
               <li>

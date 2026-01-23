@@ -58,8 +58,8 @@ export default function WebsiteHeader() {
             <Link href="/use-cases" className="text-gray-700 hover:text-primary-600 transition font-medium">
               Use Cases
             </Link>
-            <Link href="/pricing" className="text-gray-700 hover:text-primary-600 transition font-medium">
-              Pricing
+            <Link href="/plans" className="text-gray-700 hover:text-primary-600 transition font-medium">
+              Plans
             </Link>
             <Link href="/contact" className="text-gray-700 hover:text-primary-600 transition font-medium">
               Contact
@@ -105,8 +105,8 @@ export default function WebsiteHeader() {
             <Link href="/use-cases" className="block text-gray-700 hover:text-primary-600 transition font-medium">
               Use Cases
             </Link>
-            <Link href="/pricing" className="block text-gray-700 hover:text-primary-600 transition font-medium">
-              Pricing
+            <Link href="/plans" className="block text-gray-700 hover:text-primary-600 transition font-medium">
+              Plans
             </Link>
             <Link href="/contact" className="block text-gray-700 hover:text-primary-600 transition font-medium">
               Contact

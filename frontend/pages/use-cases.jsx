@@ -316,10 +316,10 @@ export default function UseCasesPage() {
                       <FiArrowRight />
                     </Link>
                     <Link
-                      href="/pricing"
+                      href="/plans"
                       className="bg-white text-primary-600 px-5 py-2 rounded-xl hover:bg-primary-50 transition font-normal text-lg border-2 border-primary-600 shadow-lg hover:shadow-xl"
                     >
-                      View Pricing
+                      View Plans
                     </Link>
                   </div>
                 </div>

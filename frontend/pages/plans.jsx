@@ -10,7 +10,7 @@ import { FiCheck, FiX, FiZap, FiBriefcase, FiAward, FiArrowRight, FiPlus, FiMinu
 import AnimatedList from '../components/ui/AnimatedList';
 import AnimatedText from '../components/ui/AnimatedText';
 
-export default function PricingPage() {
+export default function PlansPage() {
   const [clientRegisterUrl, setClientRegisterUrl] = useState('');
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -82,7 +82,7 @@ export default function PricingPage() {
   return (
     <>
       <Head>
-        <title>Pricing - Finvera | Affordable Accounting Solutions</title>
+        <title>Plans - Finvera | Affordable Accounting Solutions</title>
         <meta name="description" content="Choose the perfect plan for your business. Transparent pricing with no hidden fees." />
       </Head>
 
@@ -99,7 +99,7 @@ export default function PricingPage() {
                 </span>
               </div>
               <h1 className="text-3xl md:text-4xl font-medium text-gray-900 mb-5">
-                Simple, Transparent Pricing
+                Simple, Transparent Plans
               </h1>
               <p className="text-base text-gray-600 max-w-3xl mx-auto">
                 Choose the perfect plan for your business. All plans include a free trial. 
@@ -145,13 +145,13 @@ export default function PricingPage() {
           </div>
         </section>
 
-        {/* Pricing Cards */}
+        {/* Plans Cards */}
         <section className="py-24 bg-white">
           <div className="container mx-auto px-8 md:px-12 lg:px-20">
             {loading ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-                <p className="mt-4 text-gray-600">Loading pricing plans...</p>
+                <p className="mt-4 text-gray-600">Loading plans...</p>
               </div>
             ) : plans.length > 0 ? (
               (() => {
@@ -208,7 +208,7 @@ export default function PricingPage() {
                         )}
                       </div>
 
-                      {/* Pricing */}
+                      {/* Plans */}
                       <div className="mb-6 text-center">
                         {hasDiscount && (
                           <div className="mb-2">
@@ -353,7 +353,7 @@ export default function PricingPage() {
               })()
             ) : (
               <div className="text-center py-12">
-                <p className="text-gray-600 text-lg">No pricing plans available at the moment. Please check back later.</p>
+                <p className="text-gray-600 text-lg">No plans available at the moment. Please check back later.</p>
               </div>
             )}
           </div>
@@ -390,7 +390,7 @@ export default function PricingPage() {
                   Frequently Asked Questions
                 </ScrollFloat>
                 <p className="text-base text-gray-600 max-w-2xl mx-auto">
-                  Everything you need to know about our pricing and plans
+                  Everything you need to know about our plans and features
                 </p>
                 </div>
               <AnimatedList

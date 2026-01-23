@@ -51,7 +51,7 @@ export default function ClientReferralPage() {
   };
 
   const shareLink = referralCode?.code
-    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/pricing?ref=${referralCode.code}`
+    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/plans?ref=${referralCode.code}`
     : '';
 
   if (loading) {

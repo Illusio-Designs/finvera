@@ -34,12 +34,12 @@ export default function SubscribePage() {
         setPlan(response.data);
       } else {
         toast.error('Plan not found');
-        router.push('/pricing');
+        router.push('/plans');
       }
     } catch (error) {
       console.error('Error fetching plan:', error);
       toast.error('Failed to load plan details');
-      router.push('/pricing');
+      router.push('/plans');
     } finally {
       setPlanLoading(false);
     }
@@ -52,7 +52,7 @@ export default function SubscribePage() {
       fetchPlan(plan_id);
     } else {
       toast.error('No plan selected');
-      router.push('/pricing');
+      router.push('/plans');
     }
   }, [router.query, router, fetchPlan]);
 
@@ -183,11 +183,11 @@ export default function SubscribePage() {
         <div className="max-w-4xl mx-auto py-8 px-4">
           <div className="mb-6">
             <Link
-              href="/pricing"
+              href="/plans"
               className="inline-flex items-center text-primary-600 hover:text-primary-700"
             >
               <FiArrowLeft className="mr-2" />
-              Back to Pricing
+              Back to Plans
             </Link>
           </div>
 
