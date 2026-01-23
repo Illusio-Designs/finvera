@@ -1,7 +1,6 @@
-// Re-export AuthContext from frontend with React Native adaptations
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api } from '../lib/api';
+import { authAPI } from '../lib/api';
 
 const AuthContext = createContext();
 
@@ -15,14 +14,15 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Start with loading true to check stored auth
   const [token, setToken] = useState(null);
 
+  // Check for stored authentication on app startup
   useEffect(() => {
-    checkAuthState();
+    checkStoredAuth();
   }, []);
 
-  const checkAuthState = async () => {
+  const checkStoredAuth = async () => {
     try {
       const storedToken = await AsyncStorage.getItem('token');
       const storedUser = await AsyncStorage.getItem('user');
@@ -32,29 +32,94 @@ export const AuthProvider = ({ children }) => {
         setUser(JSON.parse(storedUser));
       }
     } catch (error) {
-      console.error('Error checking auth state:', error);
+      console.error('Error checking stored auth:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const login = async (credentials) => {
+  const login = async (email, password, portalType = 'client', companyId = null) => {
     try {
-      const response = await api.post('/auth/login', credentials);
-      const { token: newToken, user: newUser } = response.data;
+      setLoading(true);
+      const response = await authAPI.login(email, password, portalType, companyId);
       
-      await AsyncStorage.setItem('token', newToken);
-      await AsyncStorage.setItem('user', JSON.stringify(newUser));
+      // Handle successful login with user data
+      if (response.data && response.data.user) {
+        const { accessToken, refreshToken, jti, user } = response.data;
+        
+        await AsyncStorage.setItem('token', accessToken);
+        await AsyncStorage.setItem('user', JSON.stringify(user));
+        
+        setToken(accessToken);
+        setUser(user);
+        
+        return { success: true, user };
+      }
       
-      setToken(newToken);
-      setUser(newUser);
-      
-      return { success: true };
-    } catch (error) {
+      // Handle other response scenarios
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Login failed' 
+        message: response.data?.message || 'Login failed',
+        requireCompany: response.data?.require_company,
+        companies: response.data?.companies,
+        needsCompanyCreation: response.data?.needs_company_creation
       };
+    } catch (error) {
+      console.error('Login error:', error);
+      
+      // Handle specific error responses from backend
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        
+        // Special handling for company creation requirement (409 status)
+        if (error.response.status === 409 && errorData.needs_company_creation) {
+          console.log('Company creation required - storing partial auth data');
+          
+          // Store partial user data and token for company creation flow
+          if (errorData.user && errorData.accessToken) {
+            await AsyncStorage.setItem('token', errorData.accessToken);
+            await AsyncStorage.setItem('user', JSON.stringify(errorData.user));
+            setToken(errorData.accessToken);
+            setUser(errorData.user);
+          }
+          
+          return { 
+            success: false, 
+            message: errorData.message || 'Company setup required',
+            requireCompany: errorData.require_company,
+            companies: errorData.companies,
+            needsCompanyCreation: true,
+            user: errorData.user
+          };
+        }
+        
+        // Handle company selection requirement (400 status)
+        if (error.response.status === 400 && errorData.require_company) {
+          return { 
+            success: false, 
+            message: errorData.message || 'Company selection required',
+            requireCompany: true,
+            companies: errorData.companies,
+            needsCompanyCreation: false
+          };
+        }
+        
+        // Handle other error responses
+        return { 
+          success: false, 
+          message: errorData.message || 'Login failed',
+          requireCompany: errorData.require_company,
+          companies: errorData.companies,
+          needsCompanyCreation: errorData.needs_company_creation
+        };
+      }
+      
+      return { 
+        success: false, 
+        message: 'Network error. Please check your connection and try again.' 
+      };
+    } finally {
+      setLoading(false);
     }
   };
 

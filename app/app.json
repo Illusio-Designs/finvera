@@ -11,7 +11,20 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#3b82f6"
+      "backgroundColor": "#3e60ab"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "fonts": [
+      "./assets/fonts/agency.otf"
+    ],
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/c01c18e3-b193-4f24-ae44-3e5bf7c72736"
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
     },
     "ios": {
       "supportsTablet": true,
@@ -20,7 +33,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#3b82f6"
+        "backgroundColor": "#3e60ab"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.finvera.mobile"

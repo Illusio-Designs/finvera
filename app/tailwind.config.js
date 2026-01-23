@@ -3,23 +3,51 @@ module.exports = {
   content: [
     "./App.{js,jsx,ts,tsx}",
     "./src/**/*.{js,jsx,ts,tsx}",
-    "../frontend/components/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
+    fontFamily: {
+      'agency': ['Agency', 'Arial Black', 'Arial', 'sans-serif'],
+      'primary': ['Agency', 'Arial Black', 'Arial', 'sans-serif'],
+      'sans': ['Agency', 'Arial Black', 'Arial', 'sans-serif'],
+    },
     extend: {
       colors: {
+        // Finvera Brand Colors
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          50: '#f0f4fc',
+          100: '#e1e9f9',
+          200: '#c3d3f3',
+          300: '#a5bded',
+          400: '#87a7e7',
+          500: '#3e60ab', // Primary brand blue
+          600: '#36509a',
+          700: '#2d4089',
+          800: '#243a75', // Secondary darker blue
+          900: '#1b2d61',
         },
+        // Gradient colors from logo
+        gradient: {
+          dark: '#2140D7',
+          medium: '#3665E6',
+          light: '#4A85EE',
+          tagline: '#3D78E0',
+        },
+        // Neutral colors
+        neutral: {
+          white: '#FFFFFF',
+          black: '#000000',
+        },
+        // Status colors
+        status: {
+          success: '#10b981',
+          warning: '#f59e0b',
+          error: '#ef4444',
+          info: '#3b82f6',
+        },
+      },
+      backgroundImage: {
+        'finvera-gradient': 'linear-gradient(135deg, #2140D7 0%, #3665E6 50%, #4A85EE 100%)',
+        'finvera-gradient-horizontal': 'linear-gradient(90deg, #2140D7 0%, #3665E6 50%, #4A85EE 100%)',
       },
     },
   },
