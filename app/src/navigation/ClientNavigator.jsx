@@ -1,7 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import DashboardScreen from '../screens/client/DashboardScreen';
-import VouchersScreen from '../screens/client/VouchersScreen';
+import DashboardScreen from '../screens/client/DashboardScreen.jsx';
+import VouchersScreen from '../screens/client/VouchersScreen.jsx';
 
 const Stack = createNativeStackNavigator();
 

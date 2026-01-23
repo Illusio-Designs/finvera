@@ -1,12 +1,12 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext.jsx';
 
 // Import screens
-import AuthNavigator from './AuthNavigator';
-import ClientNavigator from './ClientNavigator';
-import LoadingScreen from '../screens/LoadingScreen';
+import AuthNavigator from './AuthNavigator.jsx';
+import ClientNavigator from './ClientNavigator.jsx';
+import LoadingScreen from '../screens/LoadingScreen.jsx';
 
 const Stack = createNativeStackNavigator();
 
