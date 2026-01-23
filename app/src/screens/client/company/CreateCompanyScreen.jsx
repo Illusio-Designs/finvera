@@ -629,23 +629,37 @@ export default function CreateCompanyScreen() {
 
           <Text style={styles.sectionTitle}>Contact Information</Text>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Contact Number</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter contact number"
-              value={formData.contact_number}
-              onChangeText={(value) => handleChange('contact_number', value)}
-              keyboardType="phone-pad"
-              placeholderTextColor="#9ca3af"
-            />
+          <View style={styles.row}>
+            <View style={[styles.inputContainer, styles.halfWidth]}>
+              <Text style={styles.label}>Contact Number *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="+91 9876543210"
+                value={formData.contact_number}
+                onChangeText={(value) => handleChange('contact_number', value)}
+                keyboardType="phone-pad"
+                placeholderTextColor="#9ca3af"
+              />
+            </View>
+
+            <View style={[styles.inputContainer, styles.halfWidth]}>
+              <Text style={styles.label}>Alternate Contact</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="+91 9876543210"
+                value={formData.alternate_contact}
+                onChangeText={(value) => handleChange('alternate_contact', value)}
+                keyboardType="phone-pad"
+                placeholderTextColor="#9ca3af"
+              />
+            </View>
           </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email Address</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter email address"
+              placeholder="company@example.com"
               value={formData.email}
               onChangeText={(value) => handleChange('email', value)}
               keyboardType="email-address"
@@ -654,7 +668,87 @@ export default function CreateCompanyScreen() {
             />
           </View>
 
-          <Text style={styles.sectionTitle}>Financial Year & Currency</Text>
+          <View style={styles.row}>
+            <View style={[styles.inputContainer, styles.halfWidth]}>
+              <Text style={styles.label}>Website</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="www.company.com"
+                value={formData.website}
+                onChangeText={(value) => handleChange('website', value)}
+                keyboardType="url"
+                autoCapitalize="none"
+                placeholderTextColor="#9ca3af"
+              />
+            </View>
+
+            <View style={[styles.inputContainer, styles.halfWidth]}>
+              <Text style={styles.label}>Fax Number</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Fax number"
+                value={formData.fax}
+                onChangeText={(value) => handleChange('fax', value)}
+                keyboardType="phone-pad"
+                placeholderTextColor="#9ca3af"
+              />
+            </View>
+          </View>
+
+          <Text style={styles.sectionTitle}>Banking Information</Text>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Bank Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter bank name"
+              value={formData.bank_name}
+              onChangeText={(value) => handleChange('bank_name', value)}
+              autoCapitalize="words"
+              placeholderTextColor="#9ca3af"
+            />
+          </View>
+
+          <View style={styles.row}>
+            <View style={[styles.inputContainer, styles.halfWidth]}>
+              <Text style={styles.label}>Account Number</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Account number"
+                value={formData.bank_account_number}
+                onChangeText={(value) => handleChange('bank_account_number', value)}
+                keyboardType="numeric"
+                placeholderTextColor="#9ca3af"
+              />
+            </View>
+
+            <View style={[styles.inputContainer, styles.halfWidth]}>
+              <Text style={styles.label}>IFSC Code</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="IFSC code"
+                value={formData.bank_ifsc}
+                onChangeText={(value) => handleChange('bank_ifsc', value.toUpperCase())}
+                autoCapitalize="characters"
+                maxLength={11}
+                placeholderTextColor="#9ca3af"
+              />
+            </View>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Bank Branch</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Branch name/address"
+              value={formData.bank_branch}
+              onChangeText={(value) => handleChange('bank_branch', value)}
+              autoCapitalize="words"
+              placeholderTextColor="#9ca3af"
+            />
+          </View>
+
+          <Text style={styles.sectionTitle}>Financial Settings</Text>
 
           <CustomDropdown
             label="Currency"
@@ -662,6 +756,14 @@ export default function CreateCompanyScreen() {
             options={currencies}
             onSelect={handleCurrencySelect}
             placeholder="Select currency"
+          />
+
+          <CustomDropdown
+            label="Decimal Places"
+            value={decimalPlacesOptions.find(decimal => decimal.value === formData.decimal_places)}
+            options={decimalPlacesOptions}
+            onSelect={handleDecimalPlacesSelect}
+            placeholder="Select decimal places"
           />
 
           <CustomDropdown
@@ -674,6 +776,64 @@ export default function CreateCompanyScreen() {
             onSelect={handleFinancialYearSelect}
             placeholder="Select financial year"
           />
+
+          <Text style={styles.sectionTitle}>Feature Settings</Text>
+
+          <View style={styles.checkboxContainer}>
+            <TouchableOpacity 
+              style={styles.checkbox}
+              onPress={() => handleChange('enable_multi_currency', !formData.enable_multi_currency)}
+            >
+              <View style={[styles.checkboxBox, formData.enable_multi_currency && styles.checkboxChecked]}>
+                {formData.enable_multi_currency && (
+                  <Ionicons name="checkmark" size={16} color="white" />
+                )}
+              </View>
+              <Text style={styles.checkboxLabel}>Enable Multi-Currency</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.checkboxContainer}>
+            <TouchableOpacity 
+              style={styles.checkbox}
+              onPress={() => handleChange('enable_gst', !formData.enable_gst)}
+            >
+              <View style={[styles.checkboxBox, formData.enable_gst && styles.checkboxChecked]}>
+                {formData.enable_gst && (
+                  <Ionicons name="checkmark" size={16} color="white" />
+                )}
+              </View>
+              <Text style={styles.checkboxLabel}>Enable GST</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.checkboxContainer}>
+            <TouchableOpacity 
+              style={styles.checkbox}
+              onPress={() => handleChange('enable_tds', !formData.enable_tds)}
+            >
+              <View style={[styles.checkboxBox, formData.enable_tds && styles.checkboxChecked]}>
+                {formData.enable_tds && (
+                  <Ionicons name="checkmark" size={16} color="white" />
+                )}
+              </View>
+              <Text style={styles.checkboxLabel}>Enable TDS</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.checkboxContainer}>
+            <TouchableOpacity 
+              style={styles.checkbox}
+              onPress={() => handleChange('enable_inventory', !formData.enable_inventory)}
+            >
+              <View style={[styles.checkboxBox, formData.enable_inventory && styles.checkboxChecked]}>
+                {formData.enable_inventory && (
+                  <Ionicons name="checkmark" size={16} color="white" />
+                )}
+              </View>
+              <Text style={styles.checkboxLabel}>Enable Inventory Management</Text>
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity
             style={[styles.createButton, (loading || apiStatus !== 'connected') && styles.buttonDisabled]}
@@ -839,5 +999,33 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
     fontFamily: 'Agency',
+  },
+  checkboxContainer: {
+    marginBottom: 16,
+  },
+  checkbox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkboxBox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    borderRadius: 4,
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'white',
+  },
+  checkboxChecked: {
+    backgroundColor: '#3e60ab',
+    borderColor: '#3e60ab',
+  },
+  checkboxLabel: {
+    fontSize: 16,
+    color: '#374151',
+    fontFamily: 'Agency',
+    flex: 1,
   },
 });
