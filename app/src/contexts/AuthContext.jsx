@@ -56,13 +56,10 @@ export const AuthProvider = ({ children }) => {
         return { success: true, user };
       }
       
-      // Handle other response scenarios
+      // Handle other response scenarios - but always treat as login failure
       return { 
         success: false, 
-        message: response.data?.message || 'Login failed',
-        requireCompany: response.data?.require_company,
-        companies: response.data?.companies,
-        needsCompanyCreation: response.data?.needs_company_creation
+        message: response.data?.message || 'Login failed. Please check your credentials.'
       };
     } catch (error) {
       console.error('Login error:', error);
@@ -71,46 +68,10 @@ export const AuthProvider = ({ children }) => {
       if (error.response?.data) {
         const errorData = error.response.data;
         
-        // Special handling for company creation requirement (409 status)
-        if (error.response.status === 409 && errorData.needs_company_creation) {
-          console.log('Company creation required - storing partial auth data');
-          
-          // Store partial user data and token for company creation flow
-          if (errorData.user && errorData.accessToken) {
-            await AsyncStorage.setItem('token', errorData.accessToken);
-            await AsyncStorage.setItem('user', JSON.stringify(errorData.user));
-            setToken(errorData.accessToken);
-            setUser(errorData.user);
-          }
-          
-          return { 
-            success: false, 
-            message: errorData.message || 'Company setup required',
-            requireCompany: errorData.require_company,
-            companies: errorData.companies,
-            needsCompanyCreation: true,
-            user: errorData.user
-          };
-        }
-        
-        // Handle company selection requirement (400 status)
-        if (error.response.status === 400 && errorData.require_company) {
-          return { 
-            success: false, 
-            message: errorData.message || 'Company selection required',
-            requireCompany: true,
-            companies: errorData.companies,
-            needsCompanyCreation: false
-          };
-        }
-        
-        // Handle other error responses
+        // For any backend error, just show the error message
         return { 
           success: false, 
-          message: errorData.message || 'Login failed',
-          requireCompany: errorData.require_company,
-          companies: errorData.companies,
-          needsCompanyCreation: errorData.needs_company_creation
+          message: errorData.message || 'Login failed. Please check your credentials.'
         };
       }
       

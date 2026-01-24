@@ -1,17 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigationState } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Font from 'expo-font';
-import { AuthProvider } from './src/contexts/AuthContext.jsx';
+import { AuthProvider, useAuth } from './src/contexts/AuthContext.jsx';
 import { NotificationProvider } from './src/contexts/NotificationContext.jsx';
+import { DrawerProvider, useDrawer } from './src/contexts/DrawerContext.jsx';
+import CustomDrawer from './src/components/navigation/CustomDrawer.jsx';
+import BottomTabBar from './src/components/navigation/BottomTabBar.jsx';
+
+// Auth Screens
 import LoginScreen from './src/screens/auth/LoginScreen.jsx';
-import RegisterScreen from './src/screens/client/auth/RegisterScreen.jsx';
-import ForgotPasswordScreen from './src/screens/client/auth/ForgotPasswordScreen.jsx';
-import ResetPasswordScreen from './src/screens/client/auth/ResetPasswordScreen.jsx';
-import CreateCompanyScreen from './src/screens/client/company/CreateCompanyScreen.jsx';
-import CompanyProvisioningScreen from './src/screens/client/company/CompanyProvisioningScreen.jsx';
-import DashboardScreen from './src/screens/client/DashboardScreen.jsx';
 import SplashScreen from './src/screens/auth/SplashScreen.jsx';
+import ForgotPasswordScreen from './src/screens/auth/ForgotPasswordScreen.jsx';
+import ResetPasswordScreen from './src/screens/auth/ResetPasswordScreen.jsx';
+
+// Client Screens
+import DashboardScreen from './src/screens/client/DashboardScreen.jsx';
+import VouchersScreen from './src/screens/client/VouchersScreen.jsx';
+import ReportsScreen from './src/screens/client/ReportsScreen.jsx';
+import GSTScreen from './src/screens/client/GSTScreen.jsx';
+import MoreScreen from './src/screens/client/MoreScreen.jsx';
+import ProfileScreen from './src/screens/client/ProfileScreen.jsx';
+import SettingsScreen from './src/screens/client/SettingsScreen.jsx';
+import NotificationPreferencesScreen from './src/screens/client/NotificationPreferencesScreen.jsx';
+import LedgersScreen from './src/screens/client/LedgersScreen.jsx';
+import InventoryScreen from './src/screens/client/InventoryScreen.jsx';
+import SupportScreen from './src/screens/client/SupportScreen.jsx';
+import CompaniesScreen from './src/screens/client/CompaniesScreen.jsx';
+import NotificationsScreen from './src/screens/client/NotificationsScreen.jsx';
+
+// Loading Screen
 import LoadingScreen from './src/screens/LoadingScreen.jsx';
 
 const Stack = createNativeStackNavigator();
@@ -19,6 +37,11 @@ const Stack = createNativeStackNavigator();
 function AppNavigator() {
   const [showSplash, setShowSplash] = useState(true);
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  const { isAuthenticated, loading } = useAuth();
+  const { isDrawerOpen, closeDrawer } = useDrawer();
+
+  // Track current route for bottom navigation
+  const [currentRoute, setCurrentRoute] = useState('Dashboard');
 
   useEffect(() => {
     loadFonts();
@@ -38,31 +61,85 @@ function AppNavigator() {
   };
 
   useEffect(() => {
-    if (fontsLoaded) {
-      // Show splash screen for 3 seconds after fonts are loaded
+    if (fontsLoaded && !loading) {
+      // Show splash screen for 2 seconds after fonts are loaded and auth is checked
       const timer = setTimeout(() => {
         setShowSplash(false);
-      }, 3000);
+      }, 2000);
 
       return () => clearTimeout(timer);
     }
-  }, [fontsLoaded]);
+  }, [fontsLoaded, loading]);
 
-  if (!fontsLoaded || showSplash) {
+  // Navigation state listener to track current route
+  const onNavigationStateChange = (state) => {
+    if (state) {
+      const currentRouteName = getCurrentRouteName(state);
+      setCurrentRoute(currentRouteName);
+    }
+  };
+
+  // Helper function to get current route name
+  const getCurrentRouteName = (navigationState) => {
+    if (!navigationState) return 'Dashboard';
+    
+    const route = navigationState.routes[navigationState.index];
+    if (route.state) {
+      return getCurrentRouteName(route.state);
+    }
+    return route.name;
+  };
+
+  if (!fontsLoaded || loading || showSplash) {
     return showSplash ? <SplashScreen /> : <LoadingScreen />;
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer onStateChange={onNavigationStateChange}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-        <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-        <Stack.Screen name="CreateCompany" component={CreateCompanyScreen} />
-        <Stack.Screen name="CompanyProvisioning" component={CompanyProvisioningScreen} />
-        <Stack.Screen name="Dashboard" component={DashboardScreen} />
+        {isAuthenticated ? (
+          <>
+            {/* Main App Screens */}
+            <Stack.Screen name="Dashboard" component={DashboardScreen} />
+            <Stack.Screen name="Vouchers" component={VouchersScreen} />
+            <Stack.Screen name="Reports" component={ReportsScreen} />
+            <Stack.Screen name="GST" component={GSTScreen} />
+            <Stack.Screen name="More" component={MoreScreen} />
+            
+            {/* Profile & Settings */}
+            <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="NotificationPreferences" component={NotificationPreferencesScreen} />
+            
+            {/* Business Features */}
+            <Stack.Screen name="Ledgers" component={LedgersScreen} />
+            <Stack.Screen name="Inventory" component={InventoryScreen} />
+            <Stack.Screen name="Support" component={SupportScreen} />
+            <Stack.Screen name="Companies" component={CompaniesScreen} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} />
+          </>
+        ) : (
+          <>
+            {/* Auth Screens */}
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+          </>
+        )}
       </Stack.Navigator>
+      
+      {/* Custom Drawer Overlay - Inside NavigationContainer for navigation access */}
+      {isAuthenticated && (
+        <CustomDrawer 
+          visible={isDrawerOpen} 
+          onClose={closeDrawer}
+        />
+      )}
+
+      {/* Sticky Bottom Navigation - Only show for authenticated users */}
+      {isAuthenticated && (
+        <BottomTabBar currentRoute={currentRoute} />
+      )}
     </NavigationContainer>
   );
 }
@@ -71,7 +148,9 @@ export default function App() {
   return (
     <AuthProvider>
       <NotificationProvider>
-        <AppNavigator />
+        <DrawerProvider>
+          <AppNavigator />
+        </DrawerProvider>
       </NotificationProvider>
     </AuthProvider>
   );

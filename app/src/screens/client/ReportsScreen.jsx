@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../components/navigation/TopBar';
 import { useDrawer } from '../../contexts/DrawerContext.jsx';
 
-export default function VouchersScreen() {
+export default function ReportsScreen() {
   const navigation = useNavigation();
   const { openDrawer } = useDrawer();
 
@@ -17,12 +17,10 @@ export default function VouchersScreen() {
     console.log('Search pressed');
   };
 
-  const voucherTypes = [];
-
   return (
     <View style={styles.container}>
       <TopBar 
-        title="Vouchers" 
+        title="Reports" 
         onMenuPress={handleMenuPress}
         onSearchPress={handleSearchPress}
       />
@@ -32,10 +30,10 @@ export default function VouchersScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Voucher Management</Text>
+          <Text style={styles.sectionTitle}>Reports</Text>
           <View style={styles.emptyState}>
-            <Ionicons name="document-outline" size={48} color="#9ca3af" />
-            <Text style={styles.emptyText}>Connect to backend to load voucher data</Text>
+            <Ionicons name="bar-chart-outline" size={48} color="#9ca3af" />
+            <Text style={styles.emptyText}>Connect to backend to load reports data</Text>
           </View>
         </View>
       </ScrollView>

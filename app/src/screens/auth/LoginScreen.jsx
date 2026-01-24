@@ -15,7 +15,7 @@ export default function LoginScreen() {
   const [apiStatus, setApiStatus] = useState('checking');
   const { login } = useAuth();
   const navigation = useNavigation();
-  const { showSuccess, showError, showWarning, showInfo } = useNotification();
+  const { showSuccess, showError } = useNotification();
 
   // Test API connectivity on component mount
   useEffect(() => {
@@ -85,48 +85,14 @@ export default function LoginScreen() {
       const result = await login(email, password, 'client');
       console.log('Login result:', { 
         success: result.success, 
-        message: result.message, 
-        needsCompanyCreation: result.needsCompanyCreation,
-        requireCompany: result.requireCompany 
+        message: result.message
       });
       
       if (result.success) {
-        // Successful login with company
-        console.log('Login successful, navigating to dashboard');
-        showSuccess('Welcome Back!', 'Login successful. Redirecting to dashboard...');
-        
-        setTimeout(() => {
-          navigation.replace('Dashboard');
-        }, 1500);
-        
-      } else if (result.needsCompanyCreation) {
-        // User authenticated but needs to create company
-        console.log('Company creation required, navigating to create company');
-        showInfo(
-          'Company Setup Required', 
-          'Please create your company to continue using Finvera.',
-          {
-            duration: 4000,
-            actionText: 'Create Company',
-            onActionPress: () => navigation.navigate('CreateCompany')
-          }
-        );
-        
-        setTimeout(() => {
-          navigation.navigate('CreateCompany');
-        }, 2000);
-        
-      } else if (result.requireCompany && result.companies && result.companies.length > 0) {
-        // User has multiple companies - need to implement company selection
-        console.log('Multiple companies found, need company selection');
-        showInfo(
-          'Company Selection Required', 
-          'You have multiple companies. Please select one to continue.',
-          {
-            duration: 5000
-          }
-        );
-        // TODO: Navigate to company selection screen
+        // Successful login - show success message
+        // Navigation will happen automatically due to auth state change
+        console.log('Login successful, auth state will trigger navigation');
+        showSuccess('Welcome Back!', 'Login successful. Loading dashboard...');
         
       } else {
         // Login failed
@@ -221,13 +187,6 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          <TouchableOpacity 
-            style={styles.forgotPassword}
-            onPress={() => navigation.navigate('ForgotPassword')}
-          >
-            <Text style={styles.forgotPasswordText}>Forgot your password?</Text>
-          </TouchableOpacity>
-
           <TouchableOpacity
             style={[styles.button, (loading || apiStatus !== 'connected') && styles.buttonDisabled]}
             onPress={handleLogin}
@@ -254,18 +213,6 @@ export default function LoginScreen() {
               <Text style={styles.googleButtonText}>Continue with Google</Text>
             </View>
           </TouchableOpacity>
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Don't have an account?{' '}
-              <Text 
-                style={styles.footerLink}
-                onPress={() => navigation.navigate('Register')}
-              >
-                Register
-              </Text>
-            </Text>
-          </View>
         </View>
       </View>
       </ScrollView>
@@ -418,16 +365,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: 24,
-  },
-  forgotPasswordText: {
-    fontSize: 14,
-    color: '#3e60ab',
-    fontWeight: '600',
-    fontFamily: 'Agency',
-  },
   button: {
     backgroundColor: '#3e60ab',
     borderRadius: 8,
@@ -488,19 +425,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '600',
     fontSize: 16,
-    fontFamily: 'Agency',
-  },
-  footer: {
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontFamily: 'Agency',
-  },
-  footerLink: {
-    color: '#3e60ab',
-    fontWeight: '600',
     fontFamily: 'Agency',
   },
 });

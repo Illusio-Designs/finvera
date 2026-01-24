@@ -1,39 +1,39 @@
 import React, { useEffect } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
-export default function SplashScreen({ onFinish }) {
-  useEffect(() => {
-    // Simulate loading time
-    const timer = setTimeout(() => {
-      onFinish && onFinish();
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, [onFinish]);
-
+export default function SplashScreen() {
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={['#2140D7', '#3665E6', '#4A85EE']}
+      style={styles.container}
+    >
       <View style={styles.content}>
-        {/* Finvera Logo */}
+        {/* Logo */}
         <View style={styles.logoContainer}>
-          <Image 
-            source={require('../../../assets/icon.png')} 
-            style={styles.logoImage}
-            resizeMode="contain"
-          />
+          <View style={styles.logoCircle}>
+            <Text style={styles.logoText}>F</Text>
+          </View>
         </View>
 
-        <Text style={styles.title}>Finvera</Text>
-        <Text style={styles.subtitle}>Simplify Your Business</Text>
+        {/* Brand Name */}
+        <Text style={styles.brandName}>Finvera</Text>
+        <Text style={styles.tagline}>Financial Excellence Simplified</Text>
 
+        {/* Loading Indicator */}
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FFFFFF" />
-          <Text style={styles.loadingText}>Loading...</Text>
+          <View style={styles.loadingDot} />
+          <View style={[styles.loadingDot, styles.loadingDotDelay1]} />
+          <View style={[styles.loadingDot, styles.loadingDotDelay2]} />
         </View>
-
-        <Text style={styles.tagline}>Powered by Innovation</Text>
       </View>
-    </View>
+
+      {/* Footer */}
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>© 2024 Finvera Solutions</Text>
+        <Text style={styles.versionText}>Version 1.0.0</Text>
+      </View>
+    </LinearGradient>
   );
 }
 
@@ -42,48 +42,80 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#3e60ab',
   },
   content: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: 40,
   },
   logoContainer: {
-    marginBottom: 32,
+    marginBottom: 40,
   },
-  logoImage: {
+  logoCircle: {
     width: 120,
     height: 120,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 8,
-    letterSpacing: 1,
-    fontFamily: 'Agency',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginBottom: 48,
-    textAlign: 'center',
-    fontFamily: 'Agency',
-  },
-  loadingContainer: {
+    borderRadius: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 48,
+    borderWidth: 3,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
-  loadingText: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 16,
+  logoText: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: 'white',
     fontFamily: 'Agency',
+  },
+  brandName: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: 'white',
+    fontFamily: 'Agency',
+    marginBottom: 8,
+    letterSpacing: 2,
   },
   tagline: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontFamily: 'Agency',
     textAlign: 'center',
+    marginBottom: 60,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: 'white',
+    marginHorizontal: 4,
+    opacity: 0.3,
+  },
+  loadingDotDelay1: {
+    opacity: 0.6,
+  },
+  loadingDotDelay2: {
+    opacity: 1,
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 40,
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontFamily: 'Agency',
+    marginBottom: 4,
+  },
+  versionText: {
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.6)',
     fontFamily: 'Agency',
   },
 });

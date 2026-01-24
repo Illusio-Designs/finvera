@@ -1,11 +1,16 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { accountingAPI, companyAPI, clientSupportAPI } from '../../lib/api.js';
-import { formatCurrency, formatDate } from '../../utils/businessLogic.js';
+import { useDrawer } from '../../contexts/DrawerContext.jsx';
+import { accountingAPI, companyAPI } from '../../lib/api.js';
+import { formatCurrency } from '../../utils/businessLogic.js';
 import { Ionicons } from '@expo/vector-icons';
+import TopBar from '../../components/navigation/TopBar';
 
-export default function DashboardScreen({ navigation }) {
+export default function DashboardScreen() {
+  const navigation = useNavigation();
+  const { openDrawer } = useDrawer();
   const [dashboardData, setDashboardData] = useState({
     stats: {
       receivables: 0,
@@ -15,47 +20,43 @@ export default function DashboardScreen({ navigation }) {
     },
     recent_activity: [],
   });
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [companyName, setCompanyName] = useState('Client');
-  const { user, logout } = useAuth();
+  const [companyName, setCompanyName] = useState('Your Business');
+  const { user } = useAuth();
+
+  const handleMenuPress = () => {
+    openDrawer();
+  };
+
+  const handleNavigateToScreen = (screenName) => {
+    navigation.navigate(screenName);
+  };
+
+  const handleSearchPress = () => {
+    console.log('Search pressed');
+  };
 
   const fetchDashboardData = useCallback(async () => {
     try {
-      setLoading(true);
       const response = await accountingAPI.dashboard();
       const data = response.data?.data || response.data || {};
       setDashboardData({
-        stats: data.stats || {
-          receivables: 0,
-          payables: 0,
-          cash_on_hand: 0,
-          gst_payable: 0,
-        },
+        stats: data.stats || {},
         recent_activity: data.recent_activity || [],
       });
     } catch (error) {
       console.error('Dashboard error:', error);
-      // Fallback to default data on error
       setDashboardData({
-        stats: {
-          receivables: 0,
-          payables: 0,
-          cash_on_hand: 0,
-          gst_payable: 0,
-        },
+        stats: {},
         recent_activity: [],
       });
-      Alert.alert('Error', 'Failed to load dashboard data. Please check your connection.');
-    } finally {
-      setLoading(false);
     }
   }, []);
 
   const fetchCompanyName = useCallback(async () => {
     try {
       if (!user?.company_id) {
-        setCompanyName('Client');
+        setCompanyName(user?.name || 'Your Business');
         return;
       }
       const response = await companyAPI.list();
@@ -64,13 +65,13 @@ export default function DashboardScreen({ navigation }) {
       if (currentCompany?.company_name) {
         setCompanyName(currentCompany.company_name);
       } else {
-        setCompanyName('Client');
+        setCompanyName(user?.name || 'Your Business');
       }
     } catch (error) {
       console.error('Failed to fetch company name:', error);
-      setCompanyName('Client');
+      setCompanyName(user?.name || 'Your Business');
     }
-  }, [user?.company_id]);
+  }, [user?.company_id, user?.name]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -124,82 +125,104 @@ export default function DashboardScreen({ navigation }) {
   ];
 
   const quickActions = [
-    { label: 'Create Voucher', icon: 'document-text', color: '#3e60ab', screen: 'Vouchers' },
+    { label: 'Create Invoice', icon: 'document-text', color: '#3e60ab', screen: 'Vouchers' },
     { label: 'Manage Ledgers', icon: 'folder', color: '#6b7280', screen: 'Ledgers' },
     { label: 'View Reports', icon: 'bar-chart', color: '#10b981', screen: 'Reports' },
-    { label: 'GST Management', icon: 'receipt', color: '#f59e0b', screen: 'GSTINs' },
+    { label: 'GST Returns', icon: 'receipt', color: '#f59e0b', screen: 'GST' },
+    { label: 'Inventory', icon: 'cube', color: '#8b5cf6', screen: 'Inventory' },
+    { label: 'Support', icon: 'help-circle', color: '#ef4444', screen: 'Support' },
   ];
 
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-    >
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <Text style={styles.welcomeText}>Welcome back,</Text>
-          <Text style={styles.companyName}>{companyName}</Text>
+    <View style={styles.container}>
+      <TopBar 
+        title={`Welcome, ${companyName}`} 
+        onMenuPress={handleMenuPress}
+        onSearchPress={handleSearchPress}
+      />
+      
+      <ScrollView 
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <Text style={styles.welcomeText}>Dashboard Overview</Text>
+            <Text style={styles.companyName}>Financial Summary</Text>
+          </View>
         </View>
-        <View style={styles.headerActions}>
-          <TouchableOpacity 
-            style={styles.profileButton} 
-            onPress={() => navigation.navigate('Profile')}
-          >
-            <Ionicons name="person-outline" size={24} color="#6b7280" />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.settingsButton} 
-            onPress={() => navigation.navigate('Settings')}
-          >
-            <Ionicons name="settings-outline" size={24} color="#6b7280" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-            <Ionicons name="log-out-outline" size={24} color="#6b7280" />
-          </TouchableOpacity>
-        </View>
-      </View>
 
-      {/* Stats Grid */}
-      <View style={styles.statsGrid}>
-        {statCards.map((card, index) => (
-          <TouchableOpacity key={index} style={[styles.statCard, { backgroundColor: card.bgColor }]}>
-            <View style={styles.statCardContent}>
-              <View style={styles.statCardLeft}>
-                <Text style={styles.statCardTitle}>{card.title}</Text>
-                <Text style={[styles.statCardValue, { color: card.color }]}>{card.value}</Text>
-                <Text style={styles.statCardSubtitle}>{card.subtitle}</Text>
+        {/* Stats Grid */}
+        <View style={styles.statsGrid}>
+          {statCards.map((card, index) => (
+            <TouchableOpacity key={index} style={[styles.statCard, { backgroundColor: card.bgColor }]}>
+              <View style={styles.statCardContent}>
+                <View style={styles.statCardLeft}>
+                  <Text style={styles.statCardTitle}>{card.title}</Text>
+                  <Text style={[styles.statCardValue, { color: card.color }]}>{card.value}</Text>
+                  <Text style={styles.statCardSubtitle}>{card.subtitle}</Text>
+                </View>
+                <View style={[styles.statCardIcon, { backgroundColor: card.color }]}>
+                  <Ionicons name={card.icon} size={24} color="white" />
+                </View>
               </View>
-              <View style={[styles.statCardIcon, { backgroundColor: card.color }]}>
-                <Ionicons name={card.icon} size={24} color="white" />
-              </View>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Quick Actions */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.quickActionsGrid}>
-          {quickActions.map((action, index) => (
-            <TouchableOpacity 
-              key={index} 
-              style={styles.quickActionCard}
-              onPress={() => navigation.navigate(action.screen)}
-            >
-              <Ionicons name={action.icon} size={24} color={action.color} />
-              <Text style={styles.quickActionText}>{action.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
-      </View>
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>✅ Connected to Finvera API</Text>
-      </View>
-    </ScrollView>
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.quickActionsGrid}>
+            {quickActions.map((action, index) => (
+              <TouchableOpacity 
+                key={index} 
+                style={styles.quickActionCard}
+                onPress={() => handleNavigateToScreen(action.screen)}
+              >
+                <View style={[styles.quickActionIcon, { backgroundColor: action.color }]}>
+                  <Ionicons name={action.icon} size={24} color="white" />
+                </View>
+                <Text style={styles.quickActionText}>{action.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Recent Activity */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          <View style={styles.activityCard}>
+            {dashboardData.recent_activity.length > 0 ? (
+              dashboardData.recent_activity.map((activity, index) => (
+                <View key={index} style={styles.activityItem}>
+                  <View style={styles.activityIcon}>
+                    <Ionicons name={activity.icon || "document-text"} size={20} color="#3e60ab" />
+                  </View>
+                  <View style={styles.activityContent}>
+                    <Text style={styles.activityTitle}>{activity.title}</Text>
+                    <Text style={styles.activitySubtitle}>{activity.subtitle}</Text>
+                  </View>
+                  <Text style={styles.activityAmount}>{activity.amount || ''}</Text>
+                </View>
+              ))
+            ) : (
+              <View style={styles.emptyActivity}>
+                <Ionicons name="time-outline" size={32} color="#9ca3af" />
+                <Text style={styles.emptyActivityText}>No recent activity</Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Add bottom padding to account for sticky bottom tab bar */}
+        <View style={styles.bottomPadding} />
+      </ScrollView>
+    </View>
   );
 }
 
@@ -208,12 +231,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f9fafb',
   },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 100, // Extra padding for bottom tab bar
+  },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: 16,
     paddingBottom: 16,
     backgroundColor: 'white',
   },
@@ -226,25 +252,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Agency',
   },
   companyName: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#111827',
     fontFamily: 'Agency',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  profileButton: {
-    padding: 8,
-    marginRight: 4,
-  },
-  settingsButton: {
-    padding: 8,
-    marginRight: 4,
-  },
-  logoutButton: {
-    padding: 8,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -308,7 +319,7 @@ const styles = StyleSheet.create({
   },
   quickActionCard: {
     backgroundColor: 'white',
-    width: '48%',
+    width: '31%',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -318,21 +329,78 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  quickActionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   quickActionText: {
-    marginTop: 8,
-    fontSize: 14,
+    fontSize: 12,
     color: '#374151',
     textAlign: 'center',
     fontFamily: 'Agency',
   },
-  footer: {
+  activityCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  activityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  activityIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  activityContent: {
+    flex: 1,
+  },
+  activityTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+    fontFamily: 'Agency',
+  },
+  activitySubtitle: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
+    fontFamily: 'Agency',
+  },
+  activityAmount: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+    fontFamily: 'Agency',
+  },
+  emptyActivity: {
     alignItems: 'center',
     paddingVertical: 20,
   },
-  footerText: {
+  emptyActivityText: {
     fontSize: 14,
-    color: '#10b981',
-    fontWeight: '600',
+    color: '#9ca3af',
+    marginTop: 8,
     fontFamily: 'Agency',
+  },
+  bottomPadding: {
+    height: 20,
   },
 });

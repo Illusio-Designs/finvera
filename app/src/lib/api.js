@@ -40,69 +40,69 @@ export const branchAPI = {
 export const accountingAPI = {
   dashboard: () => apiClient.get('/accounting/dashboard'),
   ledgers: {
-    list: (params) => apiClient.get('/ledgers', { params }),
-    create: (data) => apiClient.post('/ledgers', data),
-    update: (id, data) => apiClient.put(`/ledgers/${id}`, data),
-    delete: (id) => apiClient.delete(`/ledgers/${id}`),
-    get: (id) => apiClient.get(`/ledgers/${id}`),
-    statement: (id, params) => apiClient.get(`/ledgers/${id}/statement`, { params }),
-    transactions: (id, params) => apiClient.get(`/ledgers/${id}/transactions`, { params }),
+    list: (params) => apiClient.get('/accounting/ledgers', { params }),
+    create: (data) => apiClient.post('/accounting/ledgers', data),
+    update: (id, data) => apiClient.put(`/accounting/ledgers/${id}`, data),
+    delete: (id) => apiClient.delete(`/accounting/ledgers/${id}`),
+    get: (id) => apiClient.get(`/accounting/ledgers/${id}`),
+    statement: (id, params) => apiClient.get(`/accounting/ledgers/${id}/statement`, { params }),
+    transactions: (id, params) => apiClient.get(`/accounting/ledgers/${id}/transactions`, { params }),
   },
   outstanding: (params) => apiClient.get('/accounting/outstanding', { params }),
 };
 
 // Voucher APIs
 export const voucherAPI = {
-  list: (params) => apiClient.get('/vouchers', { params }),
-  create: (data) => apiClient.post('/vouchers', data),
-  update: (id, data) => apiClient.put(`/vouchers/${id}`, data),
-  delete: (id) => apiClient.delete(`/vouchers/${id}`),
-  get: (id) => apiClient.get(`/vouchers/${id}`),
-  types: () => apiClient.get('/voucher-types'),
+  list: (params) => apiClient.get('/accounting/vouchers', { params }),
+  create: (data) => apiClient.post('/accounting/vouchers', data),
+  update: (id, data) => apiClient.put(`/accounting/vouchers/${id}`, data),
+  delete: (id) => apiClient.delete(`/accounting/vouchers/${id}`),
+  get: (id) => apiClient.get(`/accounting/vouchers/${id}`),
+  types: () => apiClient.get('/accounting/voucher-types'),
   salesInvoice: {
-    create: (data) => apiClient.post('/vouchers/sales-invoice', data),
-    update: (id, data) => apiClient.put(`/vouchers/sales-invoice/${id}`, data),
-    get: (id) => apiClient.get(`/vouchers/sales-invoice/${id}`),
+    create: (data) => apiClient.post('/accounting/vouchers/sales-invoice', data),
+    update: (id, data) => apiClient.put(`/accounting/vouchers/sales-invoice/${id}`, data),
+    get: (id) => apiClient.get(`/accounting/vouchers/sales-invoice/${id}`),
   },
   purchaseInvoice: {
-    create: (data) => apiClient.post('/vouchers/purchase-invoice', data),
-    update: (id, data) => apiClient.put(`/vouchers/purchase-invoice/${id}`, data),
-    get: (id) => apiClient.get(`/vouchers/purchase-invoice/${id}`),
+    create: (data) => apiClient.post('/accounting/vouchers/purchase-invoice', data),
+    update: (id, data) => apiClient.put(`/accounting/vouchers/purchase-invoice/${id}`, data),
+    get: (id) => apiClient.get(`/accounting/vouchers/purchase-invoice/${id}`),
   },
   payment: {
-    create: (data) => apiClient.post('/vouchers/payment', data),
-    update: (id, data) => apiClient.put(`/vouchers/payment/${id}`, data),
+    create: (data) => apiClient.post('/accounting/vouchers/payment', data),
+    update: (id, data) => apiClient.put(`/accounting/vouchers/payment/${id}`, data),
   },
   receipt: {
-    create: (data) => apiClient.post('/vouchers/receipt', data),
-    update: (id, data) => apiClient.put(`/vouchers/receipt/${id}`, data),
+    create: (data) => apiClient.post('/accounting/vouchers/receipt', data),
+    update: (id, data) => apiClient.put(`/accounting/vouchers/receipt/${id}`, data),
   },
 };
 
 // Inventory APIs
 export const inventoryAPI = {
   items: {
-    list: (params) => apiClient.get('/inventory/items', { params }),
-    create: (data) => apiClient.post('/inventory/items', data),
-    update: (id, data) => apiClient.put(`/inventory/items/${id}`, data),
-    delete: (id) => apiClient.delete(`/inventory/items/${id}`),
-    get: (id) => apiClient.get(`/inventory/items/${id}`),
+    list: (params) => apiClient.get('/accounting/inventory/items', { params }),
+    create: (data) => apiClient.post('/accounting/inventory/items', data),
+    update: (id, data) => apiClient.put(`/accounting/inventory/items/${id}`, data),
+    delete: (id) => apiClient.delete(`/accounting/inventory/items/${id}`),
+    get: (id) => apiClient.get(`/accounting/inventory/items/${id}`),
   },
   adjustments: {
-    list: (params) => apiClient.get('/inventory/adjustments', { params }),
-    create: (data) => apiClient.post('/inventory/adjustments', data),
-    get: (id) => apiClient.get(`/inventory/adjustments/${id}`),
+    list: (params) => apiClient.get('/accounting/stock-adjustments', { params }),
+    create: (data) => apiClient.post('/accounting/stock-adjustments', data),
+    get: (id) => apiClient.get(`/accounting/stock-adjustments/${id}`),
   },
   transfers: {
-    list: (params) => apiClient.get('/inventory/transfers', { params }),
-    create: (data) => apiClient.post('/inventory/transfers', data),
-    get: (id) => apiClient.get(`/inventory/transfers/${id}`),
+    list: (params) => apiClient.get('/accounting/stock-transfers', { params }),
+    create: (data) => apiClient.post('/accounting/stock-transfers', data),
+    get: (id) => apiClient.get(`/accounting/stock-transfers/${id}`),
   },
   warehouses: {
-    list: () => apiClient.get('/warehouses'),
-    create: (data) => apiClient.post('/warehouses', data),
-    update: (id, data) => apiClient.put(`/warehouses/${id}`, data),
-    delete: (id) => apiClient.delete(`/warehouses/${id}`),
+    list: () => apiClient.get('/accounting/warehouses'),
+    create: (data) => apiClient.post('/accounting/warehouses', data),
+    update: (id, data) => apiClient.put(`/accounting/warehouses/${id}`, data),
+    delete: (id) => apiClient.delete(`/accounting/warehouses/${id}`),
   },
   attributes: {
     list: () => apiClient.get('/attributes'),
@@ -175,10 +175,10 @@ export const notificationAPI = {
 // Support APIs
 export const clientSupportAPI = {
   tickets: {
-    list: (params) => apiClient.get('/support/tickets', { params }),
+    list: (params) => apiClient.get('/support/my-tickets', { params }),
     create: (data) => apiClient.post('/support/tickets', data),
-    update: (id, data) => apiClient.put(`/support/tickets/${id}`, data),
-    get: (id) => apiClient.get(`/support/tickets/${id}`),
+    update: (id, data) => apiClient.put(`/support/my-tickets/${id}`, data),
+    get: (id) => apiClient.get(`/support/my-tickets/${id}`),
     messages: (id) => apiClient.get(`/support/tickets/${id}/messages`),
     addMessage: (id, data) => apiClient.post(`/support/tickets/${id}/messages`, data),
   },
