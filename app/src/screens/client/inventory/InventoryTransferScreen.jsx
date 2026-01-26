@@ -40,11 +40,11 @@ export default function InventoryTransferScreen() {
     } finally {
       setLoading(false);
     }
-  }, [showNotification]);
+  }, []); // Removed showNotification from dependencies
 
   useEffect(() => {
     fetchTransfers();
-  }, [fetchTransfers]);
+  }, []); // Changed to empty dependency array since there are no dynamic dependencies
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

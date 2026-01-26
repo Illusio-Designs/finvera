@@ -112,8 +112,30 @@ export default function CustomDrawer({ visible, onClose }) {
       items: [
         { name: 'All Vouchers', icon: 'document-text-outline', color: '#10b981', screen: 'Vouchers' },
         { name: 'Payment Vouchers', icon: 'card-outline', color: '#3e60ab', screen: 'Payment' },
-        { name: 'Sales Invoices', icon: 'receipt-outline', color: '#10b981', screen: 'SalesInvoice' },
-        { name: 'Purchase Invoices', icon: 'card-outline', color: '#ef4444', screen: 'PurchaseInvoice' },
+        { name: 'Receipt Vouchers', icon: 'receipt-outline', color: '#10b981', screen: 'Receipt' },
+        { name: 'Journal Entries', icon: 'journal-outline', color: '#8b5cf6', screen: 'Journal' },
+        { name: 'Contra Entries', icon: 'swap-horizontal-outline', color: '#f59e0b', screen: 'Contra' },
+        { name: 'Debit Notes', icon: 'remove-circle-outline', color: '#ef4444', screen: 'DebitNote' },
+        { name: 'Credit Notes', icon: 'add-circle-outline', color: '#10b981', screen: 'CreditNote' },
+      ]
+    },
+    {
+      title: 'Tools & Utilities',
+      expandable: true,
+      items: [
+        { name: 'Tally Import', icon: 'cloud-upload-outline', color: '#3e60ab', screen: 'TallyImport' },
+        { name: 'Notifications', icon: 'notifications-outline', color: '#f59e0b', screen: 'Notifications' },
+      ]
+    },
+    {
+      title: 'Business Services',
+      expandable: true,
+      items: [
+        { name: 'Subscription Plans', icon: 'diamond-outline', color: '#3e60ab', screen: 'Plans' },
+        { name: 'My Subscription', icon: 'card-outline', color: '#10b981', screen: 'Subscribe' },
+        { name: 'Reviews & Feedback', icon: 'star-outline', color: '#f59e0b', screen: 'Review' },
+        { name: 'Business Loan', icon: 'business-outline', color: '#8b5cf6', screen: 'Loan' },
+        { name: 'Referral Program', icon: 'people-outline', color: '#ef4444', screen: 'Referral' },
       ]
     },
     {
@@ -121,7 +143,6 @@ export default function CustomDrawer({ visible, onClose }) {
       items: [
         { name: 'Profile', icon: 'person-outline', color: '#8b5cf6', screen: 'Profile' },
         { name: 'Settings', icon: 'settings-outline', color: '#6b7280', screen: 'Settings' },
-        { name: 'Notifications', icon: 'notifications-outline', color: '#f59e0b', screen: 'Notifications' },
         { name: 'Sign Out', icon: 'log-out-outline', color: '#ef4444', action: 'logout' },
       ]
     }

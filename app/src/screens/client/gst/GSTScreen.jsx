@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, TextInput, FlatList } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
@@ -14,6 +15,7 @@ const GST_TABS = [
 ];
 
 export default function GSTScreen() {
+  const navigation = useNavigation();
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
   const [activeTab, setActiveTab] = useState('gstr2a');
@@ -496,6 +498,67 @@ export default function GSTScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
+        {/* GST Management Cards */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>GST Management</Text>
+          </View>
+          
+          <View style={styles.managementGrid}>
+            <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('GSTINs')}>
+              <View style={[styles.managementIcon, { backgroundColor: '#10b981' }]}>
+                <Ionicons name="card" size={24} color="white" />
+              </View>
+              <View style={styles.managementInfo}>
+                <Text style={styles.managementTitle}>GSTIN Records</Text>
+                <Text style={styles.managementSubtitle}>Manage GSTIN details</Text>
+              </View>
+              <View style={styles.managementArrow}>
+                <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('GSTRates')}>
+              <View style={[styles.managementIcon, { backgroundColor: '#f59e0b' }]}>
+                <Ionicons name="calculator" size={24} color="white" />
+              </View>
+              <View style={styles.managementInfo}>
+                <Text style={styles.managementTitle}>GST Rates</Text>
+                <Text style={styles.managementSubtitle}>View & manage tax rates</Text>
+              </View>
+              <View style={styles.managementArrow}>
+                <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('EInvoice')}>
+              <View style={[styles.managementIcon, { backgroundColor: '#3b82f6' }]}>
+                <Ionicons name="document-text" size={24} color="white" />
+              </View>
+              <View style={styles.managementInfo}>
+                <Text style={styles.managementTitle}>E-Invoice</Text>
+                <Text style={styles.managementSubtitle}>Electronic invoicing</Text>
+              </View>
+              <View style={styles.managementArrow}>
+                <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('EWayBill')}>
+              <View style={[styles.managementIcon, { backgroundColor: '#ef4444' }]}>
+                <Ionicons name="car" size={24} color="white" />
+              </View>
+              <View style={styles.managementInfo}>
+                <Text style={styles.managementTitle}>E-Way Bill</Text>
+                <Text style={styles.managementSubtitle}>Transportation documents</Text>
+              </View>
+              <View style={styles.managementArrow}>
+                <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Tabs */}
         <View style={styles.tabsContainer}>
           <FlatList
@@ -807,5 +870,63 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     textAlign: 'center',
     fontFamily: 'Agency',
+  },
+  section: {
+    paddingHorizontal: 16,
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    fontFamily: 'Agency',
+  },
+  managementGrid: {
+    gap: 12,
+  },
+  managementCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    marginBottom: 8,
+  },
+  managementIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  managementInfo: {
+    flex: 1,
+  },
+  managementTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    fontFamily: 'Agency',
+  },
+  managementSubtitle: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontFamily: 'Agency',
+    marginTop: 2,
+  },
+  managementArrow: {
+    padding: 8,
   },
 });

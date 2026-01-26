@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, FlatList } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
@@ -8,6 +9,7 @@ import { inventoryAPI } from '../../../lib/api';
 import { formatCurrency } from '../../../utils/businessLogic';
 
 export default function InventoryScreen() {
+  const navigation = useNavigation();
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
   const [inventoryItems, setInventoryItems] = useState([]);
@@ -70,11 +72,11 @@ export default function InventoryScreen() {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, showNotification]);
+  }, [searchQuery]); // Removed showNotification from dependencies
 
   useEffect(() => {
     fetchInventoryItems();
-  }, [fetchInventoryItems]);
+  }, [searchQuery]); // Changed to depend on searchQuery directly instead of fetchInventoryItems
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -88,43 +90,31 @@ export default function InventoryScreen() {
   };
 
   const handleCreateItem = () => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Create new inventory item functionality will be available soon'
-    });
+    navigation.navigate('InventoryItems');
   };
 
   const handleEditItem = () => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Edit inventory item functionality will be available soon'
-    });
+    navigation.navigate('InventoryItems');
   };
 
   const handleDeleteItem = () => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Delete inventory item functionality will be available soon'
-    });
+    navigation.navigate('InventoryItems');
   };
 
   const handleAdjustment = () => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Stock adjustment functionality will be available soon'
-    });
+    navigation.navigate('InventoryAdjustment');
   };
 
   const handleTransfer = () => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Stock transfer functionality will be available soon'
-    });
+    navigation.navigate('InventoryTransfer');
+  };
+
+  const handleWarehousesPress = () => {
+    navigation.navigate('Warehouses');
+  };
+
+  const handleAttributesPress = () => {
+    navigation.navigate('Attributes');
   };
 
   const getStockStatus = (quantity) => {
@@ -267,6 +257,70 @@ export default function InventoryScreen() {
             <Ionicons name="arrow-forward" size={20} color="#3e60ab" />
             <Text style={[styles.actionButtonText, { color: '#3e60ab' }]}>Transfer</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Inventory Management Cards */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Inventory Management</Text>
+          </View>
+          
+          <View style={styles.managementGrid}>
+            <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('InventoryItems')}>
+              <View style={[styles.managementIcon, { backgroundColor: '#10b981' }]}>
+                <Ionicons name="list" size={24} color="white" />
+              </View>
+              <Text style={styles.managementTitle}>Inventory Items</Text>
+              <Text style={styles.managementSubtitle}>View & manage all items</Text>
+              <View style={styles.managementArrow}>
+                <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.managementCard} onPress={handleAdjustment}>
+              <View style={[styles.managementIcon, { backgroundColor: '#f59e0b' }]}>
+                <Ionicons name="swap-horizontal" size={24} color="white" />
+              </View>
+              <Text style={styles.managementTitle}>Stock Adjustments</Text>
+              <Text style={styles.managementSubtitle}>Adjust inventory levels</Text>
+              <View style={styles.managementArrow}>
+                <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.managementCard} onPress={handleTransfer}>
+              <View style={[styles.managementIcon, { backgroundColor: '#3b82f6' }]}>
+                <Ionicons name="arrow-forward" size={24} color="white" />
+              </View>
+              <Text style={styles.managementTitle}>Stock Transfers</Text>
+              <Text style={styles.managementSubtitle}>Transfer between locations</Text>
+              <View style={styles.managementArrow}>
+                <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.managementCard} onPress={handleWarehousesPress}>
+              <View style={[styles.managementIcon, { backgroundColor: '#8b5cf6' }]}>
+                <Ionicons name="storefront" size={24} color="white" />
+              </View>
+              <Text style={styles.managementTitle}>Warehouses</Text>
+              <Text style={styles.managementSubtitle}>Manage storage locations</Text>
+              <View style={styles.managementArrow}>
+                <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.managementCard} onPress={handleAttributesPress}>
+              <View style={[styles.managementIcon, { backgroundColor: '#ef4444' }]}>
+                <Ionicons name="pricetag" size={24} color="white" />
+              </View>
+              <Text style={styles.managementTitle}>Product Attributes</Text>
+              <Text style={styles.managementSubtitle}>Manage item properties</Text>
+              <View style={styles.managementArrow}>
+                <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Inventory Items List */}
@@ -717,5 +771,46 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     backgroundColor: '#ef4444',
+  },
+  managementGrid: {
+    gap: 12,
+  },
+  managementCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    marginBottom: 8,
+  },
+  managementIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  managementTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    fontFamily: 'Agency',
+    flex: 1,
+  },
+  managementSubtitle: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontFamily: 'Agency',
+    flex: 1,
+    marginTop: 2,
+  },
+  managementArrow: {
+    padding: 8,
   },
 });

@@ -4,78 +4,73 @@ import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
-import { accountingAPI } from '../../../lib/api';
+import { voucherAPI } from '../../../lib/api';
 
-export default function InventoryItemsScreen() {
+export default function ContraScreen() {
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
-  const [items, setItems] = useState([]);
-  const [warehouses, setWarehouses] = useState([]);
+  const [contras, setContras] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedContra, setSelectedContra] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState('all'); // all, active, inactive, low_stock
+  const [filter, setFilter] = useState('all');
 
   const handleMenuPress = () => {
     openDrawer();
   };
 
-  const fetchData = useCallback(async () => {
+  const fetchContras = useCallback(async () => {
     try {
-      const [itemsRes, warehousesRes] = await Promise.all([
-        accountingAPI.inventory.items.list({ 
-          search: searchQuery,
-          is_active: filter === 'active' ? true : filter === 'inactive' ? false : undefined,
-          limit: 50 
-        }).catch(error => {
-          console.error('Inventory items API error:', error);
-          return { data: { data: [] } };
-        }),
-        accountingAPI.warehouses.getAll({ is_active: true }).catch(error => {
-          console.error('Warehouses API error:', error);
-          return { data: { data: [] } };
-        })
-      ]);
-      
-      // Enhanced error handling for API responses
-      const itemsData = itemsRes?.data?.data || itemsRes?.data?.items || itemsRes?.data || [];
-      const warehousesData = warehousesRes?.data?.data || warehousesRes?.data?.warehouses || warehousesRes?.data || [];
-      
-      setItems(Array.isArray(itemsData) ? itemsData : []);
-      setWarehouses(Array.isArray(warehousesData) ? warehousesData : []);
+      const response = await voucherAPI.list({ 
+        voucher_type: 'contra',
+        search: searchQuery,
+        status: filter === 'all' ? undefined : filter,
+        limit: 50 
+      });
+      const data = response.data?.data || response.data || [];
+      setContras(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Inventory items fetch error:', error);
+      console.error('Contras fetch error:', error);
       showNotification({
         type: 'error',
         title: 'Error',
-        message: 'Failed to load inventory items'
+        message: 'Failed to load contra entries'
       });
-      setItems([]);
-      setWarehouses([]);
+      setContras([]);
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, filter]); // Removed showNotification from dependencies
+  }, [searchQuery, filter, showNotification]);
 
   useEffect(() => {
-    fetchData();
-  }, [searchQuery, filter]); // Changed to depend on searchQuery and filter directly
+    fetchContras();
+  }, [fetchContras]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchData();
+    await fetchContras();
     setRefreshing(false);
-  }, [fetchData]);
+  }, [fetchContras]);
 
-  const handleItemPress = (item) => {
-    setSelectedItem(item);
+  const handleContraPress = (contra) => {
+    setSelectedContra(contra);
     setShowDetailModal(true);
   };
 
   const handleSearch = (query) => {
     setSearchQuery(query);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Unknown';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
   };
 
   const formatCurrency = (amount) => {
@@ -87,32 +82,35 @@ export default function InventoryItemsScreen() {
     }).format(amount || 0);
   };
 
-  const getStockStatus = (quantity) => {
-    if (quantity <= 0) return { status: 'Out of Stock', color: '#ef4444' };
-    if (quantity <= 10) return { status: 'Low Stock', color: '#f59e0b' };
-    return { status: 'In Stock', color: '#10b981' };
+  const getContraStatusColor = (status) => {
+    const colors = {
+      'posted': '#10b981',
+      'draft': '#6b7280',
+      'cancelled': '#ef4444',
+    };
+    return colors[status?.toLowerCase()] || '#6b7280';
+  };
+
+  const getContraStatusIcon = (status) => {
+    const icons = {
+      'posted': 'checkmark-circle',
+      'draft': 'document-text',
+      'cancelled': 'close-circle',
+    };
+    return icons[status?.toLowerCase()] || 'document-text';
   };
 
   const filterOptions = [
-    { key: 'all', label: 'All Items', icon: 'list-outline' },
-    { key: 'active', label: 'Active', icon: 'checkmark-circle-outline' },
-    { key: 'inactive', label: 'Inactive', icon: 'close-circle-outline' },
-    { key: 'low_stock', label: 'Low Stock', icon: 'warning-outline' },
+    { key: 'all', label: 'All Contras', icon: 'list-outline' },
+    { key: 'posted', label: 'Posted', icon: 'checkmark-circle-outline' },
+    { key: 'draft', label: 'Draft', icon: 'document-text-outline' },
   ];
-
-  const filteredItems = items.filter(item => {
-    if (filter === 'low_stock') {
-      return (item.quantity_on_hand || 0) <= 10;
-    }
-    return true;
-  });
 
   return (
     <View style={styles.container}>
       <TopBar 
-        title="Inventory Items" 
+        title="Contra Entries" 
         onMenuPress={handleMenuPress}
-        onSearchPress={() => {}}
       />
       
       <ScrollView 
@@ -122,13 +120,21 @@ export default function InventoryItemsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
+        {/* Header Section */}
+        <View style={styles.headerSection}>
+          <Text style={styles.sectionTitle}>Contra Entries</Text>
+          <Text style={styles.sectionSubtitle}>
+            Manage bank and cash transfer transactions
+          </Text>
+        </View>
+
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <View style={styles.searchBar}>
             <Ionicons name="search" size={20} color="#64748b" />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search items by name or code..."
+              placeholder="Search contra entries by reference..."
               value={searchQuery}
               onChangeText={handleSearch}
               placeholderTextColor="#9ca3af"
@@ -174,146 +180,164 @@ export default function InventoryItemsScreen() {
         {/* Stats Cards */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <View style={styles.statIcon}>
-              <Ionicons name="cube" size={24} color="#3e60ab" />
+            <View style={[styles.statIcon, { backgroundColor: '#dbeafe' }]}>
+              <Ionicons name="swap-horizontal" size={24} color="#3e60ab" />
             </View>
             <View style={styles.statInfo}>
-              <Text style={styles.statValue}>{items.length}</Text>
-              <Text style={styles.statLabel}>Total Items</Text>
+              <Text style={styles.statValue}>{contras.length}</Text>
+              <Text style={styles.statLabel}>Total Contras</Text>
             </View>
           </View>
           
           <View style={styles.statCard}>
-            <View style={styles.statIcon}>
+            <View style={[styles.statIcon, { backgroundColor: '#d1fae5' }]}>
               <Ionicons name="checkmark-circle" size={24} color="#10b981" />
             </View>
             <View style={styles.statInfo}>
               <Text style={styles.statValue}>
-                {items.filter(item => item.is_active).length}
+                {contras.filter(c => c.status === 'posted').length}
               </Text>
-              <Text style={styles.statLabel}>Active</Text>
+              <Text style={styles.statLabel}>Posted</Text>
             </View>
           </View>
           
           <View style={styles.statCard}>
-            <View style={styles.statIcon}>
-              <Ionicons name="warning" size={24} color="#f59e0b" />
+            <View style={[styles.statIcon, { backgroundColor: '#f3f4f6' }]}>
+              <Ionicons name="document-text" size={24} color="#6b7280" />
             </View>
             <View style={styles.statInfo}>
               <Text style={styles.statValue}>
-                {items.filter(item => (item.quantity_on_hand || 0) <= 10).length}
+                {contras.filter(c => c.status === 'draft').length}
               </Text>
-              <Text style={styles.statLabel}>Low Stock</Text>
+              <Text style={styles.statLabel}>Draft</Text>
             </View>
           </View>
         </View>
 
-        {/* Items List */}
+        {/* Contras List */}
         {loading ? (
           <View style={styles.loadingContainer}>
             <View style={styles.loadingCard}>
               <View style={styles.spinner} />
-              <Text style={styles.loadingText}>Loading inventory items...</Text>
+              <Text style={styles.loadingText}>Loading contra entries...</Text>
             </View>
           </View>
-        ) : filteredItems.length === 0 ? (
+        ) : contras.length === 0 ? (
           <View style={styles.emptyContainer}>
             <View style={styles.emptyCard}>
               <View style={styles.emptyIcon}>
-                <Ionicons name="cube-outline" size={64} color="#94a3b8" />
+                <Ionicons name="swap-horizontal-outline" size={64} color="#94a3b8" />
               </View>
-              <Text style={styles.emptyTitle}>No Items Found</Text>
+              <Text style={styles.emptyTitle}>No Contra Entries Found</Text>
               <Text style={styles.emptySubtitle}>
                 {searchQuery 
-                  ? `No items found matching "${searchQuery}"`
-                  : filter === 'low_stock' 
-                  ? 'No items with low stock'
-                  : 'No inventory items available'
+                  ? `No contra entries found matching "${searchQuery}"`
+                  : 'No contra entries have been created yet'
                 }
               </Text>
             </View>
           </View>
         ) : (
-          <View style={styles.itemsList}>
-            {filteredItems.map((item, index) => {
-              const stockStatus = getStockStatus(item.quantity_on_hand);
-              return (
-                <TouchableOpacity
-                  key={item.id || index}
-                  style={styles.itemCard}
-                  onPress={() => handleItemPress(item)}
-                  activeOpacity={0.95}
-                >
-                  <View style={styles.itemCardGradient}>
-                    <View style={styles.itemCardContent}>
-                      <View style={styles.itemCardHeader}>
-                        <View style={styles.itemIcon}>
-                          <Ionicons name="cube" size={24} color="#3e60ab" />
-                        </View>
-                        <View style={styles.itemInfo}>
-                          <Text style={styles.itemName}>
-                            {item.item_name || 'Unnamed Item'}
-                          </Text>
-                          <Text style={styles.itemCode}>
-                            Code: {item.item_code || 'N/A'}
-                          </Text>
-                        </View>
-                        <View style={styles.itemStatus}>
-                          <View style={[
-                            styles.statusBadge,
-                            { backgroundColor: stockStatus.color }
-                          ]}>
-                            <Text style={styles.statusText}>{stockStatus.status}</Text>
-                          </View>
-                        </View>
+          <View style={styles.contrasList}>
+            {contras.map((contra, index) => (
+              <TouchableOpacity
+                key={contra.id || index}
+                style={styles.contraCard}
+                onPress={() => handleContraPress(contra)}
+                activeOpacity={0.95}
+              >
+                <View style={styles.contraCardGradient}>
+                  <View style={styles.contraCardContent}>
+                    <View style={styles.contraCardHeader}>
+                      <View style={[
+                        styles.contraIcon,
+                        { backgroundColor: getContraStatusColor(contra.status) + '20' }
+                      ]}>
+                        <Ionicons 
+                          name={getContraStatusIcon(contra.status)} 
+                          size={24} 
+                          color={getContraStatusColor(contra.status)} 
+                        />
                       </View>
-                      
-                      <View style={styles.itemCardBody}>
-                        <View style={styles.itemDetail}>
-                          <Ionicons name="layers-outline" size={16} color="#64748b" />
-                          <Text style={styles.itemDetailText}>
-                            Quantity: {item.quantity_on_hand || 0} {item.uqc || 'units'}
-                          </Text>
-                        </View>
-                        <View style={styles.itemDetail}>
-                          <Ionicons name="pricetag-outline" size={16} color="#64748b" />
-                          <Text style={styles.itemDetailText}>
-                            Avg Cost: {formatCurrency(item.avg_cost)}
-                          </Text>
-                        </View>
-                        <View style={styles.itemDetail}>
-                          <Ionicons name="receipt-outline" size={16} color="#64748b" />
-                          <Text style={styles.itemDetailText}>
-                            HSN: {item.hsn_sac_code || 'N/A'}
-                          </Text>
-                        </View>
+                      <View style={styles.contraInfo}>
+                        <Text style={styles.contraTitle}>
+                          {contra.reference || 'Contra Entry'}
+                        </Text>
+                        <Text style={styles.contraDate}>
+                          {formatDate(contra.voucher_date)}
+                        </Text>
                       </View>
-
-                      <View style={styles.itemCardFooter}>
-                        <View style={styles.itemValue}>
-                          <Text style={styles.itemValueAmount}>
-                            {formatCurrency((item.quantity_on_hand || 0) * (item.avg_cost || 0))}
+                      <View style={styles.contraStatus}>
+                        <View style={[
+                          styles.statusBadge,
+                          { backgroundColor: getContraStatusColor(contra.status) }
+                        ]}>
+                          <Text style={styles.statusText}>
+                            {contra.status?.toUpperCase() || 'DRAFT'}
                           </Text>
-                          <Text style={styles.itemValueLabel}>Total Value</Text>
                         </View>
-                        <TouchableOpacity style={styles.itemAction}>
-                          <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
-                        </TouchableOpacity>
                       </View>
                     </View>
                     
-                    {/* Decorative elements */}
-                    <View style={[styles.decorativeCircle, { backgroundColor: stockStatus.color + '20' }]} />
-                    <View style={[styles.decorativeLine, { backgroundColor: stockStatus.color }]} />
+                    <View style={styles.contraCardBody}>
+                      <View style={styles.contraDetail}>
+                        <Ionicons name="document-text-outline" size={16} color="#64748b" />
+                        <Text style={styles.contraDetailText}>
+                          Voucher No: {contra.voucher_number || 'N/A'}
+                        </Text>
+                      </View>
+                      <View style={styles.contraDetail}>
+                        <Ionicons name="arrow-forward-outline" size={16} color="#64748b" />
+                        <Text style={styles.contraDetailText}>
+                          From: {contra.from_account || 'N/A'}
+                        </Text>
+                      </View>
+                      <View style={styles.contraDetail}>
+                        <Ionicons name="arrow-back-outline" size={16} color="#64748b" />
+                        <Text style={styles.contraDetailText}>
+                          To: {contra.to_account || 'N/A'}
+                        </Text>
+                      </View>
+                      {contra.narration && (
+                        <View style={styles.contraDetail}>
+                          <Ionicons name="chatbox-outline" size={16} color="#64748b" />
+                          <Text style={styles.contraDetailText} numberOfLines={1}>
+                            {contra.narration}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    <View style={styles.contraCardFooter}>
+                      <View style={styles.contraAmount}>
+                        <Text style={styles.contraAmountValue}>
+                          {formatCurrency(contra.total_amount)}
+                        </Text>
+                        <Text style={styles.contraAmountLabel}>Transfer Amount</Text>
+                      </View>
+                      <TouchableOpacity style={styles.contraAction}>
+                        <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </TouchableOpacity>
-              );
-            })}
+                  
+                  {/* Decorative elements */}
+                  <View style={[
+                    styles.decorativeCircle, 
+                    { backgroundColor: getContraStatusColor(contra.status) + '20' }
+                  ]} />
+                  <View style={[
+                    styles.decorativeLine, 
+                    { backgroundColor: getContraStatusColor(contra.status) }
+                  ]} />
+                </View>
+              </TouchableOpacity>
+            ))}
           </View>
         )}
       </ScrollView>
 
-      {/* Item Detail Modal */}
+      {/* Contra Detail Modal */}
       <Modal
         visible={showDetailModal}
         animationType="slide"
@@ -323,13 +347,20 @@ export default function InventoryItemsScreen() {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <View style={styles.modalHeaderContent}>
-              <View style={styles.modalIcon}>
-                <Ionicons name="cube" size={20} color="#3e60ab" />
+              <View style={[
+                styles.modalIcon,
+                { backgroundColor: selectedContra ? getContraStatusColor(selectedContra.status) + '20' : '#dbeafe' }
+              ]}>
+                <Ionicons 
+                  name={selectedContra ? getContraStatusIcon(selectedContra.status) : 'swap-horizontal'} 
+                  size={20} 
+                  color={selectedContra ? getContraStatusColor(selectedContra.status) : '#3e60ab'} 
+                />
               </View>
               <View>
-                <Text style={styles.modalTitle}>Item Details</Text>
+                <Text style={styles.modalTitle}>Contra Entry Details</Text>
                 <Text style={styles.modalSubtitle}>
-                  {selectedItem?.item_name || 'Item Information'}
+                  {selectedContra?.reference || 'Contra Entry'}
                 </Text>
               </View>
             </View>
@@ -341,62 +372,61 @@ export default function InventoryItemsScreen() {
             </TouchableOpacity>
           </View>
           
-          {selectedItem && (
+          {selectedContra && (
             <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
               <View style={styles.detailCard}>
-                <Text style={styles.detailCardTitle}>Basic Information</Text>
+                <Text style={styles.detailCardTitle}>Entry Information</Text>
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Item Name:</Text>
-                  <Text style={styles.detailValue}>{selectedItem.item_name || 'N/A'}</Text>
+                  <Text style={styles.detailLabel}>Voucher Number:</Text>
+                  <Text style={styles.detailValue}>{selectedContra.voucher_number || 'N/A'}</Text>
                 </View>
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Item Code:</Text>
-                  <Text style={styles.detailValue}>{selectedItem.item_code || 'N/A'}</Text>
+                  <Text style={styles.detailLabel}>Date:</Text>
+                  <Text style={styles.detailValue}>{formatDate(selectedContra.voucher_date)}</Text>
                 </View>
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>HSN/SAC Code:</Text>
-                  <Text style={styles.detailValue}>{selectedItem.hsn_sac_code || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Unit of Measure:</Text>
-                  <Text style={styles.detailValue}>{selectedItem.uqc || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>GST Rate:</Text>
-                  <Text style={styles.detailValue}>{selectedItem.gst_rate || 0}%</Text>
-                </View>
-              </View>
-
-              <View style={styles.detailCard}>
-                <Text style={styles.detailCardTitle}>Stock Information</Text>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Quantity on Hand:</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedItem.quantity_on_hand || 0} {selectedItem.uqc || 'units'}
-                  </Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Average Cost:</Text>
-                  <Text style={styles.detailValue}>{formatCurrency(selectedItem.avg_cost)}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Total Value:</Text>
-                  <Text style={styles.detailValue}>
-                    {formatCurrency((selectedItem.quantity_on_hand || 0) * (selectedItem.avg_cost || 0))}
-                  </Text>
+                  <Text style={styles.detailLabel}>Reference:</Text>
+                  <Text style={styles.detailValue}>{selectedContra.reference || 'N/A'}</Text>
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Status:</Text>
                   <View style={[
                     styles.statusBadge,
-                    { backgroundColor: selectedItem.is_active ? '#10b981' : '#ef4444' }
+                    { backgroundColor: getContraStatusColor(selectedContra.status) }
                   ]}>
                     <Text style={styles.statusText}>
-                      {selectedItem.is_active ? 'Active' : 'Inactive'}
+                      {selectedContra.status?.toUpperCase() || 'DRAFT'}
                     </Text>
                   </View>
                 </View>
               </View>
+
+              <View style={styles.detailCard}>
+                <Text style={styles.detailCardTitle}>Transfer Details</Text>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>From Account:</Text>
+                  <Text style={styles.detailValue}>{selectedContra.from_account || 'N/A'}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>To Account:</Text>
+                  <Text style={styles.detailValue}>{selectedContra.to_account || 'N/A'}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Transfer Amount:</Text>
+                  <Text style={styles.detailValue}>{formatCurrency(selectedContra.total_amount)}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Transfer Type:</Text>
+                  <Text style={styles.detailValue}>{selectedContra.transfer_type || 'Bank Transfer'}</Text>
+                </View>
+              </View>
+
+              {selectedContra.narration && (
+                <View style={styles.detailCard}>
+                  <Text style={styles.detailCardTitle}>Narration</Text>
+                  <Text style={styles.narrationText}>{selectedContra.narration}</Text>
+                </View>
+              )}
             </ScrollView>
           )}
         </View>
@@ -415,6 +445,24 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 100,
+  },
+  headerSection: {
+    padding: 20,
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 8,
+    fontFamily: 'Agency',
+    letterSpacing: -0.5,
+  },
+  sectionSubtitle: {
+    fontSize: 16,
+    color: '#64748b',
+    fontFamily: 'Agency',
+    lineHeight: 24,
   },
   searchContainer: {
     paddingHorizontal: 20,
@@ -464,9 +512,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   filterTabActive: {
-    backgroundColor: '#3e60ab',
-    borderColor: '#3e60ab',
-    shadowColor: '#3e60ab',
+    backgroundColor: '#f59e0b',
+    borderColor: '#f59e0b',
+    shadowColor: '#f59e0b',
     shadowOpacity: 0.3,
   },
   filterTabText: {
@@ -505,7 +553,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: '#f8fafc',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -548,7 +595,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 3,
     borderColor: '#e2e8f0',
-    borderTopColor: '#3e60ab',
+    borderTopColor: '#f59e0b',
     marginBottom: 12,
   },
   loadingText: {
@@ -595,12 +642,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
-  itemsList: {
+  contrasList: {
     paddingHorizontal: 20,
     gap: 16,
     marginBottom: 24,
   },
-  itemCard: {
+  contraCard: {
     backgroundColor: 'white',
     borderRadius: 20,
     shadowColor: '#000',
@@ -612,24 +659,23 @@ const styles = StyleSheet.create({
     borderColor: '#f1f5f9',
     overflow: 'hidden',
   },
-  itemCardGradient: {
+  contraCardGradient: {
     position: 'relative',
     padding: 20,
   },
-  itemCardContent: {
+  contraCardContent: {
     position: 'relative',
     zIndex: 2,
   },
-  itemCardHeader: {
+  contraCardHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: 16,
   },
-  itemIcon: {
+  contraIcon: {
     width: 56,
     height: 56,
     borderRadius: 16,
-    backgroundColor: '#dbeafe',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -639,11 +685,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  itemInfo: {
+  contraInfo: {
     flex: 1,
     paddingRight: 12,
   },
-  itemName: {
+  contraTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#0f172a',
@@ -652,15 +698,15 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     lineHeight: 22,
   },
-  itemCode: {
+  contraDate: {
     fontSize: 14,
     color: '#64748b',
     fontFamily: 'Agency',
     lineHeight: 18,
   },
-  itemStatus: {
+  contraStatus: {
     alignItems: 'flex-end',
-    minWidth: 80,
+    minWidth: 70,
   },
   statusBadge: {
     paddingHorizontal: 10,
@@ -671,33 +717,33 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-    minWidth: 70,
+    minWidth: 60,
     alignItems: 'center',
   },
   statusText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
     color: 'white',
     fontFamily: 'Agency',
   },
-  itemCardBody: {
+  contraCardBody: {
     marginBottom: 16,
     gap: 8,
   },
-  itemDetail: {
+  contraDetail: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingVertical: 2,
   },
-  itemDetailText: {
+  contraDetailText: {
     fontSize: 14,
     color: '#64748b',
     fontFamily: 'Agency',
     flex: 1,
     lineHeight: 18,
   },
-  itemCardFooter: {
+  contraCardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -705,22 +751,22 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#f1f5f9',
   },
-  itemValue: {
+  contraAmount: {
     flex: 1,
   },
-  itemValueAmount: {
+  contraAmountValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#3e60ab',
+    color: '#f59e0b',
     fontFamily: 'Agency',
   },
-  itemValueLabel: {
+  contraAmountLabel: {
     fontSize: 12,
     color: '#64748b',
     fontFamily: 'Agency',
     marginTop: 2,
   },
-  itemAction: {
+  contraAction: {
     width: 32,
     height: 32,
     borderRadius: 8,
@@ -775,7 +821,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#dbeafe',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -841,5 +886,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     flex: 1,
     fontFamily: 'Agency',
+  },
+  narrationText: {
+    fontSize: 14,
+    color: '#0f172a',
+    fontFamily: 'Agency',
+    lineHeight: 20,
   },
 });

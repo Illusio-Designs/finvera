@@ -5,6 +5,7 @@ import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { reportsAPI } from '../../../lib/api';
+import { useNavigation } from '@react-navigation/native';
 
 const REPORTS = [
   {
@@ -73,6 +74,7 @@ const REPORTS = [
 export default function ReportsScreen() {
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
+  const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
   const [showDateModal, setShowDateModal] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
@@ -114,11 +116,28 @@ export default function ReportsScreen() {
   }, []);
 
   const handleReportPress = (report) => {
-    if (report.hasDateRange) {
-      setSelectedReport(report);
-      setShowDateModal(true);
+    // Map report IDs to screen names
+    const screenMap = {
+      'balance-sheet': 'BalanceSheet',
+      'profit-loss': 'ProfitLoss',
+      'trial-balance': 'Reports', // Keep on same screen for now
+      'ledger-statement': 'Reports', // Keep on same screen for now
+      'stock-ledger': 'Reports', // Keep on same screen for now
+      'stock-summary': 'Reports', // Keep on same screen for now
+    };
+
+    const screenName = screenMap[report.id];
+    
+    if (screenName && screenName !== 'Reports') {
+      navigation.navigate(screenName);
     } else {
-      generateReport(report, {});
+      // Original logic for reports that don't have dedicated screens yet
+      if (report.hasDateRange) {
+        setSelectedReport(report);
+        setShowDateModal(true);
+      } else {
+        generateReport(report, {});
+      }
     }
   };
 

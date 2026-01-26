@@ -46,11 +46,11 @@ export default function TDSScreen() {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, filter, showNotification]);
+  }, [searchQuery, filter]); // Removed showNotification from dependencies
 
   useEffect(() => {
     fetchTDSData();
-  }, [fetchTDSData]);
+  }, [searchQuery, filter]); // Changed to depend on searchQuery and filter directly
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

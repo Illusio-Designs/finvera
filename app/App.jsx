@@ -54,6 +54,18 @@ import ProfitLossScreen from './src/screens/client/reports/ProfitLossScreen.jsx'
 
 // Phase 5: Extended Vouchers Screens
 import PaymentScreen from './src/screens/client/vouchers/PaymentScreen.jsx';
+import ReceiptScreen from './src/screens/client/vouchers/ReceiptScreen.jsx';
+import JournalScreen from './src/screens/client/vouchers/JournalScreen.jsx';
+import ContraScreen from './src/screens/client/vouchers/ContraScreen.jsx';
+import DebitNoteScreen from './src/screens/client/vouchers/DebitNoteScreen.jsx';
+import CreditNoteScreen from './src/screens/client/vouchers/CreditNoteScreen.jsx';
+
+// Phase 5: Tools Screens
+import TallyImportScreen from './src/screens/client/tools/TallyImportScreen.jsx';
+import PlansScreen from './src/screens/client/business/PlansScreen.jsx';
+import SubscribeScreen from './src/screens/client/business/SubscribeScreen.jsx';
+import ReviewScreen from './src/screens/client/business/ReviewScreen.jsx';
+import LoanScreen from './src/screens/client/business/LoanScreen.jsx';
 
 // Loading Screen
 import LoadingScreen from './src/screens/LoadingScreen.jsx';
@@ -174,6 +186,20 @@ function AppNavigator() {
             
             {/* Phase 5: Extended Vouchers Screens */}
             <Stack.Screen name="Payment" component={PaymentScreen} />
+            <Stack.Screen name="Receipt" component={ReceiptScreen} />
+            <Stack.Screen name="Journal" component={JournalScreen} />
+            <Stack.Screen name="Contra" component={ContraScreen} />
+            <Stack.Screen name="DebitNote" component={DebitNoteScreen} />
+            <Stack.Screen name="CreditNote" component={CreditNoteScreen} />
+            
+            {/* Phase 5: Tools Screens */}
+            <Stack.Screen name="TallyImport" component={TallyImportScreen} />
+            
+            {/* Phase 6: Business Services Screens */}
+            <Stack.Screen name="Plans" component={PlansScreen} />
+            <Stack.Screen name="Subscribe" component={SubscribeScreen} />
+            <Stack.Screen name="Review" component={ReviewScreen} />
+            <Stack.Screen name="Loan" component={LoanScreen} />
           </>
         ) : (
           <>

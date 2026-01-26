@@ -6,6 +6,7 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { accountingAPI, voucherAPI } from '../../../lib/api';
 import { formatCurrency } from '../../../utils/businessLogic';
+import { useNavigation } from '@react-navigation/native';
 
 const VOUCHER_TYPES = [
   { value: 'sales_invoice', label: 'Sales Invoice', icon: 'trending-up', color: '#10b981' },
@@ -25,6 +26,7 @@ const VOUCHER_TYPES = [
 export default function VouchersScreen() {
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
+  const navigation = useNavigation();
   const [vouchers, setVouchers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -73,11 +75,33 @@ export default function VouchersScreen() {
   };
 
   const handleCreateVoucher = (voucherType) => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: `Create ${voucherType.label} functionality will be available soon`
-    });
+    // Map voucher types to screen names
+    const screenMap = {
+      'payment': 'Payment',
+      'receipt': 'Receipt', 
+      'journal': 'Journal',
+      'contra': 'Contra',
+      'debit_note': 'DebitNote',
+      'credit_note': 'CreditNote',
+      'sales_invoice': 'Vouchers', // For now, redirect to main vouchers
+      'purchase_invoice': 'Vouchers', // For now, redirect to main vouchers
+      'gst_payment': 'Vouchers', // For now, redirect to main vouchers
+      'gst_utilization': 'Vouchers', // For now, redirect to main vouchers
+      'tds_payment': 'Vouchers', // For now, redirect to main vouchers
+      'tds_settlement': 'Vouchers', // For now, redirect to main vouchers
+    };
+
+    const screenName = screenMap[voucherType.value];
+    
+    if (screenName && screenName !== 'Vouchers') {
+      navigation.navigate(screenName);
+    } else {
+      showNotification({
+        type: 'info',
+        title: 'Coming Soon',
+        message: `Create ${voucherType.label} functionality will be available soon`
+      });
+    }
   };
 
   const getStatusColor = (status) => {
