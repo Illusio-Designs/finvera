@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import TopBar from '../../components/navigation/TopBar';
-import { useDrawer } from '../../contexts/DrawerContext.jsx';
+import TopBar from '../../../components/navigation/TopBar';
+import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 
-export default function VouchersScreen() {
+export default function GSTScreen() {
   const navigation = useNavigation();
   const { openDrawer } = useDrawer();
 
@@ -13,18 +13,11 @@ export default function VouchersScreen() {
     openDrawer();
   };
 
-  const handleSearchPress = () => {
-    console.log('Search pressed');
-  };
-
-  const voucherTypes = [];
-
   return (
     <View style={styles.container}>
       <TopBar 
-        title="Vouchers" 
+        title="GST Management" 
         onMenuPress={handleMenuPress}
-        onSearchPress={handleSearchPress}
       />
       
       <ScrollView 
@@ -32,10 +25,10 @@ export default function VouchersScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Voucher Management</Text>
+          <Text style={styles.sectionTitle}>GST Management</Text>
           <View style={styles.emptyState}>
-            <Ionicons name="document-outline" size={48} color="#9ca3af" />
-            <Text style={styles.emptyText}>Connect to backend to load voucher data</Text>
+            <Ionicons name="receipt-outline" size={48} color="#9ca3af" />
+            <Text style={styles.emptyText}>Connect to backend to load GST data</Text>
           </View>
         </View>
       </ScrollView>

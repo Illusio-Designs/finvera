@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import TopBar from '../../components/navigation/TopBar';
-import { useDrawer } from '../../contexts/DrawerContext.jsx';
-import { notificationAPI } from '../../lib/api';
+import TopBar from '../../../components/navigation/TopBar';
+import { useDrawer } from '../../../contexts/DrawerContext.jsx';
+import { useNotification } from '../../../contexts/NotificationContext';
+import { notificationAPI } from '../../../lib/api';
 
 export default function NotificationsScreen() {
   const navigation = useNavigation();
   const { openDrawer } = useDrawer();
+  const { showNotification } = useNotification();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -16,10 +18,6 @@ export default function NotificationsScreen() {
 
   const handleMenuPress = () => {
     openDrawer();
-  };
-
-  const handleSearchPress = () => {
-    console.log('Search pressed');
   };
 
   const fetchNotifications = useCallback(async () => {
@@ -32,7 +30,7 @@ export default function NotificationsScreen() {
       setNotifications(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Notifications fetch error:', error);
-      Alert.alert('Error', 'Failed to load notifications');
+      showNotification('Failed to load notifications', 'error');
       setNotifications([]);
     } finally {
       setLoading(false);
@@ -62,7 +60,7 @@ export default function NotificationsScreen() {
           )
         );
       }
-      Alert.alert('Notification', notification.message || notification.title);
+      showNotification(notification.message || notification.title, 'info');
     } catch (error) {
       console.error('Mark as read error:', error);
     }
@@ -74,10 +72,10 @@ export default function NotificationsScreen() {
       setNotifications(prev => 
         prev.map(n => ({ ...n, read_at: new Date().toISOString() }))
       );
-      Alert.alert('Success', 'All notifications marked as read');
+      showNotification('All notifications marked as read', 'success');
     } catch (error) {
       console.error('Mark all as read error:', error);
-      Alert.alert('Error', 'Failed to mark all notifications as read');
+      showNotification('Failed to mark all notifications as read', 'error');
     }
   };
 
@@ -141,7 +139,6 @@ export default function NotificationsScreen() {
       <TopBar 
         title="Notifications" 
         onMenuPress={handleMenuPress}
-        onSearchPress={handleSearchPress}
       />
       
       <ScrollView 

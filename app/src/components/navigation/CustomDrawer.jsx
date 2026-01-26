@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
@@ -17,12 +17,34 @@ export default function CustomDrawer({ visible, onClose }) {
     }
   };
 
+  // Get user profile image or first letter
+  const getUserAvatar = () => {
+    if (user?.profile_image || user?.avatar) {
+      return (
+        <Image 
+          source={{ uri: user.profile_image || user.avatar }} 
+          style={styles.profileImage}
+          onError={() => {
+            // Fallback to initial if image fails to load
+            console.log('Profile image failed to load');
+          }}
+        />
+      );
+    } else {
+      return (
+        <Text style={styles.profileInitial}>
+          {(user?.name || user?.first_name || 'U').charAt(0).toUpperCase()}
+        </Text>
+      );
+    }
+  };
+
   const drawerSections = [
     {
       title: 'Main Navigation',
       items: [
         { name: 'Dashboard', icon: 'home-outline', color: '#3e60ab', screen: 'Dashboard' },
-        { name: 'Vouchers', icon: 'document-text-outline', color: '#10b981', screen: 'Vouchers' },
+        { name: 'Transactions', icon: 'document-text-outline', color: '#10b981', screen: 'Vouchers' },
         { name: 'Reports', icon: 'bar-chart-outline', color: '#f59e0b', screen: 'Reports' },
         { name: 'GST', icon: 'receipt-outline', color: '#8b5cf6', screen: 'GST' },
       ]
@@ -30,19 +52,28 @@ export default function CustomDrawer({ visible, onClose }) {
     {
       title: 'Business Management',
       items: [
-        { name: 'Ledgers', icon: 'folder-outline', color: '#10b981', screen: 'Ledgers' },
+        { name: 'Accounts', icon: 'folder-outline', color: '#10b981', screen: 'Ledgers' },
+        { name: 'Outstanding', icon: 'time-outline', color: '#f59e0b', screen: 'Outstanding' },
         { name: 'Inventory', icon: 'cube-outline', color: '#3e60ab', screen: 'Inventory' },
         { name: 'Companies', icon: 'business-outline', color: '#f59e0b', screen: 'Companies' },
-        { name: 'Support', icon: 'help-circle-outline', color: '#ef4444', screen: 'Support' },
+        { name: 'Branches', icon: 'location-outline', color: '#8b5cf6', screen: 'Branches' },
+        { name: 'Help & Support', icon: 'help-circle-outline', color: '#ef4444', screen: 'Support' },
       ]
     },
     {
-      title: 'Account',
+      title: 'Invoices & Vouchers',
+      items: [
+        { name: 'Sales Invoices', icon: 'receipt-outline', color: '#10b981', screen: 'SalesInvoice' },
+        { name: 'Purchase Invoices', icon: 'card-outline', color: '#ef4444', screen: 'PurchaseInvoice' },
+      ]
+    },
+    {
+      title: 'Your Account',
       items: [
         { name: 'Profile', icon: 'person-outline', color: '#8b5cf6', screen: 'Profile' },
         { name: 'Settings', icon: 'settings-outline', color: '#6b7280', screen: 'Settings' },
         { name: 'Notifications', icon: 'notifications-outline', color: '#f59e0b', screen: 'Notifications' },
-        { name: 'Logout', icon: 'log-out-outline', color: '#ef4444', action: 'logout' },
+        { name: 'Sign Out', icon: 'log-out-outline', color: '#ef4444', action: 'logout' },
       ]
     }
   ];
@@ -62,17 +93,24 @@ export default function CustomDrawer({ visible, onClose }) {
             <View style={styles.headerContent}>
               <View style={styles.profileSection}>
                 <View style={styles.profileAvatar}>
-                  <Text style={styles.profileInitial}>
-                    {(user?.name || 'U').charAt(0).toUpperCase()}
-                  </Text>
+                  {getUserAvatar()}
                 </View>
                 <View style={styles.profileInfo}>
-                  <Text style={styles.profileName}>{user?.name || 'User'}</Text>
-                  <Text style={styles.profileEmail}>{user?.email || 'user@example.com'}</Text>
+                  <Text style={styles.profileName}>
+                    {user?.name || user?.first_name || 'User'}
+                  </Text>
+                  <Text style={styles.profileEmail}>
+                    {user?.email || 'user@example.com'}
+                  </Text>
+                  {user?.company_name && (
+                    <Text style={styles.profileCompany}>
+                      {user.company_name}
+                    </Text>
+                  )}
                 </View>
               </View>
               <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-                <Ionicons name="close" size={24} color="#6b7280" />
+                <Ionicons name="close" size={24} color="white" />
               </TouchableOpacity>
             </View>
           </View>
@@ -142,18 +180,26 @@ const styles = StyleSheet.create({
   },
   profileSection: {
     flex: 1,
+    paddingRight: 12,
   },
   profileAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  profileImage: {
+    width: 66,
+    height: 66,
+    borderRadius: 33,
   },
   profileInitial: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: 'white',
     fontFamily: 'Agency',
@@ -172,9 +218,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
     fontFamily: 'Agency',
+    marginBottom: 2,
+  },
+  profileCompany: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontFamily: 'Agency',
+    fontStyle: 'italic',
   },
   closeButton: {
-    padding: 4,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    alignSelf: 'flex-start',
   },
   content: {
     flex: 1,

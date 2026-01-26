@@ -1,36 +1,47 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNotification } from '../../contexts/NotificationContext';
 import { authAPI } from '../../lib/api';
 
 export default function ForgotPasswordScreen() {
   const navigation = useNavigation();
+  const { showNotification } = useNotification();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email address');
+      showNotification({
+        type: 'error',
+        title: 'Missing Information',
+        message: 'Please enter your email address'
+      });
       return;
     }
 
     if (!isValidEmail(email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      showNotification({
+        type: 'error',
+        title: 'Invalid Email',
+        message: 'Please enter a valid email address'
+      });
       return;
     }
 
     try {
       setLoading(true);
       await authAPI.forgotPassword(email);
-      Alert.alert(
-        'Success',
-        'Password reset instructions have been sent to your email address.',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
+      showNotification({
+        type: 'success',
+        title: 'Email Sent',
+        message: 'Password reset instructions have been sent to your email address'
+      });
+      navigation.goBack();
     } catch (error) {
       console.error('Forgot password error:', error);
-      Alert.alert('Error', error.response?.data?.message || 'Failed to send reset email');
+      showNotification(error.response?.data?.message || 'Failed to send reset email', 'error');
     } finally {
       setLoading(false);
     }

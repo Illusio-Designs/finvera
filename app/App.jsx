@@ -15,19 +15,19 @@ import ForgotPasswordScreen from './src/screens/auth/ForgotPasswordScreen.jsx';
 import ResetPasswordScreen from './src/screens/auth/ResetPasswordScreen.jsx';
 
 // Client Screens
-import DashboardScreen from './src/screens/client/DashboardScreen.jsx';
-import VouchersScreen from './src/screens/client/VouchersScreen.jsx';
-import ReportsScreen from './src/screens/client/ReportsScreen.jsx';
-import GSTScreen from './src/screens/client/GSTScreen.jsx';
-import MoreScreen from './src/screens/client/MoreScreen.jsx';
-import ProfileScreen from './src/screens/client/ProfileScreen.jsx';
-import SettingsScreen from './src/screens/client/SettingsScreen.jsx';
-import NotificationPreferencesScreen from './src/screens/client/NotificationPreferencesScreen.jsx';
-import LedgersScreen from './src/screens/client/LedgersScreen.jsx';
-import InventoryScreen from './src/screens/client/InventoryScreen.jsx';
-import SupportScreen from './src/screens/client/SupportScreen.jsx';
-import CompaniesScreen from './src/screens/client/CompaniesScreen.jsx';
-import NotificationsScreen from './src/screens/client/NotificationsScreen.jsx';
+import DashboardScreen from './src/screens/client/dashboard/DashboardScreen.jsx';
+import VouchersScreen from './src/screens/client/vouchers/VouchersScreen.jsx';
+import ReportsScreen from './src/screens/client/reports/ReportsScreen.jsx';
+import GSTScreen from './src/screens/client/gst/GSTScreen.jsx';
+import MoreScreen from './src/screens/client/profile/MoreScreen.jsx';
+import ProfileScreen from './src/screens/client/profile/ProfileScreen.jsx';
+import SettingsScreen from './src/screens/client/profile/SettingsScreen.jsx';
+import NotificationPreferencesScreen from './src/screens/client/profile/NotificationPreferencesScreen.jsx';
+import LedgersScreen from './src/screens/client/accounting/LedgersScreen.jsx';
+import InventoryScreen from './src/screens/client/inventory/InventoryScreen.jsx';
+import SupportScreen from './src/screens/client/business/SupportScreen.jsx';
+import CompaniesScreen from './src/screens/client/company/CompaniesScreen.jsx';
+import NotificationsScreen from './src/screens/client/tools/NotificationsScreen.jsx';
 
 // Loading Screen
 import LoadingScreen from './src/screens/LoadingScreen.jsx';

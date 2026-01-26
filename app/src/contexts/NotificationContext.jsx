@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import CustomNotification from '../components/ui/CustomNotification';
+import { setGlobalNotificationHandler } from '../services/globalNotificationService';
 
 const NotificationContext = createContext();
 
@@ -40,6 +41,12 @@ export const NotificationProvider = ({ children }) => {
       onActionPress,
     });
   };
+
+  // Register global notification handler
+  useEffect(() => {
+    setGlobalNotificationHandler(showNotification);
+    return () => setGlobalNotificationHandler(null);
+  }, []);
 
   const hideNotification = () => {
     setNotification(prev => ({

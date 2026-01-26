@@ -1,28 +1,66 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
+import SearchModal from '../ui/SearchModal';
 
-export default function TopBar({ title = 'Finvera', onMenuPress, onSearchPress }) {
+export default function TopBar({ 
+  title = 'Finvera', 
+  onMenuPress, 
+  onSearchPress,
+  showSearch = true, 
+  showBackButton = false, 
+  onBackPress 
+}) {
   const { user } = useAuth();
+  const [showSearchModal, setShowSearchModal] = useState(false);
+
+  const handleSearchPress = () => {
+    if (onSearchPress) {
+      onSearchPress();
+    } else {
+      setShowSearchModal(true);
+    }
+  };
+
+  const handleBackPress = () => {
+    if (onBackPress) {
+      onBackPress();
+    }
+  };
 
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
       <View style={styles.container}>
         <View style={styles.leftSection}>
-          <TouchableOpacity style={styles.menuButton} onPress={onMenuPress}>
-            <Ionicons name="menu" size={24} color="#3e60ab" />
-          </TouchableOpacity>
+          {showBackButton ? (
+            <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
+              <Ionicons name="arrow-back" size={24} color="#3e60ab" />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.menuButton} onPress={onMenuPress}>
+              <Ionicons name="menu" size={24} color="#3e60ab" />
+            </TouchableOpacity>
+          )}
           <Text style={styles.title}>{title}</Text>
         </View>
         
         <View style={styles.rightSection}>
-          <TouchableOpacity style={styles.searchButton} onPress={onSearchPress}>
-            <Ionicons name="search" size={24} color="#3e60ab" />
-          </TouchableOpacity>
+          {showSearch && (
+            <TouchableOpacity style={styles.searchButton} onPress={handleSearchPress}>
+              <Ionicons name="search" size={24} color="#3e60ab" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
+
+      {/* Search Modal */}
+      <SearchModal 
+        visible={showSearchModal}
+        onClose={() => setShowSearchModal(false)}
+        placeholder="Search ledgers, vouchers, inventory..."
+      />
     </>
   );
 }
@@ -50,6 +88,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   menuButton: {
+    padding: 8,
+    marginRight: 12,
+  },
+  backButton: {
     padding: 8,
     marginRight: 12,
   },

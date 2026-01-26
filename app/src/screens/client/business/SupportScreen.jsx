@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import TopBar from '../../components/navigation/TopBar';
-import { useDrawer } from '../../contexts/DrawerContext.jsx';
-import { clientSupportAPI } from '../../lib/api';
+import TopBar from '../../../components/navigation/TopBar';
+import { useDrawer } from '../../../contexts/DrawerContext.jsx';
+import { useNotification } from '../../../contexts/NotificationContext';
+import { clientSupportAPI } from '../../../lib/api';
 
 export default function SupportScreen() {
   const navigation = useNavigation();
   const { openDrawer } = useDrawer();
+  const { showNotification } = useNotification();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -16,10 +18,6 @@ export default function SupportScreen() {
 
   const handleMenuPress = () => {
     openDrawer();
-  };
-
-  const handleSearchPress = () => {
-    console.log('Search pressed');
   };
 
   const fetchTickets = useCallback(async () => {
@@ -32,7 +30,7 @@ export default function SupportScreen() {
       setTickets(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Support tickets fetch error:', error);
-      Alert.alert('Error', 'Failed to load support tickets');
+      showNotification('Failed to load support tickets', 'error');
       setTickets([]);
     } finally {
       setLoading(false);
@@ -50,11 +48,11 @@ export default function SupportScreen() {
   }, [fetchTickets]);
 
   const handleTicketPress = (ticket) => {
-    Alert.alert('Ticket Details', `View details for ticket #${ticket.ticket_number || ticket.id}`);
+    showNotification(`View details for ticket #${ticket.ticket_number || ticket.id}`, 'info');
   };
 
   const handleCreateTicket = () => {
-    Alert.alert('Create Ticket', 'Create new support ticket functionality will be available soon');
+    showNotification('Create new support ticket functionality will be available soon', 'info');
   };
 
   const filterOptions = [
@@ -120,7 +118,6 @@ export default function SupportScreen() {
       <TopBar 
         title="Support" 
         onMenuPress={handleMenuPress}
-        onSearchPress={handleSearchPress}
       />
       
       <ScrollView 
@@ -138,7 +135,7 @@ export default function SupportScreen() {
               <TouchableOpacity
                 key={index}
                 style={styles.categoryCard}
-                onPress={() => Alert.alert(category.title, 'This will open the support form')}
+                onPress={() => showNotification('This will open the support form', 'info')}
               >
                 <View style={[styles.categoryIcon, { backgroundColor: category.color }]}>
                   <Ionicons name={category.icon} size={20} color="white" />

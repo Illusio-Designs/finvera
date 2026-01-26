@@ -95,12 +95,64 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUser = (userData) => {
+    setUser(prev => ({ ...prev, ...userData }));
+  };
+
+  const updateProfile = async (profileData) => {
+    try {
+      const response = await authAPI.updateProfile(profileData);
+      if (response.data?.user) {
+        const updatedUser = response.data.user;
+        setUser(updatedUser);
+        await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+        return { success: true, user: updatedUser };
+      }
+      return { success: false, message: 'Failed to update profile' };
+    } catch (error) {
+      console.error('Profile update error:', error);
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Failed to update profile' 
+      };
+    }
+  };
+
+  const uploadProfileImage = async (imageUri) => {
+    try {
+      const formData = new FormData();
+      formData.append('image', {
+        uri: imageUri,
+        type: 'image/jpeg',
+        name: 'profile.jpg',
+      });
+
+      const response = await authAPI.uploadProfileImage(formData);
+      if (response.data?.user) {
+        const updatedUser = response.data.user;
+        setUser(updatedUser);
+        await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+        return { success: true, user: updatedUser };
+      }
+      return { success: false, message: 'Failed to upload image' };
+    } catch (error) {
+      console.error('Image upload error:', error);
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Failed to upload image' 
+      };
+    }
+  };
+
   const value = {
     user,
     token,
     loading,
     login,
     logout,
+    updateUser,
+    updateProfile,
+    uploadProfileImage,
     isAuthenticated: !!user && !!token,
   };
 

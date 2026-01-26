@@ -9,6 +9,14 @@ export const authAPI = {
   resetPassword: (token, password) => apiClient.post('/auth/reset-password', { token, password }),
   verifyToken: () => apiClient.get('/auth/verify'),
   refreshToken: () => apiClient.post('/auth/refresh'),
+  getProfile: () => apiClient.get('/auth/profile'),
+  updateProfile: (data) => apiClient.put('/auth/profile', data),
+  uploadProfileImage: (formData) => apiClient.post('/auth/profile/image', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  }),
+  changePassword: (data) => apiClient.post('/auth/change-password', data),
 };
 
 // User Profile APIs
@@ -190,6 +198,17 @@ export const finboxAPI = {
   checkEligibility: () => apiClient.get('/finbox/eligibility'),
   applyLoan: (data) => apiClient.post('/finbox/apply', data),
   loanStatus: () => apiClient.get('/finbox/status'),
+};
+
+// Search APIs
+export const searchAPI = {
+  universal: (params) => apiClient.get('/search', { params }),
+  ledgers: (query) => apiClient.get(`/search/ledgers?q=${encodeURIComponent(query)}`),
+  vouchers: (query) => apiClient.get(`/search/vouchers?q=${encodeURIComponent(query)}`),
+  inventory: (query) => apiClient.get(`/search/items?q=${encodeURIComponent(query)}`),
+  companies: (query) => apiClient.get(`/search/companies?q=${encodeURIComponent(query)}`),
+  support: (query) => apiClient.get(`/search/support?q=${encodeURIComponent(query)}`),
+  notifications: (query) => apiClient.get(`/search/notifications?q=${encodeURIComponent(query)}`),
 };
 
 // Legacy export for backward compatibility

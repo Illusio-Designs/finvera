@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useAuth } from '../../contexts/AuthContext.jsx';
-import { useDrawer } from '../../contexts/DrawerContext.jsx';
-import { accountingAPI, companyAPI } from '../../lib/api.js';
-import { formatCurrency } from '../../utils/businessLogic.js';
+import { useAuth } from '../../../contexts/AuthContext.jsx';
+import { useDrawer } from '../../../contexts/DrawerContext.jsx';
+import { accountingAPI, companyAPI } from '../../../lib/api.js';
+import { formatCurrency } from '../../../utils/businessLogic.js';
 import { Ionicons } from '@expo/vector-icons';
-import TopBar from '../../components/navigation/TopBar';
+import TopBar from '../../../components/navigation/TopBar';
 
 export default function DashboardScreen() {
   const navigation = useNavigation();
@@ -30,10 +30,6 @@ export default function DashboardScreen() {
 
   const handleNavigateToScreen = (screenName) => {
     navigation.navigate(screenName);
-  };
-
-  const handleSearchPress = () => {
-    console.log('Search pressed');
   };
 
   const fetchDashboardData = useCallback(async () => {
@@ -138,7 +134,6 @@ export default function DashboardScreen() {
       <TopBar 
         title={`Welcome, ${companyName}`} 
         onMenuPress={handleMenuPress}
-        onSearchPress={handleSearchPress}
       />
       
       <ScrollView 

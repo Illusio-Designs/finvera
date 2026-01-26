@@ -1,6 +1,6 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert } from 'react-native';
+import { showGlobalError } from '../services/globalNotificationService';
 
 // Get the correct API URL for development
 const getDevApiUrl = () => {
@@ -67,15 +67,21 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       // Token expired, redirect to login
       await AsyncStorage.multiRemove(['token', 'user']);
-      // Navigate to login screen
+      showGlobalError('Session Expired', 'Please log in again to continue.');
+    } else if (error.response?.status === 403) {
+      showGlobalError('Access Denied', 'You don\'t have permission to access this feature.');
+    } else if (error.response?.status === 404) {
+      showGlobalError('Not Found', 'The requested information could not be found.');
     } else if (error.response?.status >= 500) {
-      Alert.alert('Server Error', 'Something went wrong on our end. Please try again.');
+      showGlobalError('Service Unavailable', 'Our servers are experiencing issues. Please try again in a moment.');
     } else if (error.code === 'ECONNABORTED') {
-      Alert.alert('Timeout', 'Request timed out. Please check your connection.');
+      showGlobalError('Request Timeout', 'The request is taking longer than expected. Please check your connection and try again.');
     } else if (error.code === 'ERR_NETWORK') {
-      Alert.alert('Network Error', 'Please check your internet connection and ensure the server is running.');
+      showGlobalError('Connection Issue', 'Please check your internet connection and try again.');
     } else if (error.code === 'ECONNREFUSED') {
-      Alert.alert('Connection Error', 'Cannot connect to server. Please ensure the backend is running on port 3000.');
+      showGlobalError('Service Unavailable', 'Unable to connect to our servers. Please try again later.');
+    } else if (error.response?.data?.message) {
+      showGlobalError('Error', error.response.data.message);
     }
     return Promise.reject(error);
   }

@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNotification } from '../../contexts/NotificationContext';
 import { authAPI } from '../../lib/api';
 
 export default function ResetPasswordScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const { showNotification } = useNotification();
   const { token } = route.params || {};
   
   const [password, setPassword] = useState('');
@@ -17,36 +19,45 @@ export default function ResetPasswordScreen() {
 
   const handleResetPassword = async () => {
     if (!password.trim() || !confirmPassword.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+      showNotification({
+        type: 'error',
+        title: 'Missing Information',
+        message: 'Please fill in all fields'
+      });
       return;
     }
 
     if (password.length < 8) {
-      Alert.alert('Error', 'Password must be at least 8 characters long');
+      showNotification({
+        type: 'error',
+        title: 'Password Too Short',
+        message: 'Password must be at least 8 characters long'
+      });
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      showNotification({
+        type: 'error',
+        title: 'Password Mismatch',
+        message: 'Passwords do not match'
+      });
       return;
     }
 
     if (!token) {
-      Alert.alert('Error', 'Invalid reset token');
+      showNotification('Invalid reset token', 'error');
       return;
     }
 
     try {
       setLoading(true);
       await authAPI.resetPassword(token, password);
-      Alert.alert(
-        'Success',
-        'Your password has been reset successfully. Please login with your new password.',
-        [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
-      );
+      showNotification('Your password has been reset successfully. Please login with your new password.', 'success');
+      navigation.navigate('Login');
     } catch (error) {
       console.error('Reset password error:', error);
-      Alert.alert('Error', error.response?.data?.message || 'Failed to reset password');
+      showNotification(error.response?.data?.message || 'Failed to reset password', 'error');
     } finally {
       setLoading(false);
     }

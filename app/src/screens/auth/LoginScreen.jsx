@@ -1,58 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Linking, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useNotification } from '../../contexts/NotificationContext.jsx';
 import { Ionicons } from '@expo/vector-icons';
-import { apiClient } from '../../lib/apiClient';
-import { findBestApiUrl } from '../../utils/networkTest';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [apiStatus, setApiStatus] = useState('checking');
   const { login } = useAuth();
   const navigation = useNavigation();
   const { showSuccess, showError } = useNotification();
-
-  // Test API connectivity on component mount
-  useEffect(() => {
-    testApiConnectivity();
-  }, []);
-
-  const testApiConnectivity = async () => {
-    console.log('🔍 Testing API connectivity...');
-    setApiStatus('checking');
-    
-    try {
-      const bestUrl = await findBestApiUrl();
-      
-      if (bestUrl) {
-        // Update the API client to use the working URL
-        apiClient.defaults.baseURL = bestUrl;
-        console.log('✅ API client updated to use:', bestUrl);
-        setApiStatus('connected');
-        showSuccess('Connected', 'Server connection established successfully');
-      } else {
-        setApiStatus('failed');
-        showError(
-          'Connection Failed', 
-          'Cannot connect to server. Please ensure the backend is running and your device is on the same network.',
-          {
-            duration: 6000,
-            actionText: 'Retry',
-            onActionPress: testApiConnectivity
-          }
-        );
-      }
-    } catch (error) {
-      console.error('❌ Network test failed:', error);
-      setApiStatus('failed');
-      showError('Network Error', 'Failed to test network connectivity: ' + error.message);
-    }
-  };
 
   const handleGoogleLogin = async () => {
     try {
@@ -137,19 +97,6 @@ export default function LoginScreen() {
         <View style={styles.form}>
           <Text style={styles.formTitle}>Sign in to your account</Text>
           
-          {/* API Status Indicator */}
-          <View style={styles.apiStatusContainer}>
-            <View style={[styles.statusDot, { backgroundColor: apiStatus === 'connected' ? '#10b981' : apiStatus === 'failed' ? '#ef4444' : '#f59e0b' }]} />
-            <Text style={styles.apiStatusText}>
-              {apiStatus === 'connected' ? 'Server Connected' : apiStatus === 'failed' ? 'Server Disconnected' : 'Checking Connection...'}
-            </Text>
-            {apiStatus === 'failed' && (
-              <TouchableOpacity onPress={testApiConnectivity} style={styles.retryButton}>
-                <Text style={styles.retryButtonText}>Retry</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email address</Text>
             <TextInput
@@ -188,12 +135,12 @@ export default function LoginScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.button, (loading || apiStatus !== 'connected') && styles.buttonDisabled]}
+            style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleLogin}
-            disabled={loading || apiStatus !== 'connected'}
+            disabled={loading}
           >
             <Text style={styles.buttonText}>
-              {loading ? 'Signing in...' : apiStatus !== 'connected' ? 'Server Disconnected' : 'Sign in'}
+              {loading ? 'Signing in...' : 'Sign in'}
             </Text>
           </TouchableOpacity>
 
@@ -284,40 +231,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
     fontFamily: 'Agency',
-  },
-  apiStatusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 6,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  apiStatusText: {
-    fontSize: 12,
-    color: '#6b7280',
-    fontFamily: 'Agency',
-    flex: 1,
-  },
-  retryButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    backgroundColor: '#3e60ab',
-    borderRadius: 4,
-  },
-  retryButtonText: {
-    fontSize: 12,
-    color: 'white',
-    fontFamily: 'Agency',
-    fontWeight: '600',
   },
   inputContainer: {
     marginBottom: 20,
