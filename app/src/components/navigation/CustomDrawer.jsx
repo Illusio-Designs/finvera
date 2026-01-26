@@ -52,24 +52,29 @@ export default function CustomDrawer({ visible, onClose }) {
       title: 'Main Navigation',
       items: [
         { name: 'Dashboard', icon: 'home-outline', color: '#3e60ab', screen: 'Dashboard' },
-        { name: 'Transactions', icon: 'document-text-outline', color: '#10b981', screen: 'Vouchers' },
-        { name: 'Reports', icon: 'bar-chart-outline', color: '#f59e0b', screen: 'Reports' },
+        { name: 'Vouchers & Invoices', icon: 'document-text-outline', color: '#10b981', screen: 'Vouchers' },
+        { name: 'Reports & Analytics', icon: 'bar-chart-outline', color: '#f59e0b', screen: 'Reports' },
+        { name: 'Inventory Management', icon: 'cube-outline', color: '#3e60ab', screen: 'Inventory' },
+        { name: 'GST Management', icon: 'receipt-outline', color: '#8b5cf6', screen: 'GST' },
       ]
     },
     {
-      title: 'Business Management',
-      items: [
-        { name: 'Accounts', icon: 'folder-outline', color: '#10b981', screen: 'Ledgers' },
-        { name: 'Outstanding', icon: 'time-outline', color: '#f59e0b', screen: 'Outstanding' },
-        { name: 'Companies', icon: 'business-outline', color: '#f59e0b', screen: 'Companies' },
-        { name: 'Help & Support', icon: 'help-circle-outline', color: '#ef4444', screen: 'Support' },
-      ]
-    },
-    {
-      title: 'Inventory Management',
+      title: 'Accounting & Finance',
       expandable: true,
       items: [
-        { name: 'Inventory Overview', icon: 'cube-outline', color: '#3e60ab', screen: 'Inventory' },
+        { name: 'Account Ledgers', icon: 'folder-outline', color: '#10b981', screen: 'Ledgers' },
+        { name: 'Payment Vouchers', icon: 'card-outline', color: '#3e60ab', screen: 'Payment' },
+        { name: 'Receipt Vouchers', icon: 'receipt-outline', color: '#10b981', screen: 'Receipt' },
+        { name: 'Journal Entries', icon: 'journal-outline', color: '#8b5cf6', screen: 'Journal' },
+        { name: 'Contra Entries', icon: 'swap-horizontal-outline', color: '#f59e0b', screen: 'Contra' },
+        { name: 'Debit Notes', icon: 'remove-circle-outline', color: '#ef4444', screen: 'DebitNote' },
+        { name: 'Credit Notes', icon: 'add-circle-outline', color: '#10b981', screen: 'CreditNote' },
+      ]
+    },
+    {
+      title: 'Inventory & Stock',
+      expandable: true,
+      items: [
         { name: 'Inventory Items', icon: 'list-outline', color: '#10b981', screen: 'InventoryItems' },
         { name: 'Stock Adjustments', icon: 'swap-horizontal-outline', color: '#f59e0b', screen: 'InventoryAdjustment' },
         { name: 'Stock Transfers', icon: 'arrow-forward-outline', color: '#3b82f6', screen: 'InventoryTransfer' },
@@ -78,10 +83,9 @@ export default function CustomDrawer({ visible, onClose }) {
       ]
     },
     {
-      title: 'GST Management',
+      title: 'GST & Compliance',
       expandable: true,
       items: [
-        { name: 'GST Overview', icon: 'receipt-outline', color: '#8b5cf6', screen: 'GST' },
         { name: 'GSTIN Records', icon: 'card-outline', color: '#10b981', screen: 'GSTINs' },
         { name: 'GST Rates', icon: 'calculator-outline', color: '#f59e0b', screen: 'GSTRates' },
         { name: 'E-Invoice', icon: 'document-text-outline', color: '#3b82f6', screen: 'EInvoice' },
@@ -98,33 +102,11 @@ export default function CustomDrawer({ visible, onClose }) {
       ]
     },
     {
-      title: 'Reports & Analytics',
+      title: 'Financial Reports',
       expandable: true,
       items: [
-        { name: 'Reports Overview', icon: 'bar-chart-outline', color: '#f59e0b', screen: 'Reports' },
         { name: 'Balance Sheet', icon: 'document-text-outline', color: '#3e60ab', screen: 'BalanceSheet' },
         { name: 'Profit & Loss', icon: 'trending-up-outline', color: '#10b981', screen: 'ProfitLoss' },
-      ]
-    },
-    {
-      title: 'Invoices & Vouchers',
-      expandable: true,
-      items: [
-        { name: 'All Vouchers', icon: 'document-text-outline', color: '#10b981', screen: 'Vouchers' },
-        { name: 'Payment Vouchers', icon: 'card-outline', color: '#3e60ab', screen: 'Payment' },
-        { name: 'Receipt Vouchers', icon: 'receipt-outline', color: '#10b981', screen: 'Receipt' },
-        { name: 'Journal Entries', icon: 'journal-outline', color: '#8b5cf6', screen: 'Journal' },
-        { name: 'Contra Entries', icon: 'swap-horizontal-outline', color: '#f59e0b', screen: 'Contra' },
-        { name: 'Debit Notes', icon: 'remove-circle-outline', color: '#ef4444', screen: 'DebitNote' },
-        { name: 'Credit Notes', icon: 'add-circle-outline', color: '#10b981', screen: 'CreditNote' },
-      ]
-    },
-    {
-      title: 'Tools & Utilities',
-      expandable: true,
-      items: [
-        { name: 'Tally Import', icon: 'cloud-upload-outline', color: '#3e60ab', screen: 'TallyImport' },
-        { name: 'Notifications', icon: 'notifications-outline', color: '#f59e0b', screen: 'Notifications' },
       ]
     },
     {
@@ -136,6 +118,16 @@ export default function CustomDrawer({ visible, onClose }) {
         { name: 'Reviews & Feedback', icon: 'star-outline', color: '#f59e0b', screen: 'Review' },
         { name: 'Business Loan', icon: 'business-outline', color: '#8b5cf6', screen: 'Loan' },
         { name: 'Referral Program', icon: 'people-outline', color: '#ef4444', screen: 'Referral' },
+      ]
+    },
+    {
+      title: 'Tools & Utilities',
+      expandable: true,
+      items: [
+        { name: 'Tally Import', icon: 'cloud-upload-outline', color: '#3e60ab', screen: 'TallyImport' },
+        { name: 'Notifications', icon: 'notifications-outline', color: '#f59e0b', screen: 'Notifications' },
+        { name: 'Companies', icon: 'business-outline', color: '#f59e0b', screen: 'Companies' },
+        { name: 'Help & Support', icon: 'help-circle-outline', color: '#ef4444', screen: 'Support' },
       ]
     },
     {

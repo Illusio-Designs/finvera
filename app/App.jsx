@@ -66,6 +66,7 @@ import PlansScreen from './src/screens/client/business/PlansScreen.jsx';
 import SubscribeScreen from './src/screens/client/business/SubscribeScreen.jsx';
 import ReviewScreen from './src/screens/client/business/ReviewScreen.jsx';
 import LoanScreen from './src/screens/client/business/LoanScreen.jsx';
+import ReferralScreen from './src/screens/client/business/ReferralScreen.jsx';
 
 // Loading Screen
 import LoadingScreen from './src/screens/LoadingScreen.jsx';
@@ -200,6 +201,7 @@ function AppNavigator() {
             <Stack.Screen name="Subscribe" component={SubscribeScreen} />
             <Stack.Screen name="Review" component={ReviewScreen} />
             <Stack.Screen name="Loan" component={LoanScreen} />
+            <Stack.Screen name="Referral" component={ReferralScreen} />
           </>
         ) : (
           <>
