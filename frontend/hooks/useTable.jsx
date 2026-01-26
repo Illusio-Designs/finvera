@@ -70,26 +70,38 @@ export const useTable = (fetchFunction, initialParams = {}) => {
         return;
       }
       
+      // Enhanced error handling for API responses
+      if (!response) {
+        throw new Error('No response received from API');
+      }
+      
       // Handle axios response structure: response.data contains the actual data
       const responseData = response.data || response;
       
-      // Extract data array - could be in responseData.data, responseData.items, or responseData.vouchers
-      const items = responseData.data || responseData.items || responseData.vouchers || [];
+      // Extract data array with multiple fallbacks
+      const items = responseData?.data || responseData?.items || responseData?.vouchers || responseData?.transfers || responseData?.tds || responseData?.tdsDetails || [];
       setData(Array.isArray(items) ? items : []);
       
       // Handle pagination in nested object or direct format
-      if (responseData.pagination) {
+      if (responseData?.pagination) {
         setPagination((prev) => ({
           ...prev,
           total: responseData.pagination.total || 0,
           totalPages: responseData.pagination.totalPages || 0,
         }));
-      } else if (responseData.total !== undefined) {
+      } else if (responseData?.total !== undefined) {
         // Handle direct pagination format (total, page, limit, totalPages)
         setPagination((prev) => ({
           ...prev,
           total: responseData.total || 0,
           totalPages: responseData.totalPages || Math.ceil((responseData.total || 0) / (responseData.limit || prev.limit)),
+        }));
+      } else {
+        // No pagination info - set defaults
+        setPagination((prev) => ({
+          ...prev,
+          total: Array.isArray(items) ? items.length : 0,
+          totalPages: 1,
         }));
       }
     } catch (err) {

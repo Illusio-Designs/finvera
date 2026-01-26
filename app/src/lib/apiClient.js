@@ -55,7 +55,50 @@ apiClient.interceptors.request.use(
 
 // Response interceptor for error handling
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Ensure response always has a data property with proper structure
+    if (response && response.data) {
+      // If the response data doesn't have the expected structure, normalize it
+      if (!response.data.data && !response.data.items && !response.data.transfers && !response.data.tds && !response.data.tdsDetails && !response.data.pagination) {
+        // If it's an array, wrap it in the expected structure
+        if (Array.isArray(response.data)) {
+          response.data = {
+            data: response.data,
+            pagination: {
+              page: 1,
+              limit: response.data.length,
+              total: response.data.length,
+              totalPages: 1
+            }
+          };
+        }
+        // Handle legacy TDS response format
+        else if (response.data.tdsDetails && Array.isArray(response.data.tdsDetails)) {
+          response.data = {
+            data: response.data.tdsDetails,
+            pagination: {
+              page: 1,
+              limit: response.data.tdsDetails.length,
+              total: response.data.tdsDetails.length,
+              totalPages: 1
+            }
+          };
+        }
+      }
+    } else {
+      // If no response data, provide empty structure
+      response.data = {
+        data: [],
+        pagination: {
+          page: 1,
+          limit: 0,
+          total: 0,
+          totalPages: 0
+        }
+      };
+    }
+    return response;
+  },
   async (error) => {
     console.log('API Error:', {
       status: error.response?.status,
@@ -72,6 +115,11 @@ apiClient.interceptors.response.use(
       showGlobalError('Access Denied', 'You don\'t have permission to access this feature.');
     } else if (error.response?.status === 404) {
       showGlobalError('Not Found', 'The requested information could not be found.');
+    } else if (error.response?.status === 429) {
+      // Rate limiting - don't show global error for login attempts, let the login screen handle it
+      if (!error.config?.url?.includes('/auth/login')) {
+        showGlobalError('Too Many Requests', 'You\'re making requests too quickly. Please wait a moment and try again.');
+      }
     } else if (error.response?.status >= 500) {
       showGlobalError('Service Unavailable', 'Our servers are experiencing issues. Please try again in a moment.');
     } else if (error.code === 'ECONNABORTED') {
@@ -80,7 +128,8 @@ apiClient.interceptors.response.use(
       showGlobalError('Connection Issue', 'Please check your internet connection and try again.');
     } else if (error.code === 'ECONNREFUSED') {
       showGlobalError('Service Unavailable', 'Unable to connect to our servers. Please try again later.');
-    } else if (error.response?.data?.message) {
+    } else if (error.response?.data?.message && !error.config?.url?.includes('/auth/login')) {
+      // Don't show global errors for login attempts, let the login screen handle them
       showGlobalError('Error', error.response.data.message);
     }
     return Promise.reject(error);

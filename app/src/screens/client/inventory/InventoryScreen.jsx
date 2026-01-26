@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
@@ -9,13 +8,14 @@ import { inventoryAPI } from '../../../lib/api';
 import { formatCurrency } from '../../../utils/businessLogic';
 
 export default function InventoryScreen() {
-  const navigation = useNavigation();
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
   const [inventoryItems, setInventoryItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [stats, setStats] = useState({
     totalItems: 0,
     totalValue: 0,
@@ -30,28 +30,47 @@ export default function InventoryScreen() {
   const fetchInventoryItems = useCallback(async () => {
     try {
       const response = await inventoryAPI.items.list({ 
-        limit: 50,
-        status: filter !== 'all' ? filter : undefined 
+        limit: 100,
+        search: searchQuery || undefined
+      }).catch(error => {
+        console.error('Inventory API error:', error);
+        return { data: { data: [] } };
       });
-      const data = response.data?.data || response.data || [];
+      
+      // Enhanced error handling for API responses
+      const data = response?.data?.data || response?.data?.items || response?.data || [];
       const items = Array.isArray(data) ? data : [];
       setInventoryItems(items);
       
       // Calculate stats
       const totalItems = items.length;
-      const totalValue = items.reduce((sum, item) => sum + (item.value || 0), 0);
-      const lowStock = items.filter(item => item.stock_level === 'low').length;
-      const outOfStock = items.filter(item => item.stock_level === 'out').length;
+      const totalValue = items.reduce((sum, item) => {
+        const qty = parseFloat(item.quantity_on_hand) || 0;
+        const cost = parseFloat(item.avg_cost) || 0;
+        return sum + (qty * cost);
+      }, 0);
+      const lowStock = items.filter(item => {
+        const qty = parseFloat(item.quantity_on_hand) || 0;
+        return qty > 0 && qty <= 10; // Consider low stock as <= 10
+      }).length;
+      const outOfStock = items.filter(item => {
+        const qty = parseFloat(item.quantity_on_hand) || 0;
+        return qty === 0;
+      }).length;
       
       setStats({ totalItems, totalValue, lowStock, outOfStock });
     } catch (error) {
       console.error('Inventory fetch error:', error);
-      showNotification('Failed to load inventory items', 'error');
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to load inventory items'
+      });
       setInventoryItems([]);
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [searchQuery, showNotification]);
 
   useEffect(() => {
     fetchInventoryItems();
@@ -64,46 +83,130 @@ export default function InventoryScreen() {
   }, [fetchInventoryItems]);
 
   const handleItemPress = (item) => {
-    showNotification(`View details for ${item.name}`, 'info');
+    setSelectedItem(item);
+    setShowDetailModal(true);
   };
 
   const handleCreateItem = () => {
-    showNotification('Create new inventory item functionality will be available soon', 'info');
+    showNotification({
+      type: 'info',
+      title: 'Coming Soon',
+      message: 'Create new inventory item functionality will be available soon'
+    });
+  };
+
+  const handleEditItem = () => {
+    showNotification({
+      type: 'info',
+      title: 'Coming Soon',
+      message: 'Edit inventory item functionality will be available soon'
+    });
+  };
+
+  const handleDeleteItem = () => {
+    showNotification({
+      type: 'info',
+      title: 'Coming Soon',
+      message: 'Delete inventory item functionality will be available soon'
+    });
   };
 
   const handleAdjustment = () => {
-    showNotification('Stock adjustment functionality will be available soon', 'info');
+    showNotification({
+      type: 'info',
+      title: 'Coming Soon',
+      message: 'Stock adjustment functionality will be available soon'
+    });
   };
 
   const handleTransfer = () => {
-    showNotification('Stock transfer functionality will be available soon', 'info');
+    showNotification({
+      type: 'info',
+      title: 'Coming Soon',
+      message: 'Stock transfer functionality will be available soon'
+    });
   };
 
-  const filterOptions = [
-    { key: 'all', label: 'All Items', icon: 'cube-outline' },
-    { key: 'in_stock', label: 'In Stock', icon: 'checkmark-circle-outline' },
-    { key: 'low_stock', label: 'Low Stock', icon: 'warning-outline' },
-    { key: 'out_of_stock', label: 'Out of Stock', icon: 'close-circle-outline' },
-  ];
-
-  const getStockStatusColor = (stockLevel) => {
-    const colors = {
-      'high': '#10b981',
-      'medium': '#f59e0b',
-      'low': '#ef4444',
-      'out': '#6b7280',
-    };
-    return colors[stockLevel] || '#6b7280';
+  const getStockStatus = (quantity) => {
+    const qty = parseFloat(quantity) || 0;
+    if (qty === 0) return { level: 'out', color: '#6b7280', icon: 'close-circle', label: 'Out of Stock' };
+    if (qty <= 10) return { level: 'low', color: '#ef4444', icon: 'alert-circle', label: 'Low Stock' };
+    if (qty <= 50) return { level: 'medium', color: '#f59e0b', icon: 'warning', label: 'Medium Stock' };
+    return { level: 'high', color: '#10b981', icon: 'checkmark-circle', label: 'In Stock' };
   };
 
-  const getStockStatusIcon = (stockLevel) => {
-    const icons = {
-      'high': 'checkmark-circle',
-      'medium': 'warning',
-      'low': 'alert-circle',
-      'out': 'close-circle',
-    };
-    return icons[stockLevel] || 'help-circle';
+  const formatQuantity = (quantity) => {
+    const qty = parseFloat(quantity) || 0;
+    return qty.toFixed(3);
+  };
+
+  const renderInventoryItem = ({ item }) => {
+    const stockStatus = getStockStatus(item.quantity_on_hand);
+    const totalValue = (parseFloat(item.quantity_on_hand) || 0) * (parseFloat(item.avg_cost) || 0);
+
+    return (
+      <TouchableOpacity 
+        style={styles.itemCard}
+        onPress={() => handleItemPress(item)}
+      >
+        <View style={styles.itemCardHeader}>
+          <View style={styles.itemIcon}>
+            <Ionicons name="cube" size={20} color="#3e60ab" />
+          </View>
+          <View style={styles.itemInfo}>
+            <Text style={styles.itemName}>{item.item_name || 'Unnamed Item'}</Text>
+            <Text style={styles.itemCode}>
+              {item.item_code || 'No Code'} • {item.hsn_sac_code || 'No HSN'}
+            </Text>
+          </View>
+          <View style={styles.itemStatus}>
+            <View style={[
+              styles.statusBadge,
+              { backgroundColor: stockStatus.color }
+            ]}>
+              <Ionicons 
+                name={stockStatus.icon} 
+                size={12} 
+                color="white" 
+              />
+            </View>
+          </View>
+        </View>
+        
+        <View style={styles.itemCardBody}>
+          <View style={styles.itemStat}>
+            <Text style={styles.itemStatValue}>{formatQuantity(item.quantity_on_hand)}</Text>
+            <Text style={styles.itemStatLabel}>Quantity</Text>
+          </View>
+          <View style={styles.itemStat}>
+            <Text style={styles.itemStatValue}>{item.uqc || 'NOS'}</Text>
+            <Text style={styles.itemStatLabel}>Unit</Text>
+          </View>
+          <View style={styles.itemStat}>
+            <Text style={styles.itemStatValue}>{formatCurrency(item.avg_cost || 0)}</Text>
+            <Text style={styles.itemStatLabel}>Avg Cost</Text>
+          </View>
+          <View style={styles.itemStat}>
+            <Text style={styles.itemStatValue}>{formatCurrency(totalValue)}</Text>
+            <Text style={styles.itemStatLabel}>Value</Text>
+          </View>
+        </View>
+
+        <View style={styles.itemCardFooter}>
+          <View style={styles.itemDetails}>
+            <Text style={styles.itemDetailText}>
+              GST: {item.gst_rate ? `${item.gst_rate}%` : 'N/A'}
+            </Text>
+            <Text style={[styles.itemDetailText, { color: stockStatus.color }]}>
+              {stockStatus.label}
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.itemAction}>
+            <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    );
   };
 
   return (
@@ -111,6 +214,10 @@ export default function InventoryScreen() {
       <TopBar 
         title="Inventory" 
         onMenuPress={handleMenuPress}
+        showSearch={true}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onSearchSubmit={fetchInventoryItems}
       />
       
       <ScrollView 
@@ -162,118 +269,139 @@ export default function InventoryScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Filter Tabs */}
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterContainer}
-        >
-          {filterOptions.map((option) => (
-            <TouchableOpacity
-              key={option.key}
-              style={[
-                styles.filterTab,
-                filter === option.key && styles.filterTabActive
-              ]}
-              onPress={() => setFilter(option.key)}
-            >
-              <Ionicons 
-                name={option.icon} 
-                size={16} 
-                color={filter === option.key ? 'white' : '#6b7280'} 
-              />
-              <Text style={[
-                styles.filterTabText,
-                filter === option.key && styles.filterTabTextActive
-              ]}>
-                {option.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
         {/* Inventory Items List */}
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Loading inventory...</Text>
-          </View>
-        ) : inventoryItems.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="cube-outline" size={64} color="#d1d5db" />
-            <Text style={styles.emptyTitle}>No Items Found</Text>
-            <Text style={styles.emptySubtitle}>
-              {filter === 'all' 
-                ? 'Add your first inventory item to get started' 
-                : `No ${filter.replace('_', ' ')} items found`}
-            </Text>
-            <TouchableOpacity style={styles.emptyButton} onPress={handleCreateItem}>
-              <Text style={styles.emptyButtonText}>Add Item</Text>
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Inventory Items</Text>
+            <TouchableOpacity onPress={fetchInventoryItems}>
+              <Ionicons name="refresh" size={20} color="#3e60ab" />
             </TouchableOpacity>
           </View>
-        ) : (
-          <View style={styles.itemsList}>
-            {inventoryItems.map((item, index) => (
-              <TouchableOpacity
-                key={item.id || index}
-                style={styles.itemCard}
-                onPress={() => handleItemPress(item)}
-              >
-                <View style={styles.itemCardHeader}>
-                  <View style={styles.itemIcon}>
-                    <Ionicons name="cube" size={20} color="#3e60ab" />
-                  </View>
-                  <View style={styles.itemInfo}>
-                    <Text style={styles.itemName}>{item.name || 'Unnamed Item'}</Text>
-                    <Text style={styles.itemCode}>
-                      {item.code || 'No Code'} • {item.category || 'General'}
-                    </Text>
-                  </View>
-                  <View style={styles.itemStatus}>
-                    <View style={[
-                      styles.statusBadge,
-                      { backgroundColor: getStockStatusColor(item.stock_level) }
-                    ]}>
-                      <Ionicons 
-                        name={getStockStatusIcon(item.stock_level)} 
-                        size={12} 
-                        color="white" 
-                      />
-                    </View>
-                  </View>
-                </View>
-                
-                <View style={styles.itemCardBody}>
-                  <View style={styles.itemStat}>
-                    <Text style={styles.itemStatValue}>{item.quantity || 0}</Text>
-                    <Text style={styles.itemStatLabel}>Quantity</Text>
-                  </View>
-                  <View style={styles.itemStat}>
-                    <Text style={styles.itemStatValue}>{item.unit || 'PCS'}</Text>
-                    <Text style={styles.itemStatLabel}>Unit</Text>
-                  </View>
-                  <View style={styles.itemStat}>
-                    <Text style={styles.itemStatValue}>{formatCurrency(item.rate || 0)}</Text>
-                    <Text style={styles.itemStatLabel}>Rate</Text>
-                  </View>
-                  <View style={styles.itemStat}>
-                    <Text style={styles.itemStatValue}>{formatCurrency(item.value || 0)}</Text>
-                    <Text style={styles.itemStatLabel}>Value</Text>
-                  </View>
-                </View>
-
-                <View style={styles.itemCardFooter}>
-                  <Text style={styles.itemDescription}>
-                    {item.description || 'No description available'}
-                  </Text>
-                  <TouchableOpacity style={styles.itemAction}>
-                    <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
-                  </TouchableOpacity>
-                </View>
+          
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Loading inventory...</Text>
+            </View>
+          ) : inventoryItems.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="cube-outline" size={64} color="#d1d5db" />
+              <Text style={styles.emptyTitle}>No Items Found</Text>
+              <Text style={styles.emptySubtitle}>
+                Add your first inventory item to get started
+              </Text>
+              <TouchableOpacity style={styles.emptyButton} onPress={handleCreateItem}>
+                <Text style={styles.emptyButtonText}>Add Item</Text>
               </TouchableOpacity>
-            ))}
-          </View>
-        )}
+            </View>
+          ) : (
+            <FlatList
+              data={inventoryItems}
+              renderItem={renderInventoryItem}
+              keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
+              scrollEnabled={false}
+              contentContainerStyle={styles.itemsList}
+            />
+          )}
+        </View>
       </ScrollView>
+
+      {/* Item Detail Modal */}
+      <Modal
+        visible={showDetailModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowDetailModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Item Details</Text>
+            <TouchableOpacity 
+              onPress={() => setShowDetailModal(false)}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color="#6b7280" />
+            </TouchableOpacity>
+          </View>
+          
+          {selectedItem && (
+            <ScrollView style={styles.modalContent}>
+              <View style={styles.detailCard}>
+                <Text style={styles.detailCardTitle}>Basic Information</Text>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Item Name:</Text>
+                  <Text style={styles.detailValue}>{selectedItem.item_name || 'N/A'}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Item Code:</Text>
+                  <Text style={styles.detailValue}>{selectedItem.item_code || 'N/A'}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>HSN/SAC Code:</Text>
+                  <Text style={styles.detailValue}>{selectedItem.hsn_sac_code || 'N/A'}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Unit:</Text>
+                  <Text style={styles.detailValue}>{selectedItem.uqc || 'NOS'}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>GST Rate:</Text>
+                  <Text style={styles.detailValue}>{selectedItem.gst_rate ? `${selectedItem.gst_rate}%` : 'N/A'}</Text>
+                </View>
+              </View>
+
+              <View style={styles.detailCard}>
+                <Text style={styles.detailCardTitle}>Stock Information</Text>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Quantity on Hand:</Text>
+                  <Text style={styles.detailValue}>{formatQuantity(selectedItem.quantity_on_hand)}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Average Cost:</Text>
+                  <Text style={styles.detailValue}>{formatCurrency(selectedItem.avg_cost || 0)}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Total Value:</Text>
+                  <Text style={styles.detailValue}>
+                    {formatCurrency((parseFloat(selectedItem.quantity_on_hand) || 0) * (parseFloat(selectedItem.avg_cost) || 0))}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Status:</Text>
+                  <View style={[styles.statusBadge, { backgroundColor: getStockStatus(selectedItem.quantity_on_hand).color }]}>
+                    <Text style={styles.statusText}>{getStockStatus(selectedItem.quantity_on_hand).label}</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.actionButtons}>
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.editButton]}
+                  onPress={handleEditItem}
+                >
+                  <Ionicons name="create" size={20} color="white" />
+                  <Text style={styles.actionButtonText}>Edit Item</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.adjustButton]}
+                  onPress={handleAdjustment}
+                >
+                  <Ionicons name="swap-horizontal" size={20} color="white" />
+                  <Text style={styles.actionButtonText}>Adjust Stock</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.deleteButton]}
+                  onPress={handleDeleteItem}
+                >
+                  <Ionicons name="trash" size={20} color="white" />
+                  <Text style={styles.actionButtonText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -285,9 +413,27 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    backgroundColor: '#f9fafb',
   },
   scrollContent: {
-    paddingBottom: 100, // Extra padding for bottom tab bar
+    paddingBottom: 100,
+    backgroundColor: '#f9fafb',
+  },
+  section: {
+    paddingHorizontal: 16,
+    marginBottom: 0,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    fontFamily: 'Agency',
   },
   statsContainer: {
     padding: 16,
@@ -321,7 +467,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingBottom: 16,
-    gap: 8,
+    gap: 6,
   },
   actionButton: {
     flex: 1,
@@ -330,7 +476,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#3e60ab',
     paddingVertical: 12,
+    paddingHorizontal: 8,
     borderRadius: 8,
+    minHeight: 44,
   },
   actionButtonSecondary: {
     backgroundColor: 'white',
@@ -338,45 +486,23 @@ const styles = StyleSheet.create({
     borderColor: '#3e60ab',
   },
   actionButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: 'white',
     fontFamily: 'Agency',
     marginLeft: 4,
-  },
-  filterContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  filterTab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
-    borderRadius: 20,
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  filterTabActive: {
-    backgroundColor: '#3e60ab',
-    borderColor: '#3e60ab',
-  },
-  filterTabText: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontFamily: 'Agency',
-    marginLeft: 4,
-  },
-  filterTabTextActive: {
-    color: 'white',
+    textAlign: 'center',
   },
   loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 40,
     alignItems: 'center',
-    paddingVertical: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   loadingText: {
     fontSize: 16,
@@ -384,11 +510,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Agency',
   },
   emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 12,
     paddingVertical: 40,
     paddingHorizontal: 32,
+    alignItems: 'center',
+    borderWidth: 0,
+    marginBottom: 0,
   },
   emptyTitle: {
     fontSize: 20,
@@ -418,19 +546,15 @@ const styles = StyleSheet.create({
     fontFamily: 'Agency',
   },
   itemsList: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    gap: 12,
+    paddingBottom: 0,
   },
   itemCard: {
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    borderWidth: 0,
   },
   itemCardHeader: {
     flexDirection: 'row',
@@ -471,6 +595,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'white',
+    fontFamily: 'Agency',
+  },
   itemCardBody: {
     flexDirection: 'row',
     marginBottom: 12,
@@ -498,13 +628,94 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#f3f4f6',
   },
-  itemDescription: {
+  itemDetails: {
     flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  itemDetailText: {
     fontSize: 12,
     color: '#6b7280',
     fontFamily: 'Agency',
   },
   itemAction: {
     padding: 4,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#f9fafb',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    fontFamily: 'Agency',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  modalContent: {
+    flex: 1,
+    padding: 16,
+  },
+  detailCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  detailCardTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 12,
+    fontFamily: 'Agency',
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500',
+    flex: 1,
+    fontFamily: 'Agency',
+  },
+  detailValue: {
+    fontSize: 14,
+    color: '#111827',
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'right',
+    fontFamily: 'Agency',
+  },
+  actionButtons: {
+    gap: 12,
+    paddingBottom: 20,
+  },
+  editButton: {
+    backgroundColor: '#f59e0b',
+  },
+  adjustButton: {
+    backgroundColor: '#3e60ab',
+  },
+  deleteButton: {
+    backgroundColor: '#ef4444',
   },
 });

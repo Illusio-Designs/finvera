@@ -55,13 +55,27 @@ export default function LoginScreen() {
         showSuccess('Welcome Back!', 'Login successful. Loading dashboard...');
         
       } else {
-        // Login failed
+        // Login failed - show specific error message
         console.log('Login failed:', result.message);
-        showError('Login Failed', result.message || 'Invalid email or password');
+        
+        // Show appropriate error based on the message
+        if (result.message.includes('Too many login attempts')) {
+          showError('Rate Limited', result.message);
+        } else if (result.message.includes('Invalid email or password')) {
+          showError('Invalid Credentials', result.message);
+        } else if (result.message.includes('Account access is restricted')) {
+          showError('Account Restricted', result.message);
+        } else if (result.message.includes('Server error')) {
+          showError('Server Error', result.message);
+        } else if (result.message.includes('Network error')) {
+          showError('Connection Error', result.message);
+        } else {
+          showError('Login Failed', result.message || 'Please check your credentials and try again');
+        }
       }
     } catch (error) {
       console.error('Login error:', error);
-      showError('Error', 'Network error. Please try again.');
+      showError('Error', 'An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }

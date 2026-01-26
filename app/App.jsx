@@ -27,7 +27,33 @@ import LedgersScreen from './src/screens/client/accounting/LedgersScreen.jsx';
 import InventoryScreen from './src/screens/client/inventory/InventoryScreen.jsx';
 import SupportScreen from './src/screens/client/business/SupportScreen.jsx';
 import CompaniesScreen from './src/screens/client/company/CompaniesScreen.jsx';
+import CompanyBranchSelectionScreen from './src/screens/client/company/CompanyBranchSelectionScreen.jsx';
 import NotificationsScreen from './src/screens/client/tools/NotificationsScreen.jsx';
+
+// Phase 3: Advanced Inventory Screens
+import InventoryItemsScreen from './src/screens/client/inventory/InventoryItemsScreen.jsx';
+import InventoryAdjustmentScreen from './src/screens/client/inventory/InventoryAdjustmentScreen.jsx';
+import InventoryTransferScreen from './src/screens/client/inventory/InventoryTransferScreen.jsx';
+import WarehousesScreen from './src/screens/client/inventory/WarehousesScreen.jsx';
+import AttributesScreen from './src/screens/client/inventory/AttributesScreen.jsx';
+
+// Phase 3: Advanced GST Screens
+import GSTINsScreen from './src/screens/client/gst/GSTINsScreen.jsx';
+import GSTRatesScreen from './src/screens/client/gst/GSTRatesScreen.jsx';
+import EInvoiceScreen from './src/screens/client/gst/EInvoiceScreen.jsx';
+import EWayBillScreen from './src/screens/client/gst/EWayBillScreen.jsx';
+
+// Phase 4: Tax Management Screens
+import IncomeTaxScreen from './src/screens/client/tax/IncomeTaxScreen.jsx';
+import TaxCalculatorScreen from './src/screens/client/tax/TaxCalculatorScreen.jsx';
+import TDSScreen from './src/screens/client/tax/TDSScreen.jsx';
+
+// Phase 4: Reports Screens
+import BalanceSheetScreen from './src/screens/client/reports/BalanceSheetScreen.jsx';
+import ProfitLossScreen from './src/screens/client/reports/ProfitLossScreen.jsx';
+
+// Phase 5: Extended Vouchers Screens
+import PaymentScreen from './src/screens/client/vouchers/PaymentScreen.jsx';
 
 // Loading Screen
 import LoadingScreen from './src/screens/LoadingScreen.jsx';
@@ -96,9 +122,15 @@ function AppNavigator() {
 
   return (
     <NavigationContainer onStateChange={onNavigationStateChange}>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator 
+        screenOptions={{ headerShown: false }}
+        initialRouteName={isAuthenticated ? "CompanyBranchSelection" : "Login"}
+      >
         {isAuthenticated ? (
           <>
+            {/* Post-login Company/Branch Selection */}
+            <Stack.Screen name="CompanyBranchSelection" component={CompanyBranchSelectionScreen} />
+            
             {/* Main App Screens */}
             <Stack.Screen name="Dashboard" component={DashboardScreen} />
             <Stack.Screen name="Vouchers" component={VouchersScreen} />
@@ -117,6 +149,31 @@ function AppNavigator() {
             <Stack.Screen name="Support" component={SupportScreen} />
             <Stack.Screen name="Companies" component={CompaniesScreen} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} />
+            
+            {/* Phase 3: Advanced Inventory Screens */}
+            <Stack.Screen name="InventoryItems" component={InventoryItemsScreen} />
+            <Stack.Screen name="InventoryAdjustment" component={InventoryAdjustmentScreen} />
+            <Stack.Screen name="InventoryTransfer" component={InventoryTransferScreen} />
+            <Stack.Screen name="Warehouses" component={WarehousesScreen} />
+            <Stack.Screen name="Attributes" component={AttributesScreen} />
+            
+            {/* Phase 3: Advanced GST Screens */}
+            <Stack.Screen name="GSTINs" component={GSTINsScreen} />
+            <Stack.Screen name="GSTRates" component={GSTRatesScreen} />
+            <Stack.Screen name="EInvoice" component={EInvoiceScreen} />
+            <Stack.Screen name="EWayBill" component={EWayBillScreen} />
+            
+            {/* Phase 4: Tax Management Screens */}
+            <Stack.Screen name="IncomeTax" component={IncomeTaxScreen} />
+            <Stack.Screen name="TaxCalculator" component={TaxCalculatorScreen} />
+            <Stack.Screen name="TDS" component={TDSScreen} />
+            
+            {/* Phase 4: Reports Screens */}
+            <Stack.Screen name="BalanceSheet" component={BalanceSheetScreen} />
+            <Stack.Screen name="ProfitLoss" component={ProfitLossScreen} />
+            
+            {/* Phase 5: Extended Vouchers Screens */}
+            <Stack.Screen name="Payment" component={PaymentScreen} />
           </>
         ) : (
           <>

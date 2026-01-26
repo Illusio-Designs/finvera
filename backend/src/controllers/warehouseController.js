@@ -8,6 +8,21 @@ module.exports = {
       const offset = (page - 1) * limit;
       const where = {};
 
+      // Validate tenant models are available
+      if (!req.tenantModels || !req.tenantModels.Warehouse) {
+        logger.error('Tenant models not available in warehouse list');
+        return res.status(500).json({
+          data: [],
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            totalPages: 0,
+          },
+          error: 'Database connection not available'
+        });
+      }
+
       if (search) {
         where[Op.or] = [
           { warehouse_name: { [Op.like]: `%${search}%` } },
@@ -20,25 +35,39 @@ module.exports = {
         where.is_active = is_active === 'true' || is_active === true;
       }
 
-      const { count, rows } = await req.tenantModels.Warehouse.findAndCountAll({
+      const result = await req.tenantModels.Warehouse.findAndCountAll({
         where,
         limit: parseInt(limit),
         offset: parseInt(offset),
         order: [['warehouse_name', 'ASC']],
+      }).catch(error => {
+        logger.error('Error fetching warehouses:', error);
+        return { count: 0, rows: [] };
       });
 
+      const { count, rows } = result;
+
       res.json({
-        data: rows,
+        data: Array.isArray(rows) ? rows : [],
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
-          total: count,
-          totalPages: Math.ceil(count / limit),
+          total: count || 0,
+          totalPages: Math.ceil((count || 0) / limit),
         },
       });
     } catch (error) {
       logger.error('Error listing warehouses:', error);
-      next(error);
+      res.status(500).json({
+        data: [],
+        pagination: {
+          page: parseInt(req.query.page || 1),
+          limit: parseInt(req.query.limit || 20),
+          total: 0,
+          totalPages: 0,
+        },
+        error: 'Failed to fetch warehouses'
+      });
     }
   },
 
@@ -47,6 +76,15 @@ module.exports = {
       const { is_active } = req.query;
       const where = {};
 
+      // Validate tenant models are available
+      if (!req.tenantModels || !req.tenantModels.Warehouse) {
+        logger.error('Tenant models not available in warehouse getAll');
+        return res.status(500).json({
+          data: [],
+          error: 'Database connection not available'
+        });
+      }
+
       if (is_active !== undefined) {
         where.is_active = is_active === 'true' || is_active === true;
       }
@@ -54,12 +92,18 @@ module.exports = {
       const warehouses = await req.tenantModels.Warehouse.findAll({
         where,
         order: [['warehouse_name', 'ASC']],
+      }).catch(error => {
+        logger.error('Error fetching all warehouses:', error);
+        return [];
       });
 
-      res.json({ data: warehouses });
+      res.json({ data: Array.isArray(warehouses) ? warehouses : [] });
     } catch (error) {
       logger.error('Error getting all warehouses:', error);
-      next(error);
+      res.status(500).json({
+        data: [],
+        error: 'Failed to fetch warehouses'
+      });
     }
   },
 

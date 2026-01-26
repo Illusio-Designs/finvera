@@ -19,11 +19,11 @@ export const authAPI = {
   changePassword: (data) => apiClient.post('/auth/change-password', data),
 };
 
-// User Profile APIs
+// User Profile APIs (using auth endpoints as per backend)
 export const profileAPI = {
-  get: () => apiClient.get('/profile'),
-  update: (data) => apiClient.put('/profile', data),
-  changePassword: (data) => apiClient.post('/profile/change-password', data),
+  get: () => apiClient.get('/auth/profile'),
+  update: (data) => apiClient.put('/auth/profile', data),
+  changePassword: (data) => apiClient.post('/auth/change-password', data),
 };
 
 // Company Management APIs
@@ -35,9 +35,9 @@ export const companyAPI = {
   get: (id) => apiClient.get(`/companies/${id}`),
 };
 
-// Branch Management APIs
+// Branch Management APIs (fixed to match backend structure)
 export const branchAPI = {
-  list: () => apiClient.get('/branches'),
+  list: (companyId) => apiClient.get(`/branches/company/${companyId}`),
   create: (data) => apiClient.post('/branches', data),
   update: (id, data) => apiClient.put(`/branches/${id}`, data),
   delete: (id) => apiClient.delete(`/branches/${id}`),
@@ -120,7 +120,7 @@ export const inventoryAPI = {
   },
 };
 
-// GST APIs
+// GST APIs (fixed analytics endpoint)
 export const gstAPI = {
   gstins: {
     list: () => apiClient.get('/gst/gstins'),
@@ -131,14 +131,12 @@ export const gstAPI = {
     setDefault: (id) => apiClient.post(`/gst/gstins/${id}/set-default`),
   },
   rates: {
-    list: () => apiClient.get('/gst/rates'),
-    create: (data) => apiClient.post('/gst/rates', data),
-    update: (id, data) => apiClient.put(`/gst/rates/${id}`, data),
+    get: (hsn) => apiClient.get(`/gst/rate?hsn=${hsn}`),
   },
   returns: {
-    gstr1: (params) => apiClient.get('/gst/returns/gstr1', { params }),
-    gstr3b: (params) => apiClient.get('/gst/returns/gstr3b', { params }),
-    file: (type, data) => apiClient.post(`/gst/returns/${type}/file`, data),
+    list: () => apiClient.get('/gst/returns'),
+    gstr1: (data) => apiClient.post('/gst/returns/gstr1', data),
+    gstr3b: (data) => apiClient.post('/gst/returns/gstr3b', data),
   },
   einvoice: {
     generate: (data) => apiClient.post('/gst/einvoice/generate', data),
@@ -150,33 +148,35 @@ export const gstAPI = {
     cancel: (id) => apiClient.post(`/gst/ewaybill/${id}/cancel`),
     list: (params) => apiClient.get('/gst/ewaybill', { params }),
   },
-  analytics: (params) => apiClient.get('/gst/analytics', { params }),
+  validate: (gstin) => apiClient.post('/gst/validate', { gstin }),
+  details: (gstin) => apiClient.get(`/gst/details/${gstin}`),
+  analytics: {
+    gstr2aReconciliation: (data) => apiClient.post('/gst/analytics/gstr2a-reconciliation', data),
+    getReconciliationStatus: (jobId) => apiClient.get(`/gst/analytics/gstr2a-reconciliation/${jobId}`),
+    uploadPurchaseLedger: (data) => apiClient.post('/gst/analytics/upload-purchase-ledger', data),
+  },
 };
 
-// Reports APIs
+// Reports APIs (removed non-existent stats endpoint)
 export const reportsAPI = {
-  stats: () => apiClient.get('/reports/stats'),
   balanceSheet: (params) => apiClient.get('/reports/balance-sheet', { params }),
   profitLoss: (params) => apiClient.get('/reports/profit-loss', { params }),
   trialBalance: (params) => apiClient.get('/reports/trial-balance', { params }),
-  ledgerStatement: (id, params) => apiClient.get(`/reports/ledger-statement/${id}`, { params }),
+  ledgerStatement: (params) => apiClient.get('/reports/ledger-statement', { params }),
   stockLedger: (params) => apiClient.get('/reports/stock-ledger', { params }),
   stockSummary: (params) => apiClient.get('/reports/stock-summary', { params }),
-  categories: () => apiClient.get('/reports/categories'),
 };
 
-// Notification APIs
+// Notification APIs (removed non-existent test endpoints)
 export const notificationAPI = {
   list: (params) => apiClient.get('/notifications', { params }),
   markAsRead: (id) => apiClient.put(`/notifications/${id}/read`),
   markAllAsRead: () => apiClient.put('/notifications/read-all'),
+  getUnreadCount: () => apiClient.get('/notifications/unread-count'),
+  delete: (id) => apiClient.delete(`/notifications/${id}`),
   preferences: {
     get: () => apiClient.get('/notifications/preferences'),
     update: (data) => apiClient.put('/notifications/preferences', data),
-  },
-  test: {
-    push: () => apiClient.post('/notifications/test/push'),
-    email: () => apiClient.post('/notifications/test/email'),
   },
 };
 
@@ -200,15 +200,38 @@ export const finboxAPI = {
   loanStatus: () => apiClient.get('/finbox/status'),
 };
 
-// Search APIs
+// Search APIs (simplified to match backend universal search)
 export const searchAPI = {
   universal: (params) => apiClient.get('/search', { params }),
-  ledgers: (query) => apiClient.get(`/search/ledgers?q=${encodeURIComponent(query)}`),
-  vouchers: (query) => apiClient.get(`/search/vouchers?q=${encodeURIComponent(query)}`),
-  inventory: (query) => apiClient.get(`/search/items?q=${encodeURIComponent(query)}`),
-  companies: (query) => apiClient.get(`/search/companies?q=${encodeURIComponent(query)}`),
-  support: (query) => apiClient.get(`/search/support?q=${encodeURIComponent(query)}`),
-  notifications: (query) => apiClient.get(`/search/notifications?q=${encodeURIComponent(query)}`),
+};
+
+// Tax APIs (TDS, TCS, Income Tax)
+export const taxAPI = {
+  tds: {
+    list: (params) => apiClient.get('/tds', { params }),
+    calculate: (data) => apiClient.post('/tds/calculate', data),
+    generateReturn: (data) => apiClient.post('/tds/generate-return', data),
+    generateCertificate: (id) => apiClient.post(`/tds/${id}/generate-certificate`),
+    getReturnStatus: (returnId) => apiClient.get(`/tds/return-status/${returnId}`),
+    // Analytics APIs
+    createPotentialNoticeJob: (data) => apiClient.post('/tds/analytics/potential-notice', data),
+    getAnalyticsJobStatus: (jobId) => apiClient.get(`/tds/analytics/job-status/${jobId}`),
+    // Calculator APIs
+    calculateNonSalary: (data) => apiClient.post('/tds/calculator/non-salary', data),
+    // Compliance APIs
+    check206AB: (data) => apiClient.post('/tds/compliance/206ab', data),
+    generateCSIOTP: (data) => apiClient.post('/tds/compliance/csi-otp', data),
+    downloadCSI: (data) => apiClient.post('/tds/compliance/download-csi', data),
+    // Reports APIs
+    submitTCSReport: (data) => apiClient.post('/tds/reports/tcs-report', data),
+    getTCSReportStatus: (jobId) => apiClient.get(`/tds/reports/tcs-report/${jobId}`),
+    searchTCSReports: (data) => apiClient.post('/tds/reports/search-tcs', data),
+  },
+  incomeTax: {
+    calculate: (data) => apiClient.post('/income-tax/calculate', data),
+    getSlabs: (params) => apiClient.get('/income-tax/slabs', { params }),
+    generateReturn: (data) => apiClient.post('/income-tax/generate-return', data),
+  },
 };
 
 // Legacy export for backward compatibility

@@ -89,7 +89,50 @@ api.interceptors.request.use(
 
 // Response interceptor to handle errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Ensure response always has a data property with proper structure
+    if (response && response.data) {
+      // If the response data doesn't have the expected structure, normalize it
+      if (!response.data.data && !response.data.items && !response.data.transfers && !response.data.tds && !response.data.tdsDetails && !response.data.pagination) {
+        // If it's an array, wrap it in the expected structure
+        if (Array.isArray(response.data)) {
+          response.data = {
+            data: response.data,
+            pagination: {
+              page: 1,
+              limit: response.data.length,
+              total: response.data.length,
+              totalPages: 1
+            }
+          };
+        }
+        // Handle legacy TDS response format
+        else if (response.data.tdsDetails && Array.isArray(response.data.tdsDetails)) {
+          response.data = {
+            data: response.data.tdsDetails,
+            pagination: {
+              page: 1,
+              limit: response.data.tdsDetails.length,
+              total: response.data.tdsDetails.length,
+              totalPages: 1
+            }
+          };
+        }
+      }
+    } else {
+      // If no response data, provide empty structure
+      response.data = {
+        data: [],
+        pagination: {
+          page: 1,
+          limit: 0,
+          total: 0,
+          totalPages: 0
+        }
+      };
+    }
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       // Token expired or invalid

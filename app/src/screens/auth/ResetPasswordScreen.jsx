@@ -46,14 +46,22 @@ export default function ResetPasswordScreen() {
     }
 
     if (!token) {
-      showNotification('Invalid reset token', 'error');
+      showNotification({
+        type: 'error',
+        title: 'Invalid Token',
+        message: 'Invalid reset token'
+      });
       return;
     }
 
     try {
       setLoading(true);
       await authAPI.resetPassword(token, password);
-      showNotification('Your password has been reset successfully. Please login with your new password.', 'success');
+      showNotification({
+        type: 'success',
+        title: 'Password Reset Successful',
+        message: 'Your password has been reset successfully. Please login with your new password.'
+      });
       navigation.navigate('Login');
     } catch (error) {
       console.error('Reset password error:', error);

@@ -53,7 +53,11 @@ export const AuthProvider = ({ children }) => {
         setToken(accessToken);
         setUser(user);
         
-        return { success: true, user };
+        return { 
+          success: true, 
+          user,
+          requiresSelection: response.data.requiresSelection || false // Backend can indicate if selection is needed
+        };
       }
       
       // Handle other response scenarios - but always treat as login failure
@@ -65,19 +69,44 @@ export const AuthProvider = ({ children }) => {
       console.error('Login error:', error);
       
       // Handle specific error responses from backend
-      if (error.response?.data) {
+      if (error.response?.status === 429) {
+        return { 
+          success: false, 
+          message: 'Too many login attempts. Please wait a few minutes before trying again.'
+        };
+      } else if (error.response?.status === 401) {
+        return { 
+          success: false, 
+          message: 'Invalid email or password. Please check your credentials.'
+        };
+      } else if (error.response?.status === 403) {
+        return { 
+          success: false, 
+          message: 'Account access is restricted. Please contact support.'
+        };
+      } else if (error.response?.status >= 500) {
+        return { 
+          success: false, 
+          message: 'Server error. Please try again in a few minutes.'
+        };
+      } else if (error.response?.data) {
         const errorData = error.response.data;
         
-        // For any backend error, just show the error message
+        // For any other backend error, show the error message
         return { 
           success: false, 
           message: errorData.message || 'Login failed. Please check your credentials.'
+        };
+      } else if (error.code === 'ERR_NETWORK' || error.code === 'ECONNREFUSED') {
+        return { 
+          success: false, 
+          message: 'Network error. Please check your internet connection and try again.' 
         };
       }
       
       return { 
         success: false, 
-        message: 'Network error. Please check your connection and try again.' 
+        message: 'Login failed. Please try again.' 
       };
     } finally {
       setLoading(false);

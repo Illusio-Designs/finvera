@@ -1,24 +1,91 @@
 const { Op } = require('sequelize');
+const logger = require('../utils/logger');
 const tdsService = require('../services/tdsService');
 
 module.exports = {
   async list(req, res, next) {
     try {
-      const { quarter, financial_year, ledger_id } = req.query;
+      const { page = 1, limit = 20, quarter, financial_year, ledger_id, search, status } = req.query;
+      const offset = (page - 1) * limit;
       const where = {};
+
+      // Validate tenant models are available
+      if (!req.tenantModels || !req.tenantModels.TDSDetail) {
+        logger.error('Tenant models not available in TDS list');
+        return res.status(500).json({
+          data: [],
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            totalPages: 0,
+          },
+          error: 'Database connection not available'
+        });
+      }
 
       if (quarter) where.quarter = quarter;
       if (financial_year) where.financial_year = financial_year;
       if (ledger_id) where.ledger_id = ledger_id;
+      if (status) where.status = status;
 
-      const tdsDetails = await req.tenantModels.TDSDetail.findAll({
+      // Add search functionality
+      if (search) {
+        where[Op.or] = [
+          { deductee_name: { [Op.like]: `%${search}%` } },
+          { deductee_pan: { [Op.like]: `%${search}%` } },
+          { tds_section: { [Op.like]: `%${search}%` } },
+          { challan_number: { [Op.like]: `%${search}%` } },
+        ];
+      }
+
+      const result = await req.tenantModels.TDSDetail.findAndCountAll({
         where,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
         order: [['createdAt', 'DESC']],
+        include: [
+          {
+            model: req.tenantModels.Voucher,
+            as: 'voucher',
+            attributes: ['id', 'voucher_number', 'voucher_date'],
+            required: false,
+          },
+          {
+            model: req.tenantModels.Ledger,
+            as: 'ledger',
+            attributes: ['id', 'ledger_name'],
+            required: false,
+          },
+        ],
+      }).catch(error => {
+        logger.error('Error fetching TDS details:', error);
+        return { count: 0, rows: [] };
       });
 
-      res.json({ tdsDetails });
-    } catch (err) {
-      next(err);
+      const { count, rows } = result;
+
+      res.json({
+        data: Array.isArray(rows) ? rows : [],
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: count || 0,
+          totalPages: Math.ceil((count || 0) / limit),
+        },
+      });
+    } catch (error) {
+      logger.error('Error listing TDS details:', error);
+      res.status(500).json({
+        data: [],
+        pagination: {
+          page: parseInt(req.query.page || 1),
+          limit: parseInt(req.query.limit || 20),
+          total: 0,
+          totalPages: 0,
+        },
+        error: 'Failed to fetch TDS details'
+      });
     }
   },
 

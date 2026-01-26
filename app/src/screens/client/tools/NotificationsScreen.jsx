@@ -30,7 +30,11 @@ export default function NotificationsScreen() {
       setNotifications(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Notifications fetch error:', error);
-      showNotification('Failed to load notifications', 'error');
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to load notifications'
+      });
       setNotifications([]);
     } finally {
       setLoading(false);
@@ -72,10 +76,18 @@ export default function NotificationsScreen() {
       setNotifications(prev => 
         prev.map(n => ({ ...n, read_at: new Date().toISOString() }))
       );
-      showNotification('All notifications marked as read', 'success');
+      showNotification({
+        type: 'success',
+        title: 'Success',
+        message: 'All notifications marked as read'
+      });
     } catch (error) {
       console.error('Mark all as read error:', error);
-      showNotification('Failed to mark all notifications as read', 'error');
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to mark all notifications as read'
+      });
     }
   };
 

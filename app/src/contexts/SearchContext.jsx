@@ -81,7 +81,7 @@ export const SearchProvider = ({ children }) => {
     }
   }, []);
 
-  // Specific search functions
+  // Specific search functions (using universal search with type filters)
   const searchLedgers = useCallback(async (query) => {
     if (!query.trim()) return [];
     
@@ -89,7 +89,10 @@ export const SearchProvider = ({ children }) => {
       setIsSearching(true);
       
       try {
-        const response = await searchAPI.ledgers(query);
+        const response = await searchAPI.universal({
+          q: query,
+          type: 'ledger'
+        });
         return response.data?.data || response.data || [];
       } catch (apiError) {
         console.log('Ledger search API failed, using mock data');
@@ -123,7 +126,10 @@ export const SearchProvider = ({ children }) => {
       setIsSearching(true);
       
       try {
-        const response = await searchAPI.vouchers(query);
+        const response = await searchAPI.universal({
+          q: query,
+          type: 'voucher'
+        });
         return response.data?.data || response.data || [];
       } catch (apiError) {
         console.log('Voucher search API failed, using mock data');
@@ -157,7 +163,10 @@ export const SearchProvider = ({ children }) => {
       setIsSearching(true);
       
       try {
-        const response = await searchAPI.inventory(query);
+        const response = await searchAPI.universal({
+          q: query,
+          type: 'inventory'
+        });
         return response.data?.data || response.data || [];
       } catch (apiError) {
         console.log('Inventory search API failed, using mock data');
@@ -185,7 +194,10 @@ export const SearchProvider = ({ children }) => {
       setIsSearching(true);
       
       try {
-        const response = await searchAPI.companies(query);
+        const response = await searchAPI.universal({
+          q: query,
+          type: 'company'
+        });
         return response.data?.data || response.data || [];
       } catch (apiError) {
         console.log('Company search API failed, using mock data');

@@ -7,6 +7,21 @@ module.exports = {
       const { page = 1, limit = 20, search, from_warehouse_id, to_warehouse_id, inventory_item_id } = req.query;
       const offset = (page - 1) * limit;
 
+      // Validate tenant models are available
+      if (!req.tenantModels || !req.tenantModels.StockMovement) {
+        logger.error('Tenant models not available in stock transfer list');
+        return res.status(500).json({
+          data: [],
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            totalPages: 0,
+          },
+          error: 'Database connection not available'
+        });
+      }
+
       // Find stock movements that represent transfers (same item, different warehouses, same timestamp)
       const where = {};
       if (inventory_item_id) {
@@ -32,19 +47,24 @@ module.exports = {
         ],
         order: [['createdAt', 'DESC']],
         limit: 1000, // Get a reasonable number to find transfers
+      }).catch(error => {
+        logger.error('Error fetching stock movements:', error);
+        return [];
       });
 
       // Group movements by item and timestamp to identify transfers
       const transferMap = new Map();
-      movements.forEach((movement) => {
-        if (!movement.warehouse_id) return; // Skip aggregate movements
-        
-        const key = `${movement.inventory_item_id}_${movement.createdAt.toISOString()}`;
-        if (!transferMap.has(key)) {
-          transferMap.set(key, []);
-        }
-        transferMap.get(key).push(movement);
-      });
+      if (Array.isArray(movements)) {
+        movements.forEach((movement) => {
+          if (!movement || !movement.warehouse_id) return; // Skip aggregate movements or null movements
+          
+          const key = `${movement.inventory_item_id}_${movement.createdAt.toISOString()}`;
+          if (!transferMap.has(key)) {
+            transferMap.set(key, []);
+          }
+          transferMap.get(key).push(movement);
+        });
+      }
 
       // Filter to find pairs (OUT from one warehouse, IN to another)
       const transfers = [];
@@ -64,15 +84,15 @@ module.exports = {
             transfers.push({
               id: outMovement.id, // Use out movement ID
               date: outMovement.createdAt,
-              item_name: outMovement.item?.item_name,
-              item_code: outMovement.item?.item_code,
+              item_name: outMovement.item?.item_name || 'Unknown Item',
+              item_code: outMovement.item?.item_code || '',
               from_warehouse_id: outMovement.warehouse_id,
-              from_warehouse_name: outMovement.warehouse?.warehouse_name,
+              from_warehouse_name: outMovement.warehouse?.warehouse_name || 'Unknown Warehouse',
               to_warehouse_id: inMovement.warehouse_id,
-              to_warehouse_name: inMovement.warehouse?.warehouse_name,
+              to_warehouse_name: inMovement.warehouse?.warehouse_name || 'Unknown Warehouse',
               quantity: Math.abs(parseFloat(outMovement.quantity)),
               rate: parseFloat(outMovement.rate) || 0,
-              narration: outMovement.narration,
+              narration: outMovement.narration || '',
             });
           }
         }
