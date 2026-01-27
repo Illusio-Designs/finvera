@@ -18,9 +18,7 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    name: DataTypes.STRING, // Add name field
-    first_name: DataTypes.STRING,
-    last_name: DataTypes.STRING,
+    name: DataTypes.STRING,
     phone: DataTypes.STRING,
     profile_image: DataTypes.STRING, // Add profile_image field
     role: {

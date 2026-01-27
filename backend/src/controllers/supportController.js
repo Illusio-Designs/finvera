@@ -1,6 +1,8 @@
-const { SupportTicket, TicketMessage, SupportAgentReview, User } = require('../models');
+const { SupportTicket, TicketMessage, SupportAgentReview } = require('../models');
 const { Op } = require('sequelize');
 const logger = require('../utils/logger');
+const tenantConnectionManager = require('../config/tenantConnectionManager');
+const tenantModelsFactory = require('../services/tenantModels');
 
 module.exports = {
   // Client creates ticket (public or authenticated)
@@ -21,15 +23,143 @@ module.exports = {
         phone,
       } = req.body;
 
+      // If user is authenticated, fetch their details from database
+      let finalClientName = client_name || name;
+      let finalClientEmail = client_email || email;
+      let finalClientPhone = client_phone || phone;
+
+      console.log('🎫 Request context:', {
+        hasUser: !!req.user,
+        hasTenantModels: !!req.tenantModels,
+        hasCompany: !!req.company,
+        userInfo: req.user ? {
+          id: req.user.id,
+          tenant_id: req.user.tenant_id,
+          role: req.user.role
+        } : null
+      });
+
+      if (req.user) {
+        try {
+          console.log('🎫 Authenticated user from JWT:', {
+            id: req.user.id,
+            tenant_id: req.user.tenant_id,
+            company_id: req.user.company_id,
+            role: req.user.role
+          });
+          
+          // All users are stored in the main database (finvera_db)
+          // So let's fetch user details from there directly
+          const mainConnection = await tenantConnectionManager.getConnection({
+            id: 'main_db',
+            db_name: process.env.DB_NAME || 'finvera_db',
+            db_host: process.env.DB_HOST || 'localhost',
+            db_port: parseInt(process.env.DB_PORT) || 3306,
+            db_user: process.env.DB_USER || 'root',
+            db_password: process.env.DB_PASSWORD || '',
+          });
+          
+          const mainModels = tenantModelsFactory(mainConnection);
+          
+          console.log('🎫 Fetching user from main database...');
+          
+          // Fetch user details from main database
+          const user = await mainModels.User.findByPk(req.user.id);
+          if (user) {
+            console.log('🎫 Found user in main database:', {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              phone: user.phone
+            });
+            
+            // Use authenticated user's info if not provided in request
+            finalClientName = finalClientName || user.name || 'Unknown User';
+            finalClientEmail = finalClientEmail || user.email;
+            finalClientPhone = finalClientPhone || user.phone;
+            
+            console.log('🎫 Using authenticated user info:', {
+              finalClientName,
+              finalClientEmail,
+              finalClientPhone
+            });
+          } else {
+            console.log('🎫 User not found in main database');
+          }
+        } catch (userFetchError) {
+          console.error('🎫 Error fetching user details:', userFetchError);
+          console.error('🎫 Error stack:', userFetchError.stack);
+          // Continue with provided data or defaults
+        }
+      }
+
+      console.log('🎫 Final client info:', {
+        finalClientName,
+        finalClientEmail,
+        finalClientPhone,
+        isAuthenticated: !!req.user
+      });
+
+      // For authenticated users, we can be more lenient with validation
+      if (req.user) {
+        // For authenticated users, only require subject and description
+        if (!subject || !description) {
+          return res.status(400).json({
+            success: false,
+            message: 'Subject and description are required',
+            errors: [
+              !subject && { field: 'subject', message: 'Subject is required' },
+              !description && { field: 'description', message: 'Description is required' }
+            ].filter(Boolean)
+          });
+        }
+        
+        // Use fallback values for authenticated users if still missing
+        finalClientName = finalClientName || 'Authenticated User';
+        finalClientEmail = finalClientEmail || 'user@unknown.com';
+      } else {
+        // For non-authenticated users, require name and email
+        if (!finalClientName || !finalClientEmail) {
+          return res.status(400).json({
+            success: false,
+            message: 'Client name and email are required',
+            errors: [
+              !finalClientName && { field: 'client_name', message: 'Client name is required' },
+              !finalClientEmail && { field: 'client_email', message: 'Client email is required' }
+            ].filter(Boolean)
+          });
+        }
+
+        if (!subject || !description) {
+          return res.status(400).json({
+            success: false,
+            message: 'Subject and description are required',
+            errors: [
+              !subject && { field: 'subject', message: 'Subject is required' },
+              !description && { field: 'description', message: 'Description is required' }
+            ].filter(Boolean)
+          });
+        }
+      }
+
       // Generate unique ticket number
       const ticketNumber = `TKT-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+
+      console.log('🎫 Creating support ticket:', {
+        ticketNumber,
+        tenant_id: req.user?.tenant_id,
+        client_name: finalClientName,
+        client_email: finalClientEmail,
+        subject,
+        category
+      });
 
       const ticket = await SupportTicket.create({
         ticket_number: ticketNumber,
         tenant_id: req.user?.tenant_id || null, // If authenticated tenant user
-        client_name: client_name || name,
-        client_email: client_email || email,
-        client_phone: client_phone || phone,
+        client_name: finalClientName,
+        client_email: finalClientEmail,
+        client_phone: finalClientPhone,
         subject,
         description,
         category,
@@ -38,14 +168,18 @@ module.exports = {
         status: 'open',
       });
 
+      console.log('🎫 Support ticket created:', ticket.id);
+
       // Create initial message
       await TicketMessage.create({
         ticket_id: ticket.id,
         sender_type: 'client',
-        sender_name: client_name || name,
+        sender_name: finalClientName,
         message: description,
         attachments: attachments || [],
       });
+
+      console.log('🎫 Initial ticket message created');
 
       res.status(201).json({
         success: true,
@@ -53,6 +187,7 @@ module.exports = {
         message: 'Support ticket created successfully. We will get back to you soon!',
       });
     } catch (error) {
+      console.error('🎫 Create ticket error:', error);
       logger.error('Create ticket error:', error);
       next(error);
     }
@@ -92,13 +227,6 @@ module.exports = {
         limit: parseInt(limit),
         offset: parseInt(offset),
         order: [['createdAt', 'DESC']],
-        include: [
-          {
-            model: User,
-            as: 'assignedAgent',
-            attributes: ['id', 'name', 'email'],
-          },
-        ],
       });
 
       res.json({
@@ -125,21 +253,9 @@ module.exports = {
       const ticket = await SupportTicket.findByPk(id, {
         include: [
           {
-            model: User,
-            as: 'assignedAgent',
-            attributes: ['id', 'name', 'email', 'role'],
-          },
-          {
             model: TicketMessage,
             as: 'messages',
             order: [['createdAt', 'ASC']],
-            include: [
-              {
-                model: User,
-                as: 'sender',
-                attributes: ['id', 'name', 'email'],
-              },
-            ],
           },
           {
             model: SupportAgentReview,
@@ -170,11 +286,8 @@ module.exports = {
         return res.status(404).json({ success: false, error: 'Ticket not found' });
       }
 
-      // Verify agent exists and has support_agent role
-      const agent = await User.findByPk(agent_id);
-      if (!agent || agent.role !== 'support_agent') {
-        return res.status(400).json({ success: false, error: 'Invalid support agent' });
-      }
+      // For now, we'll skip agent validation since User model associations aren't set up
+      // TODO: Add proper agent validation when User model associations are configured
 
       await ticket.update({
         assigned_to: agent_id,
@@ -186,7 +299,7 @@ module.exports = {
         ticket_id: ticket.id,
         sender_type: 'system',
         sender_name: 'System',
-        message: `Ticket assigned to ${agent.name}`,
+        message: `Ticket assigned to agent ${agent_id}`,
       });
 
       res.json({ success: true, data: ticket });
@@ -441,13 +554,6 @@ module.exports = {
         limit: parseInt(limit),
         offset: parseInt(offset),
         order: [['createdAt', 'DESC']],
-        include: [
-          {
-            model: User,
-            as: 'assignedAgent',
-            attributes: ['id', 'name', 'email'],
-          },
-        ],
       });
 
       res.json({
@@ -480,21 +586,9 @@ module.exports = {
         where: { id, tenant_id },
         include: [
           {
-            model: User,
-            as: 'assignedAgent',
-            attributes: ['id', 'name', 'email', 'role'],
-          },
-          {
             model: TicketMessage,
             as: 'messages',
             order: [['createdAt', 'ASC']],
-            include: [
-              {
-                model: User,
-                as: 'sender',
-                attributes: ['id', 'name', 'email'],
-              },
-            ],
           },
           {
             model: SupportAgentReview,

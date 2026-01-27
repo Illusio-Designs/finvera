@@ -1186,11 +1186,273 @@ module.exports = {
     await addIndexIfNotExists('commissions', ['distributor_id'], { name: 'idx_commissions_distributor' });
     await addIndexIfNotExists('commissions', ['salesman_id'], { name: 'idx_commissions_salesman' });
     await addIndexIfNotExists('referral_rewards', ['referrer_id']);
+
+    // ============================================
+    // SUPPORT SYSTEM TABLES
+    // ============================================
+
+    // 15. SUPPORT_TICKETS TABLE
+    const [supportTicketsTable] = await queryInterface.sequelize.query("SHOW TABLES LIKE 'support_tickets'");
+    if (supportTicketsTable.length === 0) {
+      await queryInterface.createTable('support_tickets', {
+        id: {
+          type: Sequelize.UUID,
+          defaultValue: Sequelize.UUIDV4,
+          primaryKey: true,
+        },
+        ticket_number: {
+          type: Sequelize.STRING(20),
+          allowNull: false,
+          unique: true,
+          comment: 'Auto-generated ticket number (e.g., TKT-2024-0001)',
+        },
+        tenant_id: {
+          type: Sequelize.UUID,
+          allowNull: true,
+          comment: 'Tenant who raised the ticket (null for non-tenant users)',
+        },
+        client_name: {
+          type: Sequelize.STRING(100),
+          allowNull: false,
+        },
+        client_email: {
+          type: Sequelize.STRING(255),
+          allowNull: false,
+        },
+        client_phone: {
+          type: Sequelize.STRING(15),
+          allowNull: true,
+        },
+        subject: {
+          type: Sequelize.STRING(255),
+          allowNull: false,
+        },
+        description: {
+          type: Sequelize.TEXT,
+          allowNull: false,
+        },
+        category: {
+          type: Sequelize.ENUM('technical', 'billing', 'feature_request', 'bug_report', 'general', 'other'),
+          defaultValue: 'general',
+        },
+        priority: {
+          type: Sequelize.ENUM('low', 'medium', 'high', 'urgent'),
+          defaultValue: 'medium',
+        },
+        status: {
+          type: Sequelize.ENUM('open', 'assigned', 'in_progress', 'waiting_client', 'resolved', 'closed'),
+          defaultValue: 'open',
+        },
+        assigned_to: {
+          type: Sequelize.UUID,
+          allowNull: true,
+          comment: 'Support agent assigned to this ticket',
+        },
+        attachments: {
+          type: Sequelize.JSON,
+          allowNull: true,
+          comment: 'Array of attachment file paths',
+        },
+        resolution_notes: {
+          type: Sequelize.TEXT,
+          allowNull: true,
+        },
+        resolved_at: {
+          type: Sequelize.DATE,
+          allowNull: true,
+        },
+        closed_at: {
+          type: Sequelize.DATE,
+          allowNull: true,
+        },
+        createdAt: {
+          type: Sequelize.DATE,
+          allowNull: false,
+          defaultValue: Sequelize.NOW,
+        },
+        updatedAt: {
+          type: Sequelize.DATE,
+          allowNull: false,
+          defaultValue: Sequelize.NOW,
+        },
+      });
+
+      await addIndexIfNotExists('support_tickets', ['ticket_number'], { name: 'idx_support_tickets_number', unique: true });
+      await addIndexIfNotExists('support_tickets', ['tenant_id'], { name: 'idx_support_tickets_tenant_id' });
+      await addIndexIfNotExists('support_tickets', ['status'], { name: 'idx_support_tickets_status' });
+      await addIndexIfNotExists('support_tickets', ['assigned_to'], { name: 'idx_support_tickets_assigned_to' });
+      await addIndexIfNotExists('support_tickets', ['client_email'], { name: 'idx_support_tickets_client_email' });
+      console.log('✓ Created table support_tickets');
+    } else {
+      console.log('ℹ️  Table support_tickets already exists');
+    }
+
+    // 16. TICKET_MESSAGES TABLE
+    const [ticketMessagesTable] = await queryInterface.sequelize.query("SHOW TABLES LIKE 'ticket_messages'");
+    if (ticketMessagesTable.length === 0) {
+      await queryInterface.createTable('ticket_messages', {
+        id: {
+          type: Sequelize.UUID,
+          defaultValue: Sequelize.UUIDV4,
+          primaryKey: true,
+        },
+        ticket_id: {
+          type: Sequelize.UUID,
+          allowNull: false,
+          references: {
+            model: 'support_tickets',
+            key: 'id',
+          },
+          onUpdate: 'CASCADE',
+          onDelete: 'CASCADE',
+        },
+        sender_type: {
+          type: Sequelize.ENUM('client', 'agent', 'system'),
+          allowNull: false,
+        },
+        sender_id: {
+          type: Sequelize.UUID,
+          allowNull: true,
+          comment: 'User ID if sender is agent, null for client/system',
+        },
+        sender_name: {
+          type: Sequelize.STRING(100),
+          allowNull: false,
+        },
+        message: {
+          type: Sequelize.TEXT,
+          allowNull: false,
+        },
+        attachments: {
+          type: Sequelize.JSON,
+          allowNull: true,
+          comment: 'Array of attachment file paths',
+        },
+        is_internal: {
+          type: Sequelize.BOOLEAN,
+          defaultValue: false,
+          comment: 'Internal notes visible only to agents',
+        },
+        createdAt: {
+          type: Sequelize.DATE,
+          allowNull: false,
+          defaultValue: Sequelize.NOW,
+        },
+        updatedAt: {
+          type: Sequelize.DATE,
+          allowNull: false,
+          defaultValue: Sequelize.NOW,
+        },
+      });
+
+      await addIndexIfNotExists('ticket_messages', ['ticket_id'], { name: 'idx_ticket_messages_ticket_id' });
+      await addIndexIfNotExists('ticket_messages', ['sender_id'], { name: 'idx_ticket_messages_sender_id' });
+      console.log('✓ Created table ticket_messages');
+    } else {
+      console.log('ℹ️  Table ticket_messages already exists');
+    }
+
+    // 17. SUPPORT_AGENT_REVIEWS TABLE
+    const [supportAgentReviewsTable] = await queryInterface.sequelize.query("SHOW TABLES LIKE 'support_agent_reviews'");
+    if (supportAgentReviewsTable.length === 0) {
+      await queryInterface.createTable('support_agent_reviews', {
+        id: {
+          type: Sequelize.UUID,
+          defaultValue: Sequelize.UUIDV4,
+          primaryKey: true,
+        },
+        ticket_id: {
+          type: Sequelize.UUID,
+          allowNull: false,
+          unique: true,
+          references: {
+            model: 'support_tickets',
+            key: 'id',
+          },
+          onUpdate: 'CASCADE',
+          onDelete: 'CASCADE',
+        },
+        agent_id: {
+          type: Sequelize.UUID,
+          allowNull: false,
+          comment: 'Support agent being reviewed',
+        },
+        client_name: {
+          type: Sequelize.STRING(100),
+          allowNull: false,
+        },
+        client_email: {
+          type: Sequelize.STRING(255),
+          allowNull: false,
+        },
+        rating: {
+          type: Sequelize.INTEGER,
+          allowNull: false,
+          validate: {
+            min: 1,
+            max: 5,
+          },
+        },
+        feedback: {
+          type: Sequelize.TEXT,
+          allowNull: true,
+        },
+        service_quality: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+          validate: {
+            min: 1,
+            max: 5,
+          },
+        },
+        response_time: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+          validate: {
+            min: 1,
+            max: 5,
+          },
+        },
+        problem_resolution: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+          validate: {
+            min: 1,
+            max: 5,
+          },
+        },
+        would_recommend: {
+          type: Sequelize.BOOLEAN,
+          allowNull: true,
+        },
+        createdAt: {
+          type: Sequelize.DATE,
+          allowNull: false,
+          defaultValue: Sequelize.NOW,
+        },
+        updatedAt: {
+          type: Sequelize.DATE,
+          allowNull: false,
+          defaultValue: Sequelize.NOW,
+        },
+      });
+
+      await addIndexIfNotExists('support_agent_reviews', ['ticket_id'], { name: 'idx_support_agent_reviews_ticket_id', unique: true });
+      await addIndexIfNotExists('support_agent_reviews', ['agent_id'], { name: 'idx_support_agent_reviews_agent_id' });
+      await addIndexIfNotExists('support_agent_reviews', ['rating'], { name: 'idx_support_agent_reviews_rating' });
+      console.log('✓ Created table support_agent_reviews');
+    } else {
+      console.log('ℹ️  Table support_agent_reviews already exists');
+    }
+
     } // End of Admin DB section
   },
 
   async down(queryInterface, Sequelize) {
-    // Drop admin/main DB tables
+    // Drop admin/main DB tables (in reverse order of creation)
+    await queryInterface.dropTable('support_agent_reviews');
+    await queryInterface.dropTable('ticket_messages');
+    await queryInterface.dropTable('support_tickets');
     await queryInterface.dropTable('notification_preferences');
     await queryInterface.dropTable('notifications');
     await queryInterface.dropTable('referral_discount_configs');

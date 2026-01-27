@@ -3,9 +3,34 @@ const router = express.Router();
 const supportController = require('../controllers/supportController');
 const { authenticate } = require('../middleware/auth');
 const { authorize } = require('../middleware/role');
+const { setTenantContext, requireTenant } = require('../middleware/tenant');
 
-// Public routes (clients can create tickets)
-router.post('/tickets', supportController.createTicket);
+// Public routes (clients can create tickets) - with optional authentication
+router.post('/tickets', (req, res, next) => {
+  // Try to authenticate if token is provided, but don't fail if not
+  if (req.headers.authorization) {
+    authenticate(req, res, (err) => {
+      if (err) {
+        // If authentication fails, continue without user context
+        req.user = null;
+        supportController.createTicket(req, res, next);
+      } else {
+        // If authentication succeeds, set tenant context
+        setTenantContext(req, res, (tenantErr) => {
+          if (tenantErr) {
+            console.error('🎫 Tenant context error:', tenantErr);
+            // Continue without tenant context if it fails
+          }
+          supportController.createTicket(req, res, next);
+        });
+      }
+    });
+  } else {
+    // No token provided, continue without user context
+    req.user = null;
+    supportController.createTicket(req, res, next);
+  }
+});
 
 // Client routes (authenticated clients can manage their own tickets)
 router.get(
