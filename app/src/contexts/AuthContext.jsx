@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI } from '../lib/api';
+import { STORAGE_CONFIG, buildStorageKey } from '../config/env';
 
 const AuthContext = createContext();
 
@@ -24,8 +25,11 @@ export const AuthProvider = ({ children }) => {
 
   const checkStoredAuth = async () => {
     try {
-      const storedToken = await AsyncStorage.getItem('token');
-      const storedUser = await AsyncStorage.getItem('user');
+      const tokenKey = buildStorageKey(STORAGE_CONFIG.AUTH_TOKEN_KEY);
+      const userKey = buildStorageKey(STORAGE_CONFIG.USER_DATA_KEY);
+      
+      const storedToken = await AsyncStorage.getItem(tokenKey);
+      const storedUser = await AsyncStorage.getItem(userKey);
       
       if (storedToken && storedUser) {
         setToken(storedToken);
@@ -47,8 +51,19 @@ export const AuthProvider = ({ children }) => {
       if (response.data && response.data.user) {
         const { accessToken, refreshToken, jti, user } = response.data;
         
-        await AsyncStorage.setItem('token', accessToken);
-        await AsyncStorage.setItem('user', JSON.stringify(user));
+        const tokenKey = buildStorageKey(STORAGE_CONFIG.AUTH_TOKEN_KEY);
+        const userKey = buildStorageKey(STORAGE_CONFIG.USER_DATA_KEY);
+        
+        // Debug logging in development
+        if (__DEV__) {
+          console.log('🔐 Login Success - Storing tokens:');
+          console.log('  Token Key:', tokenKey);
+          console.log('  User Key:', userKey);
+          console.log('  Token Preview:', accessToken ? accessToken.substring(0, 20) + '...' : 'null');
+        }
+        
+        await AsyncStorage.setItem(tokenKey, accessToken);
+        await AsyncStorage.setItem(userKey, JSON.stringify(user));
         
         setToken(accessToken);
         setUser(user);
@@ -115,8 +130,11 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await AsyncStorage.removeItem('token');
-      await AsyncStorage.removeItem('user');
+      const tokenKey = buildStorageKey(STORAGE_CONFIG.AUTH_TOKEN_KEY);
+      const userKey = buildStorageKey(STORAGE_CONFIG.USER_DATA_KEY);
+      
+      await AsyncStorage.removeItem(tokenKey);
+      await AsyncStorage.removeItem(userKey);
       setToken(null);
       setUser(null);
     } catch (error) {
@@ -133,8 +151,10 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.updateProfile(profileData);
       if (response.data?.user) {
         const updatedUser = response.data.user;
+        const userKey = buildStorageKey(STORAGE_CONFIG.USER_DATA_KEY);
+        
         setUser(updatedUser);
-        await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+        await AsyncStorage.setItem(userKey, JSON.stringify(updatedUser));
         return { success: true, user: updatedUser };
       }
       return { success: false, message: 'Failed to update profile' };
@@ -159,8 +179,10 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.uploadProfileImage(formData);
       if (response.data?.user) {
         const updatedUser = response.data.user;
+        const userKey = buildStorageKey(STORAGE_CONFIG.USER_DATA_KEY);
+        
         setUser(updatedUser);
-        await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+        await AsyncStorage.setItem(userKey, JSON.stringify(updatedUser));
         return { success: true, user: updatedUser };
       }
       return { success: false, message: 'Failed to upload image' };
@@ -173,6 +195,31 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Debug function to check token storage (development only)
+  const debugTokenStorage = async () => {
+    if (__DEV__) {
+      try {
+        const tokenKey = buildStorageKey(STORAGE_CONFIG.AUTH_TOKEN_KEY);
+        const userKey = buildStorageKey(STORAGE_CONFIG.USER_DATA_KEY);
+        
+        const storedToken = await AsyncStorage.getItem(tokenKey);
+        const storedUser = await AsyncStorage.getItem(userKey);
+        
+        console.log('🔍 Token Storage Debug:');
+        console.log('  Token Key:', tokenKey);
+        console.log('  User Key:', userKey);
+        console.log('  Token Exists:', !!storedToken);
+        console.log('  User Exists:', !!storedUser);
+        console.log('  Token Preview:', storedToken ? storedToken.substring(0, 20) + '...' : 'null');
+        
+        return { tokenKey, userKey, hasToken: !!storedToken, hasUser: !!storedUser };
+      } catch (error) {
+        console.error('Debug token storage error:', error);
+        return null;
+      }
+    }
+  };
+
   const value = {
     user,
     token,
@@ -182,6 +229,7 @@ export const AuthProvider = ({ children }) => {
     updateUser,
     updateProfile,
     uploadProfileImage,
+    debugTokenStorage, // Only available in development
     isAuthenticated: !!user && !!token,
   };
 

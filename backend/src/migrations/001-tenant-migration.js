@@ -83,6 +83,7 @@ module.exports = {
         id: { type: Sequelize.UUID, defaultValue: Sequelize.UUIDV4, primaryKey: true },
         email: { type: Sequelize.STRING, allowNull: false, unique: true },
         password: { type: Sequelize.STRING, allowNull: false },
+        name: { type: Sequelize.STRING, allowNull: true }, // Add name field
         first_name: { type: Sequelize.STRING, allowNull: false },
         last_name: { type: Sequelize.STRING, allowNull: false },
         role: { type: Sequelize.ENUM('tenant_admin', 'user', 'accountant'), defaultValue: 'user' },

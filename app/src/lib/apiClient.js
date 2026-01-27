@@ -1,54 +1,46 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showGlobalError } from '../services/globalNotificationService';
-
-// Get the correct API URL for development
-const getDevApiUrl = () => {
-  // Priority order for development URLs:
-  // 1. Environment variable override
-  // 2. Computer's IP address (for physical devices)
-  // 3. Localhost (for iOS Simulator)
-  // 4. Expo tunnel URL (if using tunnel)
-  
-  const expoUrl = process.env.EXPO_PUBLIC_API_URL;
-  if (expoUrl) {
-    console.log('Using API URL from environment:', expoUrl);
-    return expoUrl;
-  }
-  
-  // Your computer's IP address on the local network
-  const computerIP = '192.168.1.39';
-  const ipUrl = `http://${computerIP}:3000/api`;
-  
-  console.log('Using computer IP for API:', ipUrl);
-  return ipUrl;
-};
-
-const API_BASE_URL = __DEV__ 
-  ? getDevApiUrl()
-  : 'https://api.finvera.solutions/api';
+import { API_CONFIG, STORAGE_CONFIG, DEBUG_CONFIG, buildStorageKey, isDebugMode } from '../config/env';
 
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 30000,
+  baseURL: API_CONFIG.API_URL,
+  timeout: API_CONFIG.TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
 // Log the API URL being used for debugging
-console.log('API Base URL:', API_BASE_URL);
+if (isDebugMode() && DEBUG_CONFIG.DEBUG_API_CALLS) {
+  console.log('📡 API Base URL:', API_CONFIG.API_URL);
+  console.log('⏱️  API Timeout:', API_CONFIG.TIMEOUT);
+}
 
 // Request interceptor for auth token
 apiClient.interceptors.request.use(
   async (config) => {
-    const token = await AsyncStorage.getItem('token');
+    const tokenKey = buildStorageKey(STORAGE_CONFIG.AUTH_TOKEN_KEY);
+    const token = await AsyncStorage.getItem(tokenKey);
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Log API calls in debug mode
+    if (isDebugMode() && DEBUG_CONFIG.DEBUG_API_CALLS) {
+      console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+      if (config.data) {
+        console.log('📤 Request Data:', config.data);
+      }
+    }
+    
     return config;
   },
   (error) => {
+    if (isDebugMode() && DEBUG_CONFIG.DEBUG_API_CALLS) {
+      console.error('❌ Request Error:', error);
+    }
     return Promise.reject(error);
   }
 );
@@ -56,6 +48,12 @@ apiClient.interceptors.request.use(
 // Response interceptor for error handling
 apiClient.interceptors.response.use(
   (response) => {
+    // Log API responses in debug mode
+    if (isDebugMode() && DEBUG_CONFIG.DEBUG_API_CALLS) {
+      console.log(`✅ API Response: ${response.config?.method?.toUpperCase()} ${response.config?.url}`);
+      console.log('📥 Response Status:', response.status);
+    }
+    
     // Ensure response always has a data property with proper structure
     if (response && response.data) {
       // If the response data doesn't have the expected structure, normalize it
@@ -100,16 +98,21 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error) => {
-    console.log('API Error:', {
-      status: error.response?.status,
-      message: error.response?.data?.message,
-      url: error.config?.url,
-      method: error.config?.method
-    });
+    // Log API errors in debug mode
+    if (isDebugMode() && DEBUG_CONFIG.DEBUG_API_CALLS) {
+      console.error('❌ API Error:', {
+        status: error.response?.status,
+        message: error.response?.data?.message,
+        url: error.config?.url,
+        method: error.config?.method
+      });
+    }
 
     if (error.response?.status === 401) {
       // Token expired, redirect to login
-      await AsyncStorage.multiRemove(['token', 'user']);
+      const tokenKey = buildStorageKey(STORAGE_CONFIG.AUTH_TOKEN_KEY);
+      const userKey = buildStorageKey(STORAGE_CONFIG.USER_DATA_KEY);
+      await AsyncStorage.multiRemove([tokenKey, userKey]);
       showGlobalError('Session Expired', 'Please log in again to continue.');
     } else if (error.response?.status === 403) {
       showGlobalError('Access Denied', 'You don\'t have permission to access this feature.');

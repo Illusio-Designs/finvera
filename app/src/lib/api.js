@@ -235,5 +235,15 @@ export const taxAPI = {
   },
 };
 
+// Subscription APIs
+export const subscriptionAPI = {
+  getCurrentSubscription: () => apiClient.get('/subscriptions/current'),
+  createSubscription: (data) => apiClient.post('/subscriptions', data),
+  updateSubscription: (id, data) => apiClient.put(`/subscriptions/${id}`, data),
+  cancelSubscription: (data) => apiClient.post('/subscriptions/cancel', data),
+  verifyPayment: (data) => apiClient.post('/subscriptions/verify-payment', data),
+  getPaymentHistory: () => apiClient.get('/subscriptions/payment-history'),
+};
+
 // Legacy export for backward compatibility
 export { apiClient as api };

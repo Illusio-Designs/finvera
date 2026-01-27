@@ -5,6 +5,7 @@ import * as Font from 'expo-font';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext.jsx';
 import { NotificationProvider } from './src/contexts/NotificationContext.jsx';
 import { DrawerProvider, useDrawer } from './src/contexts/DrawerContext.jsx';
+import { SubscriptionProvider } from './src/contexts/SubscriptionContext.jsx';
 import CustomDrawer from './src/components/navigation/CustomDrawer.jsx';
 import BottomTabBar from './src/components/navigation/BottomTabBar.jsx';
 
@@ -23,6 +24,9 @@ import MoreScreen from './src/screens/client/profile/MoreScreen.jsx';
 import ProfileScreen from './src/screens/client/profile/ProfileScreen.jsx';
 import SettingsScreen from './src/screens/client/profile/SettingsScreen.jsx';
 import NotificationPreferencesScreen from './src/screens/client/profile/NotificationPreferencesScreen.jsx';
+import ChangePasswordScreen from './src/screens/client/profile/ChangePasswordScreen.jsx';
+import SubscriptionScreen from './src/screens/client/profile/SubscriptionScreen.jsx';
+import PlansScreen from './src/screens/client/profile/PlansScreen.jsx';
 import LedgersScreen from './src/screens/client/accounting/LedgersScreen.jsx';
 import InventoryScreen from './src/screens/client/inventory/InventoryScreen.jsx';
 import SupportScreen from './src/screens/client/business/SupportScreen.jsx';
@@ -62,7 +66,6 @@ import CreditNoteScreen from './src/screens/client/vouchers/CreditNoteScreen.jsx
 
 // Phase 5: Tools Screens
 import TallyImportScreen from './src/screens/client/tools/TallyImportScreen.jsx';
-import PlansScreen from './src/screens/client/business/PlansScreen.jsx';
 import SubscribeScreen from './src/screens/client/business/SubscribeScreen.jsx';
 import ReviewScreen from './src/screens/client/business/ReviewScreen.jsx';
 import LoanScreen from './src/screens/client/business/LoanScreen.jsx';
@@ -155,6 +158,9 @@ function AppNavigator() {
             <Stack.Screen name="Profile" component={ProfileScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="NotificationPreferences" component={NotificationPreferencesScreen} />
+            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+            <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+            <Stack.Screen name="Plans" component={PlansScreen} />
             
             {/* Business Features */}
             <Stack.Screen name="Ledgers" component={LedgersScreen} />
@@ -197,7 +203,6 @@ function AppNavigator() {
             <Stack.Screen name="TallyImport" component={TallyImportScreen} />
             
             {/* Phase 6: Business Services Screens */}
-            <Stack.Screen name="Plans" component={PlansScreen} />
             <Stack.Screen name="Subscribe" component={SubscribeScreen} />
             <Stack.Screen name="Review" component={ReviewScreen} />
             <Stack.Screen name="Loan" component={LoanScreen} />
@@ -233,9 +238,11 @@ export default function App() {
   return (
     <AuthProvider>
       <NotificationProvider>
-        <DrawerProvider>
-          <AppNavigator />
-        </DrawerProvider>
+        <SubscriptionProvider>
+          <DrawerProvider>
+            <AppNavigator />
+          </DrawerProvider>
+        </SubscriptionProvider>
       </NotificationProvider>
     </AuthProvider>
   );

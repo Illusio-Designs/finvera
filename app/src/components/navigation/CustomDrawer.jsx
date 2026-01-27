@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Image } fr
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSubscription } from '../../contexts/SubscriptionContext';
 
 export default function CustomDrawer({ visible, onClose }) {
   const { user, logout } = useAuth();
+  const { getPlanName, getPlanType, getMaxCompanies, getMaxBranches } = useSubscription();
   const navigation = useNavigation();
   const [expandedSections, setExpandedSections] = useState({});
 
@@ -232,6 +234,14 @@ export default function CustomDrawer({ visible, onClose }) {
                       {user.company_name}
                     </Text>
                   )}
+                  <View style={styles.subscriptionInfo}>
+                    <Text style={styles.subscriptionPlan}>
+                      {getPlanName()} ({getPlanType() === 'multi-company' ? 'Multi-Company' : 'Multi-Branch'})
+                    </Text>
+                    <Text style={styles.subscriptionLimits}>
+                      Max: {getMaxCompanies()} companies, {getMaxBranches()} branches
+                    </Text>
+                  </View>
                 </View>
               </View>
               <TouchableOpacity style={styles.closeButton} onPress={onClose}>
@@ -362,6 +372,24 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.7)',
     fontFamily: 'Agency',
     fontStyle: 'italic',
+  },
+  subscriptionInfo: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  subscriptionPlan: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontFamily: 'Agency',
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  subscriptionLimits: {
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontFamily: 'Agency',
   },
   closeButton: {
     width: 44,

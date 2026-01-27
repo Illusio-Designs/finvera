@@ -21,7 +21,30 @@ router.get('/google/callback', passport.authenticate('google', { session: false 
 // Profile routes (require authentication)
 router.get('/profile', authenticate, authController.getProfile);
 router.put('/profile', authenticate, authController.updateProfile);
-router.post('/profile/image', authenticate, uploadProfile.single('profile_image'), authController.uploadProfileImage);
+router.post('/profile/image', authenticate, (req, res, next) => {
+  console.log('Profile image upload request received');
+  console.log('Headers:', req.headers);
+  console.log('Content-Type:', req.get('Content-Type'));
+  next();
+}, uploadProfile.any(), (req, res, next) => {
+  console.log('Files received:', req.files);
+  console.log('Body received:', req.body);
+  
+  // Find the image file (mobile app sends fieldname: 'image')
+  const imageFile = req.files?.find(file => file.fieldname === 'image');
+  if (imageFile) {
+    req.file = imageFile;
+    console.log('✅ Found image file:', {
+      fieldname: imageFile.fieldname,
+      filename: imageFile.filename,
+      size: imageFile.size
+    });
+  } else {
+    console.log('❌ No image file found in req.files');
+  }
+  
+  next();
+}, authController.uploadProfileImage);
 router.post('/change-password', authenticate, authController.changePassword);
 
 // Password reset routes (no authentication required)

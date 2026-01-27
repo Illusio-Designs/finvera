@@ -1,7 +1,5 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import DashboardScreen from '../screens/client/DashboardScreen.jsx';
-
 // Auth screens
 import ForgotPasswordScreen from '../screens/client/auth/ForgotPasswordScreen.jsx';
 import ResetPasswordScreen from '../screens/client/auth/ResetPasswordScreen.jsx';
@@ -9,6 +7,9 @@ import ResetPasswordScreen from '../screens/client/auth/ResetPasswordScreen.jsx'
 // Profile screens
 import ProfileScreen from '../screens/client/profile/ProfileScreen.jsx';
 import SettingsScreen from '../screens/client/profile/SettingsScreen.jsx';
+import ChangePasswordScreen from '../screens/client/profile/ChangePasswordScreen.jsx';
+import NotificationPreferencesScreen from '../screens/client/profile/NotificationPreferencesScreen.jsx';
+import SubscriptionScreen from '../screens/client/profile/SubscriptionScreen.jsx';
 
 // Company screens
 import CompaniesScreen from '../screens/client/company/CompaniesScreen.jsx';
@@ -37,8 +38,6 @@ const Stack = createNativeStackNavigator();
 export default function ClientNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Dashboard" component={DashboardScreen} />
-      
       {/* Auth Screens */}
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
@@ -46,6 +45,9 @@ export default function ClientNavigator() {
       {/* Profile Screens */}
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+      <Stack.Screen name="NotificationPreferences" component={NotificationPreferencesScreen} />
+      <Stack.Screen name="Subscription" component={SubscriptionScreen} />
       
       {/* Company Screens */}
       <Stack.Screen name="Companies" component={CompaniesScreen} />

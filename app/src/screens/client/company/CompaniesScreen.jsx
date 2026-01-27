@@ -5,7 +5,10 @@ import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useSubscription } from '../../../contexts/SubscriptionContext';
 import { companyAPI, branchAPI } from '../../../lib/api';
+import CreateCompanyModal from '../../../components/modals/CreateCompanyModal';
+import CreateBranchModal from '../../../components/modals/CreateBranchModal';
 
 const COMPANY_TYPES = [
   { value: 'sole_proprietorship', label: 'Sole Proprietorship' },
@@ -21,17 +24,30 @@ export default function CompaniesScreen({ isPostLogin = false, onSelectionComple
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
   const { user, switchCompany } = useAuth();
+  const {
+    subscription,
+    loading: subscriptionLoading,
+    hasMultiCompanyAccess,
+    hasMultiBranchAccess,
+    canCreateCompany,
+    canCreateBranch,
+    getMaxCompanies,
+    getMaxBranches,
+    getPlanType,
+    getPlanName,
+  } = useSubscription();
+  
   const [companies, setCompanies] = useState([]);
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [status, setStatus] = useState(null);
-  const [subscription, setSubscription] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showBranchModal, setShowBranchModal] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [selectedBranch, setSelectedBranch] = useState(null);
   const [activeTab, setActiveTab] = useState('companies'); // 'companies' or 'branches'
+  const [showCreateCompanyModal, setShowCreateCompanyModal] = useState(false);
+  const [showCreateBranchModal, setShowCreateBranchModal] = useState(false);
 
   const handleMenuPress = () => {
     openDrawer();
@@ -48,26 +64,12 @@ export default function CompaniesScreen({ isPostLogin = false, onSelectionComple
         const branchesRes = await branchAPI.list(user.company_id).catch(() => ({ data: { data: [] } }));
         setBranches(branchesRes?.data?.data || branchesRes?.data || []);
       }
-      
-      // Set default status since status API doesn't exist
-      setStatus({
-        company_count: companiesList.length,
-        max_companies: 5, // Default limit
-        branch_count: branches.length,
-        max_branches: 10 // Default limit
-      });
-      // Set default subscription since subscription API doesn't exist
-      setSubscription({
-        plan_type: 'basic',
-        multi_company: companiesList.length > 1,
-        multi_branch: branches.length > 1
-      });
 
-      // For post-login flow, determine which tab to show
+      // For post-login flow, determine which tab to show based on subscription
       if (isPostLogin) {
-        if (companiesList.length > 1) {
+        if (hasMultiCompanyAccess() && companiesList.length > 1) {
           setActiveTab('companies');
-        } else if (branches.length > 1) {
+        } else if (hasMultiBranchAccess() && branches.length > 1) {
           setActiveTab('branches');
         }
       }
@@ -83,7 +85,7 @@ export default function CompaniesScreen({ isPostLogin = false, onSelectionComple
     } finally {
       setLoading(false);
     }
-  }, [showNotification, user?.company_id, isPostLogin, branches.length]);
+  }, [showNotification, user?.company_id, isPostLogin, hasMultiCompanyAccess, hasMultiBranchAccess]);
 
   useEffect(() => {
     fetchData();
@@ -247,46 +249,81 @@ export default function CompaniesScreen({ isPostLogin = false, onSelectionComple
           </View>
         )}
 
-        {/* Tab Navigation - only show if we have both companies and branches */}
-        {(companies.length > 1 || branches.length > 1) && (
-          <View style={styles.tabContainer}>
-            {companies.length > 1 && (
-              <TouchableOpacity
-                style={[styles.tab, activeTab === 'companies' && styles.activeTab]}
-                onPress={() => setActiveTab('companies')}
-              >
-                <Ionicons 
-                  name="business" 
-                  size={20} 
-                  color={activeTab === 'companies' ? 'white' : '#64748b'} 
-                />
-                <Text style={[
-                  styles.tabText,
-                  activeTab === 'companies' && styles.activeTabText
-                ]}>
-                  Companies ({companies.length})
-                </Text>
-              </TouchableOpacity>
-            )}
+        {/* Tab Navigation with Create Buttons */}
+        <View style={styles.tabContainer}>
+          {/* Companies Tab */}
+          <View style={styles.tabSection}>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'companies' && styles.activeTab]}
+              onPress={() => setActiveTab('companies')}
+            >
+              <Ionicons 
+                name="business" 
+                size={20} 
+                color={activeTab === 'companies' ? 'white' : '#64748b'} 
+              />
+              <Text style={[
+                styles.tabText,
+                activeTab === 'companies' && styles.activeTabText
+              ]}>
+                Companies ({companies.length})
+              </Text>
+            </TouchableOpacity>
             
-            {branches.length > 1 && (
+            {/* Create Company Button - Only show if user has multi-company plan */}
+            {canCreateCompany() && (
               <TouchableOpacity
-                style={[styles.tab, activeTab === 'branches' && styles.activeTab]}
-                onPress={() => setActiveTab('branches')}
+                style={styles.createButton}
+                onPress={() => setShowCreateCompanyModal(true)}
               >
-                <Ionicons 
-                  name="storefront" 
-                  size={20} 
-                  color={activeTab === 'branches' ? 'white' : '#64748b'} 
-                />
-                <Text style={[
-                  styles.tabText,
-                  activeTab === 'branches' && styles.activeTabText
-                ]}>
-                  Branches ({branches.length})
-                </Text>
+                <Ionicons name="add" size={20} color="#3e60ab" />
               </TouchableOpacity>
             )}
+          </View>
+
+          {/* Branches Tab */}
+          <View style={styles.tabSection}>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'branches' && styles.activeTab]}
+              onPress={() => setActiveTab('branches')}
+            >
+              <Ionicons 
+                name="storefront" 
+                size={20} 
+                color={activeTab === 'branches' ? 'white' : '#64748b'} 
+              />
+              <Text style={[
+                styles.tabText,
+                activeTab === 'branches' && styles.activeTabText
+              ]}>
+                Branches ({branches.length})
+              </Text>
+            </TouchableOpacity>
+            
+            {/* Create Branch Button - Only show if user has multi-branch plan */}
+            {canCreateBranch() && (
+              <TouchableOpacity
+                style={styles.createButton}
+                onPress={() => setShowCreateBranchModal(true)}
+              >
+                <Ionicons name="add" size={20} color="#10b981" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* Plan Information Banner */}
+        {subscription && (
+          <View style={styles.planBanner}>
+            <View style={styles.planInfo}>
+              <Ionicons name="information-circle" size={20} color="#3e60ab" />
+              <Text style={styles.planText}>
+                {getPlanName()} - {getPlanType() === 'multi-company' ? 'Multi-Company' : 'Multi-Branch'} Plan
+              </Text>
+            </View>
+            <Text style={styles.planLimits}>
+              Companies: {companies.length}/{getMaxCompanies()} | Branches: {branches.length}/{getMaxBranches()}
+            </Text>
           </View>
         )}
 
@@ -311,9 +348,20 @@ export default function CompaniesScreen({ isPostLogin = false, onSelectionComple
                   <Text style={styles.emptySubtitle}>
                     {isPostLogin 
                       ? 'No companies available for selection'
-                      : 'No companies found in your account'
+                      : canCreateCompany() 
+                        ? 'Create your first company to get started'
+                        : 'Upgrade to Multi-Company plan to create companies'
                     }
                   </Text>
+                  {!isPostLogin && canCreateCompany() && (
+                    <TouchableOpacity
+                      style={styles.emptyActionButton}
+                      onPress={() => setShowCreateCompanyModal(true)}
+                    >
+                      <Ionicons name="add" size={20} color="white" />
+                      <Text style={styles.emptyActionText}>Create Company</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             ) : (
@@ -435,9 +483,20 @@ export default function CompaniesScreen({ isPostLogin = false, onSelectionComple
                   <Text style={styles.emptySubtitle}>
                     {isPostLogin 
                       ? 'No branches available for selection'
-                      : 'No branches available for the current company'
+                      : canCreateBranch() 
+                        ? 'Create your first branch to get started'
+                        : 'Upgrade to Multi-Branch plan to create branches'
                     }
                   </Text>
+                  {!isPostLogin && canCreateBranch() && (
+                    <TouchableOpacity
+                      style={styles.emptyActionButton}
+                      onPress={() => setShowCreateBranchModal(true)}
+                    >
+                      <Ionicons name="add" size={20} color="white" />
+                      <Text style={styles.emptyActionText}>Create Branch</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             ) : (
@@ -719,6 +778,27 @@ export default function CompaniesScreen({ isPostLogin = false, onSelectionComple
           )}
         </View>
       </Modal>
+
+      {/* Create Company Modal */}
+      <CreateCompanyModal
+        visible={showCreateCompanyModal}
+        onClose={() => setShowCreateCompanyModal(false)}
+        onSuccess={(newCompany) => {
+          setCompanies(prev => [...prev, newCompany]);
+          fetchData(); // Refresh data
+        }}
+      />
+
+      {/* Create Branch Modal */}
+      <CreateBranchModal
+        visible={showCreateBranchModal}
+        onClose={() => setShowCreateBranchModal(false)}
+        onSuccess={(newBranch) => {
+          setBranches(prev => [...prev, newBranch]);
+          fetchData(); // Refresh data
+        }}
+        selectedCompanyId={user?.company_id}
+      />
     </View>
   );
 }
@@ -762,7 +842,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   tabContainer: {
-    flexDirection: 'row',
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 4,
@@ -772,6 +851,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 1,
+  },
+  tabSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   tab: {
     flex: 1,
@@ -794,6 +878,39 @@ const styles = StyleSheet.create({
   },
   activeTabText: {
     color: 'white',
+  },
+  createButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginLeft: 8,
+  },
+  planBanner: {
+    backgroundColor: '#f0f4ff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e0e7ff',
+  },
+  planInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+  },
+  planText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#3e60ab',
+    fontFamily: 'Agency',
+  },
+  planLimits: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontFamily: 'Agency',
   },
   loadingContainer: {
     flex: 1,
@@ -865,6 +982,22 @@ const styles = StyleSheet.create({
     fontFamily: 'Agency',
     textAlign: 'center',
     lineHeight: 24,
+    marginBottom: 20,
+  },
+  emptyActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#3e60ab',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  emptyActionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
+    fontFamily: 'Agency',
   },
   companiesList: {
     gap: 12,

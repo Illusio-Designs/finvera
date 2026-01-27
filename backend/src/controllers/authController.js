@@ -663,18 +663,11 @@ module.exports = {
 
       // Check if user is in tenant database or master database
       let user = null;
-      let companyInfo = null;
       
       try {
         if (req.tenantModels && req.tenantModels.User) {
-          // Tenant user - get user and company info
+          // Tenant user - get user only (no company info)
           user = await req.tenantModels.User.findByPk(userId);
-          
-          // Get company information from TenantMaster
-          if (req.tenant_id) {
-            const TenantMaster = require('../models/TenantMaster');
-            companyInfo = await TenantMaster.findByPk(req.tenant_id);
-          }
         } else {
           // Admin user (master database)
           user = await User.findByPk(userId);
@@ -704,11 +697,11 @@ module.exports = {
         });
       }
 
-      // Return user data without sensitive information
+      // Return user data without sensitive information and without company info
       const userData = {
         id: user.id,
         email: user.email,
-        name: user.name || user.full_name,
+        name: user.name || user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim(),
         role: user.role,
         phone: user.phone,
         profile_image: user.profile_image,
@@ -716,20 +709,13 @@ module.exports = {
         last_login: user.last_login,
       };
 
-      // Add company information if available
-      if (companyInfo) {
-        userData.company_name = companyInfo.company_name;
-        userData.gstin = companyInfo.gstin;
-        userData.pan = companyInfo.pan;
-        userData.tan = companyInfo.tan;
-        userData.address = companyInfo.address;
-        userData.city = companyInfo.city;
-        userData.state = companyInfo.state;
-        userData.pincode = companyInfo.pincode;
-        userData.subscription_plan = companyInfo.subscription_plan;
-        userData.is_trial = companyInfo.is_trial;
-        userData.trial_ends_at = companyInfo.trial_ends_at;
-      }
+      // Debug logging
+      console.log('👤 Profile API Response:', {
+        userId: user.id,
+        profileImage: user.profile_image,
+        name: userData.name,
+        userData: userData
+      });
 
       return res.json({ 
         success: true,
@@ -893,14 +879,24 @@ module.exports = {
   },
 
   async uploadProfileImage(req, res, next) {
+    console.log('🚀 uploadProfileImage function called');
     try {
       const userId = req.user_id || req.user?.id || req.user?.sub;
       
+      console.log('👤 Upload request details:', {
+        userId: userId,
+        hasFile: !!req.file,
+        fileName: req.file?.filename,
+        fileSize: req.file?.size
+      });
+      
       if (!userId) {
+        console.log('❌ No user ID found in request');
         return res.status(401).json({ message: 'User not authenticated' });
       }
 
       if (!req.file) {
+        console.log('❌ No file found in request');
         return res.status(400).json({ message: 'No file uploaded' });
       }
 
@@ -943,8 +939,32 @@ module.exports = {
       const relativePath = path.relative(uploadDir, req.file.path);
       const profileImagePath = relativePath.replace(/\\/g, '/'); // Normalize path separators
 
+      // Debug logging
+      console.log('📸 Profile Image Upload:', {
+        userId: user.id,
+        originalPath: req.file.path,
+        relativePath: relativePath,
+        profileImagePath: profileImagePath,
+        uploadDir: uploadDir
+      });
+
       // Update user profile image
-      await user.update({ profile_image: profileImagePath });
+      console.log('🔄 Updating user profile_image in database...');
+      try {
+        const updateResult = await user.update({ profile_image: profileImagePath });
+        console.log('📝 Database update result:', updateResult.dataValues);
+
+        // Verify the update
+        const updatedUser = await user.reload();
+        console.log('✅ Profile Image Updated:', {
+          userId: updatedUser.id,
+          savedProfileImage: updatedUser.profile_image,
+          updateSuccessful: updatedUser.profile_image === profileImagePath
+        });
+      } catch (updateError) {
+        console.error('❌ Database update failed:', updateError);
+        throw updateError;
+      }
 
       return res.json({
         message: 'Profile image uploaded successfully',
@@ -952,7 +972,7 @@ module.exports = {
         user: {
           id: user.id,
           email: user.email,
-          name: user.name || user.full_name,
+          name: user.name || user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim(),
           profile_image: profileImagePath,
         },
       });

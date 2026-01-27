@@ -18,9 +18,11 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING,
       allowNull: false,
     },
+    name: DataTypes.STRING, // Add name field
     first_name: DataTypes.STRING,
     last_name: DataTypes.STRING,
     phone: DataTypes.STRING,
+    profile_image: DataTypes.STRING, // Add profile_image field
     role: {
       type: DataTypes.ENUM('tenant_admin', 'user', 'accountant'),
       defaultValue: 'user',
@@ -29,6 +31,7 @@ module.exports = (sequelize) => {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
+    last_login: DataTypes.DATE, // Add last_login field
     tenant_id: {
       type: DataTypes.STRING,
       allowNull: false,
