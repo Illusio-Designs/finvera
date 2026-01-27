@@ -163,6 +163,7 @@ export const authAPI = {
   uploadProfileImage: (formData) => api.post("/auth/profile/image", formData, {
     headers: { "Content-Type": "multipart/form-data" }
   }),
+  changePassword: (data) => api.post("/auth/change-password", data),
   
   // Password management
   forgotPassword: (email) => api.post("/auth/forgot-password", { email }),

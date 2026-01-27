@@ -12,7 +12,7 @@ import FormInput from '../../components/forms/FormInput';
 import FormPhoneInput from '../../components/forms/FormPhoneInput';
 import Button from '../../components/ui/Button';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { FiUser, FiMail, FiPhone, FiCamera, FiSave, FiX } from 'react-icons/fi';
+import { FiUser, FiMail, FiPhone, FiCamera, FiSave, FiX, FiLock, FiBell } from 'react-icons/fi';
 
 export default function ClientProfile() {
   const { user: authUser, updateUser } = useAuth();
@@ -21,12 +21,27 @@ export default function ClientProfile() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [profile, setProfile] = useState({
+    id: '',
     name: '',
     email: '',
     phone: '',
     role: '',
     profile_image: null,
+    is_active: true,
     last_login: null,
+    // Company information
+    company_name: '',
+    gstin: '',
+    pan: '',
+    tan: '',
+    address: '',
+    city: '',
+    state: '',
+    pincode: '',
+    // Subscription information
+    subscription_plan: '',
+    is_trial: false,
+    trial_ends_at: null,
   });
   const [formData, setFormData] = useState({
     name: '',
@@ -50,12 +65,27 @@ export default function ClientProfile() {
       const userData = response.data?.data || response.data;
       
       setProfile({
+        id: userData.id || '',
         name: userData.name || '',
         email: userData.email || '',
         phone: userData.phone || '',
         role: userData.role || '',
         profile_image: userData.profile_image || null,
+        is_active: userData.is_active !== undefined ? userData.is_active : true,
         last_login: userData.last_login || null,
+        // Company information
+        company_name: userData.company_name || '',
+        gstin: userData.gstin || '',
+        pan: userData.pan || '',
+        tan: userData.tan || '',
+        address: userData.address || '',
+        city: userData.city || '',
+        state: userData.state || '',
+        pincode: userData.pincode || '',
+        // Subscription information
+        subscription_plan: userData.subscription_plan || '',
+        is_trial: userData.is_trial || false,
+        trial_ends_at: userData.trial_ends_at || null,
       });
       
       setFormData({
@@ -76,12 +106,27 @@ export default function ClientProfile() {
       // If API call fails, try to use data from AuthContext as fallback
       if (authUser) {
         setProfile({
+          id: authUser.id || '',
           name: authUser.name || authUser.full_name || '',
           email: authUser.email || '',
           phone: authUser.phone || '',
           role: authUser.role || '',
           profile_image: authUser.profile_image || null,
+          is_active: authUser.is_active !== undefined ? authUser.is_active : true,
           last_login: authUser.last_login || null,
+          // Company information
+          company_name: authUser.company_name || '',
+          gstin: authUser.gstin || '',
+          pan: authUser.pan || '',
+          tan: authUser.tan || '',
+          address: authUser.address || '',
+          city: authUser.city || '',
+          state: authUser.state || '',
+          pincode: authUser.pincode || '',
+          // Subscription information
+          subscription_plan: authUser.subscription_plan || '',
+          is_trial: authUser.is_trial || false,
+          trial_ends_at: authUser.trial_ends_at || null,
         });
         
         setFormData({
@@ -359,12 +404,19 @@ export default function ClientProfile() {
                   {profile.name || 'User'}
                 </h1>
                 <p className="text-gray-600 mb-2">{profile.email}</p>
-                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
-                  <span className="capitalize bg-primary-100 text-primary-700 px-3 py-1 rounded-full">
-                    {profile.role || 'User'}
-                  </span>
-                  <span>Last login: {formatDate(profile.last_login)}</span>
-                </div>
+              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                <span className="capitalize bg-primary-100 text-primary-700 px-3 py-1 rounded-full">
+                  {profile.role || 'User'}
+                </span>
+                <span className={`px-3 py-1 rounded-full ${
+                  profile.is_active 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-red-100 text-red-700'
+                }`}>
+                  {profile.is_active ? 'Active' : 'Inactive'}
+                </span>
+                <span>Last login: {formatDate(profile.last_login)}</span>
+              </div>
               </div>
             </div>
 
@@ -455,6 +507,120 @@ export default function ClientProfile() {
               </Button>
             </div>
           </form>
+          </Card>
+
+          {/* Company Information */}
+          {(profile.company_name || profile.gstin || profile.pan) && (
+            <Card className="shadow-sm border border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Company Information</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                  <p className="text-gray-900">{profile.company_name || 'Not provided'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">GSTIN</label>
+                  <p className="text-gray-900">{profile.gstin || 'Not provided'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">PAN</label>
+                  <p className="text-gray-900">{profile.pan || 'Not provided'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">TAN</label>
+                  <p className="text-gray-900">{profile.tan || 'Not provided'}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                  <p className="text-gray-900">{profile.address || 'Not provided'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                  <p className="text-gray-900">{profile.city || 'Not provided'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                  <p className="text-gray-900">{profile.state || 'Not provided'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Pincode</label>
+                  <p className="text-gray-900">{profile.pincode || 'Not provided'}</p>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Subscription Information */}
+          {(profile.subscription_plan || profile.is_trial) && (
+            <Card className="shadow-sm border border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Subscription Information</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Current Plan</label>
+                  <p className="text-gray-900">{profile.subscription_plan || 'Not provided'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Account Type</label>
+                  <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
+                    profile.is_trial 
+                      ? 'bg-yellow-100 text-yellow-800' 
+                      : 'bg-green-100 text-green-800'
+                  }`}>
+                    {profile.is_trial ? 'Trial' : 'Paid'}
+                  </span>
+                </div>
+                {profile.is_trial && profile.trial_ends_at && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Trial Ends</label>
+                    <p className="text-gray-900">{formatDate(profile.trial_ends_at)}</p>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+
+          {/* Account Settings */}
+          <Card className="shadow-sm border border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Account Settings</h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary-100 rounded-lg">
+                    <FiLock className="h-5 w-5 text-primary-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900">Change Password</h3>
+                    <p className="text-sm text-gray-500">Update your account password</p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push('/client/change-password')}
+                >
+                  Change
+                </Button>
+              </div>
+
+              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary-100 rounded-lg">
+                    <FiBell className="h-5 w-5 text-primary-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900">Notification Preferences</h3>
+                    <p className="text-sm text-gray-500">Manage your notification settings</p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push('/client/notification-preferences')}
+                >
+                  Manage
+                </Button>
+              </div>
+            </div>
           </Card>
         </div>
         </PageLayout>

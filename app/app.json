@@ -28,7 +28,23 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.finvera.mobile"
+      "bundleIdentifier": "com.finvera.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app needs access to camera to capture profile pictures and document photos for GST and accounting purposes.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to photo library to select profile pictures and document images for GST and accounting records.",
+        "NSMicrophoneUsageDescription": "This app needs access to microphone for voice notes and audio recordings related to business transactions.",
+        "NSLocationWhenInUseUsageDescription": "This app needs location access to provide location-based business services and GST compliance features.",
+        "NSContactsUsageDescription": "This app needs access to contacts to help you manage customer and vendor information for your business.",
+        "NSCalendarsUsageDescription": "This app needs access to calendar to schedule business meetings and GST filing reminders.",
+        "NSRemindersUsageDescription": "This app needs access to reminders to set up GST filing and payment reminders.",
+        "NSFaceIDUsageDescription": "This app uses Face ID for secure authentication and to protect your financial data.",
+        "NSAppleMusicUsageDescription": "This app may access media library for document attachments and business-related media files.",
+        "NSMotionUsageDescription": "This app may use motion sensors for enhanced security features.",
+        "NSBluetoothAlwaysUsageDescription": "This app may use Bluetooth to connect with business devices like printers and scanners.",
+        "NSBluetoothPeripheralUsageDescription": "This app may use Bluetooth to connect with peripheral devices for business operations.",
+        "NSLocalNetworkUsageDescription": "This app needs local network access to connect with business devices and local servers.",
+        "NSUserTrackingUsageDescription": "This app uses tracking to provide personalized business insights and improve app performance."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -36,7 +52,48 @@
         "backgroundColor": "#3e60ab"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.finvera.mobile"
+      "package": "com.finvera.mobile",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES",
+        "READ_MEDIA_VIDEO",
+        "RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_CONTACTS",
+        "WRITE_CONTACTS",
+        "READ_CALENDAR",
+        "WRITE_CALENDAR",
+        "VIBRATE",
+        "USE_FINGERPRINT",
+        "USE_BIOMETRIC",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "ACCESS_WIFI_STATE",
+        "CHANGE_WIFI_STATE",
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_SCAN",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "WAKE_LOCK",
+        "RECEIVE_BOOT_COMPLETED",
+        "SYSTEM_ALERT_WINDOW",
+        "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+        "POST_NOTIFICATIONS",
+        "SCHEDULE_EXACT_ALARM",
+        "USE_EXACT_ALARM",
+        "READ_PHONE_STATE",
+        "CALL_PHONE",
+        "READ_SMS",
+        "SEND_SMS",
+        "RECEIVE_SMS",
+        "READ_PHONE_NUMBERS",
+        "MANAGE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -46,6 +103,93 @@
         "projectId": "c01c18e3-b193-4f24-ae44-3e5bf7c72736"
       }
     },
-    "owner": "rishisoni"
+    "owner": "rishisoni",
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you select profile pictures and document images for GST and accounting records.",
+          "cameraPermission": "The app accesses your camera to let you capture profile pictures and document photos for GST and accounting purposes.",
+          "microphonePermission": "The app accesses your microphone for voice notes and audio recordings related to business transactions."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Finvera to use your location for location-based business services and GST compliance features.",
+          "locationAlwaysPermission": "Allow Finvera to use your location for background business services and automated GST compliance.",
+          "locationWhenInUsePermission": "Allow Finvera to use your location for location-based business services and GST compliance features.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Allow Finvera to access your contacts to help you manage customer and vendor information for your business."
+        }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Allow Finvera to access your calendar to schedule business meetings and GST filing reminders."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#3e60ab",
+          "defaultChannel": "default",
+          "sounds": [
+            "./assets/sounds/notification.wav"
+          ]
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Finvera to use Face ID for secure authentication and to protect your financial data."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow Finvera to access your photo library to save and manage business-related documents and images.",
+          "savePhotosPermission": "Allow Finvera to save business documents and receipts to your photo library.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ],
+      [
+        "expo-document-picker",
+        {
+          "iCloudContainerEnvironment": "Production"
+        }
+      ],
+      [
+        "expo-file-system",
+        {}
+      ],
+      [
+        "expo-sharing",
+        {}
+      ],
+      [
+        "expo-print",
+        {}
+      ],
+      [
+        "expo-barcode-scanner",
+        {
+          "cameraPermission": "Allow Finvera to use the camera for scanning barcodes and QR codes for inventory management and GST compliance."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow Finvera to access your microphone for voice notes and audio recordings related to business transactions."
+        }
+      ]
+    ]
   }
 }

@@ -663,14 +663,21 @@ module.exports = {
 
       // Check if user is in tenant database or master database
       let user = null;
+      let companyInfo = null;
       
       try {
-      if (req.tenantModels && req.tenantModels.User) {
-        // Tenant user
-        user = await req.tenantModels.User.findByPk(userId);
-      } else {
-        // Admin user (master database)
-        user = await User.findByPk(userId);
+        if (req.tenantModels && req.tenantModels.User) {
+          // Tenant user - get user and company info
+          user = await req.tenantModels.User.findByPk(userId);
+          
+          // Get company information from TenantMaster
+          if (req.tenant_id) {
+            const TenantMaster = require('../models/TenantMaster');
+            companyInfo = await TenantMaster.findByPk(req.tenant_id);
+          }
+        } else {
+          // Admin user (master database)
+          user = await User.findByPk(userId);
         }
       } catch (dbError) {
         // If database query fails, log but continue with JWT data
@@ -708,6 +715,21 @@ module.exports = {
         is_active: user.is_active,
         last_login: user.last_login,
       };
+
+      // Add company information if available
+      if (companyInfo) {
+        userData.company_name = companyInfo.company_name;
+        userData.gstin = companyInfo.gstin;
+        userData.pan = companyInfo.pan;
+        userData.tan = companyInfo.tan;
+        userData.address = companyInfo.address;
+        userData.city = companyInfo.city;
+        userData.state = companyInfo.state;
+        userData.pincode = companyInfo.pincode;
+        userData.subscription_plan = companyInfo.subscription_plan;
+        userData.is_trial = companyInfo.is_trial;
+        userData.trial_ends_at = companyInfo.trial_ends_at;
+      }
 
       return res.json({ 
         success: true,
@@ -797,8 +819,73 @@ module.exports = {
         success: true,
         message: 'Profile updated successfully',
         data: {
-        user: userData,
+          user: userData,
         },
+      });
+    } catch (err) {
+      return next(err);
+    }
+  },
+
+  async changePassword(req, res, next) {
+    try {
+      const userId = req.user_id || req.user?.id || req.user?.sub;
+      
+      if (!userId) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
+
+      const { current_password, new_password } = req.body;
+
+      // Validate input
+      if (!current_password || !new_password) {
+        return res.status(400).json({ 
+          message: 'Current password and new password are required' 
+        });
+      }
+
+      if (new_password.length < 6) {
+        return res.status(400).json({ 
+          message: 'New password must be at least 6 characters long' 
+        });
+      }
+
+      // Get user from appropriate database
+      let user = null;
+      
+      if (req.tenantModels && req.tenantModels.User) {
+        // Tenant user
+        user = await req.tenantModels.User.findByPk(userId);
+      } else {
+        // Admin user (master database)
+        user = await User.findByPk(userId);
+      }
+
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Check if user has a password (OAuth users might not have one)
+      if (!user.password) {
+        return res.status(400).json({ 
+          message: 'Cannot change password for OAuth users' 
+        });
+      }
+
+      // Verify current password
+      const bcrypt = require('bcryptjs');
+      const isCurrentPasswordValid = await bcrypt.compare(current_password, user.password);
+      if (!isCurrentPasswordValid) {
+        return res.status(400).json({ message: 'Current password is incorrect' });
+      }
+
+      // Hash and update new password
+      const hashedNewPassword = await bcrypt.hash(new_password, 10);
+      await user.update({ password: hashedNewPassword });
+
+      return res.json({
+        success: true,
+        message: 'Password changed successfully',
       });
     } catch (err) {
       return next(err);
@@ -1140,5 +1227,3 @@ This is an automated email from ${process.env.APP_NAME || 'Finvera'}
     }
   },
 };
-
-

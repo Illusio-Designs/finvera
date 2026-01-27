@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useCameraPermissions } from '../../hooks/usePermissions';
 
 export default function ProfileImagePicker({ 
   imageUri, 
@@ -20,24 +21,12 @@ export default function ProfileImagePicker({
 }) {
   const { uploadProfileImage } = useAuth();
   const { showNotification } = useNotification();
+  const { requestCameraAccess, requestMediaLibraryAccess } = useCameraPermissions();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  const requestPermissions = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      showNotification({
-        type: 'error',
-        title: 'Permission Required',
-        message: 'Please grant camera roll permissions to upload profile picture'
-      });
-      return false;
-    }
-    return true;
-  };
-
   const pickImageFromLibrary = async () => {
-    const hasPermission = await requestPermissions();
+    const hasPermission = await requestMediaLibraryAccess();
     if (!hasPermission) return;
 
     try {
@@ -64,15 +53,8 @@ export default function ProfileImagePicker({
   };
 
   const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      showNotification({
-        type: 'error',
-        title: 'Permission Required',
-        message: 'Please grant camera permissions to take profile picture'
-      });
-      return;
-    }
+    const hasPermission = await requestCameraAccess();
+    if (!hasPermission) return;
 
     try {
       const result = await ImagePicker.launchCameraAsync({

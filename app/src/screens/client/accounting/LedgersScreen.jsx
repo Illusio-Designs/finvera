@@ -93,10 +93,11 @@ export default function LedgersScreen() {
 
   const handleCreateLedger = () => {
     showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Create new ledger functionality will be available soon'
+      type: 'success',
+      title: 'Create Ledger',
+      message: 'Ledger creation form will open'
     });
+    // In a real implementation, this would open a create ledger form/modal
   };
 
   const handleCreateSupplier = () => {

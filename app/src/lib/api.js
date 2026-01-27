@@ -17,6 +17,7 @@ export const authAPI = {
     },
   }),
   changePassword: (data) => apiClient.post('/auth/change-password', data),
+  changePassword: (data) => apiClient.post('/auth/change-password', data),
 };
 
 // User Profile APIs (using auth endpoints as per backend)

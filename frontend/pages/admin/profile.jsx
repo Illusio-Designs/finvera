@@ -21,11 +21,13 @@ export default function AdminProfile() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [profile, setProfile] = useState({
+    id: '',
     name: '',
     email: '',
     phone: '',
     role: '',
     profile_image: null,
+    is_active: true,
     last_login: null,
   });
   const [formData, setFormData] = useState({
@@ -50,11 +52,13 @@ export default function AdminProfile() {
       const userData = response.data?.data || response.data;
       
       setProfile({
+        id: userData.id || '',
         name: userData.name || '',
         email: userData.email || '',
         phone: userData.phone || '',
         role: userData.role || '',
         profile_image: userData.profile_image || null,
+        is_active: userData.is_active !== undefined ? userData.is_active : true,
         last_login: userData.last_login || null,
       });
       
@@ -76,11 +80,13 @@ export default function AdminProfile() {
       // If API call fails, try to use data from AuthContext as fallback
       if (authUser) {
         setProfile({
+          id: authUser.id || '',
           name: authUser.name || authUser.full_name || '',
           email: authUser.email || '',
           phone: authUser.phone || '',
           role: authUser.role || '',
           profile_image: authUser.profile_image || null,
+          is_active: authUser.is_active !== undefined ? authUser.is_active : true,
           last_login: authUser.last_login || null,
         });
         
@@ -362,6 +368,13 @@ export default function AdminProfile() {
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
                   <span className="capitalize bg-primary-100 text-primary-700 px-3 py-1 rounded-full">
                     {profile.role || 'Admin'}
+                  </span>
+                  <span className={`px-3 py-1 rounded-full ${
+                    profile.is_active 
+                      ? 'bg-green-100 text-green-700' 
+                      : 'bg-red-100 text-red-700'
+                  }`}>
+                    {profile.is_active ? 'Active' : 'Inactive'}
                   </span>
                   <span>Last login: {formatDate(profile.last_login)}</span>
                 </div>

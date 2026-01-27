@@ -75,7 +75,7 @@ export default function VouchersScreen() {
   };
 
   const handleCreateVoucher = (voucherType) => {
-    // Map voucher types to screen names
+    // Map voucher types to screen names - all voucher types should be creatable
     const screenMap = {
       'payment': 'Payment',
       'receipt': 'Receipt', 
@@ -83,23 +83,37 @@ export default function VouchersScreen() {
       'contra': 'Contra',
       'debit_note': 'DebitNote',
       'credit_note': 'CreditNote',
-      'sales_invoice': 'Vouchers', // For now, redirect to main vouchers
-      'purchase_invoice': 'Vouchers', // For now, redirect to main vouchers
-      'gst_payment': 'Vouchers', // For now, redirect to main vouchers
-      'gst_utilization': 'Vouchers', // For now, redirect to main vouchers
-      'tds_payment': 'Vouchers', // For now, redirect to main vouchers
-      'tds_settlement': 'Vouchers', // For now, redirect to main vouchers
+      // For invoice types - use voucher screens for now, but can be changed to dedicated invoice screens
+      'sales_invoice': 'Receipt', // Sales = Money IN = Receipt (or could be dedicated SalesInvoice screen)
+      'purchase_invoice': 'Payment', // Purchase = Money OUT = Payment (or could be dedicated PurchaseInvoice screen)
+      // For GST and TDS, redirect to appropriate screens
+      'gst_payment': 'Payment', // GST payment is money going out
+      'gst_utilization': 'Journal', // GST utilization is an adjustment
+      'tds_payment': 'Payment', // TDS payment is money going out
+      'tds_settlement': 'Journal', // TDS settlement is an adjustment
     };
 
     const screenName = screenMap[voucherType.value];
     
-    if (screenName && screenName !== 'Vouchers') {
-      navigation.navigate(screenName);
+    if (screenName) {
+      // Navigate to appropriate voucher creation screen
+      navigation.navigate(screenName, { 
+        mode: 'create', 
+        voucherType: voucherType.value,
+        voucherLabel: voucherType.label 
+      });
+      
+      showNotification({
+        type: 'success',
+        title: 'Create Voucher',
+        message: `Opening ${voucherType.label} creation in ${screenName} screen`
+      });
     } else {
+      // Fallback - should not happen with current mapping
       showNotification({
         type: 'info',
-        title: 'Coming Soon',
-        message: `Create ${voucherType.label} functionality will be available soon`
+        title: 'Create Voucher',
+        message: `${voucherType.label} creation is being prepared`
       });
     }
   };
@@ -194,6 +208,7 @@ export default function VouchersScreen() {
         {/* Voucher Type Quick Actions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Create Voucher</Text>
+          <Text style={styles.sectionSubtitle}>Tap any voucher type to start creating</Text>
           <FlatList
             data={VOUCHER_TYPES}
             renderItem={renderVoucherTypeCard}
@@ -369,6 +384,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#111827',
+    marginBottom: 8,
+    fontFamily: 'Agency',
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
     marginBottom: 16,
     fontFamily: 'Agency',
   },

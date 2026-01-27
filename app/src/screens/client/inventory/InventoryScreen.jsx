@@ -90,23 +90,23 @@ export default function InventoryScreen() {
   };
 
   const handleCreateItem = () => {
-    navigation.navigate('InventoryItems');
+    navigation.navigate('InventoryItems', { mode: 'create' });
   };
 
   const handleEditItem = () => {
-    navigation.navigate('InventoryItems');
+    navigation.navigate('InventoryItems', { mode: 'edit' });
   };
 
   const handleDeleteItem = () => {
-    navigation.navigate('InventoryItems');
+    navigation.navigate('InventoryItems', { mode: 'manage' });
   };
 
   const handleAdjustment = () => {
-    navigation.navigate('InventoryAdjustment');
+    navigation.navigate('InventoryAdjustment', { mode: 'create' });
   };
 
   const handleTransfer = () => {
-    navigation.navigate('InventoryTransfer');
+    navigation.navigate('InventoryTransfer', { mode: 'create' });
   };
 
   const handleWarehousesPress = () => {
@@ -247,15 +247,15 @@ export default function InventoryScreen() {
         <View style={styles.actionsContainer}>
           <TouchableOpacity style={styles.actionButton} onPress={handleCreateItem}>
             <Ionicons name="add" size={20} color="white" />
-            <Text style={styles.actionButtonText}>Add Item</Text>
+            <Text style={styles.actionButtonText}>Create Item</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.actionButton, styles.actionButtonSecondary]} onPress={handleAdjustment}>
             <Ionicons name="swap-horizontal" size={20} color="#3e60ab" />
-            <Text style={[styles.actionButtonText, { color: '#3e60ab' }]}>Adjust Stock</Text>
+            <Text style={[styles.actionButtonText, { color: '#3e60ab' }]}>Create Adjustment</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.actionButton, styles.actionButtonSecondary]} onPress={handleTransfer}>
             <Ionicons name="arrow-forward" size={20} color="#3e60ab" />
-            <Text style={[styles.actionButtonText, { color: '#3e60ab' }]}>Transfer</Text>
+            <Text style={[styles.actionButtonText, { color: '#3e60ab' }]}>Create Transfer</Text>
           </TouchableOpacity>
         </View>
 
@@ -266,56 +266,66 @@ export default function InventoryScreen() {
           </View>
           
           <View style={styles.managementGrid}>
-            <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('InventoryItems')}>
+            <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('InventoryItems', { mode: 'view' })}>
               <View style={[styles.managementIcon, { backgroundColor: '#10b981' }]}>
                 <Ionicons name="list" size={24} color="white" />
               </View>
-              <Text style={styles.managementTitle}>Inventory Items</Text>
-              <Text style={styles.managementSubtitle}>View & manage all items</Text>
+              <View style={styles.managementInfo}>
+                <Text style={styles.managementTitle}>Inventory Items</Text>
+                <Text style={styles.managementSubtitle}>View & create items</Text>
+              </View>
               <View style={styles.managementArrow}>
                 <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.managementCard} onPress={handleAdjustment}>
+            <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('InventoryAdjustment', { mode: 'create' })}>
               <View style={[styles.managementIcon, { backgroundColor: '#f59e0b' }]}>
                 <Ionicons name="swap-horizontal" size={24} color="white" />
               </View>
-              <Text style={styles.managementTitle}>Stock Adjustments</Text>
-              <Text style={styles.managementSubtitle}>Adjust inventory levels</Text>
+              <View style={styles.managementInfo}>
+                <Text style={styles.managementTitle}>Stock Adjustments</Text>
+                <Text style={styles.managementSubtitle}>Create adjustments</Text>
+              </View>
               <View style={styles.managementArrow}>
                 <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.managementCard} onPress={handleTransfer}>
+            <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('InventoryTransfer', { mode: 'create' })}>
               <View style={[styles.managementIcon, { backgroundColor: '#3b82f6' }]}>
                 <Ionicons name="arrow-forward" size={24} color="white" />
               </View>
-              <Text style={styles.managementTitle}>Stock Transfers</Text>
-              <Text style={styles.managementSubtitle}>Transfer between locations</Text>
+              <View style={styles.managementInfo}>
+                <Text style={styles.managementTitle}>Stock Transfers</Text>
+                <Text style={styles.managementSubtitle}>Create transfers</Text>
+              </View>
               <View style={styles.managementArrow}>
                 <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.managementCard} onPress={handleWarehousesPress}>
+            <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('Warehouses', { mode: 'create' })}>
               <View style={[styles.managementIcon, { backgroundColor: '#8b5cf6' }]}>
                 <Ionicons name="storefront" size={24} color="white" />
               </View>
-              <Text style={styles.managementTitle}>Warehouses</Text>
-              <Text style={styles.managementSubtitle}>Manage storage locations</Text>
+              <View style={styles.managementInfo}>
+                <Text style={styles.managementTitle}>Warehouses</Text>
+                <Text style={styles.managementSubtitle}>Create & manage locations</Text>
+              </View>
               <View style={styles.managementArrow}>
                 <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.managementCard} onPress={handleAttributesPress}>
+            <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('Attributes', { mode: 'create' })}>
               <View style={[styles.managementIcon, { backgroundColor: '#ef4444' }]}>
                 <Ionicons name="pricetag" size={24} color="white" />
               </View>
-              <Text style={styles.managementTitle}>Product Attributes</Text>
-              <Text style={styles.managementSubtitle}>Manage item properties</Text>
+              <View style={styles.managementInfo}>
+                <Text style={styles.managementTitle}>Product Attributes</Text>
+                <Text style={styles.managementSubtitle}>Create item properties</Text>
+              </View>
               <View style={styles.managementArrow}>
                 <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
               </View>
@@ -796,18 +806,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 16,
   },
+  managementInfo: {
+    flex: 1,
+  },
   managementTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#111827',
     fontFamily: 'Agency',
-    flex: 1,
   },
   managementSubtitle: {
     fontSize: 12,
     color: '#6b7280',
     fontFamily: 'Agency',
-    flex: 1,
     marginTop: 2,
   },
   managementArrow: {

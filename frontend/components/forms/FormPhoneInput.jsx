@@ -184,17 +184,22 @@ export default function FormPhoneInput({
             onClick={() => setShowDropdown(!showDropdown)}
             disabled={disabled}
             className={`
-              flex items-center gap-2 px-3 py-2.5 border-r border-gray-300 bg-gray-50
-              rounded-l-md hover:bg-gray-100 transition-colors
+              flex items-center gap-2 px-3 py-2.5 border-r bg-gray-50
+              rounded-l-md hover:bg-gray-100 transition-colors min-w-[120px]
               ${error && touched ? 'border-red-500' : 'border-gray-300'}
               ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
               focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1
             `}
           >
             <span className="text-xl">{selectedCountry.flag}</span>
-            <span className="text-sm font-medium text-gray-700">
-              {selectedCountry.code} {selectedCountry.dialCode}
-            </span>
+            <div className="flex flex-col items-start">
+              <span className="text-xs font-medium text-gray-500 uppercase">
+                {selectedCountry.code}
+              </span>
+              <span className="text-sm font-medium text-gray-700">
+                {selectedCountry.dialCode}
+              </span>
+            </div>
             <FiChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
           </button>
 
@@ -258,14 +263,14 @@ export default function FormPhoneInput({
                     type="button"
                     onClick={() => handleCountrySelect(country)}
                     className={`
-                      w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors
-                      ${selectedCountry.code === country.code ? 'bg-primary-50' : ''}
+                      w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left
+                      ${selectedCountry.code === country.code ? 'bg-primary-50 border-l-4 border-primary-500' : ''}
                     `}
                   >
                     <span className="text-2xl">{country.flag}</span>
-                    <div className="flex-1 text-left">
+                    <div className="flex-1">
                       <div className="text-sm font-medium text-gray-900">{country.name}</div>
-                      <div className="text-xs text-gray-500">{country.dialCode}</div>
+                      <div className="text-xs text-gray-500">{country.code} • {country.dialCode}</div>
                     </div>
                     {selectedCountry.code === country.code && (
                       <FiCheck className="h-5 w-5 text-primary-600" />

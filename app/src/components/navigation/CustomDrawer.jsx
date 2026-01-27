@@ -12,7 +12,11 @@ export default function CustomDrawer({ visible, onClose }) {
   const handleItemPress = (item) => {
     onClose();
     if (item.screen) {
-      navigation.navigate(item.screen);
+      if (item.params) {
+        navigation.navigate(item.screen, item.params);
+      } else {
+        navigation.navigate(item.screen);
+      }
     } else if (item.action === 'logout') {
       logout();
     }
@@ -56,6 +60,15 @@ export default function CustomDrawer({ visible, onClose }) {
         { name: 'Reports & Analytics', icon: 'bar-chart-outline', color: '#f59e0b', screen: 'Reports' },
         { name: 'Inventory Management', icon: 'cube-outline', color: '#3e60ab', screen: 'Inventory' },
         { name: 'GST Management', icon: 'receipt-outline', color: '#8b5cf6', screen: 'GST' },
+      ]
+    },
+    {
+      title: 'Quick Create',
+      items: [
+        { name: 'Create Voucher', icon: 'add-circle-outline', color: '#10b981', screen: 'Vouchers', description: 'New voucher/invoice' },
+        { name: 'Create Item', icon: 'cube-outline', color: '#3e60ab', screen: 'InventoryItems', params: { mode: 'create' }, description: 'New inventory item' },
+        { name: 'Create Ledger', icon: 'folder-outline', color: '#f59e0b', screen: 'Ledgers', params: { mode: 'create' }, description: 'New account ledger' },
+        { name: 'Create Adjustment', icon: 'swap-horizontal-outline', color: '#8b5cf6', screen: 'InventoryAdjustment', params: { mode: 'create' }, description: 'Stock adjustment' },
       ]
     },
     {

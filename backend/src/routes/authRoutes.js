@@ -22,6 +22,7 @@ router.get('/google/callback', passport.authenticate('google', { session: false 
 router.get('/profile', authenticate, authController.getProfile);
 router.put('/profile', authenticate, authController.updateProfile);
 router.post('/profile/image', authenticate, uploadProfile.single('profile_image'), authController.uploadProfileImage);
+router.post('/change-password', authenticate, authController.changePassword);
 
 // Password reset routes (no authentication required)
 router.post('/forgot-password', authController.forgotPassword);
