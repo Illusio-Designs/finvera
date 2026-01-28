@@ -35,6 +35,9 @@ export default function PlansPage() {
   useEffect(() => {
     // Fetch pricing plans from API
     const fetchPlans = async () => {
+      // Skip during build time
+      if (typeof window === 'undefined') return;
+      
       try {
         setLoading(true);
         const response = await pricingAPI.list({ 

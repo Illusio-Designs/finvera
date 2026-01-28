@@ -14,6 +14,9 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const handleCallback = async () => {
+      // Skip during build time
+      if (typeof window === 'undefined') return;
+      
       try {
         const { token, refreshToken, jti, error: errorParam, needsCompany } = router.query;
 
