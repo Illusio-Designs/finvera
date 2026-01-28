@@ -20,6 +20,12 @@ const nextConfig = {
     if (process.env.ELECTRON_BUILD) {
       return [];
     }
+    
+    // Only add rewrite if API_URL is defined
+    if (!process.env.API_URL) {
+      return [];
+    }
+    
     return [
       {
         source: '/api/:path*',
