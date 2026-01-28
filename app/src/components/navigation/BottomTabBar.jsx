@@ -98,13 +98,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     paddingBottom: 24, // Extra padding for safe area
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopWidth: 0.5, // Made even thinner
+    borderTopColor: '#f9fafb', // Made even lighter
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 15,
+    shadowOffset: { width: 0, height: -2 }, // Reduced shadow offset
+    shadowOpacity: 0.03, // Further reduced shadow opacity
+    shadowRadius: 4, // Further reduced shadow radius
+    elevation: 4, // Further reduced elevation
   },
   tab: {
     flex: 1,

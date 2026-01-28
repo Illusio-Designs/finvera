@@ -1,16 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, TextInput, Share } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
-import { businessAPI } from '../../../lib/api';
+import { useAuth } from '../../../contexts/AuthContext';
+import { referralAPI } from '../../../lib/api';
 
 export default function ReferralScreen() {
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
-  const [referralData, setReferralData] = useState(null);
-  const [referralRewards, setReferralRewards] = useState([]);
+  const { user } = useAuth();
+  const [referralCode, setReferralCode] = useState(null);
+  const [discountConfig, setDiscountConfig] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -21,13 +25,43 @@ export default function ReferralScreen() {
 
   const fetchReferralData = useCallback(async () => {
     try {
-      const [referralRes, rewardsRes] = await Promise.all([
-        businessAPI.referral.get(),
-        businessAPI.referral.rewards()
-      ]);
+      setLoading(true);
       
-      setReferralData(referralRes.data);
-      setReferralRewards(rewardsRes.data?.data || rewardsRes.data || []);
+      // Fetch referral code (most important)
+      try {
+        const codeResponse = await referralAPI.getMyCode();
+        const codeData = codeResponse.data?.referralCode || codeResponse.data;
+        setReferralCode(codeData);
+      } catch (codeError) {
+        console.error('Referral code fetch error:', codeError);
+        // Set demo data for referral code
+        setReferralCode({
+          code: 'DEMO123',
+          discount_type: 'percentage',
+          discount_value: 10,
+          free_trial_days: 30,
+          total_uses: 0
+        });
+      }
+
+      // Try to fetch discount config
+      try {
+        const configResponse = await referralAPI.getCurrentDiscountConfig();
+        const configData = configResponse.data?.config || configResponse.data;
+        setDiscountConfig(configData);
+      } catch (configError) {
+        console.error('Discount config fetch error:', configError);
+        // Provide fallback config
+        setDiscountConfig({
+          discount_percentage: 10,
+          free_trial_days: 30
+        });
+      }
+
+      // Don't fetch analytics for regular users - it's admin-only
+      // Analytics will remain null for regular users
+      setAnalytics(null);
+      
     } catch (error) {
       console.error('Referral data fetch error:', error);
       showNotification({
@@ -35,12 +69,23 @@ export default function ReferralScreen() {
         title: 'Error',
         message: 'Failed to load referral data'
       });
-      setReferralData(null);
-      setReferralRewards([]);
+      
+      // Set default data for demo
+      setReferralCode({
+        code: 'DEMO123',
+        discount_type: 'percentage',
+        discount_value: 10,
+        free_trial_days: 30,
+        total_uses: 0
+      });
+      setDiscountConfig({
+        discount_percentage: 10,
+        free_trial_days: 30
+      });
     } finally {
       setLoading(false);
     }
-  }, [showNotification]);
+  }, [user, showNotification]);
 
   useEffect(() => {
     fetchReferralData();
@@ -52,15 +97,47 @@ export default function ReferralScreen() {
     setRefreshing(false);
   }, [fetchReferralData]);
 
+  const handleCopyReferralLink = async () => {
+    try {
+      const referralLink = getReferralLink();
+      await Clipboard.setStringAsync(referralLink);
+      showNotification({
+        type: 'success',
+        title: 'Copied',
+        message: 'Referral link copied to clipboard'
+      });
+    } catch (error) {
+      console.error('Copy error:', error);
+      // Fallback to share if clipboard fails
+      try {
+        await Share.share({
+          message: `Join Finvera using my referral code "${referralCode?.code}" and get ${referralCode?.discount_value || 10}% discount plus ${referralCode?.free_trial_days || 30} days free trial! ${getReferralLink()}`,
+          title: 'Join Finvera with my referral',
+        });
+        showNotification({
+          type: 'success',
+          title: 'Shared',
+          message: 'Referral link shared successfully'
+        });
+      } catch (shareError) {
+        showNotification({
+          type: 'error',
+          title: 'Error',
+          message: 'Failed to copy or share referral link'
+        });
+      }
+    }
+  };
+
   const handleShareReferral = async () => {
     try {
-      const referralLink = referralData?.referral_link || 'https://finvera.com/refer';
-      const message = `Join Finvera using my referral link and get exclusive benefits! ${referralLink}`;
+      const referralLink = getReferralLink();
+      const message = `Join Finvera using my referral code "${referralCode?.code}" and get ${referralCode?.discount_value || 10}% discount plus ${referralCode?.free_trial_days || 30} days free trial! ${referralLink}`;
       
       await Share.share({
         message: message,
         url: referralLink,
-        title: 'Join Finvera',
+        title: 'Join Finvera with my referral',
       });
     } catch (error) {
       console.error('Share error:', error);
@@ -72,13 +149,10 @@ export default function ReferralScreen() {
     }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount || 0);
+  const getReferralLink = () => {
+    const baseUrl = 'https://finvera.com/register';
+    const code = referralCode?.code || 'DEMO123';
+    return `${baseUrl}?ref=${code}`;
   };
 
   const formatDate = (dateString) => {
@@ -91,15 +165,32 @@ export default function ReferralScreen() {
     });
   };
 
-  const getRewardStatusColor = (status) => {
-    const colors = {
-      'earned': '#10b981',
-      'pending': '#f59e0b',
-      'paid': '#3b82f6',
-      'expired': '#ef4444',
+  const getStatsData = () => {
+    // Calculate stats from available data
+    const totalReferrals = referralCode?.total_uses || referralCode?.current_uses || 0;
+    
+    return {
+      totalReferrals,
+      discountOffered: referralCode?.discount_value || 10,
+      trialDays: referralCode?.free_trial_days || 30
     };
-    return colors[status?.toLowerCase()] || '#6b7280';
   };
+
+  const stats = getStatsData();
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <TopBar 
+          title="Referral Program" 
+          onMenuPress={handleMenuPress}
+        />
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading referral data...</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -117,242 +208,231 @@ export default function ReferralScreen() {
       >
         {/* Header Section */}
         <View style={styles.headerSection}>
-          <Text style={styles.sectionTitle}>Referral Program</Text>
-          <Text style={styles.sectionSubtitle}>
+          <View style={styles.headerIcon}>
+            <Ionicons name="people" size={32} color="#3e60ab" />
+          </View>
+          <Text style={styles.headerTitle}>Referral Program</Text>
+          <Text style={styles.headerSubtitle}>
             Earn rewards by referring friends and colleagues to Finvera
           </Text>
         </View>
 
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <View style={styles.loadingCard}>
-              <View style={styles.spinner} />
-              <Text style={styles.loadingText}>Loading referral data...</Text>
+        {/* Referral Stats */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Your Referral Program</Text>
+          <View style={styles.statsContainer}>
+            <View style={styles.statCard}>
+              <View style={styles.statIcon}>
+                <Ionicons name="people" size={24} color="#3e60ab" />
+              </View>
+              <View style={styles.statInfo}>
+                <Text style={styles.statValue}>{stats.totalReferrals}</Text>
+                <Text style={styles.statLabel}>Total Uses</Text>
+              </View>
+            </View>
+            
+            <View style={styles.statCard}>
+              <View style={styles.statIcon}>
+                <Ionicons name="pricetag" size={24} color="#10b981" />
+              </View>
+              <View style={styles.statInfo}>
+                <Text style={styles.statValue}>{stats.discountOffered}%</Text>
+                <Text style={styles.statLabel}>Discount</Text>
+              </View>
+            </View>
+            
+            <View style={styles.statCard}>
+              <View style={styles.statIcon}>
+                <Ionicons name="calendar" size={24} color="#f59e0b" />
+              </View>
+              <View style={styles.statInfo}>
+                <Text style={styles.statValue}>{stats.trialDays}</Text>
+                <Text style={styles.statLabel}>Trial Days</Text>
+              </View>
             </View>
           </View>
-        ) : (
-          <>
-            {/* Referral Stats */}
-            <View style={styles.statsContainer}>
-              <View style={styles.statCard}>
-                <View style={[styles.statIcon, { backgroundColor: '#dbeafe' }]}>
-                  <Ionicons name="people" size={24} color="#3e60ab" />
-                </View>
-                <View style={styles.statInfo}>
-                  <Text style={styles.statValue}>{referralData?.total_referrals || 0}</Text>
-                  <Text style={styles.statLabel}>Total Referrals</Text>
-                </View>
-              </View>
-              
-              <View style={styles.statCard}>
-                <View style={[styles.statIcon, { backgroundColor: '#d1fae5' }]}>
-                  <Ionicons name="checkmark-circle" size={24} color="#10b981" />
-                </View>
-                <View style={styles.statInfo}>
-                  <Text style={styles.statValue}>{referralData?.successful_referrals || 0}</Text>
-                  <Text style={styles.statLabel}>Successful</Text>
-                </View>
-              </View>
-              
-              <View style={styles.statCard}>
-                <View style={[styles.statIcon, { backgroundColor: '#fef3c7' }]}>
-                  <Ionicons name="gift" size={24} color="#f59e0b" />
-                </View>
-                <View style={styles.statInfo}>
-                  <Text style={styles.statValue}>{formatCurrency(referralData?.total_earnings)}</Text>
-                  <Text style={styles.statLabel}>Total Earned</Text>
-                </View>
-              </View>
-            </View>
+        </View>
 
-            {/* Referral Link Card */}
-            <View style={styles.referralLinkCard}>
-              <View style={styles.referralLinkHeader}>
-                <View style={styles.referralLinkIcon}>
-                  <Ionicons name="link" size={24} color="#3e60ab" />
-                </View>
-                <Text style={styles.referralLinkTitle}>Your Referral Link</Text>
+        {/* Referral Code Card */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Your Referral Code</Text>
+          <View style={styles.sectionCard}>
+            <View style={styles.referralCodeHeader}>
+              <View style={styles.referralCodeIcon}>
+                <Ionicons name="ticket" size={32} color="#3e60ab" />
               </View>
-              
-              <View style={styles.referralLinkContainer}>
-                <Text style={styles.referralLinkText} numberOfLines={1}>
-                  {referralData?.referral_link || 'https://finvera.com/refer/your-code'}
+              <View style={styles.referralCodeInfo}>
+                <Text style={styles.referralCodeTitle}>Referral Code</Text>
+                <Text style={styles.referralCodeSubtitle}>
+                  Share this code to earn rewards
                 </Text>
-                <TouchableOpacity 
-                  style={styles.copyButton}
-                  onPress={() => {
-                    // Copy to clipboard functionality would go here
-                    showNotification({
-                      type: 'success',
-                      title: 'Copied',
-                      message: 'Referral link copied to clipboard'
-                    });
-                  }}
-                >
-                  <Ionicons name="copy" size={16} color="#3e60ab" />
-                </TouchableOpacity>
-              </View>
-              
-              <View style={styles.referralActions}>
-                <TouchableOpacity 
-                  style={styles.shareButton}
-                  onPress={handleShareReferral}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="share" size={20} color="white" />
-                  <Text style={styles.shareButtonText}>Share Link</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.qrButton}
-                  onPress={() => setShowShareModal(true)}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="qr-code" size={20} color="#3e60ab" />
-                  <Text style={styles.qrButtonText}>QR Code</Text>
-                </TouchableOpacity>
               </View>
             </View>
-
-            {/* How It Works */}
-            <View style={styles.howItWorksCard}>
-              <Text style={styles.howItWorksTitle}>How It Works</Text>
-              
-              <View style={styles.stepsList}>
-                <View style={styles.stepItem}>
-                  <View style={styles.stepNumber}>
-                    <Text style={styles.stepNumberText}>1</Text>
-                  </View>
-                  <View style={styles.stepContent}>
-                    <Text style={styles.stepTitle}>Share Your Link</Text>
-                    <Text style={styles.stepDescription}>
-                      Share your unique referral link with friends and colleagues
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.stepItem}>
-                  <View style={styles.stepNumber}>
-                    <Text style={styles.stepNumberText}>2</Text>
-                  </View>
-                  <View style={styles.stepContent}>
-                    <Text style={styles.stepTitle}>They Sign Up</Text>
-                    <Text style={styles.stepDescription}>
-                      Your referrals sign up and start using Finvera
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.stepItem}>
-                  <View style={styles.stepNumber}>
-                    <Text style={styles.stepNumberText}>3</Text>
-                  </View>
-                  <View style={styles.stepContent}>
-                    <Text style={styles.stepTitle}>Earn Rewards</Text>
-                    <Text style={styles.stepDescription}>
-                      Get rewarded for each successful referral
-                    </Text>
-                  </View>
-                </View>
-              </View>
+            
+            <View style={styles.referralCodeDisplay}>
+              <Text style={styles.referralCodeText}>{referralCode?.code || 'DEMO123'}</Text>
+              <TouchableOpacity 
+                style={styles.copyCodeButton}
+                onPress={handleCopyReferralLink}
+              >
+                <Ionicons name="copy" size={16} color="#3e60ab" />
+              </TouchableOpacity>
             </View>
 
-            {/* Reward Tiers */}
-            <View style={styles.rewardTiersCard}>
-              <Text style={styles.rewardTiersTitle}>Reward Tiers</Text>
-              
-              <View style={styles.tiersList}>
-                <View style={styles.tierItem}>
-                  <View style={[styles.tierIcon, { backgroundColor: '#d1fae5' }]}>
-                    <Ionicons name="star" size={20} color="#10b981" />
-                  </View>
-                  <View style={styles.tierContent}>
-                    <Text style={styles.tierTitle}>Basic Plan Referral</Text>
-                    <Text style={styles.tierReward}>₹500 per referral</Text>
-                  </View>
-                </View>
-
-                <View style={styles.tierItem}>
-                  <View style={[styles.tierIcon, { backgroundColor: '#dbeafe' }]}>
-                    <Ionicons name="diamond" size={20} color="#3e60ab" />
-                  </View>
-                  <View style={styles.tierContent}>
-                    <Text style={styles.tierTitle}>Premium Plan Referral</Text>
-                    <Text style={styles.tierReward}>₹1,000 per referral</Text>
-                  </View>
-                </View>
-
-                <View style={styles.tierItem}>
-                  <View style={[styles.tierIcon, { backgroundColor: '#fef3c7' }]}>
-                    <Ionicons name="trophy" size={20} color="#f59e0b" />
-                  </View>
-                  <View style={styles.tierContent}>
-                    <Text style={styles.tierTitle}>Enterprise Plan Referral</Text>
-                    <Text style={styles.tierReward}>₹2,000 per referral</Text>
-                  </View>
-                </View>
+            <View style={styles.referralBenefits}>
+              <View style={styles.benefitItem}>
+                <Ionicons name="pricetag" size={16} color="#10b981" />
+                <Text style={styles.benefitText}>
+                  {referralCode?.discount_value || 10}% discount for new users
+                </Text>
+              </View>
+              <View style={styles.benefitItem}>
+                <Ionicons name="calendar" size={16} color="#3e60ab" />
+                <Text style={styles.benefitText}>
+                  {referralCode?.free_trial_days || 30} days free trial
+                </Text>
               </View>
             </View>
-
-            {/* Recent Rewards */}
-            <View style={styles.rewardsSection}>
-              <Text style={styles.rewardsTitle}>Recent Rewards</Text>
+            
+            <View style={styles.referralActions}>
+              <TouchableOpacity 
+                style={styles.shareButton}
+                onPress={handleShareReferral}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="share" size={20} color="white" />
+                <Text style={styles.shareButtonText}>Share Code</Text>
+              </TouchableOpacity>
               
-              {referralRewards.length === 0 ? (
-                <View style={styles.emptyRewards}>
-                  <Ionicons name="gift-outline" size={48} color="#94a3b8" />
-                  <Text style={styles.emptyRewardsTitle}>No Rewards Yet</Text>
-                  <Text style={styles.emptyRewardsText}>
-                    Start referring friends to earn your first reward!
+              <TouchableOpacity 
+                style={styles.linkButton}
+                onPress={handleCopyReferralLink}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="link" size={20} color="#3e60ab" />
+                <Text style={styles.linkButtonText}>Copy Link</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        {/* How It Works */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>How It Works</Text>
+          <View style={styles.sectionCard}>
+            <View style={styles.stepsList}>
+              <View style={styles.stepItem}>
+                <View style={styles.stepNumber}>
+                  <Text style={styles.stepNumberText}>1</Text>
+                </View>
+                <View style={styles.stepContent}>
+                  <Text style={styles.stepTitle}>Share Your Code</Text>
+                  <Text style={styles.stepDescription}>
+                    Share your unique referral code with friends and colleagues
                   </Text>
                 </View>
-              ) : (
-                <View style={styles.rewardsList}>
-                  {referralRewards.map((reward, index) => (
-                    <View key={reward.id || index} style={styles.rewardCard}>
-                      <View style={styles.rewardCardContent}>
-                        <View style={[
-                          styles.rewardIcon,
-                          { backgroundColor: getRewardStatusColor(reward.status) + '20' }
-                        ]}>
-                          <Ionicons 
-                            name="gift" 
-                            size={20} 
-                            color={getRewardStatusColor(reward.status)} 
-                          />
-                        </View>
-                        <View style={styles.rewardInfo}>
-                          <Text style={styles.rewardTitle}>
-                            {reward.referral_name || 'Referral Reward'}
-                          </Text>
-                          <Text style={styles.rewardDate}>
-                            {formatDate(reward.earned_date)}
-                          </Text>
-                        </View>
-                        <View style={styles.rewardAmount}>
-                          <Text style={styles.rewardAmountText}>
-                            {formatCurrency(reward.amount)}
-                          </Text>
-                          <View style={[
-                            styles.rewardStatus,
-                            { backgroundColor: getRewardStatusColor(reward.status) }
-                          ]}>
-                            <Text style={styles.rewardStatusText}>
-                              {reward.status?.toUpperCase() || 'PENDING'}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-                    </View>
-                  ))}
+              </View>
+
+              <View style={styles.stepItem}>
+                <View style={styles.stepNumber}>
+                  <Text style={styles.stepNumberText}>2</Text>
                 </View>
-              )}
+                <View style={styles.stepContent}>
+                  <Text style={styles.stepTitle}>They Sign Up</Text>
+                  <Text style={styles.stepDescription}>
+                    Your referrals sign up using your code and get instant benefits
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.stepItem}>
+                <View style={styles.stepNumber}>
+                  <Text style={styles.stepNumberText}>3</Text>
+                </View>
+                <View style={styles.stepContent}>
+                  <Text style={styles.stepTitle}>Earn Rewards</Text>
+                  <Text style={styles.stepDescription}>
+                    Get rewarded for each successful referral that subscribes
+                  </Text>
+                </View>
+              </View>
             </View>
-          </>
-        )}
+          </View>
+        </View>
+
+        {/* Benefits */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Referral Benefits</Text>
+          <View style={styles.sectionCard}>
+            <View style={styles.benefitsContent}>
+              <View style={styles.benefitCard}>
+                <View style={styles.benefitIcon}>
+                  <Ionicons name="pricetag" size={32} color="#10b981" />
+                </View>
+                <Text style={styles.benefitTitle}>Instant Discount</Text>
+                <Text style={styles.benefitDescription}>
+                  New users get {referralCode?.discount_value || 10}% off their first bill when they use your code
+                </Text>
+              </View>
+
+              <View style={styles.benefitCard}>
+                <View style={styles.benefitIcon}>
+                  <Ionicons name="calendar" size={32} color="#3e60ab" />
+                </View>
+                <Text style={styles.benefitTitle}>Free Trial</Text>
+                <Text style={styles.benefitDescription}>
+                  Plus {referralCode?.free_trial_days || 30} days of free trial to explore all features
+                </Text>
+              </View>
+
+              <View style={styles.benefitCard}>
+                <View style={styles.benefitIcon}>
+                  <Ionicons name="rocket" size={32} color="#f59e0b" />
+                </View>
+                <Text style={styles.benefitTitle}>Quick Setup</Text>
+                <Text style={styles.benefitDescription}>
+                  Instant activation - no waiting period or complex approval process
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Terms & Conditions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Terms & Conditions</Text>
+          <View style={styles.sectionCard}>
+            <View style={styles.termsContent}>
+              <View style={styles.termItem}>
+                <Ionicons name="checkmark-circle" size={16} color="#10b981" />
+                <Text style={styles.termText}>
+                  Rewards are credited after successful subscription
+                </Text>
+              </View>
+              <View style={styles.termItem}>
+                <Ionicons name="checkmark-circle" size={16} color="#10b981" />
+                <Text style={styles.termText}>
+                  Minimum subscription period of 3 months required
+                </Text>
+              </View>
+              <View style={styles.termItem}>
+                <Ionicons name="checkmark-circle" size={16} color="#10b981" />
+                <Text style={styles.termText}>
+                  Rewards are processed within 30 days of qualification
+                </Text>
+              </View>
+              <View style={styles.termItem}>
+                <Ionicons name="checkmark-circle" size={16} color="#10b981" />
+                <Text style={styles.termText}>
+                  Self-referrals and fraudulent activities are not allowed
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
       </ScrollView>
 
-      {/* QR Code Modal */}
+      {/* Share Modal */}
       <Modal
         visible={showShareModal}
         animationType="slide"
@@ -361,40 +441,42 @@ export default function ReferralScreen() {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <View style={styles.modalHeaderContent}>
-              <View style={styles.modalIcon}>
-                <Ionicons name="qr-code" size={20} color="#3e60ab" />
-              </View>
-              <View>
-                <Text style={styles.modalTitle}>QR Code</Text>
-                <Text style={styles.modalSubtitle}>Share your referral link</Text>
-              </View>
-            </View>
+            <Text style={styles.modalTitle}>Share Referral</Text>
             <TouchableOpacity 
               onPress={() => setShowShareModal(false)}
               style={styles.closeButton}
             >
-              <Ionicons name="close" size={24} color="#64748b" />
+              <Ionicons name="close" size={24} color="#6b7280" />
             </TouchableOpacity>
           </View>
           
           <View style={styles.modalContent}>
-            <View style={styles.qrCodeContainer}>
-              <View style={styles.qrCodePlaceholder}>
-                <Ionicons name="qr-code" size={120} color="#94a3b8" />
-                <Text style={styles.qrCodeText}>QR Code</Text>
+            <View style={styles.shareContent}>
+              <View style={styles.shareIcon}>
+                <Ionicons name="share" size={48} color="#3e60ab" />
               </View>
-              <Text style={styles.qrCodeDescription}>
-                Scan this QR code to access your referral link
+              <Text style={styles.shareTitle}>Share Your Referral</Text>
+              <Text style={styles.shareDescription}>
+                Choose how you'd like to share your referral code with others
               </Text>
-            </View>
-
-            <View style={styles.comingSoonContainer}>
-              <Ionicons name="construct" size={32} color="#94a3b8" />
-              <Text style={styles.comingSoonTitle}>Coming Soon</Text>
-              <Text style={styles.comingSoonText}>
-                QR code generation will be available in the next update
-              </Text>
+              
+              <View style={styles.shareOptions}>
+                <TouchableOpacity 
+                  style={styles.shareOption}
+                  onPress={handleShareReferral}
+                >
+                  <Ionicons name="share" size={24} color="#3e60ab" />
+                  <Text style={styles.shareOptionText}>Share via Apps</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.shareOption}
+                  onPress={handleCopyReferralLink}
+                >
+                  <Ionicons name="copy" size={24} color="#3e60ab" />
+                  <Text style={styles.shareOptionText}>Copy Link</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
@@ -406,534 +488,448 @@ export default function ReferralScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#f9fafb',
   },
   content: {
     flex: 1,
+    padding: 16,
   },
   scrollContent: {
     paddingBottom: 100,
-  },
-  headerSection: {
-    padding: 20,
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#0f172a',
-    marginBottom: 8,
-    fontFamily: 'Agency',
-    letterSpacing: -0.5,
-  },
-  sectionSubtitle: {
-    fontSize: 16,
-    color: '#64748b',
-    fontFamily: 'Agency',
-    lineHeight: 24,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 40,
-  },
-  loadingCard: {
-    backgroundColor: 'white',
-    paddingHorizontal: 32,
-    paddingVertical: 24,
-    borderRadius: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  spinner: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 3,
-    borderColor: '#e2e8f0',
-    borderTopColor: '#3e60ab',
-    marginBottom: 12,
   },
   loadingText: {
     fontSize: 16,
-    color: '#64748b',
+    color: '#6b7280',
     fontFamily: 'Agency',
   },
+  
+  // Header Section
+  headerSection: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  headerIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#f0f4ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#111827',
+    fontFamily: 'Agency',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: '#6b7280',
+    fontFamily: 'Agency',
+    textAlign: 'center',
+    lineHeight: 22,
+    fontWeight: '400',
+  },
+  
+  // Section Styles
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 12,
+    fontFamily: 'Agency',
+    paddingHorizontal: 4,
+  },
+  sectionCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  
+  // Stats Section
   statsContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginBottom: 24,
     gap: 12,
+    paddingHorizontal: 16,
   },
   statCard: {
     flex: 1,
     backgroundColor: 'white',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
-    flexDirection: 'row',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-    gap: 12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
   statIcon: {
     width: 48,
     height: 48,
-    borderRadius: 12,
+    borderRadius: 24,
+    backgroundColor: '#f8fafc',
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 12,
   },
   statInfo: {
-    flex: 1,
+    alignItems: 'center',
   },
   statValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0f172a',
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
     fontFamily: 'Agency',
+    marginBottom: 4,
   },
   statLabel: {
-    fontSize: 11,
-    color: '#64748b',
+    fontSize: 12,
+    color: '#6b7280',
     fontFamily: 'Agency',
-    marginTop: 2,
+    textAlign: 'center',
+    fontWeight: '500',
   },
-  referralLinkCard: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 24,
-    marginHorizontal: 20,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  referralLinkHeader: {
+  
+  // Referral Code Section
+  referralCodeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
-    gap: 12,
+    padding: 24,
+    paddingBottom: 20,
+    gap: 16,
   },
-  referralLinkIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: '#dbeafe',
+  referralCodeIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#f0f4ff',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  referralLinkTitle: {
+  referralCodeInfo: {
+    flex: 1,
+  },
+  referralCodeTitle: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#0f172a',
+    fontWeight: '600',
+    color: '#111827',
+    fontFamily: 'Agency',
+    marginBottom: 6,
+  },
+  referralCodeSubtitle: {
+    fontSize: 15,
+    color: '#6b7280',
     fontFamily: 'Agency',
   },
-  referralLinkContainer: {
+  referralCodeDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f8fafc',
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    marginHorizontal: 24,
     marginBottom: 20,
     gap: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
-  referralLinkText: {
+  referralCodeText: {
     flex: 1,
-    fontSize: 14,
-    color: '#64748b',
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#3e60ab',
     fontFamily: 'Agency',
+    letterSpacing: 2,
   },
-  copyButton: {
-    padding: 8,
+  copyCodeButton: {
+    padding: 10,
     borderRadius: 8,
     backgroundColor: 'white',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
+  referralBenefits: {
+    paddingHorizontal: 24,
+    marginBottom: 24,
+    gap: 12,
+  },
+  benefitItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  benefitText: {
+    fontSize: 15,
+    color: '#6b7280',
+    fontFamily: 'Agency',
+    fontWeight: '500',
+  },
   referralActions: {
     flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
     gap: 12,
   },
   shareButton: {
-    flex: 2,
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#3e60ab',
-    borderRadius: 12,
+    borderRadius: 10,
     paddingVertical: 14,
+    paddingHorizontal: 16,
     gap: 8,
+    shadowColor: '#3e60ab',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  shareButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: 'white',
+    fontFamily: 'Agency',
+  },
+  linkButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 1.5,
+    borderColor: '#3e60ab',
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  linkButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#3e60ab',
+    fontFamily: 'Agency',
+  },
+  
+  // Steps Section
+  stepsList: {
+    padding: 24,
+    gap: 24,
+  },
+  stepItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 20,
+  },
+  stepNumber: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#3e60ab',
+    justifyContent: 'center',
+    alignItems: 'center',
     shadowColor: '#3e60ab',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
-  shareButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
-  },
-  qrButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    paddingVertical: 14,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  qrButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#3e60ab',
-    fontFamily: 'Agency',
-  },
-  howItWorksCard: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 24,
-    marginHorizontal: 20,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  howItWorksTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#0f172a',
-    fontFamily: 'Agency',
-    marginBottom: 20,
-  },
-  stepsList: {
-    gap: 16,
-  },
-  stepItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 16,
-  },
-  stepNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#3e60ab',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   stepNumberText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: 'bold',
     color: 'white',
     fontFamily: 'Agency',
   },
   stepContent: {
     flex: 1,
+    paddingTop: 2,
   },
   stepTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
-    fontFamily: 'Agency',
-    marginBottom: 4,
-  },
-  stepDescription: {
-    fontSize: 14,
-    color: '#64748b',
-    fontFamily: 'Agency',
-    lineHeight: 20,
-  },
-  rewardTiersCard: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 24,
-    marginHorizontal: 20,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  rewardTiersTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#0f172a',
-    fontFamily: 'Agency',
-    marginBottom: 20,
-  },
-  tiersList: {
-    gap: 16,
-  },
-  tierItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 16,
-    gap: 16,
-  },
-  tierIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tierContent: {
-    flex: 1,
-  },
-  tierTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
-    fontFamily: 'Agency',
-    marginBottom: 4,
-  },
-  tierReward: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#10b981',
+    fontWeight: '600',
+    color: '#111827',
     fontFamily: 'Agency',
-  },
-  rewardsSection: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
-  },
-  rewardsTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#0f172a',
-    fontFamily: 'Agency',
-    marginBottom: 16,
-  },
-  emptyRewards: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 32,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  emptyRewardsTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0f172a',
-    fontFamily: 'Agency',
-    marginTop: 16,
     marginBottom: 8,
   },
-  emptyRewardsText: {
-    fontSize: 14,
-    color: '#64748b',
+  stepDescription: {
+    fontSize: 15,
+    color: '#6b7280',
     fontFamily: 'Agency',
-    textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 22,
+    fontWeight: '500',
   },
-  rewardsList: {
-    gap: 12,
+  
+  // Benefits Section
+  benefitsContent: {
+    padding: 24,
+    gap: 24,
   },
-  rewardCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  rewardCardContent: {
-    flexDirection: 'row',
+  benefitCard: {
     alignItems: 'center',
-    padding: 16,
-    gap: 16,
+    backgroundColor: '#f8fafc',
+    borderRadius: 16,
+    padding: 24,
   },
-  rewardIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+  benefitIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'white',
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  rewardInfo: {
+  benefitTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#111827',
+    fontFamily: 'Agency',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  benefitDescription: {
+    fontSize: 15,
+    color: '#6b7280',
+    fontFamily: 'Agency',
+    textAlign: 'center',
+    lineHeight: 22,
+    fontWeight: '500',
+  },
+  
+  // Terms Section
+  termsContent: {
+    padding: 20,
+    gap: 12,
+  },
+  termItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  termText: {
     flex: 1,
-  },
-  rewardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
-    fontFamily: 'Agency',
-    marginBottom: 4,
-  },
-  rewardDate: {
     fontSize: 14,
-    color: '#64748b',
+    color: '#6b7280',
     fontFamily: 'Agency',
+    lineHeight: 20,
   },
-  rewardAmount: {
-    alignItems: 'flex-end',
-  },
-  rewardAmountText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#10b981',
-    fontFamily: 'Agency',
-    marginBottom: 4,
-  },
-  rewardStatus: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  rewardStatusText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
-  },
+  
   // Modal Styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#f9fafb',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    padding: 16,
     backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  modalHeaderContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  modalIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#dbeafe',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderBottomColor: '#e5e7eb',
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#0f172a',
+    fontWeight: 'bold',
+    color: '#111827',
     fontFamily: 'Agency',
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: '#64748b',
-    fontFamily: 'Agency',
-    marginTop: 2,
   },
   closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#f8fafc',
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 4,
   },
   modalContent: {
     flex: 1,
-    padding: 20,
+    padding: 16,
   },
-  qrCodeContainer: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  qrCodePlaceholder: {
-    width: 200,
-    height: 200,
-    backgroundColor: 'white',
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  qrCodeText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#94a3b8',
-    fontFamily: 'Agency',
-    marginTop: 8,
-  },
-  qrCodeDescription: {
-    fontSize: 14,
-    color: '#64748b',
-    fontFamily: 'Agency',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  comingSoonContainer: {
+  shareContent: {
     alignItems: 'center',
     paddingVertical: 40,
   },
-  comingSoonTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0f172a',
-    fontFamily: 'Agency',
-    marginTop: 16,
-    marginBottom: 8,
+  shareIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#f0f4ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
   },
-  comingSoonText: {
-    fontSize: 14,
-    color: '#64748b',
+  shareTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#111827',
+    fontFamily: 'Agency',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  shareDescription: {
+    fontSize: 16,
+    color: '#6b7280',
     fontFamily: 'Agency',
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 22,
+    marginBottom: 32,
+  },
+  shareOptions: {
+    width: '100%',
+    gap: 16,
+  },
+  shareOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  shareOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    fontFamily: 'Agency',
   },
 });

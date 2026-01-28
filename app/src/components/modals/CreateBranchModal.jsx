@@ -11,6 +11,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Dropdown from '../ui/Dropdown';
 import { branchAPI, companyAPI } from '../../lib/api';
 import { useNotification } from '../../contexts/NotificationContext';
 import { validateGSTIN, validateEmail, validatePhone } from '../../utils/formatters';
@@ -188,81 +189,98 @@ const CreateBranchModal = ({ visible, onClose, onSuccess, selectedCompanyId }) =
   };
 
   const renderCompanySelector = () => (
-    <View style={styles.companySelector}>
-      <Text style={styles.companySelectorTitle}>Select Company</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.companyScrollView}>
-        {loadingCompanies ? (
-          <View style={styles.loadingCompany}>
-            <Text style={styles.loadingText}>Loading companies...</Text>
-          </View>
-        ) : (
-          companies.map((company) => {
-            const isSelected = formData.company_id === company.id;
-            
-            return (
-              <TouchableOpacity
-                key={company.id}
-                style={[
-                  styles.companyCard,
-                  isSelected && styles.companyCardSelected
-                ]}
-                onPress={() => handleInputChange('company_id', company.id)}
-                disabled={!!selectedCompanyId}
-              >
-                <View style={styles.companyIcon}>
+    <Dropdown
+      label="Select Company"
+      placeholder={loadingCompanies ? "Loading companies..." : "Choose a company"}
+      value={formData.company_id}
+      onSelect={(value) => handleInputChange('company_id', value)}
+      options={companies}
+      getOptionValue={(option) => option.id}
+      getOptionLabel={(option) => option.company_name}
+      disabled={!!selectedCompanyId || loadingCompanies}
+      required
+      renderOption={(option, index, handleSelect) => {
+        const isSelected = formData.company_id === option.id;
+        
+        return (
+          <TouchableOpacity
+            key={index}
+            style={[
+              styles.companyOption,
+              isSelected && styles.selectedCompanyOption
+            ]}
+            onPress={() => handleSelect(option)}
+          >
+            <View style={styles.companyInfo}>
+              <View style={styles.companyHeader}>
+                <View style={styles.companyIconContainer}>
                   <Ionicons name="business" size={20} color={isSelected ? '#3e60ab' : '#6b7280'} />
                 </View>
                 <Text style={[
-                  styles.companyName,
-                  isSelected && styles.companyNameSelected
-                ]} numberOfLines={2}>
-                  {company.company_name}
+                  styles.companyOptionName,
+                  isSelected && styles.selectedCompanyOptionName
+                ]}>
+                  {option.company_name}
                 </Text>
-                {company.gstin && (
-                  <Text style={styles.companyGstin}>{company.gstin}</Text>
-                )}
-              </TouchableOpacity>
-            );
-          })
-        )}
-      </ScrollView>
-    </View>
+              </View>
+              {option.gstin && (
+                <Text style={styles.companyGstin}>GSTIN: {option.gstin}</Text>
+              )}
+            </View>
+            {isSelected && (
+              <Ionicons name="checkmark" size={20} color="#3e60ab" />
+            )}
+          </TouchableOpacity>
+        );
+      }}
+    />
   );
 
   const renderBranchTypeSelector = () => (
-    <View style={styles.typeSelector}>
-      <Text style={styles.typeSelectorTitle}>Branch Type</Text>
-      <View style={styles.typeGrid}>
-        {BRANCH_TYPES.map((type) => {
-          const isSelected = formData.branch_type === type.value;
-          const typeColor = getBranchTypeColor(type.value);
-          
-          return (
-            <TouchableOpacity
-              key={type.value}
-              style={[
-                styles.typeCard,
-                isSelected && { borderColor: typeColor, backgroundColor: `${typeColor}15` }
-              ]}
-              onPress={() => {
-                handleInputChange('branch_type', type.value);
-                handleInputChange('is_head_office', type.value === 'Head Office');
-              }}
-            >
-              <View style={[styles.typeIcon, { backgroundColor: `${typeColor}20` }]}>
-                <Ionicons name={type.icon} size={20} color={typeColor} />
+    <Dropdown
+      label="Branch Type"
+      placeholder="Select branch type"
+      value={formData.branch_type}
+      onSelect={(value) => {
+        handleInputChange('branch_type', value);
+        handleInputChange('is_head_office', value === 'Head Office');
+      }}
+      options={BRANCH_TYPES}
+      getOptionValue={(option) => option.value}
+      getOptionLabel={(option) => option.label}
+      renderOption={(option, index, handleSelect) => {
+        const isSelected = formData.branch_type === option.value;
+        const typeColor = getBranchTypeColor(option.value);
+        
+        return (
+          <TouchableOpacity
+            key={index}
+            style={[
+              styles.branchTypeOption,
+              isSelected && styles.selectedBranchTypeOption
+            ]}
+            onPress={() => handleSelect(option)}
+          >
+            <View style={styles.branchTypeInfo}>
+              <View style={styles.branchTypeHeader}>
+                <View style={[styles.branchTypeIcon, { backgroundColor: `${typeColor}20` }]}>
+                  <Ionicons name={option.icon} size={20} color={typeColor} />
+                </View>
+                <Text style={[
+                  styles.branchTypeName,
+                  isSelected && { color: typeColor, fontWeight: '600' }
+                ]}>
+                  {option.label}
+                </Text>
               </View>
-              <Text style={[
-                styles.typeLabel,
-                isSelected && { color: typeColor, fontWeight: '600' }
-              ]}>
-                {type.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
+            </View>
+            {isSelected && (
+              <Ionicons name="checkmark" size={20} color={typeColor} />
+            )}
+          </TouchableOpacity>
+        );
+      }}
+    />
   );
 
   const renderStepIndicator = () => (
@@ -665,115 +683,88 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
 
-  // Company Selector
-  companySelector: {
-    marginBottom: 24,
-  },
-  companySelectorTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    fontFamily: 'Agency',
-    marginBottom: 12,
-  },
-  companyScrollView: {
-    marginHorizontal: -20,
-    paddingHorizontal: 20,
-  },
-  companyCard: {
-    width: 140,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 12,
-    marginRight: 12,
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  companyCardSelected: {
-    borderColor: '#3e60ab',
-    backgroundColor: '#3e60ab15',
-  },
-  companyIcon: {
+  // Company Dropdown Options
+  companyOption: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
   },
-  companyName: {
-    fontSize: 12,
-    color: '#6b7280',
+  selectedCompanyOption: {
+    backgroundColor: '#f0f4ff',
+  },
+  companyInfo: {
+    flex: 1,
+  },
+  companyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  companyIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  companyOptionName: {
+    fontSize: 16,
+    color: '#111827',
     fontFamily: 'Agency',
-    textAlign: 'center',
-    lineHeight: 16,
-    marginBottom: 4,
+    fontWeight: '500',
+    flex: 1,
   },
-  companyNameSelected: {
+  selectedCompanyOptionName: {
     color: '#3e60ab',
     fontWeight: '600',
   },
   companyGstin: {
-    fontSize: 10,
-    color: '#9ca3af',
-    fontFamily: 'Agency',
-    textAlign: 'center',
-  },
-  loadingCompany: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontFamily: 'Agency',
-  },
-
-  // Branch Type Selector
-  typeSelector: {
-    marginBottom: 24,
-  },
-  typeSelectorTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    fontFamily: 'Agency',
-    marginBottom: 12,
-  },
-  typeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  typeCard: {
-    width: (width - 64) / 2,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  typeIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  typeLabel: {
     fontSize: 12,
     color: '#6b7280',
     fontFamily: 'Agency',
-    textAlign: 'center',
-    lineHeight: 16,
+    marginTop: 4,
+    marginLeft: 44,
+  },
+
+  // Branch Type Dropdown Options
+  branchTypeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  selectedBranchTypeOption: {
+    backgroundColor: '#f0f4ff',
+  },
+  branchTypeInfo: {
+    flex: 1,
+  },
+  branchTypeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  branchTypeIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  branchTypeName: {
+    fontSize: 16,
+    color: '#111827',
+    fontFamily: 'Agency',
+    fontWeight: '500',
+    flex: 1,
   },
 
   inputGroup: {

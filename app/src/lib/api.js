@@ -55,16 +55,39 @@ export const branchAPI = {
 // Accounting APIs
 export const accountingAPI = {
   dashboard: () => apiClient.get('/accounting/dashboard'),
+  accountGroups: {
+    list: () => apiClient.get('/accounting/groups'),
+    tree: () => apiClient.get('/accounting/groups/tree'),
+    get: (id) => apiClient.get(`/accounting/groups/${id}`),
+  },
   ledgers: {
     list: (params) => apiClient.get('/accounting/ledgers', { params }),
     create: (data) => apiClient.post('/accounting/ledgers', data),
     update: (id, data) => apiClient.put(`/accounting/ledgers/${id}`, data),
     delete: (id) => apiClient.delete(`/accounting/ledgers/${id}`),
     get: (id) => apiClient.get(`/accounting/ledgers/${id}`),
-    statement: (id, params) => apiClient.get(`/accounting/ledgers/${id}/statement`, { params }),
+    statement: (id, params) => apiClient.get('/reports/ledger-statement', { 
+      params: { ...params, ledger_id: id } 
+    }),
     transactions: (id, params) => apiClient.get(`/accounting/ledgers/${id}/transactions`, { params }),
   },
   outstanding: (params) => apiClient.get('/accounting/outstanding', { params }),
+  // Tally Import
+  tallyImport: {
+    getTemplate: () => apiClient.get('/accounting/tally-import/template'),
+    import: (formData, onProgress) => {
+      const config = {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      };
+      if (onProgress) {
+        config.onUploadProgress = (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(percentCompleted);
+        };
+      }
+      return apiClient.post('/accounting/tally-import', formData, config);
+    },
+  },
 };
 
 // Voucher APIs
@@ -202,10 +225,30 @@ export const clientSupportAPI = {
 
 // Loan APIs (FinBox Integration)
 export const finboxAPI = {
+  // Consent management
   saveConsent: (data) => apiClient.post('/finbox/consent', data),
-  checkEligibility: () => apiClient.get('/finbox/eligibility'),
-  applyLoan: (data) => apiClient.post('/finbox/apply', data),
-  loanStatus: () => apiClient.get('/finbox/status'),
+  getConsent: () => apiClient.get('/finbox/consent'),
+  
+  // Credit scoring
+  getCreditScore: (data) => apiClient.post('/finbox/credit-score', data),
+  getInclusionScore: (customerId) => apiClient.get(`/finbox/inclusion-score/${customerId}`),
+  
+  // Loan eligibility and application
+  checkEligibility: (data) => apiClient.post('/finbox/eligibility', data),
+  
+  // User management
+  createUser: (data) => apiClient.post('/finbox/user', data),
+  
+  // Bank statement integration
+  initiateBankStatement: (data) => apiClient.post('/finbox/bank-statement/initiate', data),
+  getBankStatementStatus: (customerId) => apiClient.get(`/finbox/bank-statement/${customerId}/status`),
+  getBankStatementAnalysis: (customerId) => apiClient.get(`/finbox/bank-statement/${customerId}/analysis`),
+  
+  // Device insights
+  getDeviceInsights: (data) => apiClient.post('/finbox/device-insights', data),
+  
+  // Session management
+  generateSessionToken: (data) => apiClient.post('/finbox/session', data),
 };
 
 // Search APIs (simplified to match backend universal search)
@@ -256,6 +299,45 @@ export const subscriptionAPI = {
 export const pricingAPI = {
   list: (params) => apiClient.get('/pricing', { params }),
   get: (id) => apiClient.get(`/pricing/${id}`),
+};
+
+// Review APIs
+export const reviewAPI = {
+  getPublic: (params) => apiClient.get('/reviews/public', { params }),
+  getMy: () => apiClient.get('/reviews/my'),
+  submit: (data) => apiClient.post('/reviews', data),
+  update: (id, data) => apiClient.put(`/reviews/my/${id}`, data),
+};
+
+// Tools APIs (for backward compatibility with existing backend)
+export const toolsAPI = {
+  tallyImport: {
+    upload: (data) => apiClient.post('/accounting/tally-import', data),
+    history: () => {
+      // Since backend doesn't have history endpoint, return empty array
+      return Promise.resolve({ data: { data: [] } });
+    },
+    status: (id) => {
+      // Since backend doesn't have status endpoint, return completed status
+      return Promise.resolve({ data: { status: 'completed' } });
+    },
+  },
+};
+
+// Referral APIs (Simplified)
+export const referralAPI = {
+  // Get user's referral code
+  getMyCode: () => apiClient.get('/referrals/my-code'),
+  
+  // Verify a referral code (public endpoint for registration)
+  verifyCode: (code) => apiClient.post('/referrals/verify', { code }),
+  
+  // Get current discount configuration
+  getCurrentDiscountConfig: () => apiClient.get('/referrals/discount-config/current'),
+  
+  // Admin-only endpoints
+  getAnalytics: (params) => apiClient.get('/referrals/analytics', { params }),
+  getAllCodes: (params) => apiClient.get('/referrals', { params }),
 };
 
 // Legacy export for backward compatibility

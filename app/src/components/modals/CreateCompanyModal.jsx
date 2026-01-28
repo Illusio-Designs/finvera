@@ -11,11 +11,12 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Dropdown from '../ui/Dropdown';
 import { companyAPI } from '../../lib/api';
 import { useNotification } from '../../contexts/NotificationContext';
 import { quickNotifications } from '../../utils/notifications';
 import { extractPANFromGSTIN, validateGSTIN, validatePAN, validateEmail, validatePhone } from '../../utils/formatters';
-import DatePicker from '../ui/DatePicker';
+import DatePicker from '../ui/ModernDatePicker';
 import PhoneInput from '../ui/PhoneInput';
 
 const { width } = Dimensions.get('window');
@@ -178,36 +179,47 @@ const CreateCompanyModal = ({ visible, onClose, onSuccess }) => {
   };
 
   const renderCompanyTypeSelector = () => (
-    <View style={styles.typeSelector}>
-      <Text style={styles.typeSelectorTitle}>Select Company Type</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.typeScrollView}>
-        {COMPANY_TYPES.map((type) => {
-          const isSelected = formData.company_type === type.value;
-          const typeColor = getCompanyTypeColor(type.value);
-          
-          return (
-            <TouchableOpacity
-              key={type.value}
-              style={[
-                styles.typeCard,
-                isSelected && { borderColor: typeColor, backgroundColor: `${typeColor}15` }
-              ]}
-              onPress={() => handleInputChange('company_type', type.value)}
-            >
-              <View style={[styles.typeIcon, { backgroundColor: `${typeColor}20` }]}>
-                <Ionicons name={type.icon} size={24} color={typeColor} />
+    <Dropdown
+      label="Company Type"
+      placeholder="Select company type"
+      value={formData.company_type}
+      onSelect={(value) => handleInputChange('company_type', value)}
+      options={COMPANY_TYPES}
+      getOptionValue={(option) => option.value}
+      getOptionLabel={(option) => option.label}
+      renderOption={(option, index, handleSelect) => {
+        const isSelected = formData.company_type === option.value;
+        const typeColor = getCompanyTypeColor(option.value);
+        
+        return (
+          <TouchableOpacity
+            key={index}
+            style={[
+              styles.companyTypeOption,
+              isSelected && styles.selectedCompanyTypeOption
+            ]}
+            onPress={() => handleSelect(option)}
+          >
+            <View style={styles.companyTypeInfo}>
+              <View style={styles.companyTypeHeader}>
+                <View style={[styles.companyTypeIcon, { backgroundColor: `${typeColor}20` }]}>
+                  <Ionicons name={option.icon} size={20} color={typeColor} />
+                </View>
+                <Text style={[
+                  styles.companyTypeName,
+                  isSelected && { color: typeColor, fontWeight: '600' }
+                ]}>
+                  {option.label}
+                </Text>
               </View>
-              <Text style={[
-                styles.typeLabel,
-                isSelected && { color: typeColor, fontWeight: '600' }
-              ]} numberOfLines={2}>
-                {type.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-    </View>
+            </View>
+            {isSelected && (
+              <Ionicons name="checkmark" size={20} color={typeColor} />
+            )}
+          </TouchableOpacity>
+        );
+      }}
+    />
   );
 
   const renderStepIndicator = () => (
@@ -921,50 +933,40 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
 
-  // Company Type Selector
-  typeSelector: {
-    marginBottom: 24,
-  },
-  typeSelectorTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    fontFamily: 'Agency',
-    marginBottom: 12,
-  },
-  typeScrollView: {
-    marginHorizontal: -20,
-    paddingHorizontal: 20,
-  },
-  typeCard: {
-    width: 120,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 12,
-    marginRight: 12,
+  // Company Type Dropdown Options
+  companyTypeOption: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
   },
-  typeIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+  selectedCompanyTypeOption: {
+    backgroundColor: '#f0f4ff',
+  },
+  companyTypeInfo: {
+    flex: 1,
+  },
+  companyTypeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  companyTypeIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
   },
-  typeLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+  companyTypeName: {
+    fontSize: 16,
+    color: '#111827',
     fontFamily: 'Agency',
-    textAlign: 'center',
-    lineHeight: 16,
+    fontWeight: '500',
+    flex: 1,
   },
 
   inputGroup: {

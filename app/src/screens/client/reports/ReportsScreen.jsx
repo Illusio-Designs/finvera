@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../../components/navigation/TopBar';
+import DatePicker from '../../../components/ui/ModernDatePicker';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { reportsAPI } from '../../../lib/api';
@@ -357,31 +358,23 @@ export default function ReportsScreen() {
                 
                 <View style={styles.dateInputsRow}>
                   <View style={styles.dateInputGroup}>
-                    <Text style={styles.label}>From Date</Text>
-                    <View style={styles.inputContainer}>
-                      <Ionicons name="calendar-outline" size={16} color="#9ca3af" style={styles.inputIcon} />
-                      <TextInput
-                        style={styles.input}
-                        value={dateRange.from_date}
-                        onChangeText={(text) => setDateRange(prev => ({ ...prev, from_date: text }))}
-                        placeholder="YYYY-MM-DD"
-                        placeholderTextColor="#9ca3af"
-                      />
-                    </View>
+                    <DatePicker
+                      label="From Date"
+                      value={dateRange.from_date}
+                      onDateChange={(date) => setDateRange(prev => ({ ...prev, from_date: date }))}
+                      placeholder="Select from date"
+                      style={styles.datePicker}
+                    />
                   </View>
 
                   <View style={styles.dateInputGroup}>
-                    <Text style={styles.label}>To Date</Text>
-                    <View style={styles.inputContainer}>
-                      <Ionicons name="calendar-outline" size={16} color="#9ca3af" style={styles.inputIcon} />
-                      <TextInput
-                        style={styles.input}
-                        value={dateRange.to_date}
-                        onChangeText={(text) => setDateRange(prev => ({ ...prev, to_date: text }))}
-                        placeholder="YYYY-MM-DD"
-                        placeholderTextColor="#9ca3af"
-                      />
-                    </View>
+                    <DatePicker
+                      label="To Date"
+                      value={dateRange.to_date}
+                      onDateChange={(date) => setDateRange(prev => ({ ...prev, to_date: date }))}
+                      placeholder="Select to date"
+                      style={styles.datePicker}
+                    />
                   </View>
                 </View>
 
@@ -729,6 +722,9 @@ const styles = StyleSheet.create({
   },
   dateInputGroup: {
     flex: 1,
+  },
+  datePicker: {
+    marginBottom: 0,
   },
   formGroup: {
     marginBottom: 20,

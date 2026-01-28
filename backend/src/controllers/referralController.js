@@ -1,5 +1,4 @@
-const { ReferralCode, ReferralReward, Salesman, Distributor } = require('../models');
-const { TenantMaster } = require('../models/masterModels');
+const { ReferralCode } = require('../models');
 const { Op } = require('sequelize');
 const crypto = require('crypto');
 
@@ -57,8 +56,8 @@ module.exports = {
         owner_type,
         owner_id,
         discount_type,
-        discount_value: parseFloat(discount_value) || 0,
-        free_trial_days: parseInt(free_trial_days) || 0,
+        discount_value: parseFloat(discount_value) || 10.0,
+        free_trial_days: parseInt(free_trial_days) || 30,
         max_uses: parseInt(max_uses) || null,
         valid_from: valid_from ? new Date(valid_from) : new Date(),
         valid_until: valid_until ? new Date(valid_until) : null,
@@ -109,55 +108,42 @@ module.exports = {
     try {
       const userId = req.user?.id || req.user_id;
       const userRole = req.user?.role || req.role;
+      const tenantId = req.tenant_id || req.user?.tenant_id;
 
       let ownerId;
       let ownerType;
 
+      // Determine owner type and ID based on user role
       if (userRole === 'salesman') {
+        const { Salesman } = require('../models');
         const salesman = await Salesman.findOne({ where: { user_id: userId } });
         if (salesman) {
           ownerId = salesman.id;
           ownerType = 'salesman';
         }
       } else if (userRole === 'distributor') {
+        const { Distributor } = require('../models');
         const distributor = await Distributor.findOne({ where: { user_id: userId } });
         if (distributor) {
           ownerId = distributor.id;
           ownerType = 'distributor';
         }
-      } else if (userRole === 'tenant_admin') {
-        // Use req.tenant_id (set by auth middleware) with fallback to req.user.tenant_id
-        ownerId = req.tenant_id || req.user?.tenant_id;
+      } else if (userRole === 'tenant_admin' || userRole === 'user') {
+        // For tenant users, use tenant_id as owner_id
+        ownerId = tenantId;
         ownerType = 'customer';
       }
 
       if (!ownerId) {
-        return res.status(404).json({ message: 'No referral code found for your account' });
+        return res.status(404).json({ message: 'No referral code available for your account type' });
       }
 
+      // Check if user already has a referral code
       let referralCode = await ReferralCode.findOne({
         where: { owner_type: ownerType, owner_id: ownerId, is_active: true },
       });
 
       if (!referralCode) {
-        // Get current discount percentage from config
-        const ReferralDiscountConfig = require('../models').ReferralDiscountConfig;
-        const { Op } = require('sequelize');
-        const currentConfig = await ReferralDiscountConfig.findOne({
-          where: {
-            is_active: true,
-            effective_from: { [Op.lte]: new Date() },
-            [Op.or]: [
-              { effective_until: null },
-              { effective_until: { [Op.gte]: new Date() } },
-            ],
-          },
-          order: [['effective_from', 'DESC']],
-        });
-
-        // Use 10% as the standard discount percentage for all referral codes
-        const discountPercentage = 10.00;
-
         // Generate unique code with retry mechanism
         let code;
         let attempts = 0;
@@ -173,63 +159,25 @@ module.exports = {
           return res.status(500).json({ message: 'Failed to generate unique referral code' });
         }
 
-        // Create one if doesn't exist
+        // Create new referral code with standard 10% discount
         referralCode = await ReferralCode.create({
           code,
           owner_type: ownerType,
           owner_id: ownerId,
           discount_type: 'percentage',
-          discount_value: discountPercentage,
-          free_trial_days: 30,
+          discount_value: 10.0, // Standard 10% discount
+          free_trial_days: 30,   // Standard 30 days trial
           is_active: true,
         });
       }
 
-      res.json({ referralCode });
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  async listRewards(req, res, next) {
-    try {
-      const { referrer_type, referrer_id, status } = req.query;
-      const where = {};
-
-      if (referrer_type) where.referrer_type = referrer_type;
-      if (referrer_id) where.referrer_id = referrer_id;
-      if (status) where.reward_status = status;
-
-      const rewards = await ReferralReward.findAll({
-        where,
-        include: [
-          { model: TenantMaster, attributes: ['id', 'company_name'], foreignKey: 'referee_tenant_id', as: 'referee_tenant' },
-          { model: ReferralCode, attributes: ['id', 'code'] },
-        ],
-        order: [['createdAt', 'DESC']],
+      // Return referral code with usage stats
+      res.json({ 
+        referralCode: {
+          ...referralCode.toJSON(),
+          total_uses: referralCode.current_uses || 0,
+        }
       });
-
-      res.json({ rewards });
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  async approveReward(req, res, next) {
-    try {
-      const { id } = req.params;
-      const reward = await ReferralReward.findByPk(id);
-
-      if (!reward) {
-        return res.status(404).json({ message: 'Reward not found' });
-      }
-
-      await reward.update({
-        reward_status: 'approved',
-        payment_date: new Date(),
-      });
-
-      res.json({ reward });
     } catch (err) {
       next(err);
     }
@@ -244,89 +192,21 @@ module.exports = {
         where.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
       }
 
-      const totalRewards = await ReferralReward.count({ where });
-      const totalRevenue = await ReferralReward.sum('reward_amount', { where });
-      const conversions = await ReferralReward.count({
-        where: { ...where, reward_status: 'approved' },
+      // Get basic referral code statistics
+      const totalCodes = await ReferralCode.count({ where });
+      const activeCodes = await ReferralCode.count({ 
+        where: { ...where, is_active: true } 
       });
-
-      const conversionRate = totalRewards > 0 ? (conversions / totalRewards) * 100 : 0;
+      const totalUses = await ReferralCode.sum('current_uses', { where }) || 0;
 
       res.json({
         analytics: {
-          totalRewards,
-          totalRevenue: parseFloat(totalRevenue || 0),
-          conversions,
-          conversionRate: parseFloat(conversionRate.toFixed(2)),
+          totalCodes,
+          activeCodes,
+          totalUses,
+          averageUsesPerCode: totalCodes > 0 ? (totalUses / totalCodes).toFixed(2) : 0,
         },
       });
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  async getReferralCodeById(req, res, next) {
-    try {
-      const { id } = req.params;
-      const referralCode = await ReferralCode.findByPk(id);
-
-      if (!referralCode) {
-        return res.status(404).json({ message: 'Referral code not found' });
-      }
-
-      res.json(referralCode);
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  async updateReferralCode(req, res, next) {
-    try {
-      const { id } = req.params;
-      const referralCode = await ReferralCode.findByPk(id);
-
-      if (!referralCode) {
-        return res.status(404).json({ message: 'Referral code not found' });
-      }
-
-      await referralCode.update(req.body);
-      res.json(referralCode);
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  async deleteReferralCode(req, res, next) {
-    try {
-      const { id } = req.params;
-      const referralCode = await ReferralCode.findByPk(id);
-
-      if (!referralCode) {
-        return res.status(404).json({ message: 'Referral code not found' });
-      }
-
-      await referralCode.update({ is_active: false });
-      res.json({ message: 'Referral code deactivated' });
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  async getReferralRewardById(req, res, next) {
-    try {
-      const { id } = req.params;
-      const reward = await ReferralReward.findByPk(id, {
-        include: [
-          { model: TenantMaster, attributes: ['id', 'company_name'], as: 'referee_tenant' },
-          { model: ReferralCode, attributes: ['id', 'code'] },
-        ],
-      });
-
-      if (!reward) {
-        return res.status(404).json({ message: 'Referral reward not found' });
-      }
-
-      res.json(reward);
     } catch (err) {
       next(err);
     }
@@ -334,7 +214,7 @@ module.exports = {
 };
 
 function generateReferralCode(ownerType) {
-  const prefix = ownerType === 'salesman' ? 'SM' : ownerType === 'distributor' ? 'DS' : 'CU';
+  const prefix = ownerType === 'salesman' ? 'SM' : ownerType === 'distributor' ? 'DS' : 'FV';
   const random = crypto.randomBytes(4).toString('hex').toUpperCase();
   return `${prefix}${random}`;
 }

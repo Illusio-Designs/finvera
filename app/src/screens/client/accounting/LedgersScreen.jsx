@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../../components/navigation/TopBar';
+import CreateLedgerModal from '../../../components/modals/CreateLedgerModal';
+import DatePicker from '../../../components/ui/ModernDatePicker';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { accountingAPI } from '../../../lib/api';
@@ -13,11 +15,18 @@ export default function LedgersScreen() {
   const [ledgers, setLedgers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showStatementModal, setShowStatementModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedLedger, setSelectedLedger] = useState(null);
   const [ledgerBalance, setLedgerBalance] = useState(null);
+  const [statementData, setStatementData] = useState([]);
+  const [statementLoading, setStatementLoading] = useState(false);
+  const [dateRange, setDateRange] = useState({
+    fromDate: '',
+    toDate: ''
+  });
 
   const handleMenuPress = () => {
     openDrawer();
@@ -26,8 +35,7 @@ export default function LedgersScreen() {
   const fetchLedgers = useCallback(async () => {
     try {
       const response = await accountingAPI.ledgers.list({ 
-        limit: 100,
-        search: searchQuery || undefined
+        limit: 100
       });
       const data = response.data?.data || response.data || [];
       setLedgers(Array.isArray(data) ? data : []);
@@ -42,7 +50,7 @@ export default function LedgersScreen() {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, showNotification]);
+  }, [showNotification]);
 
   useEffect(() => {
     fetchLedgers();
@@ -70,49 +78,106 @@ export default function LedgersScreen() {
     }
   };
 
-  const handleViewStatement = (ledger) => {
+  const handleViewStatement = async (ledger) => {
     setSelectedLedger(ledger);
     setShowStatementModal(true);
+    setStatementLoading(true);
+    
+    try {
+      // Fetch ledger statement with date range if provided
+      const params = {};
+      if (dateRange.fromDate) params.from_date = dateRange.fromDate;
+      if (dateRange.toDate) params.to_date = dateRange.toDate;
+      
+      const response = await accountingAPI.ledgers.statement(ledger.id, params);
+      const statementData = response.data?.transactions || response.data?.statement || response.data?.data || [];
+      setStatementData(Array.isArray(statementData) ? statementData : []);
+    } catch (error) {
+      console.error('Error fetching ledger statement:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to load ledger statement'
+      });
+      setStatementData([]);
+    } finally {
+      setStatementLoading(false);
+    }
   };
 
-  const handleEditLedger = () => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Edit ledger functionality will be available soon'
+  const handleSetCurrentMonth = () => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    setDateRange({
+      fromDate: firstDay.toISOString().split('T')[0],
+      toDate: lastDay.toISOString().split('T')[0]
     });
   };
 
-  const handleDeleteLedger = () => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Delete ledger functionality will be available soon'
+  const handleSetCurrentYear = () => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), 0, 1);
+    const lastDay = new Date(now.getFullYear(), 11, 31);
+    
+    setDateRange({
+      fromDate: firstDay.toISOString().split('T')[0],
+      toDate: lastDay.toISOString().split('T')[0]
     });
+  };
+
+  const handleEditLedger = (ledger) => {
+    setSelectedLedger(ledger);
+    setShowEditModal(true);
+  };
+
+  const handleDeleteLedger = (ledger) => {
+    Alert.alert(
+      'Delete Ledger',
+      `Are you sure you want to delete "${ledger.ledger_name}"? This action cannot be undone.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await accountingAPI.ledgers.delete(ledger.id);
+              showNotification({
+                type: 'success',
+                title: 'Success',
+                message: 'Ledger deleted successfully'
+              });
+              fetchLedgers();
+            } catch (error) {
+              console.error('Delete ledger error:', error);
+              showNotification({
+                type: 'error',
+                title: 'Error',
+                message: error.response?.data?.message || 'Failed to delete ledger'
+              });
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleCreateLedger = () => {
-    showNotification({
-      type: 'success',
-      title: 'Create Ledger',
-      message: 'Ledger creation form will open'
-    });
-    // In a real implementation, this would open a create ledger form/modal
+    setShowCreateModal(true);
   };
 
-  const handleCreateSupplier = () => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Create supplier functionality will be available soon'
-    });
+  const handleLedgerCreated = () => {
+    fetchLedgers();
   };
 
-  const filteredLedgers = ledgers.filter(ledger => 
-    !searchQuery || 
-    (ledger.ledger_name && ledger.ledger_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (ledger.ledger_code && ledger.ledger_code.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const handleLedgerUpdated = () => {
+    fetchLedgers();
+  };
 
   return (
     <View style={styles.container}>
@@ -130,33 +195,10 @@ export default function LedgersScreen() {
       >
         {/* Header Actions */}
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.createSupplierButton} onPress={handleCreateSupplier}>
-            <Ionicons name="person-add-outline" size={16} color="#6b7280" />
-            <Text style={styles.createSupplierText}>Create Supplier</Text>
-          </TouchableOpacity>
           <TouchableOpacity style={styles.createButton} onPress={handleCreateLedger}>
             <Ionicons name="add" size={16} color="white" />
             <Text style={styles.createButtonText}>New Ledger</Text>
           </TouchableOpacity>
-        </View>
-
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <Ionicons name="search" size={20} color="#9ca3af" />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search ledgers..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholderTextColor="#9ca3af"
-            />
-            {searchQuery ? (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={20} color="#9ca3af" />
-              </TouchableOpacity>
-            ) : null}
-          </View>
         </View>
 
         {/* Ledgers List */}
@@ -164,26 +206,20 @@ export default function LedgersScreen() {
           <View style={styles.loadingContainer}>
             <Text style={styles.loadingText}>Loading ledgers...</Text>
           </View>
-        ) : filteredLedgers.length === 0 ? (
+        ) : ledgers.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="folder-outline" size={64} color="#d1d5db" />
-            <Text style={styles.emptyTitle}>
-              {searchQuery ? 'No Matching Ledgers' : 'No Ledgers Found'}
-            </Text>
+            <Text style={styles.emptyTitle}>No Ledgers Found</Text>
             <Text style={styles.emptySubtitle}>
-              {searchQuery 
-                ? `No ledgers match "${searchQuery}"` 
-                : 'Create your first ledger to get started'}
+              Create your first ledger to get started
             </Text>
-            {!searchQuery && (
-              <TouchableOpacity style={styles.emptyButton} onPress={handleCreateLedger}>
-                <Text style={styles.emptyButtonText}>Create Ledger</Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity style={styles.emptyButton} onPress={handleCreateLedger}>
+              <Text style={styles.emptyButtonText}>Create Ledger</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.ledgersList}>
-            {filteredLedgers.map((ledger, index) => (
+            {ledgers.map((ledger, index) => (
               <TouchableOpacity
                 key={ledger.id || index}
                 style={styles.ledgerCard}
@@ -246,7 +282,7 @@ export default function LedgersScreen() {
                     style={styles.actionButton}
                     onPress={(e) => {
                       e.stopPropagation();
-                      handleEditLedger();
+                      handleEditLedger(ledger);
                     }}
                   >
                     <Ionicons name="create-outline" size={16} color="#059669" />
@@ -257,7 +293,7 @@ export default function LedgersScreen() {
                     style={styles.actionButton}
                     onPress={(e) => {
                       e.stopPropagation();
-                      handleDeleteLedger();
+                      handleDeleteLedger(ledger);
                     }}
                   >
                     <Ionicons name="trash-outline" size={16} color="#dc2626" />
@@ -407,7 +443,7 @@ export default function LedgersScreen() {
               style={[styles.modalActionButton, styles.modalActionButtonSecondary]}
               onPress={() => {
                 setShowDetailModal(false);
-                handleEditLedger();
+                handleEditLedger(selectedLedger);
               }}
             >
               <Ionicons name="create-outline" size={16} color="#3e60ab" />
@@ -434,19 +470,129 @@ export default function LedgersScreen() {
             </TouchableOpacity>
           </View>
           
+          {/* Date Range Filter */}
+          <View style={styles.dateFilterContainer}>
+            {/* Quick Date Range Buttons */}
+            <View style={styles.quickDateButtons}>
+              <TouchableOpacity 
+                style={styles.quickDateButton}
+                onPress={handleSetCurrentMonth}
+              >
+                <Text style={styles.quickDateButtonText}>This Month</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.quickDateButton}
+                onPress={handleSetCurrentYear}
+              >
+                <Text style={styles.quickDateButtonText}>This Year</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {/* Date Pickers Row */}
+            <View style={styles.datePickersRow}>
+              <View style={styles.dateInputGroup}>
+                <DatePicker
+                  label="From Date"
+                  value={dateRange.fromDate}
+                  onDateChange={(value) => setDateRange(prev => ({ ...prev, fromDate: value }))}
+                  placeholder="Select from date"
+                  style={styles.datePicker}
+                />
+              </View>
+              <View style={styles.dateInputGroup}>
+                <DatePicker
+                  label="To Date"
+                  value={dateRange.toDate}
+                  onDateChange={(value) => setDateRange(prev => ({ ...prev, toDate: value }))}
+                  placeholder="Select to date"
+                  style={styles.datePicker}
+                  minimumDate={dateRange.fromDate ? new Date(dateRange.fromDate) : undefined}
+                />
+              </View>
+            </View>
+            
+            {/* Filter Buttons */}
+            <View style={styles.filterButtonContainer}>
+              <View style={styles.filterButtons}>
+                <TouchableOpacity 
+                  style={styles.clearButton}
+                  onPress={() => setDateRange({ fromDate: '', toDate: '' })}
+                >
+                  <Ionicons name="close" size={16} color="#6b7280" />
+                  <Text style={styles.clearButtonText}>Clear</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.filterButton}
+                  onPress={() => handleViewStatement(selectedLedger)}
+                >
+                  <Ionicons name="filter" size={16} color="white" />
+                  <Text style={styles.filterButtonText}>Filter</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+          
           <ScrollView style={styles.modalContent}>
             <View style={styles.statementContainer}>
-              <View style={styles.comingSoonContainer}>
-                <Ionicons name="document-text-outline" size={64} color="#d1d5db" />
-                <Text style={styles.comingSoonTitle}>Statement View</Text>
-                <Text style={styles.comingSoonSubtitle}>
-                  Detailed ledger statement with transactions will be available soon
-                </Text>
-              </View>
+              {statementLoading ? (
+                <View style={styles.loadingContainer}>
+                  <Text style={styles.loadingText}>Loading statement...</Text>
+                </View>
+              ) : statementData.length === 0 ? (
+                <View style={styles.comingSoonContainer}>
+                  <Ionicons name="document-text-outline" size={64} color="#d1d5db" />
+                  <Text style={styles.comingSoonTitle}>No Transactions</Text>
+                  <Text style={styles.comingSoonSubtitle}>
+                    No transactions found for the selected date range
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.transactionsList}>
+                  {statementData.map((transaction, index) => (
+                    <View key={index} style={styles.transactionCard}>
+                      <View style={styles.transactionHeader}>
+                        <Text style={styles.transactionDate}>
+                          {new Date(transaction.date).toLocaleDateString()}
+                        </Text>
+                        <Text style={styles.transactionVoucher}>
+                          {transaction.voucher_number}
+                        </Text>
+                      </View>
+                      <Text style={styles.transactionDescription}>
+                        {transaction.description || transaction.narration}
+                      </Text>
+                      <View style={styles.transactionAmounts}>
+                        <Text style={styles.debitAmount}>
+                          Dr: {formatCurrency(transaction.debit_amount || 0)}
+                        </Text>
+                        <Text style={styles.creditAmount}>
+                          Cr: {formatCurrency(transaction.credit_amount || 0)}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Create Ledger Modal */}
+      <CreateLedgerModal
+        visible={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={handleLedgerCreated}
+      />
+
+      {/* Edit Ledger Modal */}
+      <CreateLedgerModal
+        visible={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSuccess={handleLedgerUpdated}
+        editData={selectedLedger}
+        isEdit={true}
+      />
     </View>
   );
 }
@@ -464,38 +610,20 @@ const styles = StyleSheet.create({
   },
   headerActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 16,
-    gap: 12,
-  },
-  createSupplierButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    backgroundColor: 'white',
-    flex: 1,
-  },
-  createSupplierText: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontFamily: 'Agency',
-    marginLeft: 8,
-    fontWeight: '600',
   },
   createButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
     borderRadius: 8,
     backgroundColor: '#3e60ab',
-    flex: 1,
+    minWidth: 200,
   },
   createButtonText: {
     fontSize: 14,
@@ -503,28 +631,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontFamily: 'Agency',
     marginLeft: 8,
-  },
-  searchContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#111827',
-    fontFamily: 'Agency',
-    marginLeft: 8,
-    marginRight: 8,
   },
   loadingContainer: {
     flex: 1,
@@ -797,5 +903,138 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontFamily: 'Agency',
     textAlign: 'center',
+  },
+  // Date Filter Styles
+  dateFilterContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    gap: 16,
+  },
+  quickDateButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'center',
+  },
+  quickDateButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  quickDateButtonText: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontFamily: 'Agency',
+    fontWeight: '600',
+  },
+  datePickersRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  dateInputGroup: {
+    flex: 1,
+  },
+  datePicker: {
+    marginBottom: 0,
+  },
+  filterButtonContainer: {
+    alignItems: 'center',
+  },
+  filterButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  clearButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    gap: 8,
+    minWidth: 100,
+  },
+  clearButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6b7280',
+    fontFamily: 'Agency',
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#3e60ab',
+    gap: 8,
+    minWidth: 120,
+  },
+  filterButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'white',
+    fontFamily: 'Agency',
+  },
+  // Transaction Styles
+  transactionsList: {
+    padding: 16,
+    gap: 12,
+  },
+  transactionCard: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  transactionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  transactionDate: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontFamily: 'Agency',
+  },
+  transactionVoucher: {
+    fontSize: 12,
+    color: '#3e60ab',
+    fontFamily: 'Agency',
+    fontWeight: '600',
+  },
+  transactionDescription: {
+    fontSize: 14,
+    color: '#111827',
+    fontFamily: 'Agency',
+    marginBottom: 8,
+  },
+  transactionAmounts: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  debitAmount: {
+    fontSize: 12,
+    color: '#dc2626',
+    fontFamily: 'Agency',
+    fontWeight: '600',
+  },
+  creditAmount: {
+    fontSize: 12,
+    color: '#059669',
+    fontFamily: 'Agency',
+    fontWeight: '600',
   },
 });

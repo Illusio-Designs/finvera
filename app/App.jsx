@@ -66,7 +66,6 @@ import CreditNoteScreen from './src/screens/client/vouchers/CreditNoteScreen.jsx
 
 // Phase 5: Tools Screens
 import TallyImportScreen from './src/screens/client/tools/TallyImportScreen.jsx';
-import SubscribeScreen from './src/screens/client/business/SubscribeScreen.jsx';
 import ReviewScreen from './src/screens/client/business/ReviewScreen.jsx';
 import LoanScreen from './src/screens/client/business/LoanScreen.jsx';
 import ReferralScreen from './src/screens/client/business/ReferralScreen.jsx';
@@ -203,7 +202,6 @@ function AppNavigator() {
             <Stack.Screen name="TallyImport" component={TallyImportScreen} />
             
             {/* Phase 6: Business Services Screens */}
-            <Stack.Screen name="Subscribe" component={SubscribeScreen} />
             <Stack.Screen name="Review" component={ReviewScreen} />
             <Stack.Screen name="Loan" component={LoanScreen} />
             <Stack.Screen name="Referral" component={ReferralScreen} />

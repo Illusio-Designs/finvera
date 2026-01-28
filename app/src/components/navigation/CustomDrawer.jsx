@@ -129,7 +129,6 @@ export default function CustomDrawer({ visible, onClose }) {
       expandable: true,
       items: [
         { name: 'Subscription Plans', icon: 'diamond-outline', color: '#3e60ab', screen: 'Plans' },
-        { name: 'My Subscription', icon: 'card-outline', color: '#10b981', screen: 'Subscribe' },
         { name: 'Reviews & Feedback', icon: 'star-outline', color: '#f59e0b', screen: 'Review' },
         { name: 'Business Loan', icon: 'business-outline', color: '#8b5cf6', screen: 'Loan' },
         { name: 'Referral Program', icon: 'people-outline', color: '#ef4444', screen: 'Referral' },

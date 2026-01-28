@@ -121,6 +121,9 @@ export default function LoginScreen() {
     setLoading(true);
     
     try {
+      // Add a small delay to prevent rapid successive API calls during development
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       // Step 1: Authenticate user and get companies
       const authResult = await authAPI.authenticate(loginEmail, loginPassword);
       
@@ -177,6 +180,9 @@ export default function LoginScreen() {
   const completeLogin = async (userId, companyId, loginEmail, loginPassword) => {
     try {
       setLoading(true);
+      
+      // Add a small delay to avoid rate limiting from rapid authentication calls
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Step 2: Complete login with selected company
       const result = await login(loginEmail, loginPassword, 'client', companyId, userId);
