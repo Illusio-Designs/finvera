@@ -10,10 +10,12 @@ const nextConfig = {
   distDir: process.env.ELECTRON_BUILD ? 'out' : '.next',
   env: {
     API_URL: process.env.API_URL,
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://api.finvera.solutions/api',
     NEXT_PUBLIC_UPLOAD_URL: process.env.NEXT_PUBLIC_UPLOAD_URL,
-    MAIN_DOMAIN: process.env.MAIN_DOMAIN || process.env.NEXT_PUBLIC_MAIN_DOMAIN,
-    NEXT_PUBLIC_MAIN_DOMAIN: process.env.NEXT_PUBLIC_MAIN_DOMAIN,
+    MAIN_DOMAIN: process.env.MAIN_DOMAIN || process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions',
+    NEXT_PUBLIC_MAIN_DOMAIN: process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions',
+    NEXT_PUBLIC_UPLOADS_BASE_URL: process.env.NEXT_PUBLIC_UPLOADS_BASE_URL || 'https://api.finvera.solutions',
+    NEXT_PUBLIC_PAYLOAD_ENCRYPTION_KEY: process.env.NEXT_PUBLIC_PAYLOAD_ENCRYPTION_KEY || 'Devils@2609',
   },
   async rewrites() {
     // Skip rewrites for Electron build
