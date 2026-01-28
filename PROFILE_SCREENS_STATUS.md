@@ -111,7 +111,7 @@
 - **Navigation**: ✅ **WORKING** (Profile → Notification Preferences)
 
 #### **6. Settings Screen (`SettingsScreen.jsx`)**
-- **Status**: ✅ **PRODUCTION READY** with full API integration
+inin the app- **Status**: ✅ **PRODUCTION READY** with full API integration
 - **Location**: `app/src/screens/client/profile/SettingsScreen.jsx`
 - **Features**:
   - ✅ User profile display with avatar and profile image support
