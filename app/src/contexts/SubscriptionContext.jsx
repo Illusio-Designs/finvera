@@ -51,7 +51,7 @@ export const SubscriptionProvider = ({ children }) => {
 
   const hasMultiBranchAccess = () => {
     if (!subscription) return false;
-    return subscription.plan_type === 'multi-branch' && subscription.max_branches > 0;
+    return subscription.plan_type === 'multi-branch' && subscription.max_branches > 1;
   };
 
   const canCreateCompany = () => {
@@ -69,7 +69,7 @@ export const SubscriptionProvider = ({ children }) => {
   };
 
   const getMaxBranches = () => {
-    return subscription?.max_branches || 0;
+    return subscription?.max_branches || 1;
   };
 
   const getPlanType = () => {

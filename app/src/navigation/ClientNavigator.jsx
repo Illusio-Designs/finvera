@@ -1,5 +1,9 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+// Dashboard screen
+import DashboardScreen from '../screens/client/dashboard/DashboardScreen.jsx';
+
 // Auth screens
 import ForgotPasswordScreen from '../screens/client/auth/ForgotPasswordScreen.jsx';
 import ResetPasswordScreen from '../screens/client/auth/ResetPasswordScreen.jsx';
@@ -37,7 +41,13 @@ const Stack = createNativeStackNavigator();
 
 export default function ClientNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator 
+      screenOptions={{ headerShown: false }}
+      initialRouteName="Dashboard"
+    >
+      {/* Dashboard - Initial Screen */}
+      <Stack.Screen name="Dashboard" component={DashboardScreen} />
+      
       {/* Auth Screens */}
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />

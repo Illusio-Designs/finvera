@@ -1,32 +1,36 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { quickNotifications } from '../../../utils/notifications';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useSubscription } from '../../../contexts/SubscriptionContext';
 import { companyAPI, branchAPI } from '../../../lib/api';
 import CreateCompanyModal from '../../../components/modals/CreateCompanyModal';
 import CreateBranchModal from '../../../components/modals/CreateBranchModal';
 
+const { width } = Dimensions.get('window');
+
 const COMPANY_TYPES = [
-  { value: 'sole_proprietorship', label: 'Sole Proprietorship' },
-  { value: 'partnership_firm', label: 'Partnership Firm' },
-  { value: 'llp', label: 'Limited Liability Partnership (LLP)' },
-  { value: 'opc', label: 'One Person Company (OPC)' },
-  { value: 'private_limited', label: 'Private Limited Company' },
-  { value: 'public_limited', label: 'Public Limited Company' },
-  { value: 'section_8', label: 'Section 8 Company (Non-profit)' },
+  { value: 'sole_proprietorship', label: 'Sole Proprietorship', icon: 'person' },
+  { value: 'partnership_firm', label: 'Partnership Firm', icon: 'people' },
+  { value: 'llp', label: 'Limited Liability Partnership (LLP)', icon: 'business' },
+  { value: 'opc', label: 'One Person Company (OPC)', icon: 'person-circle' },
+  { value: 'private_limited', label: 'Private Limited Company', icon: 'business' },
+  { value: 'public_limited', label: 'Public Limited Company', icon: 'library' },
+  { value: 'section_8', label: 'Section 8 Company (Non-profit)', icon: 'heart' },
 ];
 
 export default function CompaniesScreen({ isPostLogin = false, onSelectionComplete }) {
+  const navigation = useNavigation();
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
   const { user, switchCompany } = useAuth();
   const {
     subscription,
-    loading: subscriptionLoading,
     hasMultiCompanyAccess,
     hasMultiBranchAccess,
     canCreateCompany,
@@ -42,15 +46,29 @@ export default function CompaniesScreen({ isPostLogin = false, onSelectionComple
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [showBranchModal, setShowBranchModal] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState(null);
-  const [selectedBranch, setSelectedBranch] = useState(null);
-  const [activeTab, setActiveTab] = useState('companies'); // 'companies' or 'branches'
+  const [activeTab, setActiveTab] = useState('companies');
   const [showCreateCompanyModal, setShowCreateCompanyModal] = useState(false);
   const [showCreateBranchModal, setShowCreateBranchModal] = useState(false);
 
   const handleMenuPress = () => {
     openDrawer();
+  };
+
+  // Determine which tab to show based on plan type
+  const getDefaultTab = useCallback(() => {
+    const planType = getPlanType();
+    if (planType === 'multi-company') {
+      return 'companies';
+    } else if (planType === 'multi-branch') {
+      return 'branches';
+    }
+    return 'companies';
+  }, [getPlanType]);
+
+  // Check if we should show both tabs or just one based on plan
+  const shouldShowBothTabs = () => {
+    return hasMultiCompanyAccess() && hasMultiBranchAccess();
   };
 
   const fetchData = useCallback(async () => {
@@ -65,27 +83,17 @@ export default function CompaniesScreen({ isPostLogin = false, onSelectionComple
         setBranches(branchesRes?.data?.data || branchesRes?.data || []);
       }
 
-      // For post-login flow, determine which tab to show based on subscription
-      if (isPostLogin) {
-        if (hasMultiCompanyAccess() && companiesList.length > 1) {
-          setActiveTab('companies');
-        } else if (hasMultiBranchAccess() && branches.length > 1) {
-          setActiveTab('branches');
-        }
-      }
+      // Set default tab based on plan type
+      setActiveTab(getDefaultTab());
     } catch (error) {
       console.error('Companies fetch error:', error);
-      showNotification({
-        type: 'error',
-        title: 'Error',
-        message: 'Failed to load companies data'
-      });
+      showNotification(quickNotifications.networkError());
       setCompanies([]);
       setBranches([]);
     } finally {
       setLoading(false);
     }
-  }, [showNotification, user?.company_id, isPostLogin, hasMultiCompanyAccess, hasMultiBranchAccess]);
+  }, [showNotification, user?.company_id, getDefaultTab]);
 
   useEffect(() => {
     fetchData();
@@ -104,67 +112,49 @@ export default function CompaniesScreen({ isPostLogin = false, onSelectionComple
 
   const handleSwitchCompany = async (companyId) => {
     try {
+      console.log('🔄 Attempting to switch to company:', companyId);
+      console.log('🔄 Current user company_id:', user?.company_id);
+      
       if (switchCompany) {
-        await switchCompany(companyId);
-        showNotification({
-          type: 'success',
-          title: 'Success',
-          message: 'Company switched successfully'
-        });
-        setShowDetailModal(false);
+        const result = await switchCompany(companyId);
+        console.log('🔄 Switch company result:', result);
         
-        // If this is post-login flow, complete the selection
-        if (isPostLogin && onSelectionComplete) {
-          onSelectionComplete();
+        if (result.success) {
+          showNotification(quickNotifications.companySwitched());
+          setShowDetailModal(false);
+          
+          // Refresh the data to reflect the new current company
+          await fetchData();
+          
+          if (isPostLogin && onSelectionComplete) {
+            onSelectionComplete();
+          }
+        } else {
+          showNotification(quickNotifications.companySwitchFailed());
         }
+      } else {
+        console.log('❌ switchCompany function not available');
+        showNotification(quickNotifications.companySwitchFailed());
       }
     } catch (error) {
-      showNotification({
-        type: 'error',
-        title: 'Error',
-        message: 'Failed to switch company'
-      });
+      console.error('Switch company error:', error);
+      showNotification(quickNotifications.companySwitchFailed());
     }
   };
 
   const handleBranchPress = (branch) => {
-    setSelectedBranch(branch);
-    setShowBranchModal(true);
+    showNotification({
+      type: 'info',
+      title: 'Branch Selected',
+      message: `Selected branch: ${branch.branch_name}`,
+      duration: 3000
+    });
+    // TODO: Implement branch switching functionality when backend supports it
   };
 
-  const handleSwitchBranch = async (branchId) => {
-    try {
-      // In a real app, you would have a switchBranch function
-      // For now, we'll just show success and close modal
-      showNotification({
-        type: 'success',
-        title: 'Success',
-        message: 'Branch switched successfully'
-      });
-      setShowBranchModal(false);
-      
-      // If this is post-login flow, complete the selection
-      if (isPostLogin && onSelectionComplete) {
-        onSelectionComplete();
-      }
-    } catch (error) {
-      showNotification({
-        type: 'error',
-        title: 'Error',
-        message: 'Failed to switch branch'
-      });
-    }
-  };
-
-  const shouldShowPostLoginSelection = () => {
-    return isPostLogin && (companies.length > 1 || branches.length > 1);
-  };
-
-  const canCreateMore = false; // Disabled - View & Switch only
-
-  const getCompanyTypeLabel = (type) => {
+  const getCompanyTypeInfo = (type) => {
     const companyType = COMPANY_TYPES.find(t => t.value === type);
-    return companyType ? companyType.label : type?.replace('_', ' ').toUpperCase() || 'GENERAL';
+    return companyType || { label: type?.replace('_', ' ').toUpperCase() || 'GENERAL', icon: 'business' };
   };
 
   const getCompanyTypeColor = (type) => {
@@ -180,432 +170,147 @@ export default function CompaniesScreen({ isPostLogin = false, onSelectionComple
     return colors[type?.toLowerCase()] || '#6b7280';
   };
 
-  const getCompanyTypeIcon = (type) => {
-    const icons = {
-      'private_limited': 'business',
-      'public_limited': 'storefront',
-      'partnership_firm': 'people',
-      'sole_proprietorship': 'person',
-      'llp': 'shield',
-      'opc': 'person-circle',
-      'section_8': 'heart',
-    };
-    return icons[type?.toLowerCase()] || 'business';
-  };
+  const renderCompanyCard = (company, index) => {
+    const typeInfo = getCompanyTypeInfo(company.company_type);
+    const typeColor = getCompanyTypeColor(company.company_type);
+    const isCurrentCompany = user?.company_id === company.id;
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Unknown';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
-
-  const isCurrentCompany = (companyId) => {
-    return user?.company_id === companyId;
-  };
-
-  const isCurrentBranch = (branchId) => {
-    return user?.branch_id === branchId;
-  };
-
-  const getBranchIcon = (branch) => {
-    return branch.is_head_office ? 'business' : 'storefront';
-  };
-
-  const getBranchColor = (branch) => {
-    return branch.is_head_office ? '#3e60ab' : '#10b981';
-  };
-
-  return (
-    <View style={styles.container}>
-      <TopBar 
-        title={isPostLogin ? "Select Company & Branch" : "Companies"} 
-        onMenuPress={isPostLogin ? null : handleMenuPress}
-        showBackButton={isPostLogin}
-      />
-      
-      <ScrollView 
-        style={styles.content}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+    return (
+      <View
+        key={company.id}
+        style={[
+          styles.companyCard,
+          isCurrentCompany && styles.currentCompanyCard
+        ]}
       >
-        {/* Post-login selection header */}
-        {shouldShowPostLoginSelection() && (
-          <View style={styles.postLoginHeader}>
-            <Text style={styles.postLoginTitle}>Welcome to Finvera!</Text>
-            <Text style={styles.postLoginSubtitle}>
-              {companies.length > 1 && branches.length > 1 
-                ? 'Please select your company and branch to continue'
-                : companies.length > 1 
-                ? 'Please select your company to continue'
-                : 'Please select your branch to continue'
-              }
-            </Text>
+        {isCurrentCompany && (
+          <View style={styles.currentBadge}>
+            <Text style={styles.currentBadgeText}>Current</Text>
           </View>
         )}
-
-        {/* Tab Navigation with Create Buttons */}
-        <View style={styles.tabContainer}>
-          {/* Companies Tab */}
-          <View style={styles.tabSection}>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'companies' && styles.activeTab]}
-              onPress={() => setActiveTab('companies')}
-            >
-              <Ionicons 
-                name="business" 
-                size={20} 
-                color={activeTab === 'companies' ? 'white' : '#64748b'} 
-              />
-              <Text style={[
-                styles.tabText,
-                activeTab === 'companies' && styles.activeTabText
-              ]}>
-                Companies ({companies.length})
-              </Text>
-            </TouchableOpacity>
-            
-            {/* Create Company Button - Only show if user has multi-company plan */}
-            {canCreateCompany() && (
-              <TouchableOpacity
-                style={styles.createButton}
-                onPress={() => setShowCreateCompanyModal(true)}
-              >
-                <Ionicons name="add" size={20} color="#3e60ab" />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Branches Tab */}
-          <View style={styles.tabSection}>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'branches' && styles.activeTab]}
-              onPress={() => setActiveTab('branches')}
-            >
-              <Ionicons 
-                name="storefront" 
-                size={20} 
-                color={activeTab === 'branches' ? 'white' : '#64748b'} 
-              />
-              <Text style={[
-                styles.tabText,
-                activeTab === 'branches' && styles.activeTabText
-              ]}>
-                Branches ({branches.length})
-              </Text>
-            </TouchableOpacity>
-            
-            {/* Create Branch Button - Only show if user has multi-branch plan */}
-            {canCreateBranch() && (
-              <TouchableOpacity
-                style={styles.createButton}
-                onPress={() => setShowCreateBranchModal(true)}
-              >
-                <Ionicons name="add" size={20} color="#10b981" />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {/* Plan Information Banner */}
-        {subscription && (
-          <View style={styles.planBanner}>
-            <View style={styles.planInfo}>
-              <Ionicons name="information-circle" size={20} color="#3e60ab" />
-              <Text style={styles.planText}>
-                {getPlanName()} - {getPlanType() === 'multi-company' ? 'Multi-Company' : 'Multi-Branch'} Plan
-              </Text>
+        
+        {/* Touchable area for card content (excluding actions) */}
+        <TouchableOpacity
+          style={styles.companyCardContent}
+          onPress={() => handleCompanyPress(company)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.companyHeader}>
+            <View style={[styles.companyIcon, { backgroundColor: `${typeColor}15` }]}>
+              <Ionicons name={typeInfo.icon} size={24} color={typeColor} />
             </View>
-            <Text style={styles.planLimits}>
-              Companies: {companies.length}/{getMaxCompanies()} | Branches: {branches.length}/{getMaxBranches()}
-            </Text>
+            <View style={styles.companyInfo}>
+              <Text style={styles.companyName} numberOfLines={2}>
+                {company.company_name}
+              </Text>
+              <View style={[styles.companyTypeBadge, { backgroundColor: `${typeColor}15` }]}>
+                <Text style={[styles.companyTypeText, { color: typeColor }]}>
+                  {typeInfo.label}
+                </Text>
+              </View>
+            </View>
           </View>
-        )}
 
-        {/* Companies Tab Content */}
-        {activeTab === 'companies' && (
-          <>
-            {/* Companies List */}
-            {loading ? (
-              <View style={styles.loadingContainer}>
-                <View style={styles.loadingCard}>
-                  <View style={styles.spinner} />
-                  <Text style={styles.loadingText}>Loading companies...</Text>
-                </View>
-              </View>
-            ) : companies.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <View style={styles.emptyCard}>
-                  <View style={styles.emptyIcon}>
-                    <Ionicons name="business-outline" size={64} color="#94a3b8" />
-                  </View>
-                  <Text style={styles.emptyTitle}>No Companies Found</Text>
-                  <Text style={styles.emptySubtitle}>
-                    {isPostLogin 
-                      ? 'No companies available for selection'
-                      : canCreateCompany() 
-                        ? 'Create your first company to get started'
-                        : 'Upgrade to Multi-Company plan to create companies'
-                    }
-                  </Text>
-                  {!isPostLogin && canCreateCompany() && (
-                    <TouchableOpacity
-                      style={styles.emptyActionButton}
-                      onPress={() => setShowCreateCompanyModal(true)}
-                    >
-                      <Ionicons name="add" size={20} color="white" />
-                      <Text style={styles.emptyActionText}>Create Company</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            ) : (
-              <View style={styles.companiesList}>
-                {companies.map((company, index) => (
-                  <TouchableOpacity
-                    key={company.id || index}
-                    style={[
-                      styles.companyCard,
-                      isCurrentCompany(company.id) && styles.currentCompanyCard
-                    ]}
-                    onPress={() => handleCompanyPress(company)}
-                  >
-                    <View style={styles.companyCardHeader}>
-                      <View style={[
-                        styles.companyIcon, 
-                        { backgroundColor: getCompanyTypeColor(company.company_type) }
-                      ]}>
-                        <Ionicons 
-                          name={getCompanyTypeIcon(company.company_type)} 
-                          size={24} 
-                          color="white" 
-                        />
-                      </View>
-                      <View style={styles.companyInfo}>
-                        <View style={styles.companyNameRow}>
-                          <Text style={styles.companyName}>
-                            {company.company_name || company.name || 'Unnamed Company'}
-                          </Text>
-                        </View>
-                        <View style={styles.companyMetaRow}>
-                          <Text style={styles.companyType}>
-                            {getCompanyTypeLabel(company.company_type)}
-                          </Text>
-                          {isCurrentCompany(company.id) && (
-                            <View style={styles.currentBadge}>
-                              <Ionicons name="checkmark-circle" size={12} color="white" />
-                              <Text style={styles.currentBadgeText}>Current</Text>
-                            </View>
-                          )}
-                        </View>
-                      </View>
-                      <View style={styles.companyStatus}>
-                        <View style={[
-                          styles.statusBadge,
-                          { backgroundColor: company.is_active ? '#10b981' : '#ef4444' }
-                        ]}>
-                          <Ionicons 
-                            name={company.is_active ? 'checkmark' : 'close'} 
-                            size={12} 
-                            color="white" 
-                          />
-                          <Text style={styles.statusText}>
-                            {company.is_active ? 'Active' : 'Inactive'}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                    
-                    <View style={styles.companyCardBody}>
-                      <View style={styles.companyDetail}>
-                        <Ionicons name="card-outline" size={16} color="#6b7280" />
-                        <Text style={styles.companyDetailText}>
-                          GSTIN: {company.gstin || 'Not provided'}
-                        </Text>
-                      </View>
-                      <View style={styles.companyDetail}>
-                        <Ionicons name="document-text-outline" size={16} color="#6b7280" />
-                        <Text style={styles.companyDetailText}>
-                          PAN: {company.pan || 'Not provided'}
-                        </Text>
-                      </View>
-                      <View style={styles.companyDetail}>
-                        <Ionicons name="location-outline" size={16} color="#6b7280" />
-                        <Text style={styles.companyDetailText} numberOfLines={1}>
-                          {company.registered_address || company.address || 'Address not provided'}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.companyCardFooter}>
-                      <View style={styles.companyStats}>
-                        <View style={styles.companyStat}>
-                          <Text style={styles.companyStatValue}>
-                            {formatDate(company.created_at)}
-                          </Text>
-                          <Text style={styles.companyStatLabel}>Created</Text>
-                        </View>
-                      </View>
-                      <TouchableOpacity style={styles.companyAction}>
-                        <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
-                      </TouchableOpacity>
-                    </View>
-                  </TouchableOpacity>
-                ))}
+          <View style={styles.companyDetails}>
+            {company.gstin && (
+              <View style={styles.detailRow}>
+                <Ionicons name="document-text-outline" size={16} color="#6b7280" />
+                <Text style={styles.detailLabel}>GSTIN:</Text>
+                <Text style={styles.detailValue}>{company.gstin}</Text>
               </View>
             )}
-          </>
-        )}
-
-        {/* Branches Tab Content */}
-        {activeTab === 'branches' && (
-          <>
-            {/* Branches List */}
-            {loading ? (
-              <View style={styles.loadingContainer}>
-                <View style={styles.loadingCard}>
-                  <View style={styles.spinner} />
-                  <Text style={styles.loadingText}>Loading branches...</Text>
-                </View>
-              </View>
-            ) : branches.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <View style={styles.emptyCard}>
-                  <View style={styles.emptyIcon}>
-                    <Ionicons name="storefront-outline" size={64} color="#94a3b8" />
-                  </View>
-                  <Text style={styles.emptyTitle}>No Branches Found</Text>
-                  <Text style={styles.emptySubtitle}>
-                    {isPostLogin 
-                      ? 'No branches available for selection'
-                      : canCreateBranch() 
-                        ? 'Create your first branch to get started'
-                        : 'Upgrade to Multi-Branch plan to create branches'
-                    }
-                  </Text>
-                  {!isPostLogin && canCreateBranch() && (
-                    <TouchableOpacity
-                      style={styles.emptyActionButton}
-                      onPress={() => setShowCreateBranchModal(true)}
-                    >
-                      <Ionicons name="add" size={20} color="white" />
-                      <Text style={styles.emptyActionText}>Create Branch</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            ) : (
-              <View style={styles.branchesList}>
-                {branches.map((branch, index) => (
-                  <TouchableOpacity
-                    key={branch.id || index}
-                    style={[
-                      styles.branchCard,
-                      isCurrentBranch(branch.id) && styles.currentBranchCard
-                    ]}
-                    onPress={() => handleBranchPress(branch)}
-                  >
-                    <View style={styles.branchCardHeader}>
-                      <View style={[
-                        styles.branchIcon, 
-                        { backgroundColor: getBranchColor(branch) }
-                      ]}>
-                        <Ionicons 
-                          name={getBranchIcon(branch)} 
-                          size={24} 
-                          color="white" 
-                        />
-                      </View>
-                      <View style={styles.branchInfo}>
-                        <View style={styles.branchNameRow}>
-                          <Text style={styles.branchName}>
-                            {branch.branch_name || branch.name || 'Unnamed Branch'}
-                          </Text>
-                        </View>
-                        <View style={styles.branchMetaRow}>
-                          <Text style={styles.branchCode}>
-                            Code: {branch.branch_code || 'N/A'}
-                          </Text>
-                          <View style={styles.branchBadges}>
-                            {isCurrentBranch(branch.id) && (
-                              <View style={styles.currentBadge}>
-                                <Ionicons name="checkmark-circle" size={12} color="white" />
-                                <Text style={styles.currentBadgeText}>Current</Text>
-                              </View>
-                            )}
-                            {branch.is_head_office && (
-                              <View style={styles.headOfficeBadge}>
-                                <Text style={styles.headOfficeBadgeText}>HO</Text>
-                              </View>
-                            )}
-                          </View>
-                        </View>
-                      </View>
-                      <View style={styles.branchStatus}>
-                        <View style={[
-                          styles.statusBadge,
-                          { backgroundColor: branch.is_active ? '#10b981' : '#ef4444' }
-                        ]}>
-                          <Ionicons 
-                            name={branch.is_active ? 'checkmark' : 'close'} 
-                            size={12} 
-                            color="white" 
-                          />
-                          <Text style={styles.statusText}>
-                            {branch.is_active ? 'Active' : 'Inactive'}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                    
-                    <View style={styles.branchCardBody}>
-                      <View style={styles.branchDetail}>
-                        <Ionicons name="card-outline" size={16} color="#6b7280" />
-                        <Text style={styles.branchDetailText}>
-                          GSTIN: {branch.gstin || 'Not provided'}
-                        </Text>
-                      </View>
-                      <View style={styles.branchDetail}>
-                        <Ionicons name="location-outline" size={16} color="#6b7280" />
-                        <Text style={styles.branchDetailText} numberOfLines={1}>
-                          {branch.address || 'Address not provided'}
-                        </Text>
-                      </View>
-                      <View style={styles.branchDetail}>
-                        <Ionicons name="call-outline" size={16} color="#6b7280" />
-                        <Text style={styles.branchDetailText}>
-                          {branch.contact_number || 'No contact'}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.branchCardFooter}>
-                      <View style={styles.branchStats}>
-                        <View style={styles.branchStat}>
-                          <Text style={styles.branchStatValue}>
-                            {branch.city || 'Unknown'}
-                          </Text>
-                          <Text style={styles.branchStatLabel}>City</Text>
-                        </View>
-                      </View>
-                      <TouchableOpacity style={styles.branchAction}>
-                        <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
-                      </TouchableOpacity>
-                    </View>
-                  </TouchableOpacity>
-                ))}
+            
+            {company.pan && (
+              <View style={styles.detailRow}>
+                <Ionicons name="card-outline" size={16} color="#6b7280" />
+                <Text style={styles.detailLabel}>PAN:</Text>
+                <Text style={styles.detailValue}>{company.pan}</Text>
               </View>
             )}
-          </>
-        )}
-      </ScrollView>
+            
+            {company.state && (
+              <View style={styles.detailRow}>
+                <Ionicons name="location-outline" size={16} color="#6b7280" />
+                <Text style={styles.detailLabel}>State:</Text>
+                <Text style={styles.detailValue}>{company.state}</Text>
+              </View>
+            )}
+            
+            {company.contact_number && (
+              <View style={styles.detailRow}>
+                <Ionicons name="call-outline" size={16} color="#6b7280" />
+                <Text style={styles.detailLabel}>Phone:</Text>
+                <Text style={styles.detailValue}>{company.contact_number}</Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
 
-      {/* Company Detail Modal */}
+        {/* Action buttons - separate from card content */}
+        <View style={styles.companyActions}>
+          {!isCurrentCompany && (
+            <TouchableOpacity
+              style={styles.switchButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                handleSwitchCompany(company.id);
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="swap-horizontal" size={16} color="#3e60ab" />
+              <Text style={styles.switchButtonText}>Switch</Text>
+            </TouchableOpacity>
+          )}
+          
+          <TouchableOpacity 
+            style={styles.viewButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleCompanyPress(company);
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="eye-outline" size={16} color="#6b7280" />
+            <Text style={styles.viewButtonText}>View Details</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <View style={styles.emptyIcon}>
+        <Ionicons name="business-outline" size={64} color="#d1d5db" />
+      </View>
+      <Text style={styles.emptyTitle}>No Companies Found</Text>
+      <Text style={styles.emptyDescription}>
+        {activeTab === 'companies' 
+          ? 'Create your first company to get started with accounting'
+          : 'No branches found for the current company'
+        }
+      </Text>
+      
+      {activeTab === 'companies' && canCreateCompany() && companies.length < getMaxCompanies() && (
+        <TouchableOpacity
+          style={styles.createButton}
+          onPress={() => setShowCreateCompanyModal(true)}
+        >
+          <Ionicons name="add" size={20} color="white" />
+          <Text style={styles.createButtonText}>Create Company</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
+  const renderCompanyDetailModal = () => {
+    if (!selectedCompany) return null;
+    
+    const typeInfo = getCompanyTypeInfo(selectedCompany.company_type);
+    const typeColor = getCompanyTypeColor(selectedCompany.company_type);
+    const isCurrentCompany = user?.company_id === selectedCompany.id;
+
+    return (
       <Modal
         visible={showDetailModal}
         animationType="slide"
@@ -614,190 +319,378 @@ export default function CompaniesScreen({ isPostLogin = false, onSelectionComple
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Company Details</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
+              style={styles.modalCloseButton}
               onPress={() => setShowDetailModal(false)}
-              style={styles.closeButton}
             >
               <Ionicons name="close" size={24} color="#6b7280" />
             </TouchableOpacity>
+            <Text style={styles.modalTitle}>Company Details</Text>
+            <View style={styles.modalHeaderSpacer} />
           </View>
-          
-          {selectedCompany && (
-            <ScrollView style={styles.modalContent}>
-              <View style={styles.detailCard}>
-                <Text style={styles.detailCardTitle}>Basic Information</Text>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Company Name:</Text>
-                  <Text style={styles.detailValue}>{selectedCompany.company_name || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Type:</Text>
-                  <Text style={styles.detailValue}>{getCompanyTypeLabel(selectedCompany.company_type)}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>GSTIN:</Text>
-                  <Text style={styles.detailValue}>{selectedCompany.gstin || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>PAN:</Text>
-                  <Text style={styles.detailValue}>{selectedCompany.pan || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>TAN:</Text>
-                  <Text style={styles.detailValue}>{selectedCompany.tan || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Registration Number:</Text>
-                  <Text style={styles.detailValue}>{selectedCompany.registration_number || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Address:</Text>
-                  <Text style={styles.detailValue}>{selectedCompany.registered_address || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>State:</Text>
-                  <Text style={styles.detailValue}>{selectedCompany.state || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Contact:</Text>
-                  <Text style={styles.detailValue}>{selectedCompany.contact_number || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Email:</Text>
-                  <Text style={styles.detailValue}>{selectedCompany.email || 'N/A'}</Text>
-                </View>
-              </View>
 
-              <View style={styles.actionButtons}>
-                {!isCurrentCompany(selectedCompany.id) && (
-                  <TouchableOpacity 
-                    style={[styles.actionButton, styles.switchButton]}
-                    onPress={() => handleSwitchCompany(selectedCompany.id)}
-                  >
-                    <Ionicons name="swap-horizontal" size={20} color="white" />
-                    <Text style={styles.actionButtonText}>Switch to this Company</Text>
-                  </TouchableOpacity>
-                )}
-                
-                {isCurrentCompany(selectedCompany.id) && (
-                  <View style={[styles.actionButton, styles.currentButton]}>
-                    <Ionicons name="checkmark-circle" size={20} color="white" />
-                    <Text style={styles.actionButtonText}>Current Company</Text>
+          <ScrollView 
+            style={styles.modalContent} 
+            contentContainerStyle={styles.modalScrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Company Header */}
+            <View style={styles.modalCompanyHeader}>
+              <View style={[styles.modalCompanyIcon, { backgroundColor: `${typeColor}15` }]}>
+                <Ionicons name={typeInfo.icon} size={32} color={typeColor} />
+              </View>
+              <View style={styles.modalCompanyInfo}>
+                <Text style={styles.modalCompanyName}>{selectedCompany.company_name}</Text>
+                <View style={[styles.modalCompanyTypeBadge, { backgroundColor: `${typeColor}15` }]}>
+                  <Text style={[styles.modalCompanyTypeText, { color: typeColor }]}>
+                    {typeInfo.label}
+                  </Text>
+                </View>
+                {isCurrentCompany && (
+                  <View style={styles.modalCurrentBadge}>
+                    <Ionicons name="checkmark-circle" size={16} color="#10b981" />
+                    <Text style={styles.modalCurrentBadgeText}>Current Company</Text>
                   </View>
                 )}
               </View>
-            </ScrollView>
-          )}
+            </View>
+
+            {/* Company Details Sections */}
+            <View style={styles.modalSection}>
+              <Text style={styles.modalSectionTitle}>Basic Information</Text>
+              <View style={styles.modalSectionContent}>
+                {selectedCompany.registration_number && (
+                  <View style={styles.modalDetailRow}>
+                    <Text style={styles.modalDetailLabel}>Registration Number</Text>
+                    <Text style={styles.modalDetailValue}>{selectedCompany.registration_number}</Text>
+                  </View>
+                )}
+                
+                {selectedCompany.incorporation_date && (
+                  <View style={styles.modalDetailRow}>
+                    <Text style={styles.modalDetailLabel}>Incorporation Date</Text>
+                    <Text style={styles.modalDetailValue}>
+                      {new Date(selectedCompany.incorporation_date).toLocaleDateString()}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            {/* Tax Information */}
+            <View style={styles.modalSection}>
+              <Text style={styles.modalSectionTitle}>Tax Information</Text>
+              <View style={styles.modalSectionContent}>
+                {selectedCompany.gstin && (
+                  <View style={styles.modalDetailRow}>
+                    <Text style={styles.modalDetailLabel}>GSTIN</Text>
+                    <Text style={styles.modalDetailValue}>{selectedCompany.gstin}</Text>
+                  </View>
+                )}
+                
+                {selectedCompany.pan && (
+                  <View style={styles.modalDetailRow}>
+                    <Text style={styles.modalDetailLabel}>PAN</Text>
+                    <Text style={styles.modalDetailValue}>{selectedCompany.pan}</Text>
+                  </View>
+                )}
+                
+                {selectedCompany.tan && (
+                  <View style={styles.modalDetailRow}>
+                    <Text style={styles.modalDetailLabel}>TAN</Text>
+                    <Text style={styles.modalDetailValue}>{selectedCompany.tan}</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            {/* Contact Information */}
+            <View style={styles.modalSection}>
+              <Text style={styles.modalSectionTitle}>Contact Information</Text>
+              <View style={styles.modalSectionContent}>
+                {selectedCompany.registered_address && (
+                  <View style={styles.modalDetailRow}>
+                    <Text style={styles.modalDetailLabel}>Address</Text>
+                    <Text style={styles.modalDetailValue}>{selectedCompany.registered_address}</Text>
+                  </View>
+                )}
+                
+                {selectedCompany.state && (
+                  <View style={styles.modalDetailRow}>
+                    <Text style={styles.modalDetailLabel}>State</Text>
+                    <Text style={styles.modalDetailValue}>{selectedCompany.state}</Text>
+                  </View>
+                )}
+                
+                {selectedCompany.pincode && (
+                  <View style={styles.modalDetailRow}>
+                    <Text style={styles.modalDetailLabel}>PIN Code</Text>
+                    <Text style={styles.modalDetailValue}>{selectedCompany.pincode}</Text>
+                  </View>
+                )}
+                
+                {selectedCompany.contact_number && (
+                  <View style={styles.modalDetailRow}>
+                    <Text style={styles.modalDetailLabel}>Phone</Text>
+                    <Text style={styles.modalDetailValue}>{selectedCompany.contact_number}</Text>
+                  </View>
+                )}
+                
+                {selectedCompany.email && (
+                  <View style={styles.modalDetailRow}>
+                    <Text style={styles.modalDetailLabel}>Email</Text>
+                    <Text style={styles.modalDetailValue}>{selectedCompany.email}</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            {/* Action Buttons */}
+            {!isCurrentCompany && (
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.modalSwitchButton}
+                  onPress={() => handleSwitchCompany(selectedCompany.id)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="swap-horizontal" size={20} color="white" />
+                  <Text style={styles.modalSwitchButtonText}>Switch to this Company</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            
+            {/* Bottom padding to prevent overlap with bottom navigation */}
+            <View style={styles.modalBottomPadding} />
+          </ScrollView>
         </View>
       </Modal>
+    );
+  };
 
-      {/* Branch Detail Modal */}
-      <Modal
-        visible={showBranchModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowBranchModal(false)}
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <TopBar 
+          title={isPostLogin ? "Select Company" : "Companies"} 
+          onMenuPress={isPostLogin ? undefined : handleMenuPress}
+          showBackButton={!isPostLogin}
+          onBackPress={isPostLogin ? undefined : () => navigation.goBack()}
+        />
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading companies...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <TopBar 
+        title={isPostLogin ? "Select Company" : "Companies"} 
+        onMenuPress={isPostLogin ? undefined : handleMenuPress}
+        showBackButton={!isPostLogin}
+        onBackPress={isPostLogin ? undefined : () => navigation.goBack()}
+      />
+      
+      <ScrollView 
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Branch Details</Text>
-            <TouchableOpacity 
-              onPress={() => setShowBranchModal(false)}
-              style={styles.closeButton}
+        {/* Header Section */}
+        <View style={styles.header}>
+          <Text style={styles.title}>
+            {isPostLogin ? "Select Your Company" : "Manage Companies"}
+          </Text>
+          <Text style={styles.subtitle}>
+            {isPostLogin 
+              ? "Choose a company to continue to your dashboard" 
+              : "Switch between companies or create new ones"
+            }
+          </Text>
+        </View>
+
+        {/* Tab Navigation */}
+        {shouldShowBothTabs() && (
+          <View style={styles.tabContainer}>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'companies' && styles.activeTab]}
+              onPress={() => setActiveTab('companies')}
             >
-              <Ionicons name="close" size={24} color="#6b7280" />
+              <Ionicons 
+                name="business" 
+                size={20} 
+                color={activeTab === 'companies' ? '#3e60ab' : '#6b7280'} 
+              />
+              <Text style={[
+                styles.tabText, 
+                activeTab === 'companies' && styles.activeTabText
+              ]}>
+                Companies
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'branches' && styles.activeTab]}
+              onPress={() => setActiveTab('branches')}
+            >
+              <Ionicons 
+                name="git-branch" 
+                size={20} 
+                color={activeTab === 'branches' ? '#3e60ab' : '#6b7280'} 
+              />
+              <Text style={[
+                styles.tabText, 
+                activeTab === 'branches' && styles.activeTabText
+              ]}>
+                Branches
+              </Text>
             </TouchableOpacity>
           </View>
-          
-          {selectedBranch && (
-            <ScrollView style={styles.modalContent}>
-              <View style={styles.detailCard}>
-                <Text style={styles.detailCardTitle}>Branch Information</Text>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Branch Name:</Text>
-                  <Text style={styles.detailValue}>{selectedBranch.branch_name || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Branch Code:</Text>
-                  <Text style={styles.detailValue}>{selectedBranch.branch_code || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Type:</Text>
-                  <Text style={styles.detailValue}>{selectedBranch.is_head_office ? 'Head Office' : 'Branch Office'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>GSTIN:</Text>
-                  <Text style={styles.detailValue}>{selectedBranch.gstin || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Address:</Text>
-                  <Text style={styles.detailValue}>{selectedBranch.address || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>City:</Text>
-                  <Text style={styles.detailValue}>{selectedBranch.city || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>State:</Text>
-                  <Text style={styles.detailValue}>{selectedBranch.state || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Pincode:</Text>
-                  <Text style={styles.detailValue}>{selectedBranch.pincode || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Contact:</Text>
-                  <Text style={styles.detailValue}>{selectedBranch.contact_number || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Email:</Text>
-                  <Text style={styles.detailValue}>{selectedBranch.email || 'N/A'}</Text>
-                </View>
-              </View>
+        )}
 
-              <View style={styles.actionButtons}>
-                {!isCurrentBranch(selectedBranch.id) && (
-                  <TouchableOpacity 
-                    style={[styles.actionButton, styles.switchButton]}
-                    onPress={() => handleSwitchBranch(selectedBranch.id)}
-                  >
-                    <Ionicons name="swap-horizontal" size={20} color="white" />
-                    <Text style={styles.actionButtonText}>Switch to this Branch</Text>
-                  </TouchableOpacity>
-                )}
-                
-                {isCurrentBranch(selectedBranch.id) && (
-                  <View style={[styles.actionButton, styles.currentButton]}>
-                    <Ionicons name="checkmark-circle" size={20} color="white" />
-                    <Text style={styles.actionButtonText}>Current Branch</Text>
+        {/* Plan Information Banner */}
+        {subscription && (
+          <View style={styles.planBanner}>
+            <View style={styles.planHeader}>
+              <View style={styles.planInfo}>
+                <Ionicons name="diamond" size={20} color="#3e60ab" />
+                <Text style={styles.planText}>
+                  {getPlanName()} Plan
+                </Text>
+              </View>
+              <View style={styles.planTypeIndicator}>
+                <Text style={styles.planTypeText}>
+                  {getPlanType() === 'multi-company' ? 'Multi-Company' : 'Multi-Branch'}
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.planLimitsContainer}>
+              {(getPlanType() === 'multi-company' || shouldShowBothTabs()) && (
+                <>
+                  <View style={styles.planLimit}>
+                    <Text style={styles.planLimitLabel}>Companies</Text>
+                    <Text style={[
+                      styles.planLimitValue,
+                      companies.length >= getMaxCompanies() && styles.planLimitReached
+                    ]}>
+                      {companies.length}/{getMaxCompanies()}
+                    </Text>
                   </View>
-                )}
-              </View>
-            </ScrollView>
-          )}
-        </View>
-      </Modal>
+                  {shouldShowBothTabs() && <View style={styles.planLimitSeparator} />}
+                </>
+              )}
+              {(getPlanType() === 'multi-branch' || shouldShowBothTabs()) && (
+                <View style={styles.planLimit}>
+                  <Text style={styles.planLimitLabel}>Branches</Text>
+                  <Text style={[
+                    styles.planLimitValue,
+                    branches.length >= getMaxBranches() && styles.planLimitReached
+                  ]}>
+                    {branches.length}/{getMaxBranches()}
+                  </Text>
+                </View>
+              )}
+            </View>
 
-      {/* Create Company Modal */}
+            {/* Create Button */}
+            {activeTab === 'companies' && canCreateCompany() && companies.length < getMaxCompanies() && (
+              <TouchableOpacity
+                style={styles.planCreateButton}
+                onPress={() => setShowCreateCompanyModal(true)}
+              >
+                <Ionicons name="add" size={16} color="#3e60ab" />
+                <Text style={styles.planCreateButtonText}>Create Company</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {/* Companies List */}
+        {activeTab === 'companies' && (
+          <View style={styles.companiesContainer}>
+            {companies.length > 0 ? (
+              companies.map((company, index) => renderCompanyCard(company, index))
+            ) : (
+              renderEmptyState()
+            )}
+          </View>
+        )}
+
+        {/* Branches List */}
+        {activeTab === 'branches' && (
+          <View style={styles.branchesContainer}>
+            {branches.length > 0 ? (
+              branches.map((branch, index) => (
+                <TouchableOpacity
+                  key={branch.id}
+                  style={styles.branchCard}
+                  onPress={() => handleBranchPress(branch)}
+                >
+                  <View style={styles.branchHeader}>
+                    <Ionicons name="git-branch" size={24} color="#3e60ab" />
+                    <View style={styles.branchInfo}>
+                      <Text style={styles.branchName}>{branch.branch_name}</Text>
+                      {branch.branch_code && (
+                        <Text style={styles.branchCode}>Code: {branch.branch_code}</Text>
+                      )}
+                    </View>
+                  </View>
+                  
+                  {branch.address && (
+                    <Text style={styles.branchAddress} numberOfLines={2}>
+                      {branch.address}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              ))
+            ) : (
+              renderEmptyState()
+            )}
+          </View>
+        )}
+
+        {/* Upgrade Prompt */}
+        {((activeTab === 'companies' && companies.length >= getMaxCompanies()) ||
+          (activeTab === 'branches' && branches.length >= getMaxBranches())) && (
+          <View style={styles.upgradePrompt}>
+            <Ionicons name="arrow-up-circle" size={24} color="#3e60ab" />
+            <Text style={styles.upgradePromptText}>
+              You've reached your plan limit. Upgrade to create more {activeTab}.
+            </Text>
+            <TouchableOpacity 
+              style={styles.upgradeButton}
+              onPress={() => navigation.navigate('Plans')}
+            >
+              <Text style={styles.upgradeButtonText}>Upgrade Plan</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Modals */}
+      {renderCompanyDetailModal()}
+      
       <CreateCompanyModal
         visible={showCreateCompanyModal}
         onClose={() => setShowCreateCompanyModal(false)}
-        onSuccess={(newCompany) => {
-          setCompanies(prev => [...prev, newCompany]);
-          fetchData(); // Refresh data
+        onSuccess={() => {
+          setShowCreateCompanyModal(false);
+          fetchData();
         }}
       />
-
-      {/* Create Branch Modal */}
+      
       <CreateBranchModal
         visible={showCreateBranchModal}
         onClose={() => setShowCreateBranchModal(false)}
-        onSuccess={(newBranch) => {
-          setBranches(prev => [...prev, newBranch]);
-          fetchData(); // Refresh data
+        onSuccess={() => {
+          setShowCreateBranchModal(false);
+          fetchData();
         }}
-        selectedCompanyId={user?.company_id}
       />
     </View>
   );
@@ -810,52 +703,47 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 16,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 120, // Extra padding to prevent overlap with bottom navigation
   },
-  postLoginHeader: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
   },
-  postLoginTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#3e60ab',
-    fontFamily: 'Agency',
-    marginBottom: 8,
-  },
-  postLoginSubtitle: {
+  loadingText: {
     fontSize: 16,
     color: '#6b7280',
     fontFamily: 'Agency',
-    textAlign: 'center',
-    lineHeight: 22,
   },
+  
+  // Header Styles
+  header: {
+    padding: 20,
+    paddingBottom: 16,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#111827',
+    fontFamily: 'Agency',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#6b7280',
+    fontFamily: 'Agency',
+  },
+
+  // Tab Styles
   tabContainer: {
-    backgroundColor: 'white',
+    flexDirection: 'row',
+    backgroundColor: '#f3f4f6',
     borderRadius: 12,
     padding: 4,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  tabSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
+    marginHorizontal: 20,
+    marginBottom: 20,
   },
   tab: {
     flex: 1,
@@ -868,143 +756,29 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   activeTab: {
-    backgroundColor: '#3e60ab',
+    backgroundColor: 'white',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   tabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#64748b',
-    fontFamily: 'Agency',
-  },
-  activeTabText: {
-    color: 'white',
-  },
-  createButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#f8fafc',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    marginLeft: 8,
-  },
-  planBanner: {
-    backgroundColor: '#f0f4ff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#e0e7ff',
-  },
-  planInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
-  },
-  planText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#3e60ab',
-    fontFamily: 'Agency',
-  },
-  planLimits: {
-    fontSize: 14,
     color: '#6b7280',
     fontFamily: 'Agency',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
+  activeTabText: {
+    color: '#3e60ab',
   },
-  loadingCard: {
+
+  // Plan Banner Styles
+  planBanner: {
     backgroundColor: 'white',
-    paddingHorizontal: 32,
-    paddingVertical: 24,
+    marginHorizontal: 20,
+    marginBottom: 20,
     borderRadius: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  spinner: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 3,
-    borderColor: '#e2e8f0',
-    borderTopColor: '#3e60ab',
-    marginBottom: 12,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#64748b',
-    fontFamily: 'Agency',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 40,
-  },
-  emptyCard: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 32,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-    width: '100%',
-  },
-  emptyIcon: {
-    marginBottom: 20,
-  },
-  emptyTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#0f172a',
-    fontFamily: 'Agency',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  emptySubtitle: {
-    fontSize: 16,
-    color: '#64748b',
-    fontFamily: 'Agency',
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 20,
-  },
-  emptyActionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#3e60ab',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    gap: 8,
-  },
-  emptyActionText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
-  },
-  companiesList: {
-    gap: 12,
-  },
-  companyCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1012,57 +786,114 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
   },
-  currentCompanyCard: {
-    borderWidth: 2,
-    borderColor: '#3e60ab',
-  },
-  companyCardHeader: {
+  planHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
   },
-  companyIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  companyInfo: {
-    flex: 1,
-  },
-  companyNameRow: {
+  planInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    gap: 8,
   },
-  companyName: {
+  planText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#111827',
     fontFamily: 'Agency',
-    flex: 1,
   },
-  companyMetaRow: {
+  planTypeIndicator: {
+    backgroundColor: '#3e60ab15',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  planTypeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#3e60ab',
+    fontFamily: 'Agency',
+  },
+  planLimitsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    marginBottom: 12,
   },
-  companyType: {
+  planLimit: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  planLimitLabel: {
     fontSize: 12,
     color: '#6b7280',
     fontFamily: 'Agency',
-    flex: 1,
+    marginBottom: 4,
   },
-  currentBadge: {
+  planLimitValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    fontFamily: 'Agency',
+  },
+  planLimitReached: {
+    color: '#ef4444',
+  },
+  planLimitSeparator: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#e5e7eb',
+    marginHorizontal: 16,
+  },
+  planCreateButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#3e60ab',
+    justifyContent: 'center',
+    backgroundColor: '#3e60ab15',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    gap: 6,
+  },
+  planCreateButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#3e60ab',
+    fontFamily: 'Agency',
+  },
+
+  // Company Card Styles
+  companiesContainer: {
+    paddingHorizontal: 20,
+    gap: 16,
+  },
+  companyCard: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+    position: 'relative',
+  },
+  currentCompanyCard: {
+    borderWidth: 2,
+    borderColor: '#10b981',
+  },
+  companyCardContent: {
+    // This wraps the touchable content area
+  },
+  currentBadge: {
+    position: 'absolute',
+    top: -8,
+    right: 16,
+    backgroundColor: '#10b981',
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: 12,
-    gap: 4,
+    zIndex: 1,
   },
   currentBadgeText: {
     fontSize: 10,
@@ -1070,76 +901,99 @@ const styles = StyleSheet.create({
     color: 'white',
     fontFamily: 'Agency',
   },
-  companyStatus: {
-    alignItems: 'flex-end',
-  },
-  statusBadge: {
+  companyHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    gap: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
-    textTransform: 'capitalize',
-  },
-  companyCardBody: {
+    alignItems: 'flex-start',
     marginBottom: 12,
-    gap: 8,
+    gap: 12,
   },
-  companyDetail: {
+  companyIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  companyInfo: {
+    flex: 1,
+  },
+  companyName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    fontFamily: 'Agency',
+    marginBottom: 6,
+  },
+  companyTypeBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  companyTypeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: 'Agency',
+  },
+  companyDetails: {
+    gap: 8,
+    marginBottom: 16,
+  },
+  detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  companyDetailText: {
+  detailLabel: {
     fontSize: 14,
     color: '#6b7280',
     fontFamily: 'Agency',
-    flex: 1,
+    minWidth: 60,
   },
-  companyCardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-  },
-  companyStats: {
-    flexDirection: 'row',
-    flex: 1,
-  },
-  companyStat: {
-    alignItems: 'center',
-  },
-  companyStatValue: {
-    fontSize: 12,
-    fontWeight: '600',
+  detailValue: {
+    fontSize: 14,
     color: '#111827',
     fontFamily: 'Agency',
+    flex: 1,
   },
-  companyStatLabel: {
-    fontSize: 10,
-    color: '#9ca3af',
+  companyActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  switchButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#3e60ab15',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    gap: 6,
+  },
+  switchButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#3e60ab',
     fontFamily: 'Agency',
-    marginTop: 2,
   },
-  companyAction: {
-    padding: 4,
+  viewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    gap: 6,
   },
-  // Branch styles
-  branchesList: {
+  viewButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6b7280',
+    fontFamily: 'Agency',
+  },
+
+  // Branch Card Styles
+  branchesContainer: {
+    paddingHorizontal: 20,
     gap: 12,
   },
   branchCard: {
@@ -1147,131 +1001,131 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 3,
+    shadowRadius: 2,
     elevation: 1,
   },
-  currentBranchCard: {
-    borderWidth: 2,
-    borderColor: '#10b981',
-  },
-  branchCardHeader: {
+  branchHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-  },
-  branchIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+    gap: 12,
+    marginBottom: 8,
   },
   branchInfo: {
     flex: 1,
-  },
-  branchNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
   },
   branchName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#111827',
     fontFamily: 'Agency',
-    flex: 1,
-  },
-  branchMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
   },
   branchCode: {
     fontSize: 12,
     color: '#6b7280',
     fontFamily: 'Agency',
-    flex: 1,
+    marginTop: 2,
   },
-  branchBadges: {
+  branchAddress: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontFamily: 'Agency',
+    lineHeight: 20,
+  },
+
+  // Empty State Styles
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 40,
+  },
+  emptyIcon: {
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#111827',
+    fontFamily: 'Agency',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptyDescription: {
+    fontSize: 16,
+    color: '#6b7280',
+    fontFamily: 'Agency',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  createButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    backgroundColor: '#3e60ab',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    gap: 8,
   },
-  headOfficeBadge: {
-    backgroundColor: '#f59e0b',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  headOfficeBadgeText: {
-    fontSize: 9,
+  createButtonText: {
+    fontSize: 16,
     fontWeight: '600',
     color: 'white',
     fontFamily: 'Agency',
   },
-  branchStatus: {
-    alignItems: 'flex-end',
-  },
-  branchCardBody: {
-    marginBottom: 12,
-    gap: 8,
-  },
-  branchDetail: {
-    flexDirection: 'row',
+
+  // Upgrade Prompt Styles
+  upgradePrompt: {
+    backgroundColor: 'white',
+    marginHorizontal: 20,
+    marginTop: 20,
+    borderRadius: 12,
+    padding: 16,
     alignItems: 'center',
-    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  branchDetailText: {
+  upgradePromptText: {
     fontSize: 14,
     color: '#6b7280',
     fontFamily: 'Agency',
-    flex: 1,
+    textAlign: 'center',
+    marginVertical: 8,
   },
-  branchCardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
+  upgradeButton: {
+    backgroundColor: '#3e60ab',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
   },
-  branchStats: {
-    flexDirection: 'row',
-    flex: 1,
-  },
-  branchStat: {
-    alignItems: 'center',
-  },
-  branchStatValue: {
-    fontSize: 12,
+  upgradeButtonText: {
+    fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: 'white',
     fontFamily: 'Agency',
   },
-  branchStatLabel: {
-    fontSize: 10,
-    color: '#9ca3af',
-    fontFamily: 'Agency',
-    marginTop: 2,
-  },
-  branchAction: {
-    padding: 4,
-  },
+
+  // Modal Styles
   modalContainer: {
     flex: 1,
     backgroundColor: '#f9fafb',
   },
   modalHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
+  },
+  modalCloseButton: {
+    padding: 4,
   },
   modalTitle: {
     fontSize: 18,
@@ -1279,72 +1133,129 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontFamily: 'Agency',
   },
-  closeButton: {
-    padding: 4,
+  modalHeaderSpacer: {
+    width: 32,
   },
   modalContent: {
     flex: 1,
-    padding: 16,
   },
-  detailCard: {
+  modalScrollContent: {
+    padding: 20,
+    paddingBottom: 100, // Extra padding to prevent overlap with bottom navigation
+  },
+  modalBottomPadding: {
+    height: 80, // Additional padding at the bottom
+  },
+  modalCompanyHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    gap: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 1,
   },
-  detailCardTitle: {
+  modalCompanyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCompanyInfo: {
+    flex: 1,
+  },
+  modalCompanyName: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#111827',
+    fontFamily: 'Agency',
+    marginBottom: 8,
+  },
+  modalCompanyTypeBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  modalCompanyTypeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Agency',
+  },
+  modalCurrentBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  modalCurrentBadgeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#10b981',
+    fontFamily: 'Agency',
+  },
+  modalSection: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  modalSectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#111827',
-    marginBottom: 12,
     fontFamily: 'Agency',
+    marginBottom: 12,
   },
-  detailRow: {
+  modalSectionContent: {
+    gap: 12,
+  },
+  modalDetailRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    paddingVertical: 4,
   },
-  detailLabel: {
+  modalDetailLabel: {
     fontSize: 14,
     color: '#6b7280',
-    fontWeight: '500',
-    width: 120,
     fontFamily: 'Agency',
+    flex: 1,
   },
-  detailValue: {
+  modalDetailValue: {
     fontSize: 14,
     color: '#111827',
-    fontWeight: '600',
-    flex: 1,
     fontFamily: 'Agency',
+    flex: 2,
+    textAlign: 'right',
   },
-  actionButtons: {
-    gap: 12,
-    paddingBottom: 20,
+  modalActions: {
+    paddingTop: 20,
   },
-  actionButton: {
+  modalSwitchButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: '#3e60ab',
+    paddingVertical: 16,
+    borderRadius: 12,
     gap: 8,
   },
-  actionButtonText: {
+  modalSwitchButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: 'white',
     fontFamily: 'Agency',
-  },
-  switchButton: {
-    backgroundColor: '#3e60ab',
-  },
-  currentButton: {
-    backgroundColor: '#10b981',
   },
 });

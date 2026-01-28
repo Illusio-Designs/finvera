@@ -42,10 +42,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (email, password, portalType = 'client', companyId = null) => {
+  const login = async (email, password, portalType = 'client', companyId = null, authenticatedUserId = null) => {
     try {
       setLoading(true);
-      const response = await authAPI.login(email, password, portalType, companyId);
+      const response = await authAPI.login(email, password, portalType, companyId, authenticatedUserId);
       
       // Handle successful login with user data
       if (response.data && response.data.user) {
@@ -82,6 +82,16 @@ export const AuthProvider = ({ children }) => {
       };
     } catch (error) {
       console.error('Login error:', error);
+      
+      // Handle company selection requirement
+      if (error.response?.status === 400 && error.response?.data?.require_company) {
+        return {
+          success: false,
+          message: error.response.data.message || 'Company selection required',
+          companies: error.response.data.companies || [],
+          requiresCompanySelection: true
+        };
+      }
       
       // Handle specific error responses from backend
       if (error.response?.status === 429) {
@@ -195,6 +205,51 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const switchCompany = async (companyId) => {
+    try {
+      setLoading(true);
+      
+      // Try to call the backend API first
+      try {
+        const response = await authAPI.switchCompany(companyId);
+        
+        if (response.data && response.data.user) {
+          const updatedUser = response.data.user;
+          const userKey = buildStorageKey(STORAGE_CONFIG.USER_DATA_KEY);
+          
+          await AsyncStorage.setItem(userKey, JSON.stringify(updatedUser));
+          setUser(updatedUser);
+          
+          return { success: true, user: updatedUser };
+        }
+      } catch (apiError) {
+        console.log('API switch company not available, using local update:', apiError.message);
+        
+        // Fallback: Update locally if API endpoint doesn't exist
+        if (user?.email) {
+          const updatedUser = { ...user, company_id: companyId };
+          
+          const userKey = buildStorageKey(STORAGE_CONFIG.USER_DATA_KEY);
+          await AsyncStorage.setItem(userKey, JSON.stringify(updatedUser));
+          
+          setUser(updatedUser);
+          
+          return { success: true, user: updatedUser };
+        }
+      }
+      
+      return { success: false, message: 'No user found to switch company' };
+    } catch (error) {
+      console.error('Switch company error:', error);
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Failed to switch company' 
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Debug function to check token storage (development only)
   const debugTokenStorage = async () => {
     if (__DEV__) {
@@ -229,6 +284,7 @@ export const AuthProvider = ({ children }) => {
     updateUser,
     updateProfile,
     uploadProfileImage,
+    switchCompany, // Add switchCompany to the context value
     debugTokenStorage, // Only available in development
     isAuthenticated: !!user && !!token,
   };

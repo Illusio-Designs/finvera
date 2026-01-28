@@ -1,22 +1,228 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Linking, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Linking, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useNotification } from '../../contexts/NotificationContext.jsx';
+import { authAPI } from '../../lib/api.js';
 import { Ionicons } from '@expo/vector-icons';
+import * as LocalAuthentication from 'expo-local-authentication';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { STORAGE_CONFIG, buildStorageKey } from '../../config/env';
 
+/**
+ * LoginScreen with integrated company selection
+ * 
+ * Flow:
+ * 1. User enters email/password
+ * 2. System checks if user has multiple companies (via checkUserCompanies API)
+ * 3. If multiple companies: Show company selection UI
+ * 4. If single company: Proceed directly with login
+ * 5. User selects company and login completes
+ * 
+ * This provides a seamless login experience without requiring post-login navigation.
+ */
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showCompanySelection, setShowCompanySelection] = useState(false);
+  const [userCompanies, setUserCompanies] = useState([]);
+  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [authenticatedUser, setAuthenticatedUser] = useState(null);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [savedCredentials, setSavedCredentials] = useState(null);
   const { login } = useAuth();
-  const navigation = useNavigation();
   const { showSuccess, showError } = useNotification();
+
+  // Check biometric availability on component mount
+  useEffect(() => {
+    checkBiometricAvailability();
+    checkSavedCredentials();
+  }, []);
+
+  const checkBiometricAvailability = async () => {
+    try {
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+      const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
+      
+      const available = hasHardware && isEnrolled && supportedTypes.length > 0;
+      setBiometricAvailable(available);
+    } catch (error) {
+      console.error('Biometric check error:', error);
+      setBiometricAvailable(false);
+    }
+  };
+
+  const checkSavedCredentials = async () => {
+    try {
+      const credentialsKey = buildStorageKey('biometric_credentials');
+      const saved = await AsyncStorage.getItem(credentialsKey);
+      
+      if (saved) {
+        const credentials = JSON.parse(saved);
+        setSavedCredentials(credentials);
+        setEmail(credentials.email || '');
+      }
+    } catch (error) {
+      console.error('Error checking saved credentials:', error);
+    }
+  };
+
+  const saveBiometricCredentials = async (email, password) => {
+    try {
+      const credentialsKey = buildStorageKey('biometric_credentials');
+      await AsyncStorage.setItem(credentialsKey, JSON.stringify({
+        email,
+        password,
+        savedAt: new Date().toISOString()
+      }));
+    } catch (error) {
+      console.error('Error saving biometric credentials:', error);
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    if (!biometricAvailable || !savedCredentials) {
+      showError('Biometric Login', 'Biometric authentication is not available or no credentials saved');
+      return;
+    }
+
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Authenticate to login to Finvera',
+        cancelLabel: 'Cancel',
+        fallbackLabel: 'Use Password',
+      });
+
+      if (result.success) {
+        setEmail(savedCredentials.email);
+        setPassword(savedCredentials.password);
+        // Proceed with login using saved credentials
+        await handleLoginWithCredentials(savedCredentials.email, savedCredentials.password);
+      } else {
+        showError('Authentication Failed', 'Biometric authentication was cancelled or failed');
+      }
+    } catch (error) {
+      console.error('Biometric authentication error:', error);
+      showError('Authentication Error', 'Failed to authenticate with biometrics');
+    }
+  };
+
+  const handleLoginWithCredentials = async (emailParam, passwordParam) => {
+    const loginEmail = emailParam || email;
+    const loginPassword = passwordParam || password;
+
+    if (!loginEmail || !loginPassword) {
+      showError('Missing Information', 'Please fill in all fields');
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      // Step 1: Authenticate user and get companies
+      const authResult = await authAPI.authenticate(loginEmail, loginPassword);
+      
+      if (authResult.data.success) {
+        const { user, companies, requiresCompanySelection, needsCompanyCreation } = authResult.data;
+        
+        if (needsCompanyCreation) {
+          showError('No Company Found', 'Please create your company first');
+          setLoading(false);
+          return;
+        }
+        
+        if (requiresCompanySelection && companies.length > 1) {
+          // Multiple companies - show selection
+          setAuthenticatedUser(user);
+          setUserCompanies(companies);
+          setShowCompanySelection(true);
+          setLoading(false);
+          
+          // Save credentials for biometric login if not using biometric already
+          if (!emailParam && biometricAvailable && !savedCredentials) {
+            Alert.alert(
+              'Save for Biometric Login?',
+              'Would you like to save your credentials for quick biometric login next time?',
+              [
+                { text: 'No', style: 'cancel' },
+                { 
+                  text: 'Yes', 
+                  onPress: () => saveBiometricCredentials(loginEmail, loginPassword)
+                }
+              ]
+            );
+          }
+          return;
+        } else if (companies.length === 1) {
+          // Single company - proceed with login
+          await completeLogin(user.id, companies[0].id, loginEmail, loginPassword);
+          return;
+        } else {
+          // No companies but no creation needed - proceed with regular login
+          await completeLogin(user.id, null, loginEmail, loginPassword);
+          return;
+        }
+      }
+      
+    } catch (error) {
+      console.error('Authentication error:', error);
+      handleLoginError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const completeLogin = async (userId, companyId, loginEmail, loginPassword) => {
+    try {
+      setLoading(true);
+      
+      // Step 2: Complete login with selected company
+      const result = await login(loginEmail, loginPassword, 'client', companyId, userId);
+      
+      if (result.success) {
+        showSuccess('Welcome Back!', 'Login successful. Loading dashboard...');
+        
+        // Save credentials for biometric login if successful and not already saved
+        if (biometricAvailable && !savedCredentials) {
+          Alert.alert(
+            'Save for Biometric Login?',
+            'Would you like to save your credentials for quick biometric login next time?',
+            [
+              { text: 'No', style: 'cancel' },
+              { 
+                text: 'Yes', 
+                onPress: () => saveBiometricCredentials(loginEmail, loginPassword)
+              }
+            ]
+          );
+        }
+        
+        // Navigation will happen automatically through AppNavigator's isAuthenticated check
+        // But we can add a small delay to ensure state is updated
+        setTimeout(() => {
+          // Reset any local state that might interfere with navigation
+          setShowCompanySelection(false);
+          setUserCompanies([]);
+          setSelectedCompany(null);
+          setAuthenticatedUser(null);
+        }, 100);
+        
+      } else {
+        handleLoginError({ response: { data: { message: result.message } } });
+      }
+    } catch (error) {
+      console.error('Login completion error:', error);
+      handleLoginError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleGoogleLogin = async () => {
     try {
-      const apiUrl = __DEV__ ? 'http://192.168.1.39:3000' : 'https://api.finvera.solutions';
+      const apiUrl = __DEV__ ? 'http://192.168.0.103:3000' : 'https://api.finvera.solutions';
       const googleAuthUrl = `${apiUrl}/auth/google`;
       
       // Open Google OAuth in browser
@@ -33,52 +239,58 @@ export default function LoginScreen() {
   };
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      showError('Missing Information', 'Please fill in all fields');
+    await handleLoginWithCredentials();
+  };
+
+  const handleLoginError = (error) => {
+    // Handle specific error responses from backend
+    if (error.response?.status === 429) {
+      showError('Rate Limited', 'Too many login attempts. Please wait a few minutes before trying again.');
+    } else if (error.response?.status === 401) {
+      showError('Invalid Credentials', 'Invalid email or password. Please check your credentials.');
+    } else if (error.response?.status === 403) {
+      showError('Account Restricted', 'Account access is restricted. Please contact support.');
+    } else if (error.response?.status >= 500) {
+      showError('Server Error', 'Server error. Please try again in a few minutes.');
+    } else if (error.response?.data) {
+      const errorData = error.response.data;
+      showError('Login Failed', errorData.message || 'Please check your credentials and try again.');
+    } else if (error.code === 'ERR_NETWORK' || error.code === 'ECONNREFUSED') {
+      showError('Connection Error', 'Network error. Please check your internet connection and try again.');
+    } else {
+      showError('Error', 'An unexpected error occurred. Please try again.');
+    }
+  };
+
+  const handleCompanySelect = async (company) => {
+    if (!authenticatedUser) {
+      showError('Session Error', 'Please try logging in again');
+      handleBackToLogin();
       return;
     }
-
-    console.log('Login attempt:', { email, hasPassword: !!password });
-    setLoading(true);
     
+    setSelectedCompany(company);
+    await completeLogin(authenticatedUser.id, company.id, email, password);
+  };
+
+  const clearBiometricCredentials = async () => {
     try {
-      const result = await login(email, password, 'client');
-      console.log('Login result:', { 
-        success: result.success, 
-        message: result.message
-      });
-      
-      if (result.success) {
-        // Successful login - show success message
-        // Navigation will happen automatically due to auth state change
-        console.log('Login successful, auth state will trigger navigation');
-        showSuccess('Welcome Back!', 'Login successful. Loading dashboard...');
-        
-      } else {
-        // Login failed - show specific error message
-        console.log('Login failed:', result.message);
-        
-        // Show appropriate error based on the message
-        if (result.message.includes('Too many login attempts')) {
-          showError('Rate Limited', result.message);
-        } else if (result.message.includes('Invalid email or password')) {
-          showError('Invalid Credentials', result.message);
-        } else if (result.message.includes('Account access is restricted')) {
-          showError('Account Restricted', result.message);
-        } else if (result.message.includes('Server error')) {
-          showError('Server Error', result.message);
-        } else if (result.message.includes('Network error')) {
-          showError('Connection Error', result.message);
-        } else {
-          showError('Login Failed', result.message || 'Please check your credentials and try again');
-        }
-      }
+      const credentialsKey = buildStorageKey('biometric_credentials');
+      await AsyncStorage.removeItem(credentialsKey);
+      setSavedCredentials(null);
+      setEmail('');
+      showSuccess('Cleared', 'Biometric credentials cleared successfully');
     } catch (error) {
-      console.error('Login error:', error);
-      showError('Error', 'An unexpected error occurred. Please try again.');
-    } finally {
-      setLoading(false);
+      console.error('Error clearing biometric credentials:', error);
+      showError('Error', 'Failed to clear biometric credentials');
     }
+  };
+
+  const handleBackToLogin = () => {
+    setShowCompanySelection(false);
+    setUserCompanies([]);
+    setSelectedCompany(null);
+    setAuthenticatedUser(null);
   };
 
   return (
@@ -104,78 +316,177 @@ export default function LoginScreen() {
         </View>
         <Text style={styles.appName}>Finvera</Text>
         <Text style={styles.tagline}>Simplify Your Business</Text>
+        
+        {/* Biometric Settings */}
+        {savedCredentials && (
+          <TouchableOpacity 
+            style={styles.clearBiometricButton}
+            onPress={() => {
+              Alert.alert(
+                'Clear Biometric Login',
+                'Are you sure you want to clear saved biometric credentials?',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Clear', style: 'destructive', onPress: clearBiometricCredentials }
+                ]
+              );
+            }}
+          >
+            <Ionicons name="settings-outline" size={16} color="#6b7280" />
+            <Text style={styles.clearBiometricText}>Clear Biometric</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* Login Form */}
-      <View style={styles.formContainer}>
-        <View style={styles.form}>
-          <Text style={styles.formTitle}>Sign in to your account</Text>
-          
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email address</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              placeholderTextColor="#9ca3af"
-            />
+      {/* Conditional Content */}
+      {showCompanySelection ? (
+        /* Company Selection Form */
+        <View style={styles.formContainer}>
+          <View style={styles.form}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={handleBackToLogin}
+            >
+              <Ionicons name="arrow-back" size={20} color="#3e60ab" />
+              <Text style={styles.backButtonText}>Back to Login</Text>
+            </TouchableOpacity>
+            
+            <Text style={styles.formTitle}>Select Your Company</Text>
+            <Text style={styles.companySubtitle}>
+              Choose which company you'd like to access
+            </Text>
+            
+            <View style={styles.companiesContainer}>
+              {userCompanies.map((company, index) => (
+                <TouchableOpacity
+                  key={company.id || index}
+                  style={[
+                    styles.companyCard,
+                    selectedCompany?.id === company.id && styles.selectedCompanyCard
+                  ]}
+                  onPress={() => handleCompanySelect(company)}
+                  disabled={loading}
+                >
+                  <View style={styles.companyIcon}>
+                    <Ionicons 
+                      name="business" 
+                      size={24} 
+                      color={selectedCompany?.id === company.id ? '#3e60ab' : '#6b7280'} 
+                    />
+                  </View>
+                  <View style={styles.companyInfo}>
+                    <Text style={[
+                      styles.companyName,
+                      selectedCompany?.id === company.id && styles.selectedCompanyName
+                    ]}>
+                      {company.company_name || company.name}
+                    </Text>
+                    <Text style={styles.companyType}>
+                      {company.company_type?.replace('_', ' ').toUpperCase() || 'BUSINESS'}
+                    </Text>
+                  </View>
+                  {selectedCompany?.id === company.id && (
+                    <Ionicons name="checkmark-circle" size={20} color="#3e60ab" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+            
+            {loading && (
+              <View style={styles.loadingContainer}>
+                <Text style={styles.loadingText}>Signing in...</Text>
+              </View>
+            )}
           </View>
-          
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.passwordContainer}>
+        </View>
+      ) : (
+        /* Login Form */
+        <View style={styles.formContainer}>
+          <View style={styles.form}>
+            <Text style={styles.formTitle}>Sign in to your account</Text>
+            
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Email address</Text>
               <TextInput
-                style={styles.passwordInput}
-                placeholder="Enter your password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
+                style={styles.input}
+                placeholder="Enter your email"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
                 placeholderTextColor="#9ca3af"
               />
-              <TouchableOpacity
-                style={styles.eyeButton}
-                onPress={() => setShowPassword(!showPassword)}
-              >
-                <Ionicons
-                  name={showPassword ? 'eye-off' : 'eye'}
-                  size={20}
-                  color="#6b7280"
+            </View>
+            
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  placeholderTextColor="#9ca3af"
                 />
+                <TouchableOpacity
+                  style={styles.eyeButton}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <Ionicons
+                    name={showPassword ? 'eye-off' : 'eye'}
+                    size={20}
+                    color="#6b7280"
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>
+                {loading ? 'Signing in...' : 'Sign in'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Biometric Login Button */}
+            {biometricAvailable && savedCredentials && (
+              <TouchableOpacity
+                style={styles.biometricButton}
+                onPress={handleBiometricLogin}
+                disabled={loading}
+              >
+                <View style={styles.biometricButtonContent}>
+                  <Ionicons name="finger-print" size={24} color="#3e60ab" />
+                  <Text style={styles.biometricButtonText}>
+                    Login with Biometrics
+                  </Text>
+                </View>
               </TouchableOpacity>
+            )}
+
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>Or continue with</Text>
+              <View style={styles.dividerLine} />
             </View>
+
+            <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
+              <View style={styles.googleButtonContent}>
+                <Image 
+                  source={require('../../../assets/google-logo.png')} 
+                  style={styles.googleIcon}
+                  resizeMode="contain"
+                />
+                <Text style={styles.googleButtonText}>Continue with Google</Text>
+              </View>
+            </TouchableOpacity>
           </View>
-
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>
-              {loading ? 'Signing in...' : 'Sign in'}
-            </Text>
-          </TouchableOpacity>
-
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>Or continue with</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
-            <View style={styles.googleButtonContent}>
-              <Image 
-                source={require('../../../assets/google-logo.png')} 
-                style={styles.googleIcon}
-                resizeMode="contain"
-              />
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
-            </View>
-          </TouchableOpacity>
         </View>
-      </View>
+      )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -222,6 +533,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     fontFamily: 'Agency',
+  },
+  clearBiometricButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: 'rgba(107, 114, 128, 0.1)',
+  },
+  clearBiometricText: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontFamily: 'Agency',
+    marginLeft: 4,
   },
   formContainer: {
     flex: 1,
@@ -296,7 +622,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#3e60ab',
     borderRadius: 8,
     paddingVertical: 12,
-    marginBottom: 24,
+    marginBottom: 16,
     shadowColor: '#3e60ab',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -312,6 +638,27 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
     fontFamily: 'Agency',
+  },
+  biometricButton: {
+    borderWidth: 1,
+    borderColor: '#3e60ab',
+    borderRadius: 8,
+    paddingVertical: 12,
+    marginBottom: 24,
+    backgroundColor: 'transparent',
+  },
+  biometricButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  biometricButtonText: {
+    color: '#3e60ab',
+    textAlign: 'center',
+    fontWeight: '600',
+    fontSize: 16,
+    fontFamily: 'Agency',
+    marginLeft: 8,
   },
   divider: {
     flexDirection: 'row',
@@ -352,6 +699,85 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '600',
     fontSize: 16,
+    fontFamily: 'Agency',
+  },
+  // Company Selection Styles
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingVertical: 8,
+  },
+  backButtonText: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: '#3e60ab',
+    fontWeight: '600',
+    fontFamily: 'Agency',
+  },
+  companySubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 24,
+    fontFamily: 'Agency',
+  },
+  companiesContainer: {
+    marginBottom: 20,
+  },
+  companyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    marginBottom: 12,
+    backgroundColor: '#f9fafb',
+  },
+  selectedCompanyCard: {
+    borderColor: '#3e60ab',
+    backgroundColor: '#eff6ff',
+  },
+  companyIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  companyInfo: {
+    flex: 1,
+  },
+  companyName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+    fontFamily: 'Agency',
+  },
+  selectedCompanyName: {
+    color: '#3e60ab',
+  },
+  companyType: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontFamily: 'Agency',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6b7280',
     fontFamily: 'Agency',
   },
 });

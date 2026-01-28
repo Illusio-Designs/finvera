@@ -5,7 +5,7 @@ export function middleware(request) {
   const hostname = request.headers.get('host') || '';
   
   // Check if this is a client-only Electron build
-  const isClientOnly = process.env.ELECTRON_CLIENT_ONLY === 'true';
+  const isClientOnly = process.env.ELECTRON_CLIENT_ONLY === 'true' && process.env.NODE_ENV === 'production';
   
   // Extract subdomain
   const subdomain = getSubdomain(hostname);

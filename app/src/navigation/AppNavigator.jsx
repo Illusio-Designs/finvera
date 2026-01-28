@@ -5,8 +5,8 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 
 // Import screens
 import LoginScreen from '../screens/auth/LoginScreen.jsx';
-import DashboardScreen from '../screens/client/DashboardScreen.jsx';
 import LoadingScreen from '../screens/LoadingScreen.jsx';
+import ClientNavigator from './ClientNavigator.jsx';
 
 const Stack = createNativeStackNavigator();
 
@@ -21,7 +21,8 @@ export default function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
-          <Stack.Screen name="Dashboard" component={DashboardScreen} />
+          // Show main app screens - ClientNavigator contains all client screens including dashboard
+          <Stack.Screen name="Client" component={ClientNavigator} />
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} />
         )}

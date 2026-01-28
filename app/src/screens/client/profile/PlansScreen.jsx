@@ -6,94 +6,7 @@ import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 
-// For now, we'll use mock data since the backend subscription plans API might not be available in mobile
-// In the future, you can replace this with: import { subscriptionAPI } from '../../../lib/api';
-const plansAPI = {
-  list: () => {
-    // Mock data based on backend subscription plans structure
-    return Promise.resolve({
-      data: [
-        {
-          id: 1,
-          plan_code: 'STARTER',
-          plan_name: 'Starter',
-          description: 'Perfect for small businesses getting started',
-          base_price: 999,
-          discounted_price: 830,
-          currency: 'INR',
-          max_users: 5,
-          max_companies: 1,
-          max_invoices_per_month: 500,
-          storage_limit_gb: 10,
-          features: [
-            'Up to 5 users',
-            '1 company',
-            '500 invoices per month',
-            '10 GB storage',
-            'Basic GST filing',
-            'Email support',
-            'Mobile app access'
-          ],
-          is_featured: false,
-          is_active: true
-        },
-        {
-          id: 2,
-          plan_code: 'PROFESSIONAL',
-          plan_name: 'Professional',
-          description: 'Most popular for growing businesses',
-          base_price: 1999,
-          discounted_price: 1660,
-          currency: 'INR',
-          max_users: 15,
-          max_companies: 3,
-          max_invoices_per_month: 2000,
-          storage_limit_gb: 50,
-          features: [
-            'Up to 15 users',
-            '3 companies',
-            '2000 invoices per month',
-            '50 GB storage',
-            'Advanced GST & TDS',
-            'E-invoice & E-way bill',
-            'Priority support',
-            'Multi-branch support',
-            'Advanced reports'
-          ],
-          is_featured: true,
-          is_active: true
-        },
-        {
-          id: 3,
-          plan_code: 'ENTERPRISE',
-          plan_name: 'Enterprise',
-          description: 'For large businesses with advanced needs',
-          base_price: 3999,
-          discounted_price: 3320,
-          currency: 'INR',
-          max_users: null, // unlimited
-          max_companies: null, // unlimited
-          max_invoices_per_month: null, // unlimited
-          storage_limit_gb: 500,
-          features: [
-            'Unlimited users',
-            'Unlimited companies',
-            'Unlimited invoices',
-            '500 GB storage',
-            'Complete tax suite',
-            'API access',
-            'Dedicated support',
-            'Custom integrations',
-            'Advanced analytics',
-            'White-label options'
-          ],
-          is_featured: false,
-          is_active: true
-        }
-      ]
-    });
-  }
-};
+import { pricingAPI } from '../../../lib/api';
 
 export default function PlansScreen() {
   const navigation = useNavigation();
@@ -111,9 +24,73 @@ export default function PlansScreen() {
   const fetchPlans = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await plansAPI.list();
-      const plansData = response.data || [];
-      setPlans(plansData);
+      const response = await pricingAPI.list({ 
+        is_active: 'true', 
+        is_visible: 'true',
+        limit: 10 
+      });
+      const plansData = response.data?.data || response.data || [];
+      
+      // Transform API data to include features array
+      const transformedPlans = plansData.map(plan => {
+        const features = [];
+        
+        // Add user limit
+        if (plan.max_users) {
+          features.push(`Up to ${plan.max_users === -1 ? 'unlimited' : plan.max_users} users`);
+        }
+        
+        // Add company limit
+        if (plan.max_companies) {
+          features.push(`${plan.max_companies === -1 ? 'Unlimited' : plan.max_companies} ${plan.max_companies === 1 ? 'company' : 'companies'}`);
+        }
+        
+        // Add branch limit
+        if (plan.max_branches && plan.max_branches > 0) {
+          features.push(`${plan.max_branches === -1 ? 'Unlimited' : plan.max_branches} ${plan.max_branches === 1 ? 'branch' : 'branches'}`);
+        }
+        
+        // Add invoice limit
+        if (plan.max_invoices_per_month) {
+          features.push(`${plan.max_invoices_per_month === -1 ? 'Unlimited' : plan.max_invoices_per_month} invoices per month`);
+        }
+        
+        // Add storage limit
+        if (plan.storage_limit_gb) {
+          features.push(`${plan.storage_limit_gb === -1 ? 'Unlimited' : plan.storage_limit_gb + ' GB'} storage`);
+        }
+        
+        // Parse features from JSON if available
+        if (plan.features) {
+          try {
+            const planFeatures = typeof plan.features === 'string' ? JSON.parse(plan.features) : plan.features;
+            if (planFeatures.gst_filing) {
+              features.push('GST filing support');
+            }
+            if (planFeatures.e_invoicing) {
+              features.push('E-invoice & E-way bill');
+            }
+          } catch (e) {
+            console.warn('Error parsing plan features:', e);
+          }
+        }
+        
+        // Add trial days
+        if (plan.trial_days && plan.trial_days > 0) {
+          features.push(`${plan.trial_days} days free trial`);
+        }
+        
+        // Add default features
+        features.push('Mobile app access');
+        features.push('Email support');
+        
+        return {
+          ...plan,
+          features
+        };
+      });
+      
+      setPlans(transformedPlans);
     } catch (error) {
       console.error('Error fetching plans:', error);
       showNotification({
@@ -151,7 +128,10 @@ export default function PlansScreen() {
     }).format(price);
   };
 
-  const getYearlyPrice = (monthlyPrice) => {
+  const getYearlyPrice = (monthlyPrice, discountedPrice) => {
+    if (discountedPrice) {
+      return discountedPrice * 12;
+    }
     return monthlyPrice * 12 * 0.83; // 17% discount
   };
 
@@ -228,7 +208,9 @@ export default function PlansScreen() {
         <View style={styles.plansContainer}>
           {plans.map((plan, index) => {
             const planColor = getPlanColor(plan);
-            const monthlyPrice = billingCycle === 'monthly' ? plan.base_price : getYearlyPrice(plan.base_price) / 12;
+            const monthlyPrice = parseFloat(plan.base_price || 0);
+            const yearlyPrice = getYearlyPrice(monthlyPrice, plan.discounted_price);
+            const displayPrice = billingCycle === 'monthly' ? monthlyPrice : yearlyPrice / 12;
             
             return (
               <View key={plan.id} style={[styles.planCard, plan.is_featured && styles.popularPlan]}>
@@ -244,14 +226,16 @@ export default function PlansScreen() {
                   
                   <View style={styles.priceContainer}>
                     <Text style={[styles.price, { color: planColor }]}>
-                      {formatPrice(monthlyPrice)}
+                      {formatPrice(displayPrice)}
                     </Text>
                     <Text style={styles.pricePeriod}>
                       /month {billingCycle === 'yearly' && '(billed yearly)'}
                     </Text>
-                    {billingCycle === 'yearly' && (
+                    {billingCycle === 'yearly' && plan.discounted_price && (
                       <View style={styles.savingsBadge}>
-                        <Text style={styles.savingsText}>Save 17%</Text>
+                        <Text style={styles.savingsText}>
+                          Save {Math.round(((monthlyPrice * 12 - yearlyPrice) / (monthlyPrice * 12)) * 100)}%
+                        </Text>
                       </View>
                     )}
                   </View>

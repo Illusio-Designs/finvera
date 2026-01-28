@@ -103,36 +103,54 @@ apiClient.interceptors.response.use(
       console.error('❌ API Error:', {
         status: error.response?.status,
         message: error.response?.data?.message,
+        data: error.response?.data, // Add full data for debugging
         url: error.config?.url,
         method: error.config?.method
       });
     }
 
+    // Don't show global errors for auth endpoints - let them handle their own errors
+    const isAuthEndpoint = error.config?.url?.includes('/auth/');
+    
     if (error.response?.status === 401) {
       // Token expired, redirect to login
       const tokenKey = buildStorageKey(STORAGE_CONFIG.AUTH_TOKEN_KEY);
       const userKey = buildStorageKey(STORAGE_CONFIG.USER_DATA_KEY);
       await AsyncStorage.multiRemove([tokenKey, userKey]);
-      showGlobalError('Session Expired', 'Please log in again to continue.');
+      if (!isAuthEndpoint) {
+        showGlobalError('Session Expired', 'Please log in again to continue.');
+      }
     } else if (error.response?.status === 403) {
-      showGlobalError('Access Denied', 'You don\'t have permission to access this feature.');
+      if (!isAuthEndpoint) {
+        showGlobalError('Access Denied', 'You don\'t have permission to access this feature.');
+      }
     } else if (error.response?.status === 404) {
-      showGlobalError('Not Found', 'The requested information could not be found.');
+      if (!isAuthEndpoint) {
+        showGlobalError('Not Found', 'The requested information could not be found.');
+      }
     } else if (error.response?.status === 429) {
-      // Rate limiting - don't show global error for login attempts, let the login screen handle it
-      if (!error.config?.url?.includes('/auth/login')) {
+      // Rate limiting - don't show global error for auth attempts
+      if (!isAuthEndpoint) {
         showGlobalError('Too Many Requests', 'You\'re making requests too quickly. Please wait a moment and try again.');
       }
     } else if (error.response?.status >= 500) {
-      showGlobalError('Service Unavailable', 'Our servers are experiencing issues. Please try again in a moment.');
+      if (!isAuthEndpoint) {
+        showGlobalError('Service Unavailable', 'Our servers are experiencing issues. Please try again in a moment.');
+      }
     } else if (error.code === 'ECONNABORTED') {
-      showGlobalError('Request Timeout', 'The request is taking longer than expected. Please check your connection and try again.');
+      if (!isAuthEndpoint) {
+        showGlobalError('Request Timeout', 'The request is taking longer than expected. Please check your connection and try again.');
+      }
     } else if (error.code === 'ERR_NETWORK') {
-      showGlobalError('Connection Issue', 'Please check your internet connection and try again.');
+      if (!isAuthEndpoint) {
+        showGlobalError('Connection Issue', 'Please check your internet connection and try again.');
+      }
     } else if (error.code === 'ECONNREFUSED') {
-      showGlobalError('Service Unavailable', 'Unable to connect to our servers. Please try again later.');
-    } else if (error.response?.data?.message && !error.config?.url?.includes('/auth/login')) {
-      // Don't show global errors for login attempts, let the login screen handle them
+      if (!isAuthEndpoint) {
+        showGlobalError('Service Unavailable', 'Unable to connect to our servers. Please try again later.');
+      }
+    } else if (error.response?.data?.message && !isAuthEndpoint) {
+      // Don't show global errors for auth attempts, let the auth screens handle them
       showGlobalError('Error', error.response.data.message);
     }
     return Promise.reject(error);

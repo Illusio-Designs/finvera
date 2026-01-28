@@ -216,7 +216,7 @@ module.exports = {
       // 4. CREATE SUBSCRIPTION PLANS
       try {
         const existingPlans = await queryInterface.sequelize.query(
-          "SELECT id FROM subscription_plans WHERE plan_code IN ('FREE', 'STARTER')",
+          "SELECT id FROM subscription_plans WHERE plan_code IN ('FREE', 'STARTER', 'PROFESSIONAL', 'ENTERPRISE')",
           { type: Sequelize.QueryTypes.SELECT }
         );
 
@@ -252,7 +252,7 @@ module.exports = {
               trial_days: 30,
               max_users: 3,
               max_invoices_per_month: 200,
-              max_companies: 1,
+              max_companies: 2,
               max_branches: 2,
               features: JSON.stringify({ gst_filing: true, e_invoicing: false }),
               salesman_commission_rate: 15,
@@ -262,9 +262,78 @@ module.exports = {
               createdAt: now,
               updatedAt: now,
             },
+            {
+              id: uuid.v4(),
+              plan_code: 'PROFESSIONAL',
+              plan_name: 'Professional',
+              description: 'Most popular for growing businesses',
+              billing_cycle: 'monthly',
+              base_price: 1999,
+              discounted_price: 1660,
+              currency: 'INR',
+              trial_days: 30,
+              max_users: 15,
+              max_invoices_per_month: 2000,
+              max_companies: 5,
+              max_branches: 10,
+              storage_limit_gb: 50,
+              features: JSON.stringify({ 
+                gst_filing: true, 
+                e_invoicing: true,
+                advanced_reports: true,
+                multi_branch: true,
+                priority_support: true
+              }),
+              salesman_commission_rate: 20,
+              distributor_commission_rate: 8,
+              renewal_commission_rate: 5,
+              is_active: true,
+              is_visible: true,
+              is_featured: true,
+              display_order: 2,
+              createdAt: now,
+              updatedAt: now,
+            },
+            {
+              id: uuid.v4(),
+              plan_code: 'ENTERPRISE',
+              plan_name: 'Enterprise',
+              description: 'For large businesses with advanced needs',
+              billing_cycle: 'monthly',
+              base_price: 3999,
+              discounted_price: 3320,
+              currency: 'INR',
+              trial_days: 30,
+              max_users: -1, // unlimited
+              max_invoices_per_month: -1, // unlimited
+              max_companies: -1, // unlimited
+              max_branches: -1, // unlimited
+              storage_limit_gb: 500,
+              features: JSON.stringify({ 
+                gst_filing: true, 
+                e_invoicing: true,
+                advanced_reports: true,
+                multi_branch: true,
+                priority_support: true,
+                api_access: true,
+                custom_integrations: true,
+                dedicated_support: true,
+                white_label: true,
+                advanced_analytics: true
+              }),
+              salesman_commission_rate: 25,
+              distributor_commission_rate: 10,
+              renewal_commission_rate: 8,
+              is_active: true,
+              is_visible: true,
+              is_featured: false,
+              display_order: 3,
+              createdAt: now,
+              updatedAt: now,
+            },
           ]);
 
-          console.log('✓ Subscription plans: FREE, STARTER');
+          console.log('✓ Subscription plans: FREE, STARTER, PROFESSIONAL, ENTERPRISE');
         } else {
           console.log('ℹ️  Subscription plans already exist');
         }
@@ -273,6 +342,85 @@ module.exports = {
       }
 
       console.log('✅ Main database seeding completed');
+
+      // 5. CREATE TEST SUBSCRIPTION FOR DEVELOPMENT
+      try {
+        // Get the system tenant
+        const systemTenant = await queryInterface.sequelize.query(
+          "SELECT id FROM tenant_master WHERE subdomain = 'system' LIMIT 1",
+          { type: Sequelize.QueryTypes.SELECT }
+        );
+
+        if (systemTenant.length > 0) {
+          const tenantId = systemTenant[0].id;
+          
+          // Check if subscription already exists
+          const existingSubscription = await queryInterface.sequelize.query(
+            "SELECT id FROM subscriptions WHERE tenant_id = ? LIMIT 1",
+            { 
+              replacements: [tenantId],
+              type: Sequelize.QueryTypes.SELECT 
+            }
+          );
+
+          if (existingSubscription.length === 0) {
+            const startDate = new Date();
+            const endDate = new Date(startDate);
+            endDate.setMonth(endDate.getMonth() + 1);
+
+            await queryInterface.bulkInsert('subscriptions', [
+              {
+                id: uuid.v4(),
+                tenant_id: tenantId,
+                subscription_plan_id: null, // Don't use FK - plan is in different database
+                razorpay_subscription_id: `local_sub_dev_${Date.now()}`,
+                razorpay_plan_id: null,
+                status: 'active',
+                plan_code: 'STARTER',
+                plan_name: 'Starter',
+                description: 'Starter plan',
+                plan_type: 'multi-company',
+                billing_cycle: 'monthly',
+                base_price: 999,
+                discounted_price: null,
+                amount: 999,
+                currency: 'INR',
+                trial_days: 30,
+                max_users: 3,
+                max_invoices_per_month: 200,
+                max_companies: 2,
+                max_branches: 2,
+                storage_limit_gb: null,
+                features: JSON.stringify({ gst_filing: true, e_invoicing: false }),
+                salesman_commission_rate: 15,
+                distributor_commission_rate: 5,
+                renewal_commission_rate: null,
+                is_active: true,
+                is_visible: true,
+                is_featured: false,
+                display_order: null,
+                valid_from: null,
+                valid_until: null,
+                start_date: startDate,
+                end_date: endDate,
+                current_period_start: startDate,
+                current_period_end: endDate,
+                cancelled_at: null,
+                notes: 'Development test subscription',
+                metadata: JSON.stringify({ mode: 'local', created_by: 'seeder' }),
+                createdAt: now,
+                updatedAt: now,
+              },
+            ]);
+
+            console.log('✓ Test subscription created for system tenant (STARTER plan with 2 companies)');
+          } else {
+            console.log('ℹ️  Test subscription already exists');
+          }
+        }
+      } catch (error) {
+        console.log('⚠️  Could not create test subscription:', error.message);
+      }
     } // End of main DB section
 
     // If neither master nor main DB, skip seeding
@@ -289,6 +437,11 @@ module.exports = {
     const { Op } = Sequelize;
     
     if (isMainDb) {
+      // Remove test subscriptions
+      await queryInterface.bulkDelete('subscriptions', {
+        notes: 'Development test subscription'
+      }, {});
+      
       // Remove subscription plans
       await queryInterface.bulkDelete('subscription_plans', null, {});
       

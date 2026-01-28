@@ -2,7 +2,14 @@ import { apiClient } from './apiClient';
 
 // Authentication APIs
 export const authAPI = {
-  login: (email, password, portalType, companyId) => apiClient.post('/auth/login', { email, password, company_id: companyId }),
+  authenticate: (email, password) => apiClient.post('/auth/authenticate', { email, password }),
+  login: (email, password, portalType, companyId, authenticatedUserId) => 
+    apiClient.post('/auth/login', { 
+      email, 
+      password, 
+      company_id: companyId,
+      authenticated_user_id: authenticatedUserId 
+    }),
   register: (userData) => apiClient.post('/auth/register', userData),
   logout: () => apiClient.post('/auth/logout'),
   forgotPassword: (email) => apiClient.post('/auth/forgot-password', { email }),
@@ -17,7 +24,7 @@ export const authAPI = {
     },
   }),
   changePassword: (data) => apiClient.post('/auth/change-password', data),
-  changePassword: (data) => apiClient.post('/auth/change-password', data),
+  switchCompany: (companyId) => apiClient.post('/auth/switch-company', { company_id: companyId }),
 };
 
 // User Profile APIs (using auth endpoints as per backend)
@@ -243,6 +250,12 @@ export const subscriptionAPI = {
   cancelSubscription: (data) => apiClient.post('/subscriptions/cancel', data),
   verifyPayment: (data) => apiClient.post('/subscriptions/verify-payment', data),
   getPaymentHistory: () => apiClient.get('/subscriptions/payment-history'),
+};
+
+// Pricing APIs
+export const pricingAPI = {
+  list: (params) => apiClient.get('/pricing', { params }),
+  get: (id) => apiClient.get(`/pricing/${id}`),
 };
 
 // Legacy export for backward compatibility

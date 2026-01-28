@@ -230,16 +230,190 @@ module.exports = {
     }
   },
 
-  async login(req, res, next) {
+  async authenticate(req, res, next) {
     try {
-      const { email, password, company_id } = req.body;
+      const { email, password } = req.body;
       
       if (!email || !password) {
         return res.status(400).json({ message: 'Email and password are required' });
       }
 
-      // Log login attempt (without password)
-      console.log(`Login attempt for email: ${email}`);
+
+      
+      // Normalize email for search
+      const normalizedEmail = email.toLowerCase().trim();
+      
+      // Find user (same logic as login)
+      let user = await User.findOne({ 
+        where: { 
+          email: normalizedEmail 
+        } 
+      });
+      
+      if (!user) {
+        const { Op } = require('sequelize');
+        user = await User.findOne({ 
+          where: { 
+            email: { [Op.like]: normalizedEmail }
+          } 
+        });
+      }
+      
+      // Check tenant_master if user not found
+      if (!user) {
+        const masterModels = getMasterModels();
+        const tenant = await masterModels.TenantMaster.findOne({ where: { email } });
+        
+        if (tenant) {
+          user = await User.findOne({ 
+            where: { 
+              tenant_id: tenant.id 
+            } 
+          });
+          
+          if (!user) {
+            // Create user for existing tenant
+            const bcrypt = require('bcryptjs');
+            const password_hash = await bcrypt.hash(password, 10);
+            
+            user = await User.create({
+              email: normalizedEmail,
+              password: password_hash,
+              name: tenant.company_name || normalizedEmail,
+              tenant_id: tenant.id,
+              role: 'tenant_admin',
+            });
+          }
+        } else {
+          return res.status(401).json({ message: 'Invalid credentials' });
+        }
+      }
+
+      // Check if user is a Google OAuth user
+      if (user.google_id && !user.password) {
+        return res.status(401).json({ 
+          message: 'This account uses Google Sign-In. Please use Google to login.',
+          use_google_login: true 
+        });
+      }
+      
+      // Verify password
+      const passwordToCompare = user.password || user.password_hash || '';
+      if (!passwordToCompare) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+      const valid = await bcrypt.compare(password, passwordToCompare);
+      if (!valid) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+
+
+      // Get user's companies if they are a tenant user
+      let companies = [];
+      if (user.tenant_id && ['tenant_admin', 'user', 'accountant'].includes(user.role)) {
+        const masterModels = getMasterModels();
+        const companyRecords = await masterModels.Company.findAll({
+          where: { tenant_id: user.tenant_id, is_active: true },
+          attributes: ['id', 'company_name', 'company_type', 'db_provisioned'],
+          order: [['createdAt', 'DESC']],
+        });
+
+        companies = companyRecords.map(company => ({
+          id: company.id,
+          company_name: company.company_name,
+          company_type: company.company_type || 'private_limited',
+          db_provisioned: company.db_provisioned
+        }));
+      }
+
+      // Return authentication result
+      return res.status(200).json({
+        success: true,
+        message: 'Authentication successful',
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name || user.full_name,
+          tenant_id: user.tenant_id,
+          role: user.role
+        },
+        companies,
+        requiresCompanySelection: companies.length > 1,
+        needsCompanyCreation: companies.length === 0
+      });
+
+    } catch (error) {
+      console.error('Authentication error:', error);
+      return res.status(500).json({ 
+        message: 'Server error during authentication',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  },
+
+  async login(req, res, next) {
+    try {
+      const { email, password, company_id, authenticated_user_id } = req.body;
+      
+      // If authenticated_user_id is provided, skip authentication and proceed with company selection
+      if (authenticated_user_id && company_id) {
+        const user = await User.findByPk(authenticated_user_id);
+        if (!user) {
+          return res.status(401).json({ message: 'Invalid user session' });
+        }
+
+        // Get the selected company
+        const masterModels = getMasterModels();
+        const selectedCompany = await masterModels.Company.findOne({
+          where: { 
+            id: company_id, 
+            tenant_id: user.tenant_id, 
+            is_active: true 
+          }
+        });
+
+        if (!selectedCompany) {
+          return res.status(403).json({ message: 'Invalid company selection' });
+        }
+
+        if (!selectedCompany.db_provisioned) {
+          return res.status(503).json({
+            message: 'Company database is being provisioned',
+            company_id: selectedCompany.id,
+          });
+        }
+
+        // Generate JWT tokens
+        const tokens = await signTokens({
+          id: user.id,
+          tenant_id: user.tenant_id || null,
+          company_id: selectedCompany.id,
+          role: user.role,
+        });
+
+        return res.json({
+          user: {
+            id: user.id,
+            email: user.email,
+            tenant_id: user.tenant_id || null,
+            company_id: selectedCompany.id,
+            company_name: selectedCompany.company_name,
+            role: user.role,
+            full_name: user.name || user.full_name || null,
+            profile_image: user.profile_image || null,
+          },
+          ...tokens,
+        });
+      }
+
+      // Original login logic for backward compatibility
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required' });
+      }
+
+
       
       // Normalize email for search (lowercase, trim)
       const normalizedEmail = email.toLowerCase().trim();
@@ -264,12 +438,10 @@ module.exports = {
       
       // If user not found, check tenant_master table
       if (!user) {
-        console.log(`User not found in users table, checking tenant_master for email: ${email}`);
         const masterModels = getMasterModels();
         const tenant = await masterModels.TenantMaster.findOne({ where: { email } });
         
         if (tenant) {
-          console.log(`Tenant found in tenant_master: ${tenant.id}`);
           
           // Check if user exists by tenant_id (maybe email search failed due to case sensitivity)
           user = await User.findOne({ 
@@ -282,8 +454,6 @@ module.exports = {
             // User doesn't exist in users table but tenant exists
             // This means user creation failed during tenant creation
             // For existing tenants, create the user now with the provided password
-            console.log(`Tenant found (${tenant.id}) but user not created. Creating user now.`);
-            console.log(`Tenant email: ${tenant.email}, Company: ${tenant.company_name}`);
             
             try {
               const bcrypt = require('bcryptjs');
@@ -297,7 +467,6 @@ module.exports = {
                 role: 'tenant_admin',
               });
               
-              console.log(`User created successfully for tenant ${tenant.id}: ${user.id}`);
             } catch (createError) {
               console.error(`Failed to create user for tenant ${tenant.id}:`, createError);
               return res.status(500).json({ 
@@ -310,16 +479,13 @@ module.exports = {
               console.error(`Email mismatch: user email ${user.email} vs login email ${email}`);
               return res.status(401).json({ message: 'Invalid credentials' });
             }
-            console.log(`User found by tenant_id: ${user.id}, email: ${user.email}`);
           }
         } else {
-          console.log(`User not found in users table or tenant_master for email: ${email}`);
           return res.status(401).json({ message: 'Invalid credentials' });
         }
       }
 
-      console.log(`User found: ${user.id}, role: ${user.role}, tenant_id: ${user.tenant_id}`);
-      console.log(`User has password field: ${!!user.password}, has password_hash: ${!!user.password_hash}`);
+
       
       // Check if user is a Google OAuth user (has google_id but no password)
       if (user.google_id && !user.password) {
@@ -340,13 +506,10 @@ module.exports = {
       const valid = await bcrypt.compare(password, passwordToCompare);
       
       if (!valid) {
-        console.log(`Password comparison failed for user: ${user.id}`);
-        console.log(`Password hash stored (first 20 chars): ${passwordToCompare.substring(0, 20)}...`);
-        console.log(`Password being compared: ${password ? '[provided]' : '[missing]'}`);
         return res.status(401).json({ message: 'Invalid credentials' });
       }
 
-      console.log(`Login successful for user: ${user.id}, role: ${user.role}`);
+
 
       // If this is a tenant-side user, require a company selection (or auto-pick if only one)
       let selectedCompany = null;
@@ -564,6 +727,116 @@ module.exports = {
     }
   },
 
+  async checkCompanies(req, res, next) {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required' });
+      }
+
+
+      
+      // Normalize email for search
+      const normalizedEmail = email.toLowerCase().trim();
+      
+      // Find user (same logic as login)
+      let user = await User.findOne({ 
+        where: { 
+          email: normalizedEmail 
+        } 
+      });
+      
+      // If not found, try case-insensitive search
+      if (!user) {
+        const { Op } = require('sequelize');
+        user = await User.findOne({ 
+          where: { 
+            email: { [Op.like]: normalizedEmail }
+          } 
+        });
+      }
+      
+      // If user not found, check tenant_master table
+      if (!user) {
+        const masterModels = getMasterModels();
+        const tenant = await masterModels.TenantMaster.findOne({ where: { email } });
+        
+        if (tenant) {
+          user = await User.findOne({ 
+            where: { 
+              tenant_id: tenant.id 
+            } 
+          });
+          
+          if (!user) {
+            // Create user for existing tenant
+            const bcrypt = require('bcryptjs');
+            const password_hash = await bcrypt.hash(password, 10);
+            
+            user = await User.create({
+              email: normalizedEmail,
+              password: password_hash,
+              name: tenant.company_name || normalizedEmail,
+              tenant_id: tenant.id,
+              role: 'tenant_admin',
+            });
+          }
+        } else {
+          return res.status(401).json({ message: 'Invalid credentials' });
+        }
+      }
+
+      // Verify password
+      const passwordToCompare = user.password || user.password_hash || '';
+      if (!passwordToCompare) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+      const valid = await bcrypt.compare(password, passwordToCompare);
+      if (!valid) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+      // Get user's companies
+      let companies = [];
+      if (user.tenant_id && ['tenant_admin', 'user', 'accountant'].includes(user.role)) {
+        const masterModels = getMasterModels();
+        const companyRecords = await masterModels.Company.findAll({
+          where: { tenant_id: user.tenant_id, is_active: true },
+          attributes: ['id', 'company_name', 'company_type', 'db_provisioned'],
+          order: [['createdAt', 'DESC']],
+        });
+
+        companies = companyRecords.map(company => ({
+          id: company.id,
+          company_name: company.company_name,
+          company_type: company.company_type || 'private_limited',
+          db_provisioned: company.db_provisioned
+        }));
+      }
+
+      return res.status(200).json({
+        success: true,
+        companies,
+        user: {
+          id: user.id,
+          email: user.email,
+          tenant_id: user.tenant_id,
+          role: user.role,
+          name: user.name || user.full_name
+        }
+      });
+
+    } catch (error) {
+      console.error('Check companies error:', error);
+      return res.status(500).json({ 
+        message: 'Server error during company check',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  },
+
   async logout(req, res, next) {
     try {
       const { jti } = req.body;
@@ -708,14 +981,6 @@ module.exports = {
         is_active: user.is_active,
         last_login: user.last_login,
       };
-
-      // Debug logging
-      console.log('👤 Profile API Response:', {
-        userId: user.id,
-        profileImage: user.profile_image,
-        name: userData.name,
-        userData: userData
-      });
 
       return res.json({ 
         success: true,
@@ -879,24 +1144,14 @@ module.exports = {
   },
 
   async uploadProfileImage(req, res, next) {
-    console.log('🚀 uploadProfileImage function called');
     try {
       const userId = req.user_id || req.user?.id || req.user?.sub;
       
-      console.log('👤 Upload request details:', {
-        userId: userId,
-        hasFile: !!req.file,
-        fileName: req.file?.filename,
-        fileSize: req.file?.size
-      });
-      
       if (!userId) {
-        console.log('❌ No user ID found in request');
         return res.status(401).json({ message: 'User not authenticated' });
       }
 
       if (!req.file) {
-        console.log('❌ No file found in request');
         return res.status(400).json({ message: 'No file uploaded' });
       }
 
@@ -939,30 +1194,13 @@ module.exports = {
       const relativePath = path.relative(uploadDir, req.file.path);
       const profileImagePath = relativePath.replace(/\\/g, '/'); // Normalize path separators
 
-      // Debug logging
-      console.log('📸 Profile Image Upload:', {
-        userId: user.id,
-        originalPath: req.file.path,
-        relativePath: relativePath,
-        profileImagePath: profileImagePath,
-        uploadDir: uploadDir
-      });
-
       // Update user profile image
-      console.log('🔄 Updating user profile_image in database...');
       try {
         const updateResult = await user.update({ profile_image: profileImagePath });
-        console.log('📝 Database update result:', updateResult.dataValues);
 
         // Verify the update
         const updatedUser = await user.reload();
-        console.log('✅ Profile Image Updated:', {
-          userId: updatedUser.id,
-          savedProfileImage: updatedUser.profile_image,
-          updateSuccessful: updatedUser.profile_image === profileImagePath
-        });
       } catch (updateError) {
-        console.error('❌ Database update failed:', updateError);
         throw updateError;
       }
 
