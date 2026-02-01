@@ -120,21 +120,21 @@ class VoucherService {
     if (totalCGST > 0) {
       const cgst = await getOrCreateSystemLedger(
         { tenantModels, masterModels, tenant_id },
-        { ledgerCode: 'CGST_OUTPUT', ledgerName: 'GST Output - CGST', groupCode: 'DT' }
+        { ledgerCode: 'CGST', ledgerName: 'CGST', groupCode: 'DT' }
       );
       ledgerEntries.push({ ledger_id: cgst.id, debit_amount: 0, credit_amount: totalCGST, narration: 'CGST Output' });
     }
     if (totalSGST > 0) {
       const sgst = await getOrCreateSystemLedger(
         { tenantModels, masterModels, tenant_id },
-        { ledgerCode: 'SGST_OUTPUT', ledgerName: 'GST Output - SGST', groupCode: 'DT' }
+        { ledgerCode: 'SGST', ledgerName: 'SGST', groupCode: 'DT' }
       );
       ledgerEntries.push({ ledger_id: sgst.id, debit_amount: 0, credit_amount: totalSGST, narration: 'SGST Output' });
     }
     if (totalIGST > 0) {
       const igst = await getOrCreateSystemLedger(
         { tenantModels, masterModels, tenant_id },
-        { ledgerCode: 'IGST_OUTPUT', ledgerName: 'GST Output - IGST', groupCode: 'DT' }
+        { ledgerCode: 'IGST', ledgerName: 'IGST', groupCode: 'DT' }
       );
       ledgerEntries.push({ ledger_id: igst.id, debit_amount: 0, credit_amount: totalIGST, narration: 'IGST Output' });
     }
@@ -293,7 +293,7 @@ class VoucherService {
     // Perpetual inventory: debit inventory for taxable subtotal.
     const inventoryLedger = await getOrCreateSystemLedger(
       { tenantModels, masterModels, tenant_id },
-      { ledgerCode: 'INVENTORY', ledgerName: 'Stock-in-Hand', groupCode: 'INV' }
+      { ledgerCode: 'INVENTORY', ledgerName: 'Stock in Hand', groupCode: 'INV' }
     );
 
     const ledgerEntries = [
@@ -355,21 +355,21 @@ class VoucherService {
       if (totalCGST > 0) {
         const cgst = await getOrCreateSystemLedger(
           { tenantModels, masterModels, tenant_id },
-          { ledgerCode: 'CGST_INPUT', ledgerName: 'GST Input - CGST', groupCode: 'CA' }
+          { ledgerCode: 'CGST', ledgerName: 'CGST', groupCode: 'DT' }
         );
         ledgerEntries.push({ ledger_id: cgst.id, debit_amount: totalCGST, credit_amount: 0, narration: 'CGST Input' });
       }
       if (totalSGST > 0) {
         const sgst = await getOrCreateSystemLedger(
           { tenantModels, masterModels, tenant_id },
-          { ledgerCode: 'SGST_INPUT', ledgerName: 'GST Input - SGST', groupCode: 'CA' }
+          { ledgerCode: 'SGST', ledgerName: 'SGST', groupCode: 'DT' }
         );
         ledgerEntries.push({ ledger_id: sgst.id, debit_amount: totalSGST, credit_amount: 0, narration: 'SGST Input' });
       }
       if (totalIGST > 0) {
         const igst = await getOrCreateSystemLedger(
           { tenantModels, masterModels, tenant_id },
-          { ledgerCode: 'IGST_INPUT', ledgerName: 'GST Input - IGST', groupCode: 'CA' }
+          { ledgerCode: 'IGST', ledgerName: 'IGST', groupCode: 'DT' }
         );
         ledgerEntries.push({ ledger_id: igst.id, debit_amount: totalIGST, credit_amount: 0, narration: 'IGST Input' });
       }

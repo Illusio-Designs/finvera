@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     paddingBottom: 24, // Extra padding for safe area
     borderTopWidth: 0.5, // Made even thinner
     borderTopColor: '#f9fafb', // Made even lighter
-    shadowColor: '#000',
+    // shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 }, // Reduced shadow offset
     shadowOpacity: 0.03, // Further reduced shadow opacity
     shadowRadius: 4, // Further reduced shadow radius

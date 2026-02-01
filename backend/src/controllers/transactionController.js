@@ -31,6 +31,7 @@ module.exports = {
       req.body.sgst_amount = invoiceData.sgst_amount;
       req.body.igst_amount = invoiceData.igst_amount;
       req.body.cess_amount = invoiceData.cess_amount;
+      req.body.cogs_amount = invoiceData.cogs_amount;
       req.body.round_off = invoiceData.round_off;
       req.body.total_amount = invoiceData.total_amount;
       req.body.place_of_supply = invoiceData.place_of_supply;

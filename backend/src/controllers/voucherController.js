@@ -116,8 +116,8 @@ async function applyPurchaseInventory({ tenantModels }, voucher, voucherItems, t
 async function applySalesInventoryAndGetCogs({ tenantModels }, voucher, voucherItems, t) {
   logger.info(`Applying sales inventory for voucher ${voucher.id} with ${voucherItems.length} items`);
   
-  let totalCogs = 0;
-  
+  // Simplified sales inventory - no COGS calculation or stock reduction
+  // Just create stock movement records for tracking purposes
   for (const it of voucherItems) {
     const qty = toNum(it.quantity, 0);
     if (qty <= 0) continue;
@@ -130,46 +130,26 @@ async function applySalesInventoryAndGetCogs({ tenantModels }, voucher, voucherI
       variant_attributes: it.variant_attributes,
     }, t);
     
-    if (!inv) {
-      // Create a negative stock record if the item is not found
-      const { item: createdInv } = await findOrCreateInventoryItem(tenantModels, {
-        ...it,
-        item_name: it.item_description || it.item_name,
-        quantity_on_hand: -qty,
-      }, t);
-      logger.warn(`Created negative stock item: ${createdInv.item_name} with qty -${qty}`);
-    } else {
-      // Calculate COGS and update stock
-      const currentQty = toNum(inv.quantity_on_hand, 0);
-      const currentAvgCost = toNum(inv.avg_cost, 0);
-      const cogs = qty * currentAvgCost;
-      totalCogs += cogs;
-      
-      const newQty = currentQty - qty;
-      
-      await inv.update({
-        quantity_on_hand: newQty,
-      }, { transaction: t });
-
-      // Create stock movement record
+    if (inv) {
+      // Create stock movement record for tracking (no balance update)
       await tenantModels.StockMovement.create({
         inventory_item_id: inv.id,
         voucher_id: voucher.id,
         movement_type: 'OUT',
         quantity: -qty, // Negative for outward movement
-        rate: currentAvgCost,
-        amount: -cogs, // Negative for outward movement
+        rate: toNum(inv.avg_cost, 0),
+        amount: -(qty * toNum(inv.avg_cost, 0)), // Negative for outward movement
         reference_number: voucher.voucher_number,
         narration: `Sale to ${voucher.party_name || 'Customer'}`,
         movement_date: voucher.voucher_date,
         tenant_id: voucher.tenant_id,
       }, { transaction: t });
 
-      logger.info(`Updated inventory item ${inv.item_name}: qty ${currentQty} -> ${newQty}, COGS: ${cogs}`);
+      logger.info(`Created stock movement record for ${inv.item_name}: qty -${qty} (no balance update)`);
     }
   }
   
-  return totalCogs;
+  return 0; // No COGS calculated
 }
 
 
@@ -474,7 +454,7 @@ module.exports = {
         logger.info(`Applying purchase inventory updates for voucher ${voucher.voucher_number}`);
         await applyPurchaseInventory({ tenantModels: req.tenantModels }, voucher, voucherItems, transaction);
       } else if (voucherType === 'sales' || voucherType === 'sales_invoice') {
-        logger.info(`Applying sales inventory updates for voucher ${voucher.voucher_number}`);
+        logger.info(`Applying simplified sales inventory updates for voucher ${voucher.voucher_number}`);
         await applySalesInventoryAndGetCogs({ tenantModels: req.tenantModels }, voucher, voucherItems, transaction);
       } else {
         logger.info(`No inventory updates needed for voucher type: ${voucherType}`);
