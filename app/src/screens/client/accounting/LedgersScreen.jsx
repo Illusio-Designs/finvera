@@ -38,7 +38,11 @@ export default function LedgersScreen() {
         limit: 100
       });
       const data = response.data?.data || response.data || [];
-      setLedgers(Array.isArray(data) ? data : []);
+      const ledgersArray = Array.isArray(data) ? data : [];
+      
+      // Fetch ledgers with current balances
+      // Individual detailed balance fetching will happen when user views ledger details
+      setLedgers(ledgersArray);
     } catch (error) {
       console.error('Ledgers fetch error:', error);
       showNotification({
@@ -70,7 +74,7 @@ export default function LedgersScreen() {
 
   const fetchLedgerBalance = async (ledgerId) => {
     try {
-      const response = await accountingAPI.ledgers.get(ledgerId);
+      const response = await accountingAPI.ledgers.balance(ledgerId);
       setLedgerBalance(response.data?.data || response.data);
     } catch (error) {
       console.error('Error fetching ledger balance:', error);
@@ -239,7 +243,7 @@ export default function LedgersScreen() {
                   </View>
                   <View style={styles.ledgerAmount}>
                     <Text style={styles.ledgerBalance}>
-                      {formatCurrency(ledger.opening_balance || 0)}
+                      {formatCurrency(ledger.current_balance || ledger.opening_balance || 0)}
                     </Text>
                     <View style={[
                       styles.balanceTypeBadge,
@@ -335,13 +339,13 @@ export default function LedgersScreen() {
                     </Text>
                     <View style={[
                       styles.balanceTypeBadge,
-                      { backgroundColor: selectedLedger.balance_type === 'debit' ? '#fef2f2' : '#ecfdf5' }
+                      { backgroundColor: (ledgerBalance?.balance_type || selectedLedger.balance_type) === 'debit' ? '#fef2f2' : '#ecfdf5' }
                     ]}>
                       <Text style={[
                         styles.balanceTypeText,
-                        { color: selectedLedger.balance_type === 'debit' ? '#dc2626' : '#059669' }
+                        { color: (ledgerBalance?.balance_type || selectedLedger.balance_type) === 'debit' ? '#dc2626' : '#059669' }
                       ]}>
-                        {selectedLedger.balance_type === 'debit' ? 'Debit' : 'Credit'}
+                        {(ledgerBalance?.balance_type || selectedLedger.balance_type) === 'debit' ? 'Debit' : 'Credit'}
                       </Text>
                     </View>
                   </View>
@@ -349,10 +353,29 @@ export default function LedgersScreen() {
                   <View style={styles.balanceCard}>
                     <Text style={styles.balanceCardLabel}>Opening Balance</Text>
                     <Text style={styles.balanceCardValue}>
-                      {formatCurrency(selectedLedger.opening_balance || 0)}
+                      {formatCurrency(ledgerBalance?.opening_balance || selectedLedger.opening_balance || 0)}
                     </Text>
                   </View>
                 </View>
+
+                {/* Transaction Summary */}
+                {ledgerBalance && (ledgerBalance.total_debit > 0 || ledgerBalance.total_credit > 0) && (
+                  <View style={styles.balanceCards}>
+                    <View style={styles.balanceCard}>
+                      <Text style={styles.balanceCardLabel}>Total Debit</Text>
+                      <Text style={[styles.balanceCardValue, { color: '#dc2626' }]}>
+                        {formatCurrency(ledgerBalance.total_debit || 0)}
+                      </Text>
+                    </View>
+                    
+                    <View style={styles.balanceCard}>
+                      <Text style={styles.balanceCardLabel}>Total Credit</Text>
+                      <Text style={[styles.balanceCardValue, { color: '#059669' }]}>
+                        {formatCurrency(ledgerBalance.total_credit || 0)}
+                      </Text>
+                    </View>
+                  </View>
+                )}
 
                 {/* Ledger Information */}
                 <View style={styles.infoSection}>

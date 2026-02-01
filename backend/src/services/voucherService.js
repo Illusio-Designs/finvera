@@ -169,15 +169,40 @@ class VoucherService {
   }
 
   async createPurchaseInvoice(ctx, invoiceData) {
+    console.log('\n💼 === VOUCHER SERVICE: CREATE PURCHASE INVOICE ===');
+    console.log('📋 Input Data:', JSON.stringify(invoiceData, null, 2));
+    
     const { tenantModels, masterModels, company, tenant_id } = ctx;
     const { party_ledger_id, items = [], place_of_supply, is_reverse_charge = false, narration } = invoiceData || {};
 
+    console.log('🏢 Context:', {
+      tenant_id,
+      company_state: company?.state,
+      party_ledger_id,
+      items_count: items.length,
+      place_of_supply,
+      is_reverse_charge
+    });
+
     const partyLedger = await tenantModels.Ledger.findByPk(party_ledger_id);
     if (!partyLedger) throw new Error('Party ledger not found');
+    
+    console.log('👤 Party Ledger:', {
+      id: partyLedger.id,
+      ledger_name: partyLedger.ledger_name,
+      state: partyLedger.state
+    });
 
     const supplierState = partyLedger?.state || place_of_supply || 'Maharashtra';
     const recipientState = company?.state || 'Maharashtra';
     const pos = place_of_supply || recipientState;
+    
+    console.log('🌍 State Information:', {
+      supplierState,
+      recipientState,
+      place_of_supply: pos,
+      is_interstate: supplierState !== pos
+    });
 
     let subtotal = 0;
     let totalCGST = 0;
@@ -185,17 +210,36 @@ class VoucherService {
     let totalIGST = 0;
     let totalCess = 0;
 
-    const processedItems = (items || []).map((item) => {
+    console.log('\n📦 Processing Items:');
+    const processedItems = (items || []).map((item, index) => {
+      console.log(`\nItem ${index + 1}: ${item.item_name || item.item_description}`);
+      
       const quantity = toNum(item.quantity, 1);
       const rate = toNum(item.rate, 0);
       const discountPercent = toNum(item.discount_percent, 0);
       const discountAmount = (quantity * rate * discountPercent) / 100;
       const taxableAmount = quantity * rate - discountAmount;
 
+      console.log('  📊 Basic Calculations:', {
+        quantity,
+        rate,
+        discountPercent,
+        discountAmount,
+        taxableAmount
+      });
+
       subtotal += taxableAmount;
 
       const gstRate = toNum(item.gst_rate, 18);
+      console.log('  🧮 GST Calculation Input:', {
+        taxableAmount,
+        gstRate,
+        supplierState,
+        pos
+      });
+      
       const gst = calculateGST(taxableAmount, gstRate, supplierState, pos);
+      console.log('  💰 GST Calculation Result:', gst);
 
       totalCGST += gst.cgst;
       totalSGST += gst.sgst;
@@ -203,6 +247,15 @@ class VoucherService {
       totalCess += toNum(item.cess_amount, 0);
 
       const lineTotal = taxableAmount + gst.totalTax + toNum(item.cess_amount, 0);
+      
+      console.log('  📋 Final Item Totals:', {
+        taxableAmount,
+        cgst: gst.cgst,
+        sgst: gst.sgst,
+        igst: gst.igst,
+        lineTotal
+      });
+      
       return {
         inventory_item_id: item.inventory_item_id || null,
         warehouse_id: item.warehouse_id || null,
@@ -222,6 +275,14 @@ class VoucherService {
         cess_amount: toNum(item.cess_amount, 0),
         total_amount: lineTotal,
       };
+    });
+
+    console.log('\n💰 Invoice Totals:', {
+      subtotal,
+      totalCGST,
+      totalSGST,
+      totalIGST,
+      totalCess
     });
 
     const totalTax = totalCGST + totalSGST + totalIGST + totalCess;

@@ -721,5 +721,8 @@ module.exports = (sequelize) => {
 
   models.FinBoxConsent.belongsTo(models.User, { foreignKey: 'user_id' });
 
+  // Attach sequelize instance to models for transaction support
+  models.sequelize = sequelize;
+
   return models;
 };

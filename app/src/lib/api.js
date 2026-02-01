@@ -66,6 +66,7 @@ export const accountingAPI = {
     update: (id, data) => apiClient.put(`/accounting/ledgers/${id}`, data),
     delete: (id) => apiClient.delete(`/accounting/ledgers/${id}`),
     get: (id) => apiClient.get(`/accounting/ledgers/${id}`),
+    balance: (id, params) => apiClient.get(`/accounting/ledgers/${id}/balance`, { params }),
     statement: (id, params) => apiClient.get('/reports/ledger-statement', { 
       params: { ...params, ledger_id: id } 
     }),

@@ -60,6 +60,11 @@ export default function PurchaseInvoiceScreen() {
   const [suppliers, setSuppliers] = useState([]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  
+  // Debug loading state changes
+  useEffect(() => {
+    console.log('🔄 Loading state changed:', loading);
+  }, [loading]);
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [showItemModal, setShowItemModal] = useState(false);
   const [showCreateLedgerModal, setShowCreateLedgerModal] = useState(false);
@@ -72,16 +77,47 @@ export default function PurchaseInvoiceScreen() {
 
   const fetchSuppliers = useCallback(async () => {
     try {
+      console.log('\n👥 === FETCHING SUPPLIERS ===');
       const response = await accountingAPI.ledgers.list({ 
         limit: 1000
       });
       
       const data = response.data?.data || response.data || [];
+      console.log('📋 Raw ledgers data:', JSON.stringify(data, null, 2));
+      
+      console.log(`📊 Total ledgers fetched: ${data.length}`);
+      
+      // Log each ledger to see the structure
+      data.forEach((ledger, index) => {
+        console.log(`Ledger ${index + 1}:`, {
+          id: ledger.id,
+          ledger_name: ledger.ledger_name,
+          account_group_id: ledger.account_group_id,
+          account_group: ledger.account_group,
+          account_group_name: ledger.account_group?.name,
+          account_group_group_name: ledger.account_group?.group_name
+        });
+      });
       
       // Filter only for Sundry Creditors group
       const sundryCreditors = data.filter(ledger => {
         const groupName = ledger.account_group?.name?.toLowerCase() || '';
-        return groupName === 'sundry creditors';
+        const groupName2 = ledger.account_group?.group_name?.toLowerCase() || '';
+        
+        console.log(`🔍 Checking ledger "${ledger.ledger_name}":`, {
+          account_group_id: ledger.account_group_id,
+          groupName,
+          groupName2,
+          matches_name: groupName === 'sundry creditors',
+          matches_group_name: groupName2 === 'sundry creditors'
+        });
+        
+        return groupName === 'sundry creditors' || groupName2 === 'sundry creditors';
+      });
+      
+      console.log(`🎯 Filtered Sundry Creditors: ${sundryCreditors.length}`);
+      sundryCreditors.forEach(supplier => {
+        console.log(`- ${supplier.ledger_name} (Group: ${supplier.account_group?.name || supplier.account_group?.group_name})`);
       });
       
       setSuppliers(Array.isArray(sundryCreditors) ? sundryCreditors : []);
@@ -112,24 +148,49 @@ export default function PurchaseInvoiceScreen() {
   }, []);
 
   useEffect(() => {
+    console.log('🔄 PurchaseInvoiceScreen mounted');
+    console.log('📊 Initial loading state:', loading);
+    
     fetchSuppliers();
     fetchItems();
     
     // Generate voucher number
     const voucherNumber = generateVoucherNumber('purchase_invoice');
     setFormData(prev => ({ ...prev, voucher_number: voucherNumber }));
+    
+    console.log('✅ PurchaseInvoiceScreen initialization completed');
   }, [fetchSuppliers, fetchItems]);
 
   const handleSupplierSelect = (supplier) => {
+    console.log('\n👤 === SUPPLIER SELECTED ===');
+    console.log('🏢 Supplier Details:', {
+      id: supplier.id,
+      ledger_name: supplier.ledger_name || supplier.name,
+      account_group: supplier.account_group?.name,
+      phone: supplier.phone,
+      gstin: supplier.gstin
+    });
+
     setFormData(prev => ({
       ...prev,
       party_ledger_id: supplier.id,
       party_name: supplier.ledger_name || supplier.name
     }));
     setShowSupplierModal(false);
+    console.log('✅ === SUPPLIER SELECTION COMPLETED ===\n');
   };
 
   const handleLedgerCreated = (newLedger) => {
+    console.log('\n🆕 === NEW SUPPLIER CREATED ===');
+    console.log('🏢 New Supplier Details:', {
+      id: newLedger.id,
+      ledger_name: newLedger.ledger_name,
+      ledger_code: newLedger.ledger_code,
+      account_group_id: newLedger.account_group_id,
+      gstin: newLedger.gstin,
+      pan: newLedger.pan
+    });
+
     // Add to suppliers list
     setSuppliers(prev => [newLedger, ...prev]);
     
@@ -141,6 +202,8 @@ export default function PurchaseInvoiceScreen() {
       title: 'Success',
       message: 'Supplier created and selected successfully'
     });
+    
+    console.log('✅ === NEW SUPPLIER INTEGRATION COMPLETED ===\n');
   };
 
   const handleItemCreated = (newItem) => {
@@ -158,6 +221,14 @@ export default function PurchaseInvoiceScreen() {
   };
 
   const handleAddItem = (item) => {
+    console.log('\n➕ === ADDING ITEM TO INVOICE ===');
+    console.log('📦 Selected Item:', {
+      id: item.id,
+      item_name: item.item_name || item.name,
+      rate: item.rate,
+      gst_rate: item.gst_rate || item.tax_rate
+    });
+
     const newItem = {
       id: Date.now(),
       inventory_item_id: item.id,
@@ -171,24 +242,58 @@ export default function PurchaseInvoiceScreen() {
       total_amount: (item.rate || 0) + (((item.rate || 0) * (item.gst_rate || item.tax_rate || 0)) / 100)
     };
 
+    console.log('🔢 Calculated Item Details:', {
+      quantity: newItem.quantity,
+      rate: newItem.rate,
+      gst_rate: newItem.gst_rate,
+      taxable_amount: newItem.taxable_amount,
+      tax_amount: newItem.tax_amount,
+      total_amount: newItem.total_amount
+    });
+
+    const updatedItems = [...formData.items, newItem];
     setFormData(prev => ({
       ...prev,
-      items: [...prev.items, newItem]
+      items: updatedItems
     }));
     
-    calculateTotals([...formData.items, newItem]);
+    console.log('📊 Recalculating totals with', updatedItems.length, 'items');
+    calculateTotals(updatedItems);
     setShowItemModal(false);
+    console.log('✅ === ITEM ADDED SUCCESSFULLY ===\n');
   };
 
   const handleItemUpdate = (itemId, field, value) => {
+    console.log('\n🔄 === UPDATING ITEM ===');
+    console.log('📝 Update Details:', {
+      itemId,
+      field,
+      oldValue: formData.items.find(item => item.id === itemId)?.[field],
+      newValue: value
+    });
+
     const updatedItems = formData.items.map(item => {
       if (item.id === itemId) {
         const updatedItem = { ...item, [field]: parseFloat(value) || 0 };
         
         if (field === 'quantity' || field === 'rate') {
+          const oldTaxableAmount = updatedItem.taxable_amount;
+          const oldTaxAmount = updatedItem.tax_amount;
+          const oldTotalAmount = updatedItem.total_amount;
+
           updatedItem.taxable_amount = updatedItem.quantity * updatedItem.rate;
           updatedItem.tax_amount = (updatedItem.taxable_amount * updatedItem.gst_rate) / 100;
           updatedItem.total_amount = updatedItem.taxable_amount + updatedItem.tax_amount;
+
+          console.log('🧮 Recalculated Item:', {
+            item_name: updatedItem.item_name,
+            quantity: updatedItem.quantity,
+            rate: updatedItem.rate,
+            gst_rate: updatedItem.gst_rate,
+            taxable_amount: `${oldTaxableAmount} → ${updatedItem.taxable_amount}`,
+            tax_amount: `${oldTaxAmount} → ${updatedItem.tax_amount}`,
+            total_amount: `${oldTotalAmount} → ${updatedItem.total_amount}`
+          });
         }
         
         return updatedItem;
@@ -197,7 +302,9 @@ export default function PurchaseInvoiceScreen() {
     });
 
     setFormData(prev => ({ ...prev, items: updatedItems }));
+    console.log('📊 Recalculating invoice totals...');
     calculateTotals(updatedItems);
+    console.log('✅ === ITEM UPDATE COMPLETED ===\n');
   };
 
   const handleRemoveItem = (itemId) => {
@@ -207,9 +314,28 @@ export default function PurchaseInvoiceScreen() {
   };
 
   const calculateTotals = (items) => {
-    const subtotal = items.reduce((sum, item) => sum + (item.taxable_amount || 0), 0);
-    const taxAmount = items.reduce((sum, item) => sum + (item.tax_amount || 0), 0);
+    console.log('\n🧮 === CALCULATING INVOICE TOTALS ===');
+    console.log('📋 Items to calculate:', items.length);
+    
+    const subtotal = items.reduce((sum, item) => {
+      const itemSubtotal = item.taxable_amount || 0;
+      console.log(`  ${item.item_name}: ₹${itemSubtotal}`);
+      return sum + itemSubtotal;
+    }, 0);
+    
+    const taxAmount = items.reduce((sum, item) => {
+      const itemTax = item.tax_amount || 0;
+      console.log(`  ${item.item_name} Tax: ₹${itemTax} (${item.gst_rate}%)`);
+      return sum + itemTax;
+    }, 0);
+    
     const totalAmount = subtotal + taxAmount;
+
+    console.log('💰 Invoice Totals:', {
+      subtotal: `₹${subtotal.toFixed(2)}`,
+      tax_amount: `₹${taxAmount.toFixed(2)}`,
+      total_amount: `₹${totalAmount.toFixed(2)}`
+    });
 
     setFormData(prev => ({
       ...prev,
@@ -217,10 +343,41 @@ export default function PurchaseInvoiceScreen() {
       tax_amount: taxAmount,
       total_amount: totalAmount
     }));
+    
+    console.log('✅ === TOTALS CALCULATION COMPLETED ===\n');
+  };
+
+  // Debug function to check form state
+  const debugFormState = () => {
+    console.log('\n🔍 === FORM STATE DEBUG ===');
+    console.log('Loading:', loading);
+    console.log('Party Ledger ID:', formData.party_ledger_id);
+    console.log('Party Name:', formData.party_name);
+    console.log('Items Count:', formData.items.length);
+    console.log('Items:', formData.items);
+    console.log('Total Amount:', formData.total_amount);
+    console.log('Button should be disabled:', loading);
+    console.log('=== END FORM STATE DEBUG ===\n');
   };
 
   const handleSave = async (status = 'draft') => {
+    console.log('\n🚀 === PURCHASE INVOICE SAVE STARTED ===');
+    console.log('📋 Status:', status);
+    console.log('📋 Loading state at start:', loading);
+    console.log('📋 Form Data Summary:', {
+      voucher_number: formData.voucher_number,
+      voucher_date: formData.voucher_date,
+      party_ledger_id: formData.party_ledger_id,
+      party_name: formData.party_name,
+      status: status,
+      items_count: formData.items.length,
+      subtotal: formData.subtotal,
+      tax_amount: formData.tax_amount,
+      total_amount: formData.total_amount
+    });
+
     if (!formData.party_ledger_id) {
+      console.log('❌ Validation Failed: No supplier selected');
       showNotification({
         type: 'error',
         title: 'Validation Error',
@@ -230,6 +387,7 @@ export default function PurchaseInvoiceScreen() {
     }
 
     if (formData.items.length === 0) {
+      console.log('❌ Validation Failed: No items added');
       showNotification({
         type: 'error',
         title: 'Validation Error',
@@ -237,6 +395,22 @@ export default function PurchaseInvoiceScreen() {
       });
       return;
     }
+
+    console.log('✅ Validation Passed');
+    console.log('\n📦 Items Details:');
+    formData.items.forEach((item, index) => {
+      console.log(`Item ${index + 1}:`, {
+        id: item.id,
+        inventory_item_id: item.inventory_item_id,
+        item_name: item.item_name,
+        quantity: item.quantity,
+        rate: item.rate,
+        taxable_amount: item.taxable_amount,
+        gst_rate: item.gst_rate,
+        tax_amount: item.tax_amount,
+        total_amount: item.total_amount
+      });
+    });
 
     setLoading(true);
     try {
@@ -266,7 +440,15 @@ export default function PurchaseInvoiceScreen() {
         }))
       };
 
-      await voucherAPI.purchaseInvoice.create(payload);
+      console.log('\n📤 API Payload:', JSON.stringify(payload, null, 2));
+      console.log('\n🌐 Making API Call to:', 'voucherAPI.purchaseInvoice.create');
+      
+      const startTime = Date.now();
+      const response = await voucherAPI.purchaseInvoice.create(payload);
+      const endTime = Date.now();
+      
+      console.log(`\n✅ API Call Successful (${endTime - startTime}ms)`);
+      console.log('📥 API Response:', JSON.stringify(response.data, null, 2));
       
       showNotification({
         type: 'success',
@@ -274,14 +456,33 @@ export default function PurchaseInvoiceScreen() {
         message: `Purchase invoice ${status === 'draft' ? 'saved as draft' : 'posted'} successfully`
       });
       
+      console.log('🎉 === PURCHASE INVOICE SAVE COMPLETED ===\n');
       navigation.goBack();
     } catch (error) {
-      console.error('Save error:', error);
+      const endTime = Date.now();
+      console.log(`\n❌ API Call Failed (${endTime - (Date.now() - 1000)}ms)`);
+      console.error('💥 Save Error Details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          headers: error.config?.headers
+        }
+      });
+      
+      if (error.response?.data) {
+        console.log('🔍 Backend Error Response:', JSON.stringify(error.response.data, null, 2));
+      }
+      
       showNotification({
         type: 'error',
         title: 'Error',
         message: error.response?.data?.message || 'Failed to save purchase invoice'
       });
+      console.log('💔 === PURCHASE INVOICE SAVE FAILED ===\n');
     } finally {
       setLoading(false);
     }
@@ -424,10 +625,14 @@ export default function PurchaseInvoiceScreen() {
           <View style={styles.headerRow}>
             <View style={styles.headerInfo}>
               <Text style={styles.headerTitle}>Purchase Invoice</Text>
-              <Text style={styles.headerSubtitle}>Create new purchase invoice</Text>
+              <Text style={styles.headerSubtitle}>
+                {loading ? 'Processing...' : 'Create new purchase invoice'}
+              </Text>
             </View>
-            <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>DRAFT</Text>
+            <View style={[styles.statusBadge, loading && { backgroundColor: '#f59e0b' }]}>
+              <Text style={styles.statusText}>
+                {loading ? 'PROCESSING' : 'DRAFT'}
+              </Text>
             </View>
           </View>
         </View>
@@ -570,7 +775,10 @@ export default function PurchaseInvoiceScreen() {
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={[styles.actionButton, styles.draftButton]}
-            onPress={() => handleSave('draft')}
+            onPress={() => {
+              console.log('🔘 Draft button pressed, loading:', loading);
+              handleSave('draft');
+            }}
             disabled={loading}
           >
             <Ionicons name="save-outline" size={20} color="#f59e0b" />
@@ -580,8 +788,17 @@ export default function PurchaseInvoiceScreen() {
           </TouchableOpacity>
           
           <TouchableOpacity
-            style={[styles.actionButton, styles.postButton]}
-            onPress={() => handleSave('posted')}
+            style={[styles.actionButton, styles.postButton, loading && styles.disabledButton]}
+            onPress={() => {
+              console.log('🚨 BUTTON CLICKED! This should always show');
+              console.log('🔘 Post button pressed, loading:', loading);
+              debugFormState();
+              if (loading) {
+                console.log('⚠️ Button is disabled due to loading state');
+                return;
+              }
+              handleSave('posted');
+            }}
             disabled={loading}
           >
             <Ionicons name="checkmark-circle" size={20} color="white" />
@@ -1006,6 +1223,10 @@ const styles = StyleSheet.create({
   },
   postButton: {
     backgroundColor: '#3e60ab',
+  },
+  disabledButton: {
+    backgroundColor: '#9ca3af',
+    opacity: 0.6,
   },
   actionButtonText: {
     fontSize: 16,

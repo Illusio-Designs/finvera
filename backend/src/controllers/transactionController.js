@@ -47,19 +47,40 @@ module.exports = {
    */
   async createPurchaseInvoice(req, res, next) {
     try {
+      console.log('\n🏭 === PURCHASE INVOICE TRANSACTION STARTED ===');
+      console.log('📋 Request Body:', JSON.stringify(req.body, null, 2));
+      
       // Ensure tenant_id is available
       const tenantId = req.tenant_id || req.tenant?.id || req.company?.tenant_id;
       if (!tenantId) {
+        console.error('❌ No tenant ID found:', {
+          tenant_id: req.tenant_id,
+          tenant: req.tenant?.id,
+          company_tenant_id: req.company?.tenant_id
+        });
         return res.status(400).json({
           success: false,
           message: 'Tenant ID is required but not found in request context',
         });
       }
+      
+      console.log('✅ Tenant ID found:', tenantId);
+      console.log('🔧 Creating purchase invoice data...');
 
       const invoiceData = await voucherService.createPurchaseInvoice(
         { tenantModels: req.tenantModels, masterModels: req.masterModels, company: req.company, tenant_id: tenantId },
         req.body
       );
+      
+      console.log('📊 Invoice data created:', {
+        subtotal: invoiceData.subtotal,
+        cgst_amount: invoiceData.cgst_amount,
+        sgst_amount: invoiceData.sgst_amount,
+        igst_amount: invoiceData.igst_amount,
+        total_amount: invoiceData.total_amount,
+        items_count: invoiceData.items?.length || 0,
+        ledger_entries_count: invoiceData.ledger_entries?.length || 0
+      });
 
       req.body.voucher_type = 'Purchase';
       req.body.items = invoiceData.items;
@@ -74,8 +95,14 @@ module.exports = {
       req.body.place_of_supply = invoiceData.place_of_supply;
       req.body.is_reverse_charge = invoiceData.is_reverse_charge;
 
+      console.log('🔄 Calling voucher controller...');
       return voucherController.create(req, res, next);
     } catch (err) {
+      console.error('❌ === PURCHASE INVOICE TRANSACTION FAILED ===');
+      console.error('💥 Error details:', {
+        message: err.message,
+        stack: err.stack
+      });
       next(err);
     }
   },

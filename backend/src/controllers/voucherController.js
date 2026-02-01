@@ -8,6 +8,53 @@ function toNum(v, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+/**
+ * Update ledger balance based on ledger entries
+ */
+async function updateLedgerBalance(tenantModels, ledgerId, transaction) {
+  try {
+    const ledger = await tenantModels.Ledger.findByPk(ledgerId, { transaction });
+    if (!ledger) {
+      logger.warn(`Ledger not found: ${ledgerId}`);
+      return;
+    }
+
+    // Calculate total debits and credits from ledger entries
+    const entries = await tenantModels.VoucherLedgerEntry.findAll({
+      where: { ledger_id: ledgerId },
+      attributes: [
+        [tenantModels.sequelize.fn('SUM', tenantModels.sequelize.col('debit_amount')), 'total_debit'],
+        [tenantModels.sequelize.fn('SUM', tenantModels.sequelize.col('credit_amount')), 'total_credit']
+      ],
+      raw: true,
+      transaction
+    });
+
+    const totalDebit = parseFloat(entries[0]?.total_debit || 0);
+    const totalCredit = parseFloat(entries[0]?.total_credit || 0);
+    const openingBalance = parseFloat(ledger.opening_balance || 0);
+
+    // Calculate current balance based on ledger type
+    let currentBalance = openingBalance;
+    if (ledger.balance_type === 'debit' || ledger.opening_balance_type === 'Dr') {
+      currentBalance = openingBalance + totalDebit - totalCredit;
+    } else {
+      currentBalance = openingBalance + totalCredit - totalDebit;
+    }
+
+    // Update the ledger's current balance
+    await ledger.update({
+      current_balance: Math.abs(currentBalance)
+    }, { transaction });
+
+    logger.info(`Updated ledger balance for ${ledger.ledger_name}: ${Math.abs(currentBalance)}`);
+    return Math.abs(currentBalance);
+  } catch (error) {
+    logger.error(`Error updating ledger balance for ${ledgerId}:`, error);
+    throw error;
+  }
+}
+
 async function applyPurchaseInventory({ tenantModels }, voucher, voucherItems, t) {
   logger.info(`Applying purchase inventory for voucher ${voucher.id} with ${voucherItems.length} items`);
   
@@ -164,9 +211,30 @@ module.exports = {
   },
 
   async create(req, res, next) {
+    // Check if tenantModels and sequelize are available
+    if (!req.tenantModels || !req.tenantModels.sequelize) {
+      console.error('❌ Tenant models or sequelize not available:', {
+        tenantModels: !!req.tenantModels,
+        sequelize: !!req.tenantModels?.sequelize,
+        tenant_id: req.tenant_id
+      });
+      return res.status(500).json({
+        success: false,
+        message: 'Database connection not available. Please try again.'
+      });
+    }
+
     const transaction = await req.tenantModels.sequelize.transaction();
     
     try {
+      console.log('\n🚀 === VOUCHER CREATION STARTED ===');
+      console.log('📋 Request Body:', JSON.stringify(req.body, null, 2));
+      console.log('🏢 Tenant Info:', {
+        tenant_id: req.tenant_id,
+        tenant: req.tenant?.id,
+        company_tenant_id: req.company?.tenant_id
+      });
+
       // Ensure required fields are set
       if (!req.body.tenant_id) {
         req.body.tenant_id = req.tenant_id;
@@ -174,6 +242,7 @@ module.exports = {
       
       // Generate voucher number if not provided
       if (!req.body.voucher_number) {
+        console.log('🔢 Generating voucher number...');
         const voucherType = req.body.voucher_type || 'GEN';
         const date = new Date();
         const year = date.getFullYear();
@@ -198,44 +267,78 @@ module.exports = {
         }
         
         req.body.voucher_number = `${voucherType}${year}${month}${String(sequence).padStart(4, '0')}`;
+        console.log('✅ Generated voucher number:', req.body.voucher_number);
       }
       
       // Set default voucher_date if not provided
       if (!req.body.voucher_date) {
         req.body.voucher_date = new Date();
+        console.log('📅 Set default voucher date:', req.body.voucher_date);
       }
       
+      console.log('💾 Creating voucher record...');
       // Create the voucher
       const voucher = await req.tenantModels.Voucher.create(req.body, { transaction });
+      console.log('✅ Voucher created:', {
+        id: voucher.id,
+        voucher_number: voucher.voucher_number,
+        voucher_type: voucher.voucher_type,
+        total_amount: voucher.total_amount
+      });
       
       // Create voucher items if provided
       if (req.body.items && req.body.items.length > 0) {
-        const voucherItems = req.body.items.map(item => ({
-          ...item,
-          voucher_id: voucher.id,
-          tenant_id: req.tenant_id,
-        }));
+        console.log('📦 Creating voucher items...', req.body.items.length, 'items');
+        const voucherItems = req.body.items.map(item => {
+          // Calculate amount (quantity × rate) if not provided
+          const quantity = parseFloat(item.quantity || 0);
+          const rate = parseFloat(item.rate || 0);
+          const amount = item.amount || (quantity * rate);
+          
+          return {
+            ...item,
+            amount: amount, // Ensure amount field is present
+            voucher_id: voucher.id,
+            tenant_id: req.tenant_id,
+          };
+        });
         
+        console.log('📦 Voucher items data:', JSON.stringify(voucherItems, null, 2));
         await req.tenantModels.VoucherItem.bulkCreate(voucherItems, { transaction });
+        console.log('✅ Voucher items created successfully');
       }
       
       // Create ledger entries if provided
       if (req.body.ledger_entries && req.body.ledger_entries.length > 0) {
+        console.log('📊 Creating ledger entries...', req.body.ledger_entries.length, 'entries');
         const ledgerEntries = req.body.ledger_entries.map(entry => ({
           ...entry,
           voucher_id: voucher.id,
           tenant_id: req.tenant_id,
         }));
         
+        console.log('📊 Ledger entries data:', JSON.stringify(ledgerEntries, null, 2));
         await req.tenantModels.VoucherLedgerEntry.bulkCreate(ledgerEntries, { transaction });
+        console.log('✅ Ledger entries created successfully');
+        
+        // Update ledger balances for all affected ledgers
+        console.log('💰 Updating ledger balances...');
+        const uniqueLedgerIds = [...new Set(ledgerEntries.map(entry => entry.ledger_id))];
+        for (const ledgerId of uniqueLedgerIds) {
+          await updateLedgerBalance(req.tenantModels, ledgerId, transaction);
+        }
+        console.log('✅ Ledger balances updated successfully');
       }
       
       // If voucher is being posted immediately, apply inventory updates
       if (req.body.status === 'posted') {
+        console.log('🏭 Applying inventory updates for posted voucher...');
         await this.applyInventoryUpdates(req, voucher, transaction);
+        console.log('✅ Inventory updates applied successfully');
       }
       
       await transaction.commit();
+      console.log('✅ Transaction committed successfully');
       
       // Fetch the complete voucher with items and ledger entries
       const completeVoucher = await req.tenantModels.Voucher.findByPk(voucher.id, {
@@ -246,9 +349,25 @@ module.exports = {
         ]
       });
       
+      console.log('📤 Returning complete voucher:', {
+        id: completeVoucher.id,
+        voucher_number: completeVoucher.voucher_number,
+        items_count: completeVoucher.items?.length || 0,
+        ledger_entries_count: completeVoucher.ledgerEntries?.length || 0
+      });
+      console.log('🎉 === VOUCHER CREATION COMPLETED ===\n');
+      
       res.status(201).json({ data: completeVoucher });
     } catch (err) {
       await transaction.rollback();
+      console.error('❌ === VOUCHER CREATION FAILED ===');
+      console.error('💥 Error details:', {
+        message: err.message,
+        stack: err.stack,
+        tenant_id: req.tenant_id,
+        voucher_type: req.body.voucher_type
+      });
+      console.error('🔄 Transaction rolled back\n');
       logger.error('Error creating voucher:', err);
       next(err);
     }
@@ -315,6 +434,19 @@ module.exports = {
       
       // Update voucher status to posted
       await voucher.update({ status: 'posted' }, { transaction });
+      
+      // Update ledger balances for all ledger entries of this voucher
+      console.log('💰 Updating ledger balances for posted voucher...');
+      const ledgerEntries = await req.tenantModels.VoucherLedgerEntry.findAll({
+        where: { voucher_id: voucher.id },
+        transaction
+      });
+      
+      const uniqueLedgerIds = [...new Set(ledgerEntries.map(entry => entry.ledger_id))];
+      for (const ledgerId of uniqueLedgerIds) {
+        await updateLedgerBalance(req.tenantModels, ledgerId, transaction);
+      }
+      console.log('✅ Ledger balances updated for posted voucher');
       
       await transaction.commit();
       
