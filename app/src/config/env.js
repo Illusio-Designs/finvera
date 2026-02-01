@@ -25,6 +25,8 @@ export const API_CONFIG = {
   MAX_RETRY_ATTEMPTS: parseInt(getEnvVar('EXPO_PUBLIC_MAX_RETRY_ATTEMPTS', '3')),
   RETRY_DELAY: parseInt(getEnvVar('EXPO_PUBLIC_RETRY_DELAY', '1000')),
   REQUIRE_HTTPS: getEnvVar('EXPO_PUBLIC_REQUIRE_HTTPS', 'false') === 'true',
+  // Development fallback IPs (comma-separated list)
+  DEV_FALLBACK_IPS: getEnvVar('EXPO_PUBLIC_DEV_FALLBACK_IPS', ''),
 };
 
 // Security Configuration

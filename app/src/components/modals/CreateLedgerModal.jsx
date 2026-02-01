@@ -1,517 +1,569 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Modal, 
-  ScrollView, 
-  TouchableOpacity, 
-  TextInput
+import { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  FlatList
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Dropdown from '../ui/Dropdown';
-import { useNotification } from '../../contexts/NotificationContext';
 import { accountingAPI } from '../../lib/api';
+import { useNotification } from '../../contexts/NotificationContext';
+import PhoneInput from '../ui/PhoneInput';
+import { 
+  formatGSTIN, 
+  validateGSTIN, 
+  extractPANFromGSTIN, 
+  validatePAN,
+  formatPAN,
+  validatePhone 
+} from '../../utils/formatters';
 
 export default function CreateLedgerModal({ 
   visible, 
   onClose, 
-  onSuccess,
-  editData = null,
-  isEdit = false
+  onLedgerCreated,
+  defaultAccountGroupFilter = null, // Filter for specific account group types
+  title = 'Create New Ledger'
 }) {
   const { showNotification } = useNotification();
-  const [loading, setLoading] = useState(false);
-  const [accountGroups, setAccountGroups] = useState([]);
+  
   const [formData, setFormData] = useState({
     ledger_name: '',
     account_group_id: '',
-    opening_balance: '0',
-    balance_type: 'debit',
-    currency: 'INR',
-    description: '',
     gstin: '',
     pan: '',
     address: '',
     city: '',
     state: '',
     pincode: '',
-    country: 'India',
     phone: '',
-    email: ''
+    email: '',
+    opening_balance: 0,
+    balance_type: 'debit',
+    description: ''
   });
-  const [errors, setErrors] = useState({});
+
+  const [accountGroups, setAccountGroups] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showAccountGroupModal, setShowAccountGroupModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (visible) {
       fetchAccountGroups();
-      
-      // If editing, populate form with existing data
-      if (isEdit && editData) {
-        setFormData({
-          ledger_name: editData.ledger_name || '',
-          account_group_id: editData.account_group_id || '',
-          opening_balance: String(editData.opening_balance || 0),
-          balance_type: editData.balance_type || 'debit',
-          currency: editData.currency || 'INR',
-          description: editData.description || '',
-          gstin: editData.gstin || '',
-          pan: editData.pan || '',
-          address: editData.address || '',
-          city: editData.city || '',
-          state: editData.state || '',
-          pincode: editData.pincode || '',
-          country: editData.country || 'India',
-          phone: editData.phone || '',
-          email: editData.email || ''
-        });
-      }
     }
-  }, [visible, isEdit, editData]);
+  }, [visible]);
 
   const fetchAccountGroups = async () => {
     try {
       const response = await accountingAPI.accountGroups.list();
-      const groups = response.data?.data || response.data || [];
-      setAccountGroups(Array.isArray(groups) ? groups : []);
+      let groups = response.data?.data || response.data || [];
+      
+      // Apply filter if provided and not set to show all
+      if (defaultAccountGroupFilter && defaultAccountGroupFilter !== 'all') {
+        groups = groups.filter(group => {
+          const groupName = group.name?.toLowerCase() || '';
+          const groupNature = group.nature?.toLowerCase() || '';
+          
+          switch (defaultAccountGroupFilter) {
+            case 'supplier':
+              return groupNature === 'liability' || 
+                     groupName.includes('creditor') ||
+                     groupName.includes('supplier') ||
+                     groupName.includes('payable');
+            case 'customer':
+              return groupNature === 'asset' || 
+                     groupName.includes('debtor') ||
+                     groupName.includes('customer') ||
+                     groupName.includes('receivable');
+            default:
+              return true;
+          }
+        });
+      }
+      
+      setAccountGroups(groups);
     } catch (error) {
-      console.error('Error fetching account groups:', error);
-      // Fallback account groups
-      setAccountGroups([
-        { id: '1', name: 'Current Assets', group_code: 'CA', nature: 'asset' },
-        { id: '2', name: 'Current Liabilities', group_code: 'CL', nature: 'liability' },
-        { id: '3', name: 'Income', group_code: 'INC', nature: 'income' },
-        { id: '4', name: 'Expenses', group_code: 'EXP', nature: 'expense' },
-        { id: '5', name: 'Bank Accounts', group_code: 'BANK', nature: 'asset' },
-        { id: '6', name: 'Cash Accounts', group_code: 'CASH', nature: 'asset' },
-        { id: '7', name: 'Sundry Debtors', group_code: 'SD', nature: 'asset' },
-        { id: '8', name: 'Sundry Creditors', group_code: 'SC', nature: 'liability' }
-      ]);
+      console.error('Account groups fetch error:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to load account groups'
+      });
     }
   };
 
-  const validateForm = () => {
-    const newErrors = {};
+  const handleGSTINChange = (value) => {
+    const formattedGSTIN = formatGSTIN(value);
+    
+    // Update GSTIN
+    setFormData(prev => ({ ...prev, gstin: formattedGSTIN }));
+    
+    // Auto-extract PAN if GSTIN is valid and complete (15 characters)
+    if (formattedGSTIN.length === 15 && validateGSTIN(formattedGSTIN)) {
+      const extractedPAN = extractPANFromGSTIN(formattedGSTIN);
+      if (extractedPAN && validatePAN(extractedPAN)) {
+        setFormData(prev => ({ ...prev, pan: extractedPAN }));
+        
+        // Show success notification
+        showNotification({
+          type: 'success',
+          title: 'PAN Extracted',
+          message: `PAN ${extractedPAN} extracted from GSTIN`
+        });
+      }
+    }
+  };
 
+  const handlePANChange = (value) => {
+    const formattedPAN = formatPAN(value.toUpperCase());
+    setFormData(prev => ({ ...prev, pan: formattedPAN }));
+  };
+  const handleCreate = async () => {
+    // Validation
     if (!formData.ledger_name.trim()) {
-      newErrors.ledger_name = 'Ledger name is required';
-    }
-
-    if (!formData.account_group_id) {
-      newErrors.account_group_id = 'Account group is required';
-    }
-
-    if (formData.opening_balance && isNaN(parseFloat(formData.opening_balance))) {
-      newErrors.opening_balance = 'Opening balance must be a valid number';
-    }
-
-    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
-    }
-
-    if (formData.gstin && formData.gstin.length > 0 && formData.gstin.length !== 15) {
-      newErrors.gstin = 'GSTIN must be 15 characters long';
-    }
-
-    if (formData.pan && formData.pan.length > 0 && formData.pan.length !== 10) {
-      newErrors.pan = 'PAN must be 10 characters long';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async () => {
-    if (!validateForm()) {
       showNotification({
         type: 'error',
         title: 'Validation Error',
-        message: 'Please fix the errors in the form'
+        message: 'Please enter ledger name'
+      });
+      return;
+    }
+
+    if (!formData.account_group_id) {
+      showNotification({
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Please select an account group'
+      });
+      return;
+    }
+
+    // GSTIN validation
+    if (formData.gstin && !validateGSTIN(formData.gstin)) {
+      showNotification({
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Please enter a valid GSTIN (15 characters in correct format)'
+      });
+      return;
+    }
+
+    // PAN validation
+    if (formData.pan && !validatePAN(formData.pan)) {
+      showNotification({
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Please enter a valid PAN (10 characters: 5 letters + 4 digits + 1 letter)'
+      });
+      return;
+    }
+
+    // Phone validation
+    if (formData.phone && !validatePhone(formData.phone)) {
+      showNotification({
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Please enter a valid phone number'
       });
       return;
     }
 
     setLoading(true);
     try {
-      const submitData = {
+      const payload = {
         ...formData,
-        opening_balance: parseFloat(formData.opening_balance) || 0,
-        gstin: formData.gstin || null,
-        pan: formData.pan || null,
-        address: formData.address || null,
-        city: formData.city || null,
-        state: formData.state || null,
-        pincode: formData.pincode || null,
-        country: formData.country || null,
-        phone: formData.phone || null,
-        email: formData.email || null,
-        description: formData.description || null
+        opening_balance: parseFloat(formData.opening_balance) || 0
       };
 
-      let response;
-      if (isEdit && editData) {
-        response = await accountingAPI.ledgers.update(editData.id, submitData);
-        showNotification({
-          type: 'success',
-          title: 'Success',
-          message: 'Ledger updated successfully'
-        });
-      } else {
-        response = await accountingAPI.ledgers.create(submitData);
-        showNotification({
-          type: 'success',
-          title: 'Success',
-          message: 'Ledger created successfully'
-        });
+      const response = await accountingAPI.ledgers.create(payload);
+      const newLedger = response.data?.data || response.data;
+
+      showNotification({
+        type: 'success',
+        title: 'Success',
+        message: 'Ledger created successfully'
+      });
+
+      // Reset form
+      setFormData({
+        ledger_name: '',
+        account_group_id: '',
+        gstin: '',
+        pan: '',
+        address: '',
+        city: '',
+        state: '',
+        pincode: '',
+        phone: '',
+        email: '',
+        opening_balance: 0,
+        balance_type: 'debit',
+        description: ''
+      });
+
+      // Callback with new ledger
+      if (onLedgerCreated) {
+        onLedgerCreated(newLedger);
       }
 
-      if (onSuccess) {
-        onSuccess(response.data?.data || response.data);
-      }
-      
-      handleClose();
+      onClose();
     } catch (error) {
-      console.error(`${isEdit ? 'Update' : 'Create'} ledger error:`, error);
+      console.error('Create ledger error:', error);
       showNotification({
         type: 'error',
         title: 'Error',
-        message: error.response?.data?.message || `Failed to ${isEdit ? 'update' : 'create'} ledger`
+        message: error.response?.data?.message || 'Failed to create ledger'
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleClose = () => {
-    setFormData({
-      ledger_name: '',
-      account_group_id: '',
-      opening_balance: '0',
-      balance_type: 'debit',
-      currency: 'INR',
-      description: '',
-      gstin: '',
-      pan: '',
-      address: '',
-      city: '',
-      state: '',
-      pincode: '',
-      country: 'India',
-      phone: '',
-      email: ''
-    });
-    setErrors({});
-    onClose();
+  const handleAccountGroupSelect = (group) => {
+    setFormData(prev => ({ ...prev, account_group_id: group.id }));
+    setShowAccountGroupModal(false);
   };
 
-  const updateFormData = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: null }));
+  const filteredAccountGroups = accountGroups.filter(group =>
+    group.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    group.group_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    group.nature?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Sort account groups by nature and then by name for better organization
+  const sortedAccountGroups = filteredAccountGroups.sort((a, b) => {
+    // First sort by nature
+    if (a.nature !== b.nature) {
+      return (a.nature || '').localeCompare(b.nature || '');
     }
-  };
+    // Then sort by name within the same nature
+    return (a.name || '').localeCompare(b.name || '');
+  });
+
+  const selectedAccountGroup = accountGroups.find(g => g.id === formData.account_group_id);
+
+  const renderAccountGroupItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.accountGroupItem}
+      onPress={() => handleAccountGroupSelect(item)}
+    >
+      <View style={styles.accountGroupContent}>
+        <Text style={styles.accountGroupName}>{item.name}</Text>
+        <Text style={styles.accountGroupDetail}>
+          {item.group_code} • {item.nature?.toUpperCase() || 'N/A'}
+        </Text>
+        {item.parent_group && (
+          <Text style={styles.accountGroupParent}>
+            Under: {item.parent_group}
+          </Text>
+        )}
+      </View>
+      {formData.account_group_id === item.id && (
+        <Ionicons name="checkmark-circle" size={20} color="#10b981" />
+      )}
+    </TouchableOpacity>
+  );
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={handleClose}
-    >
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>
-            {isEdit ? 'Edit Ledger' : 'Create New Ledger'}
-          </Text>
-          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color="#6b7280" />
-          </TouchableOpacity>
-        </View>
+    <>
+      <Modal
+        visible={visible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={onClose}
+      >
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.title}>{title}</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color="#6b7280" />
+            </TouchableOpacity>
+          </View>
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Basic Information */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Basic Information</Text>
-            
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                Ledger Name <Text style={styles.required}>*</Text>
-              </Text>
-              <TextInput
-                style={[styles.input, errors.ledger_name && styles.inputError]}
-                value={formData.ledger_name}
-                onChangeText={(value) => updateFormData('ledger_name', value)}
-                placeholder="Enter ledger name"
-                placeholderTextColor="#9ca3af"
-              />
-              {errors.ledger_name && (
-                <Text style={styles.errorText}>{errors.ledger_name}</Text>
-              )}
-            </View>
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            <View style={styles.form}>
+              {/* Basic Information */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Basic Information</Text>
+                
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Ledger Name *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={formData.ledger_name}
+                    onChangeText={(value) => setFormData(prev => ({ ...prev, ledger_name: value }))}
+                    placeholder="Enter ledger name"
+                  />
+                </View>
 
-            <Dropdown
-              label="Account Group"
-              placeholder="Select account group"
-              value={formData.account_group_id}
-              onSelect={(value) => updateFormData('account_group_id', value)}
-              options={accountGroups}
-              getOptionValue={(option) => option.id}
-              getOptionLabel={(option) => option.name}
-              required
-              error={errors.account_group_id}
-              renderOption={(option, index, handleSelect) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.accountGroupOption,
-                    formData.account_group_id === option.id && styles.selectedAccountGroupOption
-                  ]}
-                  onPress={() => handleSelect(option)}
-                >
-                  <View style={styles.accountGroupInfo}>
-                    <Text style={[
-                      styles.accountGroupName,
-                      formData.account_group_id === option.id && styles.selectedAccountGroupName
-                    ]}>
-                      {option.name}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Account Group *</Text>
+                  <TouchableOpacity
+                    style={[styles.input, styles.selectInput]}
+                    onPress={() => setShowAccountGroupModal(true)}
+                  >
+                    <Text style={[styles.inputText, !selectedAccountGroup && styles.placeholder]}>
+                      {selectedAccountGroup ? 
+                        `${selectedAccountGroup.name} (${selectedAccountGroup.group_code})` : 
+                        'Select Account Group'
+                      }
                     </Text>
-                    <Text style={styles.accountGroupCode}>
-                      {option.group_code} • {option.nature}
-                    </Text>
-                  </View>
-                  {formData.account_group_id === option.id && (
-                    <Ionicons name="checkmark" size={20} color="#3e60ab" />
-                  )}
-                </TouchableOpacity>
-              )}
-            />
+                    <Ionicons name="chevron-down" size={20} color="#6b7280" />
+                  </TouchableOpacity>
+                </View>
 
-            <View style={styles.row}>
-              <View style={[styles.inputGroup, { flex: 2 }]}>
-                <Text style={styles.label}>Opening Balance</Text>
-                <TextInput
-                  style={[styles.input, errors.opening_balance && styles.inputError]}
-                  value={formData.opening_balance}
-                  onChangeText={(value) => updateFormData('opening_balance', value)}
-                  placeholder="0.00"
-                  keyboardType="numeric"
-                  placeholderTextColor="#9ca3af"
-                />
-                {errors.opening_balance && (
-                  <Text style={styles.errorText}>{errors.opening_balance}</Text>
-                )}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Description</Text>
+                  <TextInput
+                    style={[styles.input, styles.textArea]}
+                    value={formData.description}
+                    onChangeText={(value) => setFormData(prev => ({ ...prev, description: value }))}
+                    placeholder="Enter description (optional)"
+                    multiline
+                    numberOfLines={3}
+                  />
+                </View>
               </View>
 
-              <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>Type</Text>
-                <View style={styles.balanceTypeContainer}>
-                  <TouchableOpacity
-                    style={[
-                      styles.balanceTypeButton,
-                      formData.balance_type === 'debit' && styles.balanceTypeButtonSelected
-                    ]}
-                    onPress={() => updateFormData('balance_type', 'debit')}
-                  >
-                    <Text style={[
-                      styles.balanceTypeText,
-                      formData.balance_type === 'debit' && styles.balanceTypeTextSelected
-                    ]}>
-                      Dr
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.balanceTypeButton,
-                      formData.balance_type === 'credit' && styles.balanceTypeButtonSelected
-                    ]}
-                    onPress={() => updateFormData('balance_type', 'credit')}
-                  >
-                    <Text style={[
-                      styles.balanceTypeText,
-                      formData.balance_type === 'credit' && styles.balanceTypeTextSelected
-                    ]}>
-                      Cr
-                    </Text>
-                  </TouchableOpacity>
+              {/* Contact Information */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Contact Information</Text>
+                
+                <View style={styles.inputRow}>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>GSTIN</Text>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        formData.gstin && formData.gstin.length === 15 && validateGSTIN(formData.gstin) && styles.validInput,
+                        formData.gstin && formData.gstin.length > 0 && formData.gstin.length < 15 && styles.incompleteInput
+                      ]}
+                      value={formData.gstin}
+                      onChangeText={handleGSTINChange}
+                      placeholder="Enter GSTIN (15 characters)"
+                      maxLength={15}
+                      autoCapitalize="characters"
+                    />
+                    {formData.gstin && formData.gstin.length === 15 && validateGSTIN(formData.gstin) && (
+                      <View style={styles.validationIndicator}>
+                        <Ionicons name="checkmark-circle" size={16} color="#10b981" />
+                        <Text style={styles.validationText}>Valid GSTIN</Text>
+                      </View>
+                    )}
+                    {formData.gstin && formData.gstin.length > 0 && formData.gstin.length < 15 && (
+                      <View style={styles.validationIndicator}>
+                        <Ionicons name="information-circle" size={16} color="#f59e0b" />
+                        <Text style={[styles.validationText, { color: '#f59e0b' }]}>
+                          {15 - formData.gstin.length} characters remaining
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>PAN</Text>
+                    <TextInput
+                      style={[styles.input, formData.pan && styles.panExtracted]}
+                      value={formData.pan}
+                      onChangeText={handlePANChange}
+                      placeholder="Enter PAN (auto-filled from GSTIN)"
+                      maxLength={10}
+                      autoCapitalize="characters"
+                    />
+                    {formData.gstin && formData.gstin.length === 15 && formData.pan && (
+                      <View style={styles.panIndicator}>
+                        <Ionicons name="checkmark-circle" size={16} color="#10b981" />
+                        <Text style={styles.panIndicatorText}>Auto-extracted</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Address</Text>
+                  <TextInput
+                    style={[styles.input, styles.textArea]}
+                    value={formData.address}
+                    onChangeText={(value) => setFormData(prev => ({ ...prev, address: value }))}
+                    placeholder="Enter address"
+                    multiline
+                    numberOfLines={3}
+                  />
+                </View>
+
+                <View style={styles.inputRow}>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>City</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={formData.city}
+                      onChangeText={(value) => setFormData(prev => ({ ...prev, city: value }))}
+                      placeholder="Enter city"
+                    />
+                  </View>
+                  
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>State</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={formData.state}
+                      onChangeText={(value) => setFormData(prev => ({ ...prev, state: value }))}
+                      placeholder="Enter state"
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inputRow}>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Pincode</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={formData.pincode}
+                      onChangeText={(value) => setFormData(prev => ({ ...prev, pincode: value }))}
+                      placeholder="Enter pincode"
+                      keyboardType="numeric"
+                    />
+                  </View>
+                  
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Phone</Text>
+                    <PhoneInput
+                      value={formData.phone}
+                      onChangeText={(value) => setFormData(prev => ({ ...prev, phone: value }))}
+                      placeholder="Enter phone number"
+                      defaultCountry="IN"
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Email</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={formData.email}
+                    onChangeText={(value) => setFormData(prev => ({ ...prev, email: value }))}
+                    placeholder="Enter email"
+                    keyboardType="email-address"
+                  />
+                </View>
+              </View>
+
+              {/* Opening Balance */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Opening Balance</Text>
+                
+                <View style={styles.inputRow}>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Opening Balance</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={formData.opening_balance.toString()}
+                      onChangeText={(value) => setFormData(prev => ({ 
+                        ...prev, 
+                        opening_balance: parseFloat(value) || 0 
+                      }))}
+                      placeholder="0.00"
+                      keyboardType="numeric"
+                    />
+                  </View>
+                  
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Balance Type</Text>
+                    <TouchableOpacity
+                      style={[styles.input, styles.selectInput]}
+                      onPress={() => {
+                        Alert.alert(
+                          'Select Balance Type',
+                          'Choose the balance type',
+                          [
+                            { 
+                              text: 'Debit', 
+                              onPress: () => setFormData(prev => ({ ...prev, balance_type: 'debit' })) 
+                            },
+                            { 
+                              text: 'Credit', 
+                              onPress: () => setFormData(prev => ({ ...prev, balance_type: 'credit' })) 
+                            },
+                            { text: 'Cancel', style: 'cancel' }
+                          ]
+                        );
+                      }}
+                    >
+                      <Text style={styles.inputText}>
+                        {formData.balance_type === 'credit' ? 'Credit' : 'Debit'}
+                      </Text>
+                      <Ionicons name="chevron-down" size={20} color="#6b7280" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Description</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                value={formData.description}
-                onChangeText={(value) => updateFormData('description', value)}
-                placeholder="Enter description (optional)"
-                multiline
-                numberOfLines={3}
-                placeholderTextColor="#9ca3af"
-              />
-            </View>
-          </View>
-
-          {/* Contact Information */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Contact Information</Text>
-            
-            <View style={styles.row}>
-              <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>GSTIN</Text>
-                <TextInput
-                  style={[styles.input, errors.gstin && styles.inputError]}
-                  value={formData.gstin}
-                  onChangeText={(value) => updateFormData('gstin', value.toUpperCase())}
-                  placeholder="15-digit GSTIN"
-                  maxLength={15}
-                  placeholderTextColor="#9ca3af"
-                />
-                {errors.gstin && (
-                  <Text style={styles.errorText}>{errors.gstin}</Text>
-                )}
-              </View>
-
-              <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>PAN</Text>
-                <TextInput
-                  style={[styles.input, errors.pan && styles.inputError]}
-                  value={formData.pan}
-                  onChangeText={(value) => updateFormData('pan', value.toUpperCase())}
-                  placeholder="10-digit PAN"
-                  maxLength={10}
-                  placeholderTextColor="#9ca3af"
-                />
-                {errors.pan && (
-                  <Text style={styles.errorText}>{errors.pan}</Text>
-                )}
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Address</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                value={formData.address}
-                onChangeText={(value) => updateFormData('address', value)}
-                placeholder="Enter address"
-                multiline
-                numberOfLines={2}
-                placeholderTextColor="#9ca3af"
-              />
-            </View>
-
-            <View style={styles.row}>
-              <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>City</Text>
-                <TextInput
-                  style={styles.input}
-                  value={formData.city}
-                  onChangeText={(value) => updateFormData('city', value)}
-                  placeholder="City"
-                  placeholderTextColor="#9ca3af"
-                />
-              </View>
-
-              <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>State</Text>
-                <TextInput
-                  style={styles.input}
-                  value={formData.state}
-                  onChangeText={(value) => updateFormData('state', value)}
-                  placeholder="State"
-                  placeholderTextColor="#9ca3af"
-                />
-              </View>
-            </View>
-
-            <View style={styles.row}>
-              <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>Pincode</Text>
-                <TextInput
-                  style={styles.input}
-                  value={formData.pincode}
-                  onChangeText={(value) => updateFormData('pincode', value)}
-                  placeholder="Pincode"
-                  keyboardType="numeric"
-                  maxLength={6}
-                  placeholderTextColor="#9ca3af"
-                />
-              </View>
-
-              <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>Country</Text>
-                <TextInput
-                  style={styles.input}
-                  value={formData.country}
-                  onChangeText={(value) => updateFormData('country', value)}
-                  placeholder="Country"
-                  placeholderTextColor="#9ca3af"
-                />
-              </View>
-            </View>
-
-            <View style={styles.row}>
-              <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>Phone</Text>
-                <TextInput
-                  style={styles.input}
-                  value={formData.phone}
-                  onChangeText={(value) => updateFormData('phone', value)}
-                  placeholder="Phone number"
-                  keyboardType="phone-pad"
-                  placeholderTextColor="#9ca3af"
-                />
-              </View>
-
-              <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>Email</Text>
-                <TextInput
-                  style={[styles.input, errors.email && styles.inputError]}
-                  value={formData.email}
-                  onChangeText={(value) => updateFormData('email', value)}
-                  placeholder="Email address"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  placeholderTextColor="#9ca3af"
-                />
-                {errors.email && (
-                  <Text style={styles.errorText}>{errors.email}</Text>
-                )}
-              </View>
-            </View>
-          </View>
-        </ScrollView>
-
-        <View style={styles.footer}>
-          <TouchableOpacity 
-            style={styles.cancelButton} 
-            onPress={handleClose}
-            disabled={loading}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.submitButton, loading && styles.submitButtonDisabled]} 
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? (
-              <Text style={styles.submitButtonText}>
-                {isEdit ? 'Updating...' : 'Creating...'}
-              </Text>
-            ) : (
-              <>
-                <Ionicons name="checkmark" size={16} color="white" />
-                <Text style={styles.submitButtonText}>
-                  {isEdit ? 'Update Ledger' : 'Create Ledger'}
+            <View style={styles.actions}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.cancelButton]}
+                onPress={onClose}
+              >
+                <Text style={[styles.actionButtonText, { color: '#6b7280' }]}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.actionButton, styles.createButton]}
+                onPress={handleCreate}
+                disabled={loading}
+              >
+                <Text style={styles.actionButtonText}>
+                  {loading ? 'Creating...' : 'Create Ledger'}
                 </Text>
-              </>
-            )}
-          </TouchableOpacity>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+
+      {/* Account Group Selection Modal */}
+      <Modal
+        visible={showAccountGroupModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowAccountGroupModal(false)}
+      >
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Select Account Group</Text>
+            <TouchableOpacity 
+              onPress={() => setShowAccountGroupModal(false)} 
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color="#6b7280" />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.searchContainer}>
+            <Ionicons name="search" size={20} color="#6b7280" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by name, code, or nature..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+          
+          <FlatList
+            data={sortedAccountGroups}
+            renderItem={renderAccountGroupItem}
+            keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
+            style={styles.accountGroupList}
+          />
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -524,8 +576,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    padding: 16,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
@@ -541,157 +592,179 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+  },
+  form: {
+    padding: 16,
   },
   section: {
-    marginVertical: 16,
+    marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 16,
+    fontFamily: 'Agency',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    gap: 12,
   },
   inputGroup: {
+    flex: 1,
     marginBottom: 16,
   },
-  label: {
+  inputLabel: {
     fontSize: 14,
     fontWeight: '500',
     color: '#374151',
-    fontFamily: 'Agency',
     marginBottom: 8,
-  },
-  required: {
-    color: '#dc2626',
+    fontFamily: 'Agency',
   },
   input: {
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    padding: 12,
+    fontSize: 16,
+    color: '#111827',
+    backgroundColor: 'white',
+    fontFamily: 'Agency',
+  },
+  selectInput: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  inputText: {
     fontSize: 16,
     color: '#111827',
     fontFamily: 'Agency',
-    backgroundColor: 'white',
   },
-  inputError: {
-    borderColor: '#dc2626',
+  placeholder: {
+    color: '#9ca3af',
   },
   textArea: {
     height: 80,
     textAlignVertical: 'top',
   },
-  errorText: {
-    fontSize: 12,
-    color: '#dc2626',
-    fontFamily: 'Agency',
-    marginTop: 4,
-  },
-  row: {
+  actions: {
     flexDirection: 'row',
     gap: 12,
+    padding: 16,
+    paddingTop: 0,
   },
-  // Account Group Option Styles
-  accountGroupOption: {
+  actionButton: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  createButton: {
+    backgroundColor: '#3e60ab',
+  },
+  actionButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
+    fontFamily: 'Agency',
+  },
+  searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    backgroundColor: 'white',
+    margin: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    gap: 8,
   },
-  selectedAccountGroupOption: {
-    backgroundColor: '#f0f4ff',
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#111827',
+    fontFamily: 'Agency',
   },
-  accountGroupInfo: {
+  accountGroupList: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  accountGroupItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  accountGroupContent: {
     flex: 1,
   },
   accountGroupName: {
     fontSize: 16,
+    fontWeight: '500',
     color: '#111827',
+    marginBottom: 4,
+    fontFamily: 'Agency',
+  },
+  accountGroupDetail: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontFamily: 'Agency',
+  },
+  accountGroupParent: {
+    fontSize: 12,
+    color: '#9ca3af',
+    fontStyle: 'italic',
+    marginTop: 2,
+    fontFamily: 'Agency',
+  },
+  panExtracted: {
+    borderColor: '#10b981',
+    backgroundColor: '#f0fdf4',
+  },
+  panIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 4,
+  },
+  panIndicatorText: {
+    fontSize: 12,
+    color: '#10b981',
     fontFamily: 'Agency',
     fontWeight: '500',
-    marginBottom: 2,
   },
-  selectedAccountGroupName: {
-    color: '#3e60ab',
-    fontWeight: '600',
+  validInput: {
+    borderColor: '#10b981',
+    backgroundColor: '#f0fdf4',
   },
-  accountGroupCode: {
+  incompleteInput: {
+    borderColor: '#f59e0b',
+    backgroundColor: '#fffbeb',
+  },
+  validationIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 4,
+  },
+  validationText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#10b981',
     fontFamily: 'Agency',
-  },
-  balanceTypeContainer: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    backgroundColor: 'white',
-  },
-  balanceTypeButton: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-  },
-  balanceTypeButtonSelected: {
-    backgroundColor: '#3e60ab',
-  },
-  balanceTypeText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6b7280',
-    fontFamily: 'Agency',
-  },
-  balanceTypeTextSelected: {
-    color: 'white',
-  },
-  footer: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: 'white',
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    gap: 12,
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    alignItems: 'center',
-    backgroundColor: 'white',
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6b7280',
-    fontFamily: 'Agency',
-  },
-  submitButton: {
-    flex: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: '#3e60ab',
-    gap: 8,
-  },
-  submitButtonDisabled: {
-    backgroundColor: '#9ca3af',
-  },
-  submitButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    fontWeight: '500',
   },
 });

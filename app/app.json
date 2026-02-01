@@ -102,10 +102,6 @@
       "eas": {
         "projectId": "c01c18e3-b193-4f24-ae44-3e5bf7c72736"
       },
-      "EXPO_PUBLIC_API_URL": "http://192.168.1.39:3000/api",
-      "EXPO_PUBLIC_API_BASE_URL": "http://192.168.1.39:3000",
-      "EXPO_PUBLIC_UPLOADS_BASE_URL": "http://192.168.1.39:3000",
-      "EXPO_PUBLIC_PAYLOAD_ENCRYPTION_KEY": "finvera-default-encryption-key-change-this-in-production",
       "EXPO_PUBLIC_APP_NAME": "Finvera Mobile",
       "EXPO_PUBLIC_APP_VERSION": "1.0.0",
       "EXPO_PUBLIC_COMPANY_NAME": "Finvera Solutions",
@@ -137,7 +133,17 @@
       "EXPO_PUBLIC_DEFAULT_TIMEZONE": "Asia/Kolkata",
       "EXPO_PUBLIC_DEFAULT_GST_RATE": "18",
       "EXPO_PUBLIC_GST_FILING_REMINDER_DAYS": "7",
-      "EXPO_PUBLIC_FINANCIAL_YEAR_START_MONTH": "4"
+      "EXPO_PUBLIC_FINANCIAL_YEAR_START_MONTH": "4",
+      "EXPO_PUBLIC_API_URL": "http://192.168.1.39:3000/api",
+      "EXPO_PUBLIC_API_BASE_URL": "http://192.168.1.39:3000",
+      "EXPO_PUBLIC_UPLOADS_BASE_URL": "http://192.168.1.39:3000",
+      "EXPO_PUBLIC_DEV_FALLBACK_IPS": "10.230.131.128,192.168.1.100,192.168.0.100,192.168.0.103",
+      "EXPO_PUBLIC_PAYLOAD_ENCRYPTION_KEY": "finvera-default-encryption-key-change-this-in-production",
+      "EXPO_PUBLIC_DEBUG_NAVIGATION": "false",
+      "EXPO_PUBLIC_ENABLE_ANALYTICS": "false",
+      "EXPO_PUBLIC_ENABLE_CRASH_REPORTING": "false",
+      "EXPO_PUBLIC_USE_MOCK_DATA": "false",
+      "EXPO_PUBLIC_REQUIRE_HTTPS": "false"
     },
     "owner": "rishisoni",
     "plugins": [

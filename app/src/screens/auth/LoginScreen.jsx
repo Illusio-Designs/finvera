@@ -6,7 +6,7 @@ import { authAPI } from '../../lib/api.js';
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { STORAGE_CONFIG, buildStorageKey } from '../../config/env';
+import { STORAGE_CONFIG, buildStorageKey, API_CONFIG } from '../../config/env';
 
 /**
  * LoginScreen with integrated company selection
@@ -228,7 +228,7 @@ export default function LoginScreen() {
 
   const handleGoogleLogin = async () => {
     try {
-      const apiUrl = __DEV__ ? 'http://192.168.0.103:3000' : 'https://api.finvera.solutions';
+      const apiUrl = API_CONFIG.BASE_URL;
       const googleAuthUrl = `${apiUrl}/auth/google`;
       
       // Open Google OAuth in browser
