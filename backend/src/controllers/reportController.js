@@ -112,61 +112,204 @@ module.exports = {
       const from = from_date || new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0, 10);
       const to = to_date || new Date().toISOString().slice(0, 10);
 
+      console.log(`\n📊 === GENERATING TALLY-STYLE PROFIT & LOSS STATEMENT ===`);
+      console.log(`📅 Period: ${from} to ${to}`);
+      console.log(`🏢 Tenant: ${req.tenant_id}`);
+
       const ledgers = await req.tenantModels.Ledger.findAll({ where: { is_active: true } });
       const groupMap = await loadGroupMap(req.masterModels, ledgers);
       const moveMap = await movementByLedger(req.tenantModels, { fromDate: from, toDate: to });
 
-      const incomeByGroup = new Map();
-      const expenseByGroup = new Map();
+      // Get opening and closing stock values
+      const stockLedgers = ledgers.filter(l => {
+        const group = groupMap.get(l.account_group_id);
+        return group && group.group_code === 'INV'; // Stock-in-Hand group
+      });
+
+      let openingStock = 0;
+      let closingStock = 0;
+      
+      for (const stockLedger of stockLedgers) {
+        // Opening stock = opening balance
+        openingStock += toNum(stockLedger.opening_balance, 0);
+        // Closing stock = current balance
+        closingStock += toNum(stockLedger.current_balance, 0);
+      }
+
+      // Categorize accounts by group
+      const salesAccounts = [];
+      const purchaseAccounts = [];
+      const directIncomes = [];
+      const directExpenses = [];
+      const indirectIncomes = [];
+      const indirectExpenses = [];
 
       for (const ledger of ledgers) {
         const group = groupMap.get(ledger.account_group_id);
         if (!group) continue;
 
         const move = moveMap.get(ledger.id) || { debit: 0, credit: 0 };
-        const movementSigned = move.debit - move.credit; // debit-positive convention
+        const movementSigned = move.debit - move.credit;
+
+        // Skip stock accounts - handled separately
+        if (group.group_code === 'INV') continue;
 
         if (group.nature === 'income') {
           const amt = -movementSigned; // income increases on credit
           if (amt <= 0.009) continue;
-          incomeByGroup.set(group.id, (incomeByGroup.get(group.id) || 0) + amt);
+
+          const accountData = {
+            ledger_name: ledger.ledger_name,
+            ledger_code: ledger.ledger_code,
+            amount: parseFloat(amt.toFixed(2)),
+            group_code: group.group_code,
+            group_name: group.name
+          };
+
+          if (group.group_code === 'SAL') {
+            salesAccounts.push(accountData);
+          } else if (group.group_code === 'DIR_INC') {
+            directIncomes.push(accountData);
+          } else if (group.group_code === 'IND_INC') {
+            indirectIncomes.push(accountData);
+          }
         } else if (group.nature === 'expense') {
           const amt = movementSigned; // expense increases on debit
-          if (amt <= 0.009) continue;
-          expenseByGroup.set(group.id, (expenseByGroup.get(group.id) || 0) + amt);
+          
+          // Handle Round Off specially (can be positive or negative)
+          if (ledger.ledger_name.toLowerCase().includes('round')) {
+            if (Math.abs(amt) > 0.009) {
+              const roundOffData = {
+                ledger_name: ledger.ledger_name,
+                ledger_code: ledger.ledger_code,
+                amount: parseFloat(amt.toFixed(2)),
+                group_code: group.group_code,
+                group_name: group.name,
+                is_round_off: true,
+                note: amt > 0 ? 'Round off expense' : 'Round off income'
+              };
+              indirectExpenses.push(roundOffData);
+            }
+          } else if (amt > 0.009) {
+            const accountData = {
+              ledger_name: ledger.ledger_name,
+              ledger_code: ledger.ledger_code,
+              amount: parseFloat(amt.toFixed(2)),
+              group_code: group.group_code,
+              group_name: group.name
+            };
+
+            if (group.group_code === 'PUR') {
+              purchaseAccounts.push(accountData);
+            } else if (group.group_code === 'DIR_EXP') {
+              directExpenses.push(accountData);
+            } else if (group.group_code === 'IND_EXP') {
+              indirectExpenses.push(accountData);
+            }
+          }
         }
       }
 
-      const income = [...incomeByGroup.entries()].map(([groupId, amount]) => {
-        const g = groupMap.get(groupId);
-        return {
-          group_code: g?.group_code || null,
-          group_name: g?.name || null,
-          amount: parseFloat(amount.toFixed(2)),
-        };
-      });
-      const expenses = [...expenseByGroup.entries()].map(([groupId, amount]) => {
-        const g = groupMap.get(groupId);
-        return {
-          group_code: g?.group_code || null,
-          group_name: g?.name || null,
-          amount: parseFloat(amount.toFixed(2)),
-        };
-      });
+      // Calculate totals following Tally's method
+      const totalSales = salesAccounts.reduce((s, a) => s + a.amount, 0);
+      const totalPurchases = purchaseAccounts.reduce((s, a) => s + a.amount, 0);
+      const totalDirectIncomes = directIncomes.reduce((s, a) => s + a.amount, 0);
+      const totalDirectExpenses = directExpenses.reduce((s, a) => s + a.amount, 0);
+      const totalIndirectIncomes = indirectIncomes.reduce((s, a) => s + a.amount, 0);
+      const totalIndirectExpenses = indirectExpenses.reduce((s, a) => s + a.amount, 0);
 
-      const totalIncome = income.reduce((s, i) => s + toNum(i.amount, 0), 0);
-      const totalExpenses = expenses.reduce((s, i) => s + toNum(i.amount, 0), 0);
-      const netProfit = totalIncome - totalExpenses;
+      // Gross Profit Calculation (Tally style)
+      // Sales + Closing Stock - Opening Stock - Purchases - Direct Expenses + Direct Incomes
+      const grossProfit = totalSales + closingStock - openingStock - totalPurchases - totalDirectExpenses + totalDirectIncomes;
+      
+      // Add closing stock to right side (income side) - Tally style
+      const rightSideTotal = totalSales + closingStock + totalIndirectIncomes;
+      const leftSideTotal = openingStock + totalPurchases + totalDirectExpenses + totalIndirectExpenses - totalDirectIncomes;
+      
+      // Net Profit = Right Side - Left Side
+      const netProfit = rightSideTotal - leftSideTotal;
 
+      console.log(`📊 Tally-style P&L Calculation:`);
+      console.log(`  Sales: ₹${totalSales.toFixed(2)}`);
+      console.log(`  Opening Stock: ₹${openingStock.toFixed(2)}`);
+      console.log(`  Purchases: ₹${totalPurchases.toFixed(2)}`);
+      console.log(`  Closing Stock: ₹${closingStock.toFixed(2)}`);
+      console.log(`  Gross Profit: ₹${grossProfit.toFixed(2)}`);
+      console.log(`  Net Profit: ₹${netProfit.toFixed(2)}`);
+
+      // Structure response in Tally format
       res.json({
-        income,
-        expenses,
-        totals: {
-          totalIncome: parseFloat(totalIncome.toFixed(2)),
-          totalExpenses: parseFloat(totalExpenses.toFixed(2)),
-          netProfit: parseFloat(netProfit.toFixed(2)),
+        // Left side (Expenses & Costs)
+        expenses_and_costs: {
+          opening_stock: {
+            amount: parseFloat(openingStock.toFixed(2)),
+            accounts: stockLedgers.map(l => ({
+              ledger_name: l.ledger_name,
+              opening_balance: parseFloat(l.opening_balance || 0)
+            }))
+          },
+          purchase_accounts: {
+            total: parseFloat(totalPurchases.toFixed(2)),
+            accounts: purchaseAccounts
+          },
+          direct_incomes: {
+            total: parseFloat(totalDirectIncomes.toFixed(2)),
+            accounts: directIncomes,
+            note: "Shown as reduction in costs"
+          },
+          direct_expenses: {
+            total: parseFloat(totalDirectExpenses.toFixed(2)),
+            accounts: directExpenses
+          },
+          gross_profit_carried_over: parseFloat(grossProfit.toFixed(2)),
+          indirect_expenses: {
+            total: parseFloat(totalIndirectExpenses.toFixed(2)),
+            accounts: indirectExpenses
+          },
+          net_profit: parseFloat(netProfit.toFixed(2))
         },
+        
+        // Right side (Income & Revenue)
+        income_and_revenue: {
+          sales_accounts: {
+            total: parseFloat(totalSales.toFixed(2)),
+            accounts: salesAccounts
+          },
+          closing_stock: {
+            amount: parseFloat(closingStock.toFixed(2)),
+            accounts: stockLedgers.map(l => ({
+              ledger_name: l.ledger_name,
+              current_balance: parseFloat(l.current_balance || 0)
+            }))
+          },
+          gross_profit_brought_forward: parseFloat(grossProfit.toFixed(2)),
+          indirect_incomes: {
+            total: parseFloat(totalIndirectIncomes.toFixed(2)),
+            accounts: indirectIncomes
+          }
+        },
+
+        // Summary totals
+        totals: {
+          gross_profit: parseFloat(grossProfit.toFixed(2)),
+          net_profit: parseFloat(netProfit.toFixed(2)),
+          total_left_side: parseFloat(leftSideTotal.toFixed(2)),
+          total_right_side: parseFloat(rightSideTotal.toFixed(2)),
+          profit_margin: totalSales > 0 ? parseFloat((netProfit / totalSales * 100).toFixed(2)) : 0,
+          gross_profit_margin: totalSales > 0 ? parseFloat((grossProfit / totalSales * 100).toFixed(2)) : 0,
+          is_balanced: Math.abs(rightSideTotal - leftSideTotal - netProfit) < 0.01
+        },
+
         period: { from_date: from, to_date: to },
+        format: "tally_trading_account",
+        notes: [
+          'P&L follows Tally Trading Account format',
+          'Opening Stock treated as expense (cost)',
+          'Closing Stock treated as income (asset value)',
+          'Gross Profit = Sales + Closing Stock - Opening Stock - Purchases - Direct Expenses + Direct Incomes',
+          'Net Profit = Gross Profit + Indirect Incomes - Indirect Expenses',
+          'Stock movements are explicitly shown in P&L (not just Balance Sheet)'
+        ]
       });
     } catch (err) {
       next(err);
@@ -178,49 +321,160 @@ module.exports = {
       const { as_on_date } = req.query;
       const asOn = as_on_date || new Date().toISOString().slice(0, 10);
 
+      console.log(`\n🏛️ === GENERATING TALLY-STYLE BALANCE SHEET ===`);
+      console.log(`📅 As on: ${asOn}`);
+      console.log(`🏢 Tenant: ${req.tenant_id}`);
+
       const ledgers = await req.tenantModels.Ledger.findAll({ where: { is_active: true } });
       const groupMap = await loadGroupMap(req.masterModels, ledgers);
       const moveMap = await movementByLedger(req.tenantModels, { asOnDate: asOn });
 
-      const assets = new Map();
-      const liabilities = new Map();
+      // Get current period P&L for retained earnings
+      const currentYearStart = new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0, 10);
+      const plMoveMap = await movementByLedger(req.tenantModels, { fromDate: currentYearStart, toDate: asOn });
+
+      // Calculate current period profit/loss
+      let currentPeriodPL = 0;
+      for (const ledger of ledgers) {
+        const group = groupMap.get(ledger.account_group_id);
+        if (!group) continue;
+
+        const plMove = plMoveMap.get(ledger.id) || { debit: 0, credit: 0 };
+        const plMovementSigned = plMove.debit - plMove.credit;
+
+        if (group.nature === 'income') {
+          currentPeriodPL += -plMovementSigned; // income increases P&L
+        } else if (group.nature === 'expense') {
+          currentPeriodPL -= plMovementSigned; // expense decreases P&L
+        }
+      }
+
+      // Group assets and liabilities by account groups (Tally style)
+      const assetGroups = new Map();
+      const liabilityGroups = new Map();
+      const assetDetails = [];
+      const liabilityDetails = [];
 
       for (const ledger of ledgers) {
         const group = groupMap.get(ledger.account_group_id);
         if (!group) continue;
-        if (group.nature !== 'asset' && group.nature !== 'liability') continue;
 
         const move = moveMap.get(ledger.id) || { debit: 0, credit: 0 };
         const closingSigned = openingSigned(ledger) + (move.debit - move.credit);
         if (Math.abs(closingSigned) <= 0.009) continue;
 
         const amountAbs = Math.abs(closingSigned);
+        
         if (group.nature === 'asset') {
-          assets.set(group.id, (assets.get(group.id) || 0) + amountAbs);
-        } else {
-          liabilities.set(group.id, (liabilities.get(group.id) || 0) + amountAbs);
+          console.log(`📊 Asset: ${ledger.ledger_name} (${group.group_code}) = ₹${amountAbs.toFixed(2)}`);
+          
+          // Group assets by account group
+          const groupKey = `${group.group_code}_${group.name}`;
+          assetGroups.set(groupKey, (assetGroups.get(groupKey) || 0) + amountAbs);
+          
+          assetDetails.push({
+            ledger_name: ledger.ledger_name,
+            ledger_code: ledger.ledger_code,
+            amount: parseFloat(amountAbs.toFixed(2)),
+            group_code: group.group_code,
+            group_name: group.name,
+            balance_type: closingSigned >= 0 ? 'Dr' : 'Cr'
+          });
+        } else if (group.nature === 'liability') {
+          console.log(`📋 Liability: ${ledger.ledger_name} (${group.group_code}) = ₹${amountAbs.toFixed(2)}`);
+          
+          // Group liabilities by account group
+          const groupKey = `${group.group_code}_${group.name}`;
+          liabilityGroups.set(groupKey, (liabilityGroups.get(groupKey) || 0) + amountAbs);
+          
+          liabilityDetails.push({
+            ledger_name: ledger.ledger_name,
+            ledger_code: ledger.ledger_code,
+            amount: parseFloat(amountAbs.toFixed(2)),
+            group_code: group.group_code,
+            group_name: group.name,
+            balance_type: closingSigned >= 0 ? 'Dr' : 'Cr'
+          });
         }
       }
 
-      const assetsArr = [...assets.entries()].map(([groupId, amount]) => {
-        const g = groupMap.get(groupId);
-        return { group_code: g?.group_code || null, group_name: g?.name || null, amount: parseFloat(amount.toFixed(2)) };
+      // Convert grouped data to arrays (Tally format)
+      const assetsArr = [...assetGroups.entries()].map(([groupKey, amount]) => {
+        const [group_code, group_name] = groupKey.split('_');
+        return { 
+          group_code, 
+          group_name, 
+          amount: parseFloat(amount.toFixed(2)) 
+        };
       });
-      const liabilitiesArr = [...liabilities.entries()].map(([groupId, amount]) => {
-        const g = groupMap.get(groupId);
-        return { group_code: g?.group_code || null, group_name: g?.name || null, amount: parseFloat(amount.toFixed(2)) };
+      
+      const liabilitiesArr = [...liabilityGroups.entries()].map(([groupKey, amount]) => {
+        const [group_code, group_name] = groupKey.split('_');
+        return { 
+          group_code, 
+          group_name, 
+          amount: parseFloat(amount.toFixed(2)) 
+        };
       });
+
+      // Add current period P&L to liabilities (as retained earnings)
+      if (Math.abs(currentPeriodPL) > 0.009) {
+        liabilitiesArr.push({
+          group_code: 'PL',
+          group_name: 'Profit & Loss A/c',
+          amount: parseFloat(Math.abs(currentPeriodPL).toFixed(2)),
+          note: currentPeriodPL >= 0 ? 'Current Period Profit' : 'Current Period Loss'
+        });
+      }
 
       const totalAssets = assetsArr.reduce((s, i) => s + toNum(i.amount, 0), 0);
       const totalLiabilities = liabilitiesArr.reduce((s, i) => s + toNum(i.amount, 0), 0);
+      const difference = totalAssets - totalLiabilities;
 
+      console.log(`📊 Total Assets: ₹${totalAssets.toFixed(2)}`);
+      console.log(`📋 Total Liabilities: ₹${totalLiabilities.toFixed(2)}`);
+      console.log(`💰 Current Period P&L: ₹${currentPeriodPL.toFixed(2)}`);
+      console.log(`⚖️  Difference: ₹${difference.toFixed(2)}`);
+
+      // Structure response in Tally format
       res.json({
-        balanceSheet: { assets: assetsArr, liabilities: liabilitiesArr },
-        totals: {
-          totalAssets: parseFloat(totalAssets.toFixed(2)),
-          totalLiabilities: parseFloat(totalLiabilities.toFixed(2)),
+        // Tally-style two-column format
+        balance_sheet: {
+          liabilities: liabilitiesArr.sort((a, b) => {
+            // Sort order: Capital, Loans, Current Liabilities, P&L
+            const order = { 'CAP': 1, 'LOAN': 2, 'CL': 3, 'SC': 4, 'DT': 5, 'PL': 6 };
+            return (order[a.group_code] || 99) - (order[b.group_code] || 99);
+          }),
+          assets: assetsArr.sort((a, b) => {
+            // Sort order: Fixed Assets, Investments, Current Assets, Stock
+            const order = { 'FA': 1, 'INV': 2, 'CA': 3, 'CASH': 4, 'BANK': 5, 'SD': 6 };
+            return (order[a.group_code] || 99) - (order[b.group_code] || 99);
+          })
         },
+        
+        // Detailed breakdown
+        asset_details: assetDetails.sort((a, b) => a.group_code.localeCompare(b.group_code)),
+        liability_details: liabilityDetails.sort((a, b) => a.group_code.localeCompare(b.group_code)),
+        
+        // Summary totals
+        totals: {
+          total_assets: parseFloat(totalAssets.toFixed(2)),
+          total_liabilities: parseFloat(totalLiabilities.toFixed(2)),
+          current_period_pl: parseFloat(currentPeriodPL.toFixed(2)),
+          difference: parseFloat(difference.toFixed(2)),
+          is_balanced: Math.abs(difference) < 0.01
+        },
+        
         as_on_date: asOn,
+        format: "tally_balance_sheet",
+        notes: [
+          'Balance Sheet follows Tally format with two-column layout',
+          'Left side: Liabilities (Capital, Loans, Current Liabilities, P&L A/c)',
+          'Right side: Assets (Fixed Assets, Current Assets, Stock, etc.)',
+          'Current Period P&L shown as retained earnings on Liabilities side',
+          'Account groups are consolidated (not individual ledgers)',
+          'Totals must balance: Total Assets = Total Liabilities'
+        ]
       });
     } catch (err) {
       next(err);
