@@ -72,20 +72,22 @@ export default function PurchaseInvoiceScreen() {
 
   const fetchSuppliers = useCallback(async () => {
     try {
-      console.log('🔍 Fetching ledgers...');
-      
       const response = await accountingAPI.ledgers.list({ 
         limit: 1000
       });
       
       const data = response.data?.data || response.data || [];
-      console.log('📊 Fetched', data.length, 'ledgers');
       
-      // Show all ledgers for now - we can filter later if needed
-      setSuppliers(Array.isArray(data) ? data : []);
+      // Filter only for Sundry Creditors group
+      const sundryCreditors = data.filter(ledger => {
+        const groupName = ledger.account_group?.name?.toLowerCase() || '';
+        return groupName === 'sundry creditors';
+      });
+      
+      setSuppliers(Array.isArray(sundryCreditors) ? sundryCreditors : []);
       
     } catch (error) {
-      console.error('❌ Error fetching ledgers:', error);
+      console.error('Error fetching suppliers:', error);
       setSuppliers([]);
     }
   }, []);
@@ -110,15 +112,12 @@ export default function PurchaseInvoiceScreen() {
   }, []);
 
   useEffect(() => {
-    console.log('🚀 PurchaseInvoiceScreen: Starting data fetch...');
     fetchSuppliers();
     fetchItems();
     
     // Generate voucher number
     const voucherNumber = generateVoucherNumber('purchase_invoice');
     setFormData(prev => ({ ...prev, voucher_number: voucherNumber }));
-    
-    console.log('📄 Generated voucher number:', voucherNumber);
   }, [fetchSuppliers, fetchItems]);
 
   const handleSupplierSelect = (supplier) => {
@@ -267,7 +266,7 @@ export default function PurchaseInvoiceScreen() {
         }))
       };
 
-      await voucherAPI.create(payload);
+      await voucherAPI.purchaseInvoice.create(payload);
       
       showNotification({
         type: 'success',
@@ -306,22 +305,24 @@ export default function PurchaseInvoiceScreen() {
           {item.ledger_name || item.name || 'Unnamed Supplier'}
         </Text>
         
-        {/* Show parent group */}
-        {item.account_group && (
+        {/* Show account group name prominently */}
+        {item.account_group?.name && (
           <Text style={styles.supplierGroup}>
             {item.account_group.name}
           </Text>
         )}
         
-        {/* Show basic contact info */}
-        <View style={styles.supplierDetails}>
-          {item.phone && (
-            <Text style={styles.supplierDetail}>📞 {item.phone}</Text>
-          )}
-          {item.gstin && (
-            <Text style={styles.supplierDetail}>GSTIN: {item.gstin}</Text>
-          )}
-        </View>
+        {/* Show only essential contact info */}
+        {(item.phone || item.gstin) && (
+          <View style={styles.supplierDetails}>
+            {item.phone && (
+              <Text style={styles.supplierDetail}>{item.phone}</Text>
+            )}
+            {item.gstin && (
+              <Text style={styles.supplierDetail}>GSTIN: {item.gstin}</Text>
+            )}
+          </View>
+        )}
       </View>
       <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
     </TouchableOpacity>
@@ -600,7 +601,7 @@ export default function PurchaseInvoiceScreen() {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select Ledger</Text>
+            <Text style={styles.modalTitle}>Select Supplier</Text>
             <View style={styles.modalHeaderActions}>
               <TouchableOpacity
                 onPress={() => {
@@ -610,7 +611,7 @@ export default function PurchaseInvoiceScreen() {
                 style={styles.addSupplierButton}
               >
                 <Ionicons name="add" size={20} color="#3e60ab" />
-                <Text style={styles.addSupplierText}>Add Ledger</Text>
+                <Text style={styles.addSupplierText}>Add Supplier</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setShowSupplierModal(false)}
@@ -625,20 +626,11 @@ export default function PurchaseInvoiceScreen() {
             <Ionicons name="search" size={20} color="#6b7280" />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search ledgers..."
+              placeholder="Search suppliers..."
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
           </View>
-          
-          {/* Simple debug info */}
-          {__DEV__ && suppliers.length > 0 && (
-            <View style={styles.debugInfo}>
-              <Text style={styles.debugText}>
-                📊 {suppliers.length} ledgers loaded
-              </Text>
-            </View>
-          )}
           
           <FlatList
             data={filteredSuppliers}
@@ -648,10 +640,10 @@ export default function PurchaseInvoiceScreen() {
             ListEmptyComponent={
               <View style={styles.emptyState}>
                 <Ionicons name="people-outline" size={48} color="#d1d5db" />
-                <Text style={styles.emptyStateText}>No ledgers found</Text>
+                <Text style={styles.emptyStateText}>No suppliers found</Text>
                 <Text style={styles.emptyStateSubtext}>
                   {suppliers.length === 0 
-                    ? 'Create a new ledger to get started' 
+                    ? 'Create a new supplier to get started' 
                     : 'Try a different search term'}
                 </Text>
               </View>
@@ -1119,18 +1111,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: 'white',
-    fontFamily: 'Agency',
-  },
-  debugInfo: {
-    backgroundColor: '#f3f4f6',
-    padding: 8,
-    marginHorizontal: 16,
-    borderRadius: 4,
-    marginBottom: 8,
-  },
-  debugText: {
-    fontSize: 12,
-    color: '#6b7280',
     fontFamily: 'Agency',
   },
   supplierItem: {

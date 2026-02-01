@@ -3,32 +3,74 @@ const { Op } = require('sequelize');
 const logger = require('../utils/logger');
 const { findOrCreateInventoryItem } = require('../services/inventoryService');
 
-// ... (toNum, getMasterGroupId, getOrCreateSystemLedger, voucherPrefix, etc. remain the same)
+function toNum(v, fallback = 0) {
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : fallback;
+}
 
 async function applyPurchaseInventory({ tenantModels }, voucher, voucherItems, t) {
+  logger.info(`Applying purchase inventory for voucher ${voucher.id} with ${voucherItems.length} items`);
+  
   for (const it of voucherItems) {
     const qty = toNum(it.quantity, 0);
     if (qty <= 0) continue;
+    
     const taxable = toNum(it.taxable_amount, 0);
     const costRate = qty > 0 ? taxable / qty : 0;
 
-    const { item: inv } = await findOrCreateInventoryItem(tenantModels, {
+    // Find or create inventory item
+    const { item: inv, created } = await findOrCreateInventoryItem(tenantModels, {
       inventory_item_id: it.inventory_item_id,
       barcode: it.barcode,
       item_code: it.item_code,
-      item_name: it.item_description,
+      item_name: it.item_description || it.item_name,
       hsn_sac_code: it.hsn_sac_code,
       uqc: it.uqc,
       gst_rate: it.gst_rate,
       variant_attributes: it.variant_attributes,
     }, t);
 
-    // ... (warehouse and aggregate stock update logic remains the same)
+    if (created) {
+      logger.info(`Created new inventory item: ${inv.item_name} (ID: ${inv.id})`);
+    }
+
+    // Update inventory quantities using weighted average cost
+    const currentQty = toNum(inv.quantity_on_hand, 0);
+    const currentAvgCost = toNum(inv.avg_cost, 0);
+    const currentValue = currentQty * currentAvgCost;
+    
+    const newQty = currentQty + qty;
+    const newValue = currentValue + taxable;
+    const newAvgCost = newQty > 0 ? newValue / newQty : 0;
+
+    await inv.update({
+      quantity_on_hand: newQty,
+      avg_cost: newAvgCost,
+    }, { transaction: t });
+
+    // Create stock movement record
+    await tenantModels.StockMovement.create({
+      inventory_item_id: inv.id,
+      voucher_id: voucher.id,
+      movement_type: 'IN',
+      quantity: qty,
+      rate: costRate,
+      amount: taxable,
+      reference_number: voucher.voucher_number,
+      narration: `Purchase from ${voucher.party_name || 'Supplier'}`,
+      movement_date: voucher.voucher_date,
+      tenant_id: voucher.tenant_id,
+    }, { transaction: t });
+
+    logger.info(`Updated inventory item ${inv.item_name}: qty ${currentQty} -> ${newQty}, avg_cost ${currentAvgCost} -> ${newAvgCost}`);
   }
 }
 
 async function applySalesInventoryAndGetCogs({ tenantModels }, voucher, voucherItems, t) {
+  logger.info(`Applying sales inventory for voucher ${voucher.id} with ${voucherItems.length} items`);
+  
   let totalCogs = 0;
+  
   for (const it of voucherItems) {
     const qty = toNum(it.quantity, 0);
     if (qty <= 0) continue;
@@ -37,22 +79,49 @@ async function applySalesInventoryAndGetCogs({ tenantModels }, voucher, voucherI
       inventory_item_id: it.inventory_item_id,
       barcode: it.barcode,
       item_code: it.item_code,
-      item_name: it.item_description,
+      item_name: it.item_description || it.item_name,
       variant_attributes: it.variant_attributes,
     }, t);
     
     if (!inv) {
       // Create a negative stock record if the item is not found
-      // This ensures that the sale is recorded even if the item is not in inventory
       const { item: createdInv } = await findOrCreateInventoryItem(tenantModels, {
         ...it,
+        item_name: it.item_description || it.item_name,
         quantity_on_hand: -qty,
       }, t);
-      // Since this is a new item, COGS is 0
+      logger.warn(`Created negative stock item: ${createdInv.item_name} with qty -${qty}`);
     } else {
-      // ... (rest of the COGS and stock update logic remains the same)
+      // Calculate COGS and update stock
+      const currentQty = toNum(inv.quantity_on_hand, 0);
+      const currentAvgCost = toNum(inv.avg_cost, 0);
+      const cogs = qty * currentAvgCost;
+      totalCogs += cogs;
+      
+      const newQty = currentQty - qty;
+      
+      await inv.update({
+        quantity_on_hand: newQty,
+      }, { transaction: t });
+
+      // Create stock movement record
+      await tenantModels.StockMovement.create({
+        inventory_item_id: inv.id,
+        voucher_id: voucher.id,
+        movement_type: 'OUT',
+        quantity: -qty, // Negative for outward movement
+        rate: currentAvgCost,
+        amount: -cogs, // Negative for outward movement
+        reference_number: voucher.voucher_number,
+        narration: `Sale to ${voucher.party_name || 'Customer'}`,
+        movement_date: voucher.voucher_date,
+        tenant_id: voucher.tenant_id,
+      }, { transaction: t });
+
+      logger.info(`Updated inventory item ${inv.item_name}: qty ${currentQty} -> ${newQty}, COGS: ${cogs}`);
     }
   }
+  
   return totalCogs;
 }
 
@@ -95,6 +164,8 @@ module.exports = {
   },
 
   async create(req, res, next) {
+    const transaction = await req.tenantModels.sequelize.transaction();
+    
     try {
       // Ensure required fields are set
       if (!req.body.tenant_id) {
@@ -115,6 +186,7 @@ module.exports = {
             tenant_id: req.tenant_id,
           },
           order: [['createdAt', 'DESC']],
+          transaction,
         });
         
         let sequence = 1;
@@ -133,9 +205,51 @@ module.exports = {
         req.body.voucher_date = new Date();
       }
       
-      const voucher = await req.tenantModels.Voucher.create(req.body);
-      res.status(201).json({ data: voucher });
+      // Create the voucher
+      const voucher = await req.tenantModels.Voucher.create(req.body, { transaction });
+      
+      // Create voucher items if provided
+      if (req.body.items && req.body.items.length > 0) {
+        const voucherItems = req.body.items.map(item => ({
+          ...item,
+          voucher_id: voucher.id,
+          tenant_id: req.tenant_id,
+        }));
+        
+        await req.tenantModels.VoucherItem.bulkCreate(voucherItems, { transaction });
+      }
+      
+      // Create ledger entries if provided
+      if (req.body.ledger_entries && req.body.ledger_entries.length > 0) {
+        const ledgerEntries = req.body.ledger_entries.map(entry => ({
+          ...entry,
+          voucher_id: voucher.id,
+          tenant_id: req.tenant_id,
+        }));
+        
+        await req.tenantModels.VoucherLedgerEntry.bulkCreate(ledgerEntries, { transaction });
+      }
+      
+      // If voucher is being posted immediately, apply inventory updates
+      if (req.body.status === 'posted') {
+        await this.applyInventoryUpdates(req, voucher, transaction);
+      }
+      
+      await transaction.commit();
+      
+      // Fetch the complete voucher with items and ledger entries
+      const completeVoucher = await req.tenantModels.Voucher.findByPk(voucher.id, {
+        include: [
+          { model: req.tenantModels.Ledger, as: 'partyLedger', attributes: ['id', 'ledger_name'] },
+          { model: req.tenantModels.VoucherItem, as: 'items' },
+          { model: req.tenantModels.VoucherLedgerEntry, as: 'ledgerEntries' }
+        ]
+      });
+      
+      res.status(201).json({ data: completeVoucher });
     } catch (err) {
+      await transaction.rollback();
+      logger.error('Error creating voucher:', err);
       next(err);
     }
   },
@@ -175,21 +289,67 @@ module.exports = {
   },
 
   async post(req, res, next) {
+    const transaction = await req.tenantModels.sequelize.transaction();
+    
     try {
-      const voucher = await req.tenantModels.Voucher.findByPk(req.params.id);
+      const voucher = await req.tenantModels.Voucher.findByPk(req.params.id, {
+        include: [
+          { model: req.tenantModels.VoucherItem, as: 'items' },
+          { model: req.tenantModels.Ledger, as: 'partyLedger', attributes: ['id', 'ledger_name'] }
+        ],
+        transaction
+      });
       
       if (!voucher) {
+        await transaction.rollback();
         return res.status(404).json({ message: 'Voucher not found' });
       }
       
       if (voucher.status === 'posted') {
+        await transaction.rollback();
         return res.status(400).json({ message: 'Voucher is already posted' });
       }
       
-      await voucher.update({ status: 'posted' });
+      // Apply inventory updates before posting
+      await this.applyInventoryUpdates(req, voucher, transaction);
+      
+      // Update voucher status to posted
+      await voucher.update({ status: 'posted' }, { transaction });
+      
+      await transaction.commit();
+      
+      logger.info(`Voucher ${voucher.voucher_number} posted successfully with inventory updates`);
       res.json({ message: 'Voucher posted successfully', voucher });
     } catch (err) {
+      await transaction.rollback();
+      logger.error('Error posting voucher:', err);
       next(err);
+    }
+  },
+
+  async applyInventoryUpdates(req, voucher, transaction) {
+    const voucherItems = voucher.items || [];
+    
+    if (voucherItems.length === 0) {
+      logger.info(`No items to process for voucher ${voucher.voucher_number}`);
+      return;
+    }
+    
+    const voucherType = voucher.voucher_type?.toLowerCase();
+    
+    try {
+      if (voucherType === 'purchase' || voucherType === 'purchase_invoice') {
+        logger.info(`Applying purchase inventory updates for voucher ${voucher.voucher_number}`);
+        await applyPurchaseInventory({ tenantModels: req.tenantModels }, voucher, voucherItems, transaction);
+      } else if (voucherType === 'sales' || voucherType === 'sales_invoice') {
+        logger.info(`Applying sales inventory updates for voucher ${voucher.voucher_number}`);
+        await applySalesInventoryAndGetCogs({ tenantModels: req.tenantModels }, voucher, voucherItems, transaction);
+      } else {
+        logger.info(`No inventory updates needed for voucher type: ${voucherType}`);
+      }
+    } catch (error) {
+      logger.error(`Error applying inventory updates for voucher ${voucher.voucher_number}:`, error);
+      throw error;
     }
   },
 

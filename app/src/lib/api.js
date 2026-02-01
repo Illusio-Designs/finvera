@@ -99,12 +99,12 @@ export const voucherAPI = {
   get: (id) => apiClient.get(`/accounting/vouchers/${id}`),
   types: () => apiClient.get('/accounting/voucher-types'),
   salesInvoice: {
-    create: (data) => apiClient.post('/accounting/vouchers/sales-invoice', data),
+    create: (data) => apiClient.post('/accounting/invoices/sales', data),
     update: (id, data) => apiClient.put(`/accounting/vouchers/sales-invoice/${id}`, data),
     get: (id) => apiClient.get(`/accounting/vouchers/sales-invoice/${id}`),
   },
   purchaseInvoice: {
-    create: (data) => apiClient.post('/accounting/vouchers/purchase-invoice', data),
+    create: (data) => apiClient.post('/accounting/invoices/purchase', data),
     update: (id, data) => apiClient.put(`/accounting/vouchers/purchase-invoice/${id}`, data),
     get: (id) => apiClient.get(`/accounting/vouchers/purchase-invoice/${id}`),
   },
