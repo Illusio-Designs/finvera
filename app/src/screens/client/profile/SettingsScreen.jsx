@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, RefreshControl, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, RefreshControl, Image, Modal, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -7,6 +7,7 @@ import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { tenantAPI } from '../../../lib/api';
 import { buildUploadUrl } from '../../../config/env';
 
 export default function SettingsScreen() {
@@ -17,9 +18,19 @@ export default function SettingsScreen() {
   
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showBarcodeModal, setShowBarcodeModal] = useState(false);
   const [preferences, setPreferences] = useState({
     // App preferences only
     biometric: false,
+  });
+  const [barcodeSettings, setBarcodeSettings] = useState({
+    barcode_enabled: false,
+    default_barcode_type: 'CODE128',
+    default_barcode_prefix: 'FV',
+  });
+  const [tempBarcodeSettings, setTempBarcodeSettings] = useState({
+    default_barcode_type: 'CODE128',
+    default_barcode_prefix: 'FV',
   });
 
   const handleMenuPress = () => {
@@ -28,7 +39,58 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     checkBiometricAvailability();
+    fetchBarcodeSettings();
   }, []);
+
+  const fetchBarcodeSettings = async () => {
+    try {
+      const response = await tenantAPI.getProfile();
+      const tenant = response?.data?.data || response?.data;
+      const settings = tenant?.settings || {};
+      
+      setBarcodeSettings({
+        barcode_enabled: settings.barcode_enabled === true,
+        default_barcode_type: settings.default_barcode_type || 'CODE128',
+        default_barcode_prefix: settings.default_barcode_prefix || 'FV',
+      });
+      
+      setTempBarcodeSettings({
+        default_barcode_type: settings.default_barcode_type || 'CODE128',
+        default_barcode_prefix: settings.default_barcode_prefix || 'FV',
+      });
+    } catch (error) {
+      console.error('Error fetching barcode settings:', error);
+    }
+  };
+
+  const updateBarcodeSettings = async (newSettings) => {
+    try {
+      setLoading(true);
+      await tenantAPI.updateProfile({
+        settings: {
+          ...barcodeSettings,
+          ...newSettings,
+        }
+      });
+      
+      setBarcodeSettings(prev => ({ ...prev, ...newSettings }));
+      
+      showNotification({
+        type: 'success',
+        title: 'Settings Updated',
+        message: 'Barcode settings have been saved successfully'
+      });
+    } catch (error) {
+      console.error('Error updating barcode settings:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to update barcode settings'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const checkBiometricAvailability = async () => {
     try {
@@ -46,12 +108,15 @@ export default function SettingsScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    // No API calls needed for local preferences
+    await fetchBarcodeSettings();
     setRefreshing(false);
   };
 
   const toggleSetting = async (key) => {
-    if (key === 'biometric') {
+    if (key === 'barcode_enabled') {
+      const newValue = !barcodeSettings.barcode_enabled;
+      await updateBarcodeSettings({ barcode_enabled: newValue });
+    } else if (key === 'biometric') {
       const newValue = !preferences.biometric;
       
       if (newValue) {
@@ -129,16 +194,42 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleLogout = () => {
-    showNotification({
-      type: 'info',
-      title: 'Logging out...',
-      message: 'Please wait while we sign you out'
+  const handleBarcodeConfig = () => {
+    setTempBarcodeSettings({
+      default_barcode_type: barcodeSettings.default_barcode_type,
+      default_barcode_prefix: barcodeSettings.default_barcode_prefix,
     });
-    logout();
+    setShowBarcodeModal(true);
+  };
+
+  const saveBarcodeConfig = async () => {
+    await updateBarcodeSettings(tempBarcodeSettings);
+    setShowBarcodeModal(false);
   };
 
   const settingSections = [
+    {
+      title: 'Barcode Settings',
+      items: [
+        {
+          key: 'barcode_enabled',
+          label: 'Enable Barcode',
+          description: 'Use barcodes in purchase and sales',
+          type: 'switch',
+          value: barcodeSettings.barcode_enabled,
+          icon: 'barcode-outline'
+        },
+        {
+          key: 'barcode_config',
+          label: 'Barcode Configuration',
+          description: `Type: ${barcodeSettings.default_barcode_type}, Prefix: ${barcodeSettings.default_barcode_prefix}`,
+          type: 'navigation',
+          icon: 'settings-outline',
+          onPress: handleBarcodeConfig,
+          disabled: !barcodeSettings.barcode_enabled
+        },
+      ]
+    },
     {
       title: 'App Preferences',
       items: [
@@ -198,18 +289,20 @@ export default function SettingsScreen() {
                   key={item.key}
                   style={[
                     styles.settingItem,
-                    itemIndex === section.items.length - 1 && styles.settingItemLast
+                    itemIndex === section.items.length - 1 && styles.settingItemLast,
+                    item.disabled && styles.settingItemDisabled
                   ]}
                   onPress={item.onPress || (item.type === 'switch' ? () => toggleSetting(item.key) : null)}
-                  disabled={item.type === 'switch'}
+                  disabled={item.type === 'switch' || item.disabled}
+                  activeOpacity={item.disabled ? 1 : 0.7}
                 >
                   <View style={styles.settingItemLeft}>
-                    <View style={styles.settingIcon}>
-                      <Ionicons name={item.icon} size={20} color="#3e60ab" />
+                    <View style={[styles.settingIcon, item.disabled && styles.settingIconDisabled]}>
+                      <Ionicons name={item.icon} size={20} color={item.disabled ? '#9ca3af' : '#3e60ab'} />
                     </View>
                     <View style={styles.settingInfo}>
-                      <Text style={styles.settingLabel}>{item.label}</Text>
-                      <Text style={styles.settingDescription}>{item.description}</Text>
+                      <Text style={[styles.settingLabel, item.disabled && styles.settingLabelDisabled]}>{item.label}</Text>
+                      <Text style={[styles.settingDescription, item.disabled && styles.settingDescriptionDisabled]}>{item.description}</Text>
                     </View>
                   </View>
                   <View style={styles.settingItemRight}>
@@ -235,14 +328,6 @@ export default function SettingsScreen() {
           </View>
         ))}
 
-        {/* Logout Button */}
-        <View style={styles.section}>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={20} color="#ef4444" />
-            <Text style={styles.logoutButtonText}>Logout</Text>
-          </TouchableOpacity>
-        </View>
-
         {/* App Version */}
         <View style={styles.versionSection}>
           <Text style={styles.versionText}>Finvera Mobile</Text>
@@ -250,6 +335,87 @@ export default function SettingsScreen() {
           <Text style={styles.copyright}>© 2024 Finvera Solutions</Text>
         </View>
       </ScrollView>
+
+      {/* Barcode Configuration Modal */}
+      <Modal
+        visible={showBarcodeModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowBarcodeModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Barcode Configuration</Text>
+            <TouchableOpacity 
+              onPress={() => setShowBarcodeModal(false)}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color="#6b7280" />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.modalContent}>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Barcode Type</Text>
+              <View style={styles.radioGroup}>
+                {['CODE128', 'CODE39', 'EAN13', 'EAN8'].map((type) => (
+                  <TouchableOpacity
+                    key={type}
+                    style={styles.radioOption}
+                    onPress={() => setTempBarcodeSettings(prev => ({ ...prev, default_barcode_type: type }))}
+                  >
+                    <View style={[
+                      styles.radioCircle,
+                      tempBarcodeSettings.default_barcode_type === type && styles.radioCircleSelected
+                    ]}>
+                      {tempBarcodeSettings.default_barcode_type === type && (
+                        <View style={styles.radioInner} />
+                      )}
+                    </View>
+                    <Text style={styles.radioLabel}>{type}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Barcode Prefix</Text>
+              <TextInput
+                style={styles.input}
+                value={tempBarcodeSettings.default_barcode_prefix}
+                onChangeText={(text) => setTempBarcodeSettings(prev => ({ ...prev, default_barcode_prefix: text }))}
+                placeholder="Enter prefix (e.g., FV)"
+                placeholderTextColor="#9ca3af"
+                maxLength={10}
+              />
+              <Text style={styles.helpText}>
+                This prefix will be added to auto-generated barcodes
+              </Text>
+            </View>
+
+            <View style={styles.actionButtons}>
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.cancelButton]}
+                onPress={() => setShowBarcodeModal(false)}
+                disabled={loading}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.saveButton, loading && styles.saveButtonDisabled]}
+                onPress={saveBarcodeConfig}
+                disabled={loading}
+              >
+                <Ionicons name="save" size={20} color="white" />
+                <Text style={styles.saveButtonText}>
+                  {loading ? 'Saving...' : 'Save Changes'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -343,6 +509,9 @@ const styles = StyleSheet.create({
   settingItemLast: {
     borderBottomWidth: 0,
   },
+  settingItemDisabled: {
+    opacity: 0.5,
+  },
   settingItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -357,6 +526,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
+  settingIconDisabled: {
+    backgroundColor: '#f3f4f6',
+  },
   settingInfo: {
     flex: 1,
   },
@@ -367,10 +539,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Agency',
     marginBottom: 2,
   },
+  settingLabelDisabled: {
+    color: '#9ca3af',
+  },
   settingDescription: {
     fontSize: 12,
     color: '#6b7280',
     fontFamily: 'Agency',
+  },
+  settingDescriptionDisabled: {
+    color: '#d1d5db',
   },
   settingItemRight: {
     marginLeft: 12,
@@ -383,28 +561,129 @@ const styles = StyleSheet.create({
     fontFamily: 'Agency',
     textAlign: 'right',
   },
-  logoutButton: {
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#f9fafb',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    fontFamily: 'Agency',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  modalContent: {
+    flex: 1,
+    padding: 16,
+  },
+  formGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+    marginBottom: 8,
+    fontFamily: 'Agency',
+  },
+  radioGroup: {
+    gap: 12,
+  },
+  radioOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  radioCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radioCircleSelected: {
+    borderColor: '#3e60ab',
+  },
+  radioInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#3e60ab',
+  },
+  radioLabel: {
+    fontSize: 16,
+    color: '#111827',
+    fontFamily: 'Agency',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#111827',
+    backgroundColor: 'white',
+    fontFamily: 'Agency',
+  },
+  helpText: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 4,
+    fontFamily: 'Agency',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+    paddingBottom: 20,
+  },
+  actionButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'white',
-    marginHorizontal: 20,
-    paddingVertical: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#ef4444',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    gap: 8,
   },
-  logoutButtonText: {
+  cancelButton: {
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  cancelButtonText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#ef4444',
+    fontWeight: '600',
+    color: '#6b7280',
     fontFamily: 'Agency',
-    marginLeft: 8,
+  },
+  saveButton: {
+    backgroundColor: '#3e60ab',
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#9ca3af',
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
+    fontFamily: 'Agency',
   },
   versionSection: {
     alignItems: 'center',
