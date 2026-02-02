@@ -43,6 +43,12 @@ export const companyAPI = {
   get: (id) => apiClient.get(`/companies/${id}`),
 };
 
+// Tenant Management APIs
+export const tenantAPI = {
+  getProfile: () => apiClient.get('/tenants/profile'),
+  updateProfile: (data) => apiClient.put('/tenants/profile', data),
+};
+
 // Branch Management APIs (fixed to match backend structure)
 export const branchAPI = {
   list: (companyId) => apiClient.get(`/branches/company/${companyId}`),

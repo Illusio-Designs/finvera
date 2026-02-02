@@ -12,7 +12,7 @@ import FormPasswordInput from '../../components/forms/FormPasswordInput';
 import FormTextarea from '../../components/forms/FormTextarea';
 import FormSelect from '../../components/forms/FormSelect';
 import FormDatePicker from '../../components/forms/FormDatePicker';
-import { companyAPI } from '../../lib/api';
+import { companyAPI, tenantAPI } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { FiSettings, FiEdit2, FiFileText, FiTruck, FiHash, FiSave, FiX, FiArrowLeft, FiArrowRight, FiFile, FiImage, FiPenTool } from 'react-icons/fi';
@@ -47,9 +47,9 @@ export default function SettingsPage() {
   const [showDSCConfig, setShowDSCConfig] = useState(false);
   const [showBarcodeSettings, setShowBarcodeSettings] = useState(false);
 
-  // Fetch current company details
+  // Fetch current company details and tenant settings
   useEffect(() => {
-    const fetchCompany = async () => {
+    const fetchData = async () => {
       if (!user?.company_id) {
         setFetching(false);
         return;
@@ -57,18 +57,28 @@ export default function SettingsPage() {
 
       try {
         setFetching(true);
-        const response = await companyAPI.get(user.company_id);
-        const companyData = response?.data?.data || response?.data;
-        setCompany(companyData);
+        const [companyResponse, tenantResponse] = await Promise.all([
+          companyAPI.get(user.company_id),
+          tenantAPI.getProfile()
+        ]);
+        
+        const companyData = companyResponse?.data?.data || companyResponse?.data;
+        const tenantData = tenantResponse?.data?.data || tenantResponse?.data;
+        
+        // Merge tenant settings into company data for easier access
+        setCompany({
+          ...companyData,
+          settings: tenantData?.settings || {}
+        });
       } catch (error) {
-        console.error('Error fetching company:', error);
-        toast.error(error.response?.data?.message || 'Failed to load company settings');
+        console.error('Error fetching data:', error);
+        toast.error(error.response?.data?.message || 'Failed to load settings');
       } finally {
         setFetching(false);
       }
     };
 
-    fetchCompany();
+    fetchData();
   }, [user?.company_id]);
 
   if (fetching) {
@@ -531,17 +541,26 @@ export default function SettingsPage() {
             company={company}
             onSuccess={() => {
               setShowBarcodeSettings(false);
-              // Refresh company data
-              const fetchCompany = async () => {
+              // Refresh company and tenant data
+              const fetchData = async () => {
                 try {
-                  const response = await companyAPI.get(user.company_id);
-                  const companyData = response?.data?.data || response?.data;
-                  setCompany(companyData);
+                  const [companyResponse, tenantResponse] = await Promise.all([
+                    companyAPI.get(user.company_id),
+                    tenantAPI.getProfile()
+                  ]);
+                  
+                  const companyData = companyResponse?.data?.data || companyResponse?.data;
+                  const tenantData = tenantResponse?.data?.data || tenantResponse?.data;
+                  
+                  setCompany({
+                    ...companyData,
+                    settings: tenantData?.settings || {}
+                  });
                 } catch (error) {
-                  console.error('Error fetching company:', error);
+                  console.error('Error fetching data:', error);
                 }
               };
-              fetchCompany();
+              fetchData();
             }}
           />
         </PageLayout>
@@ -2215,7 +2234,7 @@ function BarcodeSettingsModal({ isOpen, onClose, company, onSuccess }) {
         default_barcode_prefix: defaultBarcodePrefix,
       };
 
-      await companyAPI.update(user.company_id, {
+      await tenantAPI.updateProfile({
         settings: updatedSettings,
       });
 

@@ -322,6 +322,14 @@ module.exports = {
       const { id } = req.params;
       const { barcode_type = 'EAN13', barcode_prefix = 'PRD' } = req.body;
 
+      // Check if barcode functionality is enabled for this tenant
+      const isBarcodeEnabled = await checkBarcodeEnabled(req.tenant_id);
+      if (!isBarcodeEnabled) {
+        return res.status(400).json({ 
+          error: 'Barcode functionality is disabled. Please enable it in company settings.' 
+        });
+      }
+
       const item = await req.tenantModels.InventoryItem.findByPk(id);
       if (!item) {
         return res.status(404).json({ error: 'Inventory item not found' });
