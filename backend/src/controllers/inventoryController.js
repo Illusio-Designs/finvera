@@ -1,6 +1,23 @@
 const { Op } = require('sequelize');
 const logger = require('../utils/logger');
 
+// Helper function to check if barcode functionality is enabled for a tenant
+async function checkBarcodeEnabled(tenantId) {
+  try {
+    const TenantMaster = require('../models/TenantMaster');
+    const tenant = await TenantMaster.findByPk(tenantId);
+    
+    if (!tenant || !tenant.settings) {
+      return false; // Default to disabled if no settings
+    }
+    
+    return tenant.settings.barcode_enabled === true;
+  } catch (error) {
+    logger.error('Error checking barcode setting:', error);
+    return false; // Default to disabled on error
+  }
+}
+
 module.exports = {
   async list(req, res, next) {
     try {
@@ -122,8 +139,20 @@ module.exports = {
         });
       }
 
+      // Check if barcode functionality is enabled for this tenant
+      const isBarcodeEnabled = await checkBarcodeEnabled(req.tenant_id);
+      
+      // If barcode functionality is disabled, ignore barcode-related fields
+      if (!isBarcodeEnabled) {
+        if (barcode || generate_barcode) {
+          return res.status(400).json({ 
+            error: 'Barcode functionality is disabled. Please enable it in company settings.' 
+          });
+        }
+      }
+
       // Check if barcode already exists
-      if (barcode) {
+      if (barcode && isBarcodeEnabled) {
         const existingBarcode = await req.tenantModels.InventoryItem.findOne({
           where: { barcode },
         });
@@ -134,9 +163,9 @@ module.exports = {
         }
       }
 
-      // Generate barcode if requested
+      // Generate barcode if requested and barcode functionality is enabled
       let generatedBarcode = barcode;
-      if (generate_barcode && !barcode) {
+      if (generate_barcode && !barcode && isBarcodeEnabled) {
         const barcodeGenerator = require('../utils/barcodeGenerator');
         
         switch (barcode_type) {

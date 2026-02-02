@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { reportsAPI } from '../../../lib/api';
+import { formatCurrency } from '../../../utils/businessLogic';
 
 export default function BalanceSheetScreen() {
   const { openDrawer } = useDrawer();
@@ -12,7 +15,6 @@ export default function BalanceSheetScreen() {
   const [balanceSheetData, setBalanceSheetData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState('current_year');
 
   const handleMenuPress = () => {
     openDrawer();
@@ -21,8 +23,7 @@ export default function BalanceSheetScreen() {
   const fetchBalanceSheet = useCallback(async () => {
     try {
       const response = await reportsAPI.balanceSheet({ 
-        period: selectedPeriod,
-        format: 'detailed'
+        as_on_date: getCurrentDate()
       });
       setBalanceSheetData(response.data);
     } catch (error) {
@@ -36,7 +37,21 @@ export default function BalanceSheetScreen() {
     } finally {
       setLoading(false);
     }
-  }, [selectedPeriod, showNotification]);
+  }, [showNotification]);
+
+  const formatDateToDDMMYY = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
+    return `${day}/${month}/${year}`;
+  };
+
+  const getCurrentDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
 
   useEffect(() => {
     fetchBalanceSheet();
@@ -48,65 +63,182 @@ export default function BalanceSheetScreen() {
     setRefreshing(false);
   }, [fetchBalanceSheet]);
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount || 0);
+  const generatePDF = async () => {
+    if (!balanceSheetData) {
+      showNotification({
+        type: 'error',
+        title: 'No Data',
+        message: 'No balance sheet data available to export'
+      });
+      return;
+    }
+
+    try {
+      const htmlContent = generateBSHTML();
+      const { uri } = await Print.printToFileAsync({
+        html: htmlContent,
+        base64: false,
+      });
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Share Balance Sheet',
+          UTI: 'com.adobe.pdf',
+        });
+      } else {
+        showNotification({
+          type: 'success',
+          title: 'PDF Generated',
+          message: 'PDF saved successfully'
+        });
+      }
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      showNotification({
+        type: 'error',
+        title: 'Export Failed',
+        message: 'Failed to generate PDF'
+      });
+    }
   };
 
-  const periodOptions = [
-    { key: 'current_year', label: 'Current Year' },
-    { key: 'previous_year', label: 'Previous Year' },
-    { key: 'current_quarter', label: 'Current Quarter' },
-    { key: 'current_month', label: 'Current Month' },
-  ];
+  const generateBSHTML = () => {
+    const { balance_sheet, totals, as_on_date } = balanceSheetData;
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Balance Sheet</title>
+        <style>
+          body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            font-size: 12px; 
+            background-color: #f0f8f0;
+          }
+          .header { 
+            text-align: center; 
+            margin-bottom: 20px; 
+            background-color: #2d5a2d;
+            color: white;
+            padding: 10px;
+            font-weight: bold;
+          }
+          .company-name { 
+            font-size: 16px; 
+            font-weight: bold; 
+            margin-bottom: 5px; 
+          }
+          .report-title { 
+            font-size: 14px; 
+            font-weight: bold; 
+          }
+          .tally-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            background-color: #f0f8f0;
+            border: 2px solid #2d5a2d;
+          }
+          .tally-table th { 
+            background-color: #2d5a2d; 
+            color: white; 
+            font-weight: bold; 
+            text-align: center; 
+            padding: 8px;
+            border: 1px solid #2d5a2d;
+          }
+          .tally-table td { 
+            padding: 6px 8px; 
+            border: 1px solid #2d5a2d;
+            vertical-align: top;
+          }
+          .amount { 
+            text-align: right; 
+            font-family: monospace;
+          }
+          .total-row { 
+            font-weight: bold; 
+            background-color: #e8f5e8;
+            border-top: 2px solid #2d5a2d;
+          }
+          .section-header { 
+            font-weight: bold; 
+            background-color: #e8f5e8;
+          }
+          .indent { 
+            padding-left: 20px; 
+            font-size: 11px;
+          }
+          .group-total {
+            font-weight: bold;
+            border-top: 1px solid #666;
+            background-color: #f8fcf8;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="company-name">Company Name</div>
+          <div class="report-title">Balance Sheet as on ${formatDateToDDMMYY(as_on_date)}</div>
+        </div>
+        
+        <table class="tally-table">
+          <thead>
+            <tr>
+              <th style="width: 40%;">Liabilities</th>
+              <th style="width: 10%;">Amount</th>
+              <th style="width: 40%;">Assets</th>
+              <th style="width: 10%;">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${generateBalanceSheetRows(balance_sheet)}
+            <tr class="total-row">
+              <td><strong>Total</strong></td>
+              <td class="amount"><strong>${formatCurrency(totals?.total_liabilities || 0)}</strong></td>
+              <td><strong>Total</strong></td>
+              <td class="amount"><strong>${formatCurrency(totals?.total_assets || 0)}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <div style="margin-top: 20px; font-size: 10px; color: #666;">
+          <p><strong>Note:</strong> This Balance Sheet follows Tally format</p>
+          <p>Generated on: ${new Date().toLocaleDateString()}</p>
+        </div>
+      </body>
+      </html>
+    `;
+  };
 
-  const renderBalanceSheetSection = (title, items, isLiability = false) => (
-    <View style={styles.sectionCard}>
-      <View style={styles.sectionHeader}>
-        <View style={[
-          styles.sectionIcon,
-          { backgroundColor: isLiability ? '#fee2e2' : '#d1fae5' }
-        ]}>
-          <Ionicons 
-            name={isLiability ? 'trending-down' : 'trending-up'} 
-            size={20} 
-            color={isLiability ? '#ef4444' : '#10b981'} 
-          />
-        </View>
-        <Text style={styles.sectionTitle}>{title}</Text>
-      </View>
+  const generateBalanceSheetRows = (balanceSheet) => {
+    if (!balanceSheet) return '';
+    
+    const liabilities = balanceSheet.liabilities || [];
+    const assets = balanceSheet.assets || [];
+    const maxRows = Math.max(liabilities.length, assets.length);
+    
+    let rows = '';
+    for (let i = 0; i < maxRows; i++) {
+      const liability = liabilities[i];
+      const asset = assets[i];
       
-      {items?.map((item, index) => (
-        <View key={index} style={styles.balanceItem}>
-          <View style={styles.balanceItemLeft}>
-            <Text style={styles.balanceItemName}>{item.name}</Text>
-            {item.subItems && (
-              <View style={styles.subItems}>
-                {item.subItems.map((subItem, subIndex) => (
-                  <View key={subIndex} style={styles.subItem}>
-                    <Text style={styles.subItemName}>{subItem.name}</Text>
-                    <Text style={styles.subItemAmount}>
-                      {formatCurrency(subItem.amount)}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-          <Text style={[
-            styles.balanceItemAmount,
-            item.isTotal && styles.totalAmount
-          ]}>
-            {formatCurrency(item.amount)}
-          </Text>
-        </View>
-      ))}
-    </View>
-  );
+      rows += `
+        <tr>
+          <td>${liability ? liability.group_name : ''}</td>
+          <td class="amount">${liability ? formatCurrency(liability.amount) : ''}</td>
+          <td>${asset ? asset.group_name : ''}</td>
+          <td class="amount">${asset ? formatCurrency(asset.amount) : ''}</td>
+        </tr>
+      `;
+    }
+    
+    return rows;
+  };
 
   return (
     <View style={styles.container}>
@@ -122,158 +254,299 @@ export default function BalanceSheetScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* Header Section */}
-        <View style={styles.headerSection}>
-          <Text style={styles.sectionTitle}>Balance Sheet</Text>
-          <Text style={styles.sectionSubtitle}>
-            Statement of financial position showing assets, liabilities and equity
-          </Text>
-        </View>
-
-        {/* Period Selection */}
-        <View style={styles.periodContainer}>
-          <Text style={styles.periodLabel}>Select Period:</Text>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            style={styles.periodTabs}
-          >
-            {periodOptions.map((option) => (
-              <TouchableOpacity
-                key={option.key}
-                style={[
-                  styles.periodTab,
-                  selectedPeriod === option.key && styles.periodTabActive
-                ]}
-                onPress={() => setSelectedPeriod(option.key)}
-              >
-                <Text style={[
-                  styles.periodTabText,
-                  selectedPeriod === option.key && styles.periodTabTextActive
-                ]}>
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+        {/* Header Actions - Same as LedgersScreen */}
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.exportButton} onPress={generatePDF}>
+            <Ionicons name="download" size={16} color="white" />
+            <Text style={styles.exportButtonText}>Export PDF</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
+            <Ionicons name="refresh" size={16} color="#3e60ab" />
+            <Text style={styles.refreshButtonText}>Refresh</Text>
+          </TouchableOpacity>
         </View>
 
         {loading ? (
           <View style={styles.loadingContainer}>
-            <View style={styles.loadingCard}>
-              <View style={styles.spinner} />
-              <Text style={styles.loadingText}>Loading balance sheet...</Text>
-            </View>
+            <Text style={styles.loadingText}>Loading balance sheet...</Text>
           </View>
         ) : !balanceSheetData ? (
           <View style={styles.emptyContainer}>
-            <View style={styles.emptyCard}>
-              <View style={styles.emptyIcon}>
-                <Ionicons name="document-text-outline" size={64} color="#94a3b8" />
-              </View>
-              <Text style={styles.emptyTitle}>No Data Available</Text>
-              <Text style={styles.emptySubtitle}>
-                Balance sheet data is not available for the selected period
-              </Text>
-            </View>
+            <Ionicons name="document-text-outline" size={64} color="#d1d5db" />
+            <Text style={styles.emptyTitle}>No Data Available</Text>
+            <Text style={styles.emptySubtitle}>
+              Balance sheet data is not available for the selected period
+            </Text>
           </View>
         ) : (
           <>
-            {/* Balance Sheet Header */}
+            {/* Clean Report Header */}
             <View style={styles.reportHeader}>
-              <Text style={styles.reportTitle}>
-                {balanceSheetData.company_name || 'Company Name'}
-              </Text>
-              <Text style={styles.reportSubtitle}>Balance Sheet</Text>
-              <Text style={styles.reportPeriod}>
-                As on {balanceSheetData.as_on_date || 'Date'}
-              </Text>
-            </View>
-
-            {/* Assets Section */}
-            {renderBalanceSheetSection(
-              'ASSETS',
-              balanceSheetData.assets,
-              false
-            )}
-
-            {/* Liabilities Section */}
-            {renderBalanceSheetSection(
-              'LIABILITIES',
-              balanceSheetData.liabilities,
-              true
-            )}
-
-            {/* Equity Section */}
-            {renderBalanceSheetSection(
-              'EQUITY',
-              balanceSheetData.equity,
-              false
-            )}
-
-            {/* Balance Verification */}
-            <View style={styles.balanceVerification}>
-              <View style={styles.verificationCard}>
-                <View style={styles.verificationHeader}>
-                  <Ionicons name="checkmark-circle" size={24} color="#10b981" />
-                  <Text style={styles.verificationTitle}>Balance Verification</Text>
-                </View>
-                
-                <View style={styles.verificationRow}>
-                  <Text style={styles.verificationLabel}>Total Assets:</Text>
-                  <Text style={styles.verificationAmount}>
-                    {formatCurrency(balanceSheetData.total_assets)}
+              <Text style={styles.reportTitle}>Balance Sheet</Text>
+              <Text style={styles.reportDate}>As on {formatDateToDDMMYY(balanceSheetData.as_on_date)}</Text>
+              <View style={styles.reportSummary}>
+                <Text style={styles.summaryText}>
+                  Total Assets: <Text style={[styles.summaryAmount, { color: '#059669' }]}>
+                    {formatCurrency(balanceSheetData.totals?.total_assets || 0)}
                   </Text>
-                </View>
-                
-                <View style={styles.verificationRow}>
-                  <Text style={styles.verificationLabel}>Total Liabilities + Equity:</Text>
-                  <Text style={styles.verificationAmount}>
-                    {formatCurrency(balanceSheetData.total_liabilities_equity)}
-                  </Text>
-                </View>
-                
-                <View style={[styles.verificationRow, styles.differenceRow]}>
-                  <Text style={styles.verificationLabel}>Difference:</Text>
-                  <Text style={[
-                    styles.verificationAmount,
-                    { color: balanceSheetData.difference === 0 ? '#10b981' : '#ef4444' }
-                  ]}>
-                    {formatCurrency(balanceSheetData.difference)}
-                  </Text>
-                </View>
-                
-                {balanceSheetData.difference === 0 ? (
-                  <View style={styles.balancedIndicator}>
-                    <Ionicons name="checkmark-circle" size={16} color="#10b981" />
-                    <Text style={styles.balancedText}>Balance Sheet is Balanced</Text>
-                  </View>
-                ) : (
-                  <View style={styles.unbalancedIndicator}>
-                    <Ionicons name="warning" size={16} color="#ef4444" />
-                    <Text style={styles.unbalancedText}>Balance Sheet is Not Balanced</Text>
-                  </View>
-                )}
+                </Text>
               </View>
             </View>
 
-            {/* Export Options */}
-            <View style={styles.exportContainer}>
-              <TouchableOpacity style={styles.exportButton} activeOpacity={0.8}>
-                <Ionicons name="download" size={20} color="#3e60ab" />
-                <Text style={styles.exportButtonText}>Export PDF</Text>
-              </TouchableOpacity>
+            {/* Scrollable Balance Sheet Table */}
+            <View style={styles.balanceSheetContainer}>
+              {/* Scroll Hint */}
+              <View style={styles.scrollHint}>
+                <Ionicons name="swap-horizontal" size={16} color="#6b7280" />
+                <Text style={styles.scrollHintText}>Swipe horizontally to view full table</Text>
+              </View>
               
-              <TouchableOpacity style={styles.exportButton} activeOpacity={0.8}>
-                <Ionicons name="document-text" size={20} color="#10b981" />
-                <Text style={styles.exportButtonText}>Export Excel</Text>
-              </TouchableOpacity>
+              <ScrollView 
+                horizontal={true}
+                showsHorizontalScrollIndicator={true}
+                style={styles.tableScrollView}
+                contentContainerStyle={styles.tableScrollContent}
+              >
+                <View style={styles.tallyTable}>
+                  {/* Table Header */}
+                  <View style={styles.tableHeader}>
+                    <View style={[styles.tableHeaderCell, styles.leftColumn]}>
+                      <Text style={styles.tableHeaderText}>Liabilities</Text>
+                    </View>
+                    <View style={styles.tableHeaderAmount}>
+                      <Text style={styles.tableHeaderText}>Amount</Text>
+                    </View>
+                    <View style={[styles.tableHeaderCell, styles.rightColumn]}>
+                      <Text style={styles.tableHeaderText}>Assets</Text>
+                    </View>
+                    <View style={styles.tableHeaderAmount}>
+                      <Text style={styles.tableHeaderText}>Amount</Text>
+                    </View>
+                  </View>
+
+                  {/* Scrollable Table Body */}
+                  <ScrollView 
+                    style={styles.tableBodyScrollView}
+                    showsVerticalScrollIndicator={true}
+                    nestedScrollEnabled={true}
+                  >
+                    <View style={styles.tableBody}>
+                      {balanceSheetData.assets && balanceSheetData.liabilities_and_capital && 
+                        renderBalanceSheetRows(balanceSheetData)
+                      }
+                      
+                      {/* Total Row */}
+                      <View style={[styles.tableRow, styles.totalRow]}>
+                        <View style={[styles.tableCell, styles.leftColumn]}>
+                          <Text style={styles.totalText}>Total</Text>
+                        </View>
+                        <View style={styles.tableCellAmount}>
+                          <Text style={styles.totalAmount}>
+                            {formatCurrency(balanceSheetData.totals?.total_liabilities || 0)}
+                          </Text>
+                        </View>
+                        <View style={[styles.tableCell, styles.rightColumn]}>
+                          <Text style={styles.totalText}>Total</Text>
+                        </View>
+                        <View style={styles.tableCellAmount}>
+                          <Text style={styles.totalAmount}>
+                            {formatCurrency(balanceSheetData.totals?.total_assets || 0)}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  </ScrollView>
+                </View>
+              </ScrollView>
             </View>
+
           </>
         )}
       </ScrollView>
     </View>
   );
+
+  function renderBalanceSheetRows(balanceSheetData) {
+    if (!balanceSheetData) return [];
+    
+    const { assets, liabilities_and_capital, asset_details, liability_details } = balanceSheetData;
+    
+    const liabilities = [];
+    const assetsList = [];
+
+    // LIABILITIES SIDE - Build detailed list with individual accounts
+    // Capital & Reserves
+    if (liabilities_and_capital?.capital_and_reserves?.groups && liabilities_and_capital.capital_and_reserves.groups.length > 0) {
+      liabilities_and_capital.capital_and_reserves.groups.forEach(group => {
+        liabilities.push({
+          name: group.group_name,
+          amount: group.amount,
+          section: 'Capital & Reserves',
+          detail: group.note || ''
+        });
+      });
+    }
+    
+    // Long-term Liabilities
+    if (liabilities_and_capital?.long_term_liabilities?.groups && liabilities_and_capital.long_term_liabilities.groups.length > 0) {
+      liabilities_and_capital.long_term_liabilities.groups.forEach(group => {
+        liabilities.push({
+          name: group.group_name,
+          amount: group.amount,
+          section: 'Long-term Liabilities'
+        });
+      });
+    }
+    
+    // Current Liabilities
+    if (liabilities_and_capital?.current_liabilities?.groups && liabilities_and_capital.current_liabilities.groups.length > 0) {
+      liabilities_and_capital.current_liabilities.groups.forEach(group => {
+        liabilities.push({
+          name: group.group_name,
+          amount: group.amount,
+          section: 'Current Liabilities'
+        });
+      });
+    }
+
+    // Add detailed liability accounts from liability_details
+    if (liability_details && liability_details.length > 0) {
+      liability_details.forEach(detail => {
+        // Only add if not already added as a group
+        const existingLiability = liabilities.find(l => l.name === detail.ledger_name);
+        if (!existingLiability) {
+          liabilities.push({
+            name: detail.ledger_name,
+            amount: detail.amount,
+            section: detail.category,
+            detail: detail.ledger_code ? `Code: ${detail.ledger_code}` : ''
+          });
+        }
+      });
+    }
+
+    // ASSETS SIDE - Build detailed list with individual accounts
+    // Fixed Assets
+    if (assets?.fixed_assets?.groups && assets.fixed_assets.groups.length > 0) {
+      assets.fixed_assets.groups.forEach(group => {
+        assetsList.push({
+          name: group.group_name,
+          amount: group.amount,
+          section: 'Fixed Assets'
+        });
+      });
+    }
+    
+    // Current Assets
+    if (assets?.current_assets?.groups && assets.current_assets.groups.length > 0) {
+      assets.current_assets.groups.forEach(group => {
+        assetsList.push({
+          name: group.group_name,
+          amount: group.amount,
+          section: 'Current Assets'
+        });
+      });
+    }
+    
+    // Add detailed asset accounts from asset_details
+    if (asset_details && asset_details.length > 0) {
+      asset_details.forEach(detail => {
+        // Only add if not already added as a group
+        const existingAsset = assetsList.find(a => a.name === detail.ledger_name);
+        if (!existingAsset) {
+          assetsList.push({
+            name: detail.ledger_name,
+            amount: detail.amount,
+            section: detail.category,
+            detail: detail.quantity ? `Qty: ${detail.quantity} @ ₹${detail.avg_cost}` : (detail.ledger_code ? `Code: ${detail.ledger_code}` : '')
+          });
+        }
+      });
+    }
+    
+    // Investments
+    if (assets?.investments?.groups && assets.investments.groups.length > 0) {
+      assets.investments.groups.forEach(group => {
+        assetsList.push({
+          name: group.group_name,
+          amount: group.amount,
+          section: 'Investments'
+        });
+      });
+    }
+
+    const maxRows = Math.max(liabilities.length, assetsList.length);
+    const rows = [];
+
+    // Track current sections for better section header display
+    let currentLiabilitySection = null;
+    let currentAssetSection = null;
+
+    for (let i = 0; i < maxRows; i++) {
+      const liability = liabilities[i];
+      const asset = assetsList[i];
+
+      // Check if we need section headers
+      const needLiabilitySectionHeader = liability?.section && liability.section !== currentLiabilitySection;
+      const needAssetSectionHeader = asset?.section && asset.section !== currentAssetSection;
+
+      if (needLiabilitySectionHeader) currentLiabilitySection = liability.section;
+      if (needAssetSectionHeader) currentAssetSection = asset.section;
+
+      rows.push(
+        <View key={i} style={[
+          styles.tableRow,
+          // Add section separator styling for better visual separation
+          (needLiabilitySectionHeader || needAssetSectionHeader) && i > 0 && styles.sectionSeparator
+        ]}>
+          <View style={[styles.tableCell, styles.leftColumn]}>
+            {/* Enhanced section header for liabilities */}
+            {needLiabilitySectionHeader && (
+              <View style={styles.sectionHeaderContainer}>
+                <Text style={[styles.sectionHeader, styles.liabilitySectionHeader]}>
+                  {liability.section}
+                </Text>
+              </View>
+            )}
+            <Text style={styles.tableCellText}>
+              {liability ? liability.name : ''}
+            </Text>
+            {liability?.detail && (
+              <Text style={styles.detailText}>{liability.detail}</Text>
+            )}
+          </View>
+          <View style={styles.tableCellAmount}>
+            <Text style={styles.tableCellAmountText}>
+              {liability ? formatCurrency(liability.amount) : ''}
+            </Text>
+          </View>
+          <View style={[styles.tableCell, styles.rightColumn]}>
+            {/* Enhanced section header for assets */}
+            {needAssetSectionHeader && (
+              <View style={styles.sectionHeaderContainer}>
+                <Text style={[styles.sectionHeader, styles.assetSectionHeader]}>
+                  {asset.section}
+                </Text>
+              </View>
+            )}
+            <Text style={styles.tableCellText}>
+              {asset ? asset.name : ''}
+            </Text>
+            {asset?.detail && (
+              <Text style={styles.detailText}>{asset.detail}</Text>
+            )}
+          </View>
+          <View style={styles.tableCellAmount}>
+            <Text style={styles.tableCellAmountText}>
+              {asset ? formatCurrency(asset.amount) : ''}
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    return rows;
+  }
 }
 
 const styles = StyleSheet.create({
@@ -285,100 +558,63 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 120, // Extra padding for better scrolling
   },
-  headerSection: {
-    padding: 20,
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#0f172a',
-    marginBottom: 8,
-    fontFamily: 'Agency',
-    letterSpacing: -0.5,
-  },
-  sectionSubtitle: {
-    fontSize: 16,
-    color: '#64748b',
-    fontFamily: 'Agency',
-    lineHeight: 24,
-  },
-  periodContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
-  },
-  periodLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    fontFamily: 'Agency',
-    marginBottom: 12,
-  },
-  periodTabs: {
+
+  // Header Actions - Same as LedgersScreen
+  headerActions: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
-  periodTab: {
+  exportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#3e60ab',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    marginRight: 12,
-    borderRadius: 16,
-    backgroundColor: 'white',
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderRadius: 8,
+    gap: 8,
   },
-  periodTabActive: {
-    backgroundColor: '#3e60ab',
-    borderColor: '#3e60ab',
-    shadowColor: '#3e60ab',
-    shadowOpacity: 0.3,
-  },
-  periodTabText: {
-    fontSize: 14,
-    color: '#64748b',
-    fontFamily: 'Agency',
-    fontWeight: '500',
-  },
-  periodTabTextActive: {
+  exportButtonText: {
     color: 'white',
+    fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Agency',
   },
+  refreshButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#3e60ab',
+    gap: 8,
+  },
+  refreshButtonText: {
+    color: '#3e60ab',
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Agency',
+  },
+
+  // Loading and Empty States - Same as LedgersScreen
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 40,
   },
-  loadingCard: {
-    backgroundColor: 'white',
-    paddingHorizontal: 32,
-    paddingVertical: 24,
-    borderRadius: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  spinner: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 3,
-    borderColor: '#e2e8f0',
-    borderTopColor: '#3e60ab',
-    marginBottom: 12,
-  },
   loadingText: {
     fontSize: 16,
-    color: '#64748b',
+    color: '#6b7280',
     fontFamily: 'Agency',
   },
   emptyContainer: {
@@ -388,275 +624,245 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 40,
   },
-  emptyCard: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 32,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-    width: '100%',
-  },
-  emptyIcon: {
-    marginBottom: 20,
-  },
   emptyTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#0f172a',
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
     fontFamily: 'Agency',
+    marginTop: 16,
     marginBottom: 8,
-    textAlign: 'center',
   },
   emptySubtitle: {
-    fontSize: 16,
-    color: '#64748b',
+    fontSize: 14,
+    color: '#6b7280',
     fontFamily: 'Agency',
     textAlign: 'center',
-    lineHeight: 24,
   },
+
+  // Report Header - Clean and Simple
   reportHeader: {
     backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 24,
-    marginHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
   },
   reportTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#0f172a',
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
     fontFamily: 'Agency',
     marginBottom: 4,
     textAlign: 'center',
   },
-  reportSubtitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#3e60ab',
+  reportDate: {
+    fontSize: 13,
+    color: '#6b7280',
     fontFamily: 'Agency',
-    marginBottom: 8,
+    marginBottom: 12,
+  },
+  reportSummary: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  summaryText: {
+    fontSize: 13,
+    color: '#374151',
+    fontFamily: 'Agency',
     textAlign: 'center',
   },
-  reportPeriod: {
+  summaryAmount: {
+    fontWeight: 'bold',
     fontSize: 14,
-    color: '#64748b',
-    fontFamily: 'Agency',
-    textAlign: 'center',
   },
-  sectionCard: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 20,
-    marginHorizontal: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
+
+  // Scrollable Table - Fixed and Scrollable
+  balanceSheetContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
-  sectionHeader: {
+  scrollHint: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 2,
-    borderBottomColor: '#e2e8f0',
-    gap: 12,
+    justifyContent: 'center',
+    paddingVertical: 8,
+    marginBottom: 8,
+    backgroundColor: '#f8fafc',
+    borderRadius: 6,
+    gap: 6,
   },
-  sectionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+  scrollHintText: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontFamily: 'Agency',
+    fontStyle: 'italic',
+  },
+  tableScrollView: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  tableScrollContent: {
+    minWidth: '100%',
+  },
+  tallyTable: {
+    backgroundColor: 'white',
+    minWidth: 560, // Reduced width for cleaner layout (160+120+160+120)
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#f3f4f6',
+    borderBottomWidth: 2,
+    borderBottomColor: '#d1d5db',
+    minHeight: 50,
+  },
+  tableHeaderCell: {
+    width: 160, // Adjusted width for better fit
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRightWidth: 1,
+    borderRightColor: '#d1d5db',
+    justifyContent: 'center',
+  },
+  tableHeaderAmount: {
+    width: 120, // Fixed width for amount columns
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRightWidth: 0, // Remove right border from last column
+    borderRightColor: '#d1d5db',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0f172a',
-    fontFamily: 'Agency',
+  leftColumn: {
+    borderRightWidth: 1,
+    borderRightColor: '#d1d5db',
   },
-  balanceItem: {
+  rightColumn: {
+    borderLeftWidth: 1,
+    borderLeftColor: '#d1d5db',
+  },
+  tableHeaderText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#374151',
+    fontFamily: 'Agency',
+    textAlign: 'center',
+  },
+  tableBodyScrollView: {
+    maxHeight: 400, // Limit height to make it scrollable
+  },
+  tableBody: {
+    backgroundColor: 'white',
+  },
+  tableRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: '#f3f4f6',
+    minHeight: 45,
   },
-  balanceItemLeft: {
-    flex: 1,
-    paddingRight: 16,
+  totalRow: {
+    backgroundColor: '#f9fafb',
+    borderTopWidth: 2,
+    borderTopColor: '#d1d5db',
+    borderBottomWidth: 0,
+    minHeight: 55,
   },
-  balanceItemName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+  tableCell: {
+    width: 160, // Fixed width matching header
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRightWidth: 1,
+    borderRightColor: '#f3f4f6',
+    justifyContent: 'center',
+  },
+  tableCellAmount: {
+    width: 120, // Fixed width matching header
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRightWidth: 0, // Remove right border from last column
+    borderRightColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+  },
+  tableCellText: {
+    fontSize: 13,
+    color: '#374151',
     fontFamily: 'Agency',
-    marginBottom: 4,
+    lineHeight: 18,
   },
-  balanceItemAmount: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+  tableCellAmountText: {
+    fontSize: 13,
+    color: '#374151',
+    fontFamily: 'Agency',
+    textAlign: 'right',
+    fontWeight: '500',
+  },
+  totalText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#111827',
+    fontFamily: 'Agency',
+  },
+  totalAmount: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#111827',
     fontFamily: 'Agency',
     textAlign: 'right',
   },
-  totalAmount: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#3e60ab',
+
+  // Section and Detail Styles - Improved for Fixed Layout
+  sectionLabel: {
+    fontSize: 10,
+    color: '#9ca3af',
+    fontFamily: 'Agency',
+    fontStyle: 'italic',
+    marginTop: 2,
   },
-  subItems: {
+  detailText: {
+    fontSize: 10,
+    color: '#6b7280',
+    fontFamily: 'Agency',
+    marginTop: 2,
+    lineHeight: 12,
+  },
+  sectionSeparator: {
+    borderTopWidth: 2,
+    borderTopColor: '#d1d5db',
     marginTop: 8,
-    paddingLeft: 16,
+    paddingTop: 8,
+    backgroundColor: '#f9fafb',
   },
-  subItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  sectionHeaderContainer: {
+    marginBottom: 4,
     alignItems: 'center',
-    paddingVertical: 4,
   },
-  subItemName: {
-    fontSize: 14,
-    color: '#64748b',
+  sectionHeader: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#374151',
     fontFamily: 'Agency',
-    flex: 1,
-  },
-  subItemAmount: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#64748b',
-    fontFamily: 'Agency',
-  },
-  balanceVerification: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
-  },
-  verificationCard: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
+    backgroundColor: '#e5e7eb',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    textAlign: 'center',
+    minWidth: 80,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: '#d1d5db',
   },
-  verificationHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-    gap: 12,
+  liabilitySectionHeader: {
+    backgroundColor: '#fef2f2',
+    borderColor: '#fecaca',
+    color: '#991b1b',
   },
-  verificationTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0f172a',
-    fontFamily: 'Agency',
+  assetSectionHeader: {
+    backgroundColor: '#f0fdf4',
+    borderColor: '#bbf7d0',
+    color: '#166534',
   },
-  verificationRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  differenceRow: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#e2e8f0',
-    marginBottom: 16,
-  },
-  verificationLabel: {
-    fontSize: 16,
-    color: '#64748b',
-    fontFamily: 'Agency',
-  },
-  verificationAmount: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
-    fontFamily: 'Agency',
-  },
-  balancedIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#d1fae5',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    gap: 8,
-  },
-  balancedText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#10b981',
-    fontFamily: 'Agency',
-  },
-  unbalancedIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fee2e2',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    gap: 8,
-  },
-  unbalancedText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ef4444',
-    fontFamily: 'Agency',
-  },
-  exportContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginBottom: 24,
-    gap: 12,
-  },
-  exportButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'white',
-    borderRadius: 16,
-    paddingVertical: 16,
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  exportButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
-    fontFamily: 'Agency',
-  },
+
 });

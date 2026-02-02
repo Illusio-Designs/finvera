@@ -8,70 +8,6 @@ import { useNotification } from '../../../contexts/NotificationContext';
 import { reportsAPI } from '../../../lib/api';
 import { useNavigation } from '@react-navigation/native';
 
-const REPORTS = [
-  {
-    id: 'trial-balance',
-    title: 'Trial Balance',
-    description: 'View trial balance report for a specific date range',
-    icon: 'bar-chart',
-    color: '#3b82f6',
-    bgColor: '#dbeafe',
-    apiCall: 'trialBalance',
-    hasDateRange: true,
-  },
-  {
-    id: 'balance-sheet',
-    title: 'Balance Sheet',
-    description: 'View balance sheet report',
-    icon: 'trending-up',
-    color: '#10b981',
-    bgColor: '#d1fae5',
-    apiCall: 'balanceSheet',
-    hasDateRange: true,
-  },
-  {
-    id: 'profit-loss',
-    title: 'Profit & Loss',
-    description: 'View profit and loss statement',
-    icon: 'trending-down',
-    color: '#ef4444',
-    bgColor: '#fee2e2',
-    apiCall: 'profitLoss',
-    hasDateRange: true,
-  },
-  {
-    id: 'ledger-statement',
-    title: 'Ledger Statement',
-    description: 'View detailed ledger statement',
-    icon: 'document-text',
-    color: '#8b5cf6',
-    bgColor: '#ede9fe',
-    apiCall: 'ledgerStatement',
-    hasDateRange: true,
-    requiresLedger: true,
-  },
-  {
-    id: 'stock-summary',
-    title: 'Stock Summary',
-    description: 'View stock summary report',
-    icon: 'cube',
-    color: '#f59e0b',
-    bgColor: '#fef3c7',
-    apiCall: 'stockSummary',
-    hasDateRange: true,
-  },
-  {
-    id: 'stock-ledger',
-    title: 'Stock Ledger',
-    description: 'View detailed stock ledger',
-    icon: 'list',
-    color: '#6366f1',
-    bgColor: '#e0e7ff',
-    apiCall: 'stockLedger',
-    hasDateRange: true,
-  },
-];
-
 export default function ReportsScreen() {
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
@@ -80,11 +16,59 @@ export default function ReportsScreen() {
   const [showDateModal, setShowDateModal] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [dateRange, setDateRange] = useState({
     from_date: '',
     to_date: '',
     ledger_id: '',
   });
+
+  const reports = [
+    {
+      id: 'profit-loss',
+      title: 'Profit & Loss',
+      description: 'Trading account showing income and expenses',
+      icon: 'trending-up',
+      color: '#10b981',
+      screen: 'ProfitLoss',
+      category: 'Financial',
+    },
+    {
+      id: 'balance-sheet',
+      title: 'Balance Sheet',
+      description: 'Statement of financial position',
+      icon: 'bar-chart',
+      color: '#3b82f6',
+      screen: 'BalanceSheet',
+      category: 'Financial',
+    },
+    {
+      id: 'trial-balance',
+      title: 'Trial Balance',
+      description: 'Verify accounting accuracy',
+      icon: 'calculator',
+      color: '#8b5cf6',
+      apiCall: 'trialBalance',
+      hasDateRange: true,
+      category: 'Accounting',
+    },
+    {
+      id: 'ledger-statement',
+      title: 'Ledger Statement',
+      description: 'Detailed transaction history',
+      icon: 'document-text',
+      color: '#f59e0b',
+      apiCall: 'ledgerStatement',
+      hasDateRange: true,
+      requiresLedger: true,
+      category: 'Accounting',
+    },
+  ];
+
+  const categories = ['All', 'Financial', 'Accounting'];
+  const filteredReports = selectedCategory === 'All' 
+    ? reports 
+    : reports.filter(report => report.category === selectedCategory);
 
   const handleMenuPress = () => {
     openDrawer();
@@ -92,7 +76,6 @@ export default function ReportsScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    // Add any refresh logic here
     setTimeout(() => setRefreshing(false), 1000);
   }, []);
 
@@ -108,7 +91,6 @@ export default function ReportsScreen() {
   };
 
   useEffect(() => {
-    // Set default date range
     setDateRange({
       from_date: getFirstDayOfMonth(),
       to_date: getCurrentDate(),
@@ -117,28 +99,13 @@ export default function ReportsScreen() {
   }, []);
 
   const handleReportPress = (report) => {
-    // Map report IDs to screen names
-    const screenMap = {
-      'balance-sheet': 'BalanceSheet',
-      'profit-loss': 'ProfitLoss',
-      'trial-balance': 'Reports', // Keep on same screen for now
-      'ledger-statement': 'Reports', // Keep on same screen for now
-      'stock-ledger': 'Reports', // Keep on same screen for now
-      'stock-summary': 'Reports', // Keep on same screen for now
-    };
-
-    const screenName = screenMap[report.id];
-    
-    if (screenName && screenName !== 'Reports') {
-      navigation.navigate(screenName);
+    if (report.screen) {
+      navigation.navigate(report.screen);
+    } else if (report.hasDateRange) {
+      setSelectedReport(report);
+      setShowDateModal(true);
     } else {
-      // Original logic for reports that don't have dedicated screens yet
-      if (report.hasDateRange) {
-        setSelectedReport(report);
-        setShowDateModal(true);
-      } else {
-        generateReport(report, {});
-      }
+      generateReport(report, {});
     }
   };
 
@@ -151,20 +118,8 @@ export default function ReportsScreen() {
         case 'trialBalance':
           response = await reportsAPI.trialBalance(params);
           break;
-        case 'balanceSheet':
-          response = await reportsAPI.balanceSheet(params);
-          break;
-        case 'profitLoss':
-          response = await reportsAPI.profitLoss(params);
-          break;
         case 'ledgerStatement':
           response = await reportsAPI.ledgerStatement(params);
-          break;
-        case 'stockSummary':
-          response = await reportsAPI.stockSummary(params);
-          break;
-        case 'stockLedger':
-          response = await reportsAPI.stockLedger(params);
           break;
         default:
           throw new Error('Unknown report type');
@@ -178,8 +133,6 @@ export default function ReportsScreen() {
         message: `${report.title} has been generated successfully`
       });
 
-      // In a real app, you would navigate to a report viewer screen
-      // For now, we'll just show the success message
       console.log('Report data:', data);
       
     } catch (error) {
@@ -226,66 +179,6 @@ export default function ReportsScreen() {
     setShowDateModal(false);
   };
 
-  const renderReportCard = (report, index) => (
-    <TouchableOpacity 
-      key={report.id}
-      style={[styles.reportCard, { transform: [{ scale: 1 }] }]}
-      onPress={() => handleReportPress(report)}
-      activeOpacity={0.95}
-    >
-      <View style={styles.reportCardGradient}>
-        <View style={styles.reportCardContent}>
-          <View style={styles.reportCardHeader}>
-            <View style={[styles.reportIcon, { backgroundColor: report.bgColor }]}>
-              <Ionicons name={report.icon} size={28} color={report.color} />
-            </View>
-            <View style={styles.reportBadge}>
-              <Text style={styles.reportBadgeText}>NEW</Text>
-            </View>
-          </View>
-          
-          <View style={styles.reportInfo}>
-            <Text style={styles.reportTitle}>{report.title}</Text>
-            <Text style={styles.reportDescription}>{report.description}</Text>
-            
-            <View style={styles.reportMeta}>
-              {report.hasDateRange && (
-                <View style={styles.metaChip}>
-                  <Ionicons name="calendar-outline" size={12} color="#6b7280" />
-                  <Text style={styles.metaText}>Date Range</Text>
-                </View>
-              )}
-              {report.requiresLedger && (
-                <View style={styles.metaChip}>
-                  <Ionicons name="folder-outline" size={12} color="#6b7280" />
-                  <Text style={styles.metaText}>Ledger</Text>
-                </View>
-              )}
-            </View>
-            
-            <View style={styles.reportFooter}>
-              <TouchableOpacity 
-                style={[styles.generateButton, { backgroundColor: report.color }]}
-                onPress={() => handleReportPress(report)}
-              >
-                <Ionicons name="analytics" size={16} color="white" />
-                <Text style={styles.generateButtonText}>Generate</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.moreButton}>
-                <Ionicons name="ellipsis-horizontal" size={16} color="#9ca3af" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-        
-        {/* Decorative elements */}
-        <View style={[styles.decorativeCircle, { backgroundColor: report.bgColor }]} />
-        <View style={[styles.decorativeLine, { backgroundColor: report.color }]} />
-      </View>
-    </TouchableOpacity>
-  );
-
   return (
     <View style={styles.container}>
       <TopBar 
@@ -300,30 +193,101 @@ export default function ReportsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        <View style={styles.section}>
-          <View style={styles.headerSection}>
-            <Text style={styles.sectionTitle}>Financial Reports</Text>
-            <Text style={styles.sectionSubtitle}>
-              Generate comprehensive reports to analyze your business performance
-            </Text>
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>6</Text>
-                <Text style={styles.statLabel}>Report Types</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>Real-time</Text>
-                <Text style={styles.statLabel}>Data</Text>
-              </View>
-            </View>
-          </View>
+        {/* Header Actions - Same as LedgersScreen */}
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.createButton} onPress={() => {}}>
+            <Ionicons name="analytics" size={16} color="white" />
+            <Text style={styles.createButtonText}>Generate Reports</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Category Filter */}
+        <View style={styles.categorySection}>
+          <Text style={styles.categoryTitle}>Categories</Text>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            style={styles.categoryTabs}
+            contentContainerStyle={styles.categoryTabsContent}
+          >
+            {categories.map((category) => (
+              <TouchableOpacity
+                key={category}
+                style={[
+                  styles.categoryTab,
+                  selectedCategory === category && styles.categoryTabActive
+                ]}
+                onPress={() => setSelectedCategory(category)}
+              >
+                <Text style={[
+                  styles.categoryTabText,
+                  selectedCategory === category && styles.categoryTabTextActive
+                ]}>
+                  {category}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Reports List */}
+        <View style={styles.reportsSection}>
+          <Text style={styles.sectionTitle}>
+            {selectedCategory === 'All' ? 'All Reports' : `${selectedCategory} Reports`}
+          </Text>
+          <Text style={styles.sectionSubtitle}>
+            {filteredReports.length} report{filteredReports.length !== 1 ? 's' : ''} available
+          </Text>
           
           <View style={styles.reportsList}>
-            {REPORTS.map((report, index) => renderReportCard(report, index))}
+            {filteredReports.map((report) => (
+              <TouchableOpacity
+                key={report.id}
+                style={styles.reportCard}
+                onPress={() => handleReportPress(report)}
+              >
+                <View style={styles.reportCardHeader}>
+                  <View style={styles.reportMainInfo}>
+                    <Text style={styles.reportName}>{report.title}</Text>
+                    <Text style={styles.reportDescription}>{report.description}</Text>
+                    <View style={styles.categoryBadge}>
+                      <Text style={styles.categoryBadgeText}>{report.category}</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.reportIcon, { backgroundColor: `${report.color}20` }]}>
+                    <Ionicons name={report.icon} size={24} color={report.color} />
+                  </View>
+                </View>
+                
+                <View style={styles.reportCardActions}>
+                  <TouchableOpacity 
+                    style={styles.actionButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleReportPress(report);
+                    }}
+                  >
+                    <Ionicons name="eye-outline" size={16} color="#3e60ab" />
+                    <Text style={styles.actionButtonText}>View</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.actionButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleReportPress(report);
+                    }}
+                  >
+                    <Ionicons name="download-outline" size={16} color="#2563eb" />
+                    <Text style={styles.actionButtonText}>Generate</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
-        {/* Modern Date Range Modal */}
+        {/* Date Range Modal */}
         <Modal
           visible={showDateModal}
           animationType="slide"
@@ -332,29 +296,15 @@ export default function ReportsScreen() {
         >
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
-              <View style={styles.modalHeaderContent}>
-                <View style={[styles.modalIcon, { backgroundColor: selectedReport?.bgColor }]}>
-                  <Ionicons name={selectedReport?.icon} size={20} color={selectedReport?.color} />
-                </View>
-                <View>
-                  <Text style={styles.modalTitle}>Generate Report</Text>
-                  <Text style={styles.modalSubtitle}>{selectedReport?.title}</Text>
-                </View>
-              </View>
-              <TouchableOpacity 
-                onPress={() => setShowDateModal(false)}
-                style={styles.closeButton}
-              >
+              <Text style={styles.modalTitle}>Generate Report</Text>
+              <TouchableOpacity onPress={() => setShowDateModal(false)}>
                 <Ionicons name="close" size={24} color="#6b7280" />
               </TouchableOpacity>
             </View>
             
-            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.modalContent}>
               <View style={styles.formCard}>
-                <View style={styles.formHeader}>
-                  <Ionicons name="calendar" size={20} color="#3e60ab" />
-                  <Text style={styles.formHeaderText}>Select Date Range</Text>
-                </View>
+                <Text style={styles.formHeaderText}>Select Date Range</Text>
                 
                 <View style={styles.dateInputsRow}>
                   <View style={styles.dateInputGroup}>
@@ -397,7 +347,7 @@ export default function ReportsScreen() {
 
               <View style={styles.actionButtons}>
                 <TouchableOpacity 
-                  style={[styles.actionButton, styles.cancelButton]}
+                  style={styles.cancelButton}
                   onPress={() => setShowDateModal(false)}
                   disabled={loading}
                 >
@@ -405,21 +355,14 @@ export default function ReportsScreen() {
                 </TouchableOpacity>
                 
                 <TouchableOpacity 
-                  style={[styles.actionButton, styles.primaryButton, loading && styles.primaryButtonDisabled]}
+                  style={styles.primaryButton}
                   onPress={handleGenerateReport}
                   disabled={loading}
                 >
-                  {loading ? (
-                    <View style={styles.loadingContainer}>
-                      <View style={styles.spinner} />
-                      <Text style={styles.primaryButtonText}>Generating...</Text>
-                    </View>
-                  ) : (
-                    <>
-                      <Ionicons name="analytics" size={20} color="white" />
-                      <Text style={styles.primaryButtonText}>Generate Report</Text>
-                    </>
-                  )}
+                  <Ionicons name="analytics" size={16} color="white" />
+                  <Text style={styles.primaryButtonText}>
+                    {loading ? 'Generating...' : 'Generate Report'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -433,7 +376,7 @@ export default function ReportsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#f9fafb',
   },
   content: {
     flex: 1,
@@ -441,280 +384,219 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 100,
   },
-  section: {
-    padding: 20,
-  },
-  headerSection: {
-    marginBottom: 32,
-  },
-  sectionTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#0f172a',
-    marginBottom: 8,
-    fontFamily: 'Agency',
-    letterSpacing: -0.5,
-  },
-  sectionSubtitle: {
-    fontSize: 16,
-    color: '#64748b',
-    marginBottom: 24,
-    fontFamily: 'Agency',
-    lineHeight: 24,
-  },
-  statsRow: {
+
+  // Header Actions - Same as LedgersScreen
+  headerActions: {
     flexDirection: 'row',
-    gap: 16,
-  },
-  statItem: {
-    backgroundColor: 'white',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  statNumber: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#3e60ab',
-    fontFamily: 'Agency',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#64748b',
-    fontFamily: 'Agency',
-    marginTop: 2,
-  },
-  reportsList: {
-    gap: 20,
-  },
-  reportCard: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-    overflow: 'hidden',
-  },
-  reportCardGradient: {
-    position: 'relative',
-    padding: 20,
-  },
-  reportCardContent: {
-    position: 'relative',
-    zIndex: 2,
-  },
-  reportCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  reportIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
-  reportBadge: {
-    backgroundColor: '#10b981',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  reportBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: 'white',
-    fontFamily: 'Agency',
-    letterSpacing: 0.5,
-  },
-  reportInfo: {
-    flex: 1,
-  },
-  reportTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 8,
-    fontFamily: 'Agency',
-    letterSpacing: -0.3,
-  },
-  reportDescription: {
-    fontSize: 14,
-    color: '#64748b',
-    marginBottom: 16,
-    fontFamily: 'Agency',
-    lineHeight: 20,
-  },
-  reportMeta: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 20,
-  },
-  metaChip: {
+  createButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    gap: 4,
-  },
-  metaText: {
-    fontSize: 11,
-    color: '#64748b',
-    fontFamily: 'Agency',
-    fontWeight: '500',
-  },
-  reportFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  generateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 12,
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    borderRadius: 8,
+    backgroundColor: '#3e60ab',
+    minWidth: 200,
   },
-  generateButtonText: {
+  createButtonText: {
     fontSize: 14,
     fontWeight: '600',
     color: 'white',
     fontFamily: 'Agency',
+    marginLeft: 8,
   },
-  moreButton: {
-    width: 40,
-    height: 40,
+
+  // Category Filter - Simple style
+  categorySection: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  categoryTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#111827',
+    fontFamily: 'Agency',
+    marginBottom: 12,
+  },
+  categoryTabs: {
+    flexDirection: 'row',
+  },
+  categoryTabsContent: {
+    paddingRight: 20,
+  },
+  categoryTab: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 12,
+    borderRadius: 6,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  categoryTabActive: {
+    backgroundColor: '#3e60ab',
+    borderColor: '#3e60ab',
+  },
+  categoryTabText: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontFamily: 'Agency',
+    fontWeight: '600',
+  },
+  categoryTabTextActive: {
+    color: 'white',
+  },
+
+  // Reports Section - Same as LedgersScreen
+  reportsSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    fontFamily: 'Agency',
+    marginBottom: 4,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontFamily: 'Agency',
+    marginBottom: 16,
+  },
+  reportsList: {
+    gap: 12,
+  },
+
+  // Report Cards - Same as LedgersScreen
+  reportCard: {
+    backgroundColor: 'white',
     borderRadius: 12,
-    backgroundColor: '#f8fafc',
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  reportCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  reportMainInfo: {
+    flex: 1,
+  },
+  reportName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    fontFamily: 'Agency',
+    marginBottom: 4,
+  },
+  reportDescription: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontFamily: 'Agency',
+    marginBottom: 8,
+  },
+  categoryBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: '#f3f4f6',
+  },
+  categoryBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#6b7280',
+    fontFamily: 'Agency',
+  },
+  reportIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    marginLeft: 16,
   },
-  decorativeCircle: {
-    position: 'absolute',
-    top: -20,
-    right: -20,
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    opacity: 0.1,
-    zIndex: 1,
+  reportCardActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+    gap: 8,
   },
-  decorativeLine: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 4,
-    opacity: 0.3,
-    zIndex: 1,
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#f9fafb',
+    gap: 4,
   },
+  actionButtonText: {
+    fontSize: 10,
+    fontFamily: 'Agency',
+    fontWeight: '600',
+  },
+
+  // Modal Styles - Same as LedgersScreen
   modalContainer: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#f9fafb',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  modalHeaderContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  modalIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderBottomColor: '#e5e7eb',
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#0f172a',
+    fontWeight: 'bold',
+    color: '#111827',
     fontFamily: 'Agency',
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: '#64748b',
-    fontFamily: 'Agency',
-    marginTop: 2,
-  },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#f8fafc',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flex: 1,
   },
   modalContent: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   formCard: {
     backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  formHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 20,
-    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   formHeaderText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontWeight: 'bold',
+    color: '#111827',
     fontFamily: 'Agency',
+    marginBottom: 16,
   },
   dateInputsRow: {
     flexDirection: 'row',
@@ -727,7 +609,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   formGroup: {
-    marginBottom: 20,
+    marginTop: 16,
   },
   label: {
     fontSize: 14,
@@ -739,20 +621,20 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    backgroundColor: '#f9fafb',
     paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   inputIcon: {
     marginRight: 8,
   },
   input: {
     flex: 1,
-    fontSize: 16,
-    color: '#0f172a',
+    fontSize: 14,
+    color: '#111827',
     fontFamily: 'Agency',
   },
   actionButtons: {
@@ -760,56 +642,36 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingBottom: 20,
   },
-  actionButton: {
+  cancelButton: {
+    flex: 1,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6b7280',
+    fontFamily: 'Agency',
+  },
+  primaryButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    backgroundColor: '#3e60ab',
+    paddingVertical: 12,
+    borderRadius: 8,
     gap: 8,
   },
-  cancelButton: {
-    backgroundColor: 'white',
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#64748b',
-    fontFamily: 'Agency',
-  },
-  primaryButton: {
-    backgroundColor: '#3e60ab',
-    shadowColor: '#3e60ab',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  primaryButtonDisabled: {
-    backgroundColor: '#94a3b8',
-    shadowOpacity: 0.1,
-  },
   primaryButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: 'white',
     fontFamily: 'Agency',
-  },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  spinner: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
-    borderTopColor: 'white',
   },
 });

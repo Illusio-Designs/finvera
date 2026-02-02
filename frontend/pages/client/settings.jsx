@@ -45,6 +45,7 @@ export default function SettingsPage() {
   const [showLogoUpload, setShowLogoUpload] = useState(false);
   const [showSignatureUpload, setShowSignatureUpload] = useState(false);
   const [showDSCConfig, setShowDSCConfig] = useState(false);
+  const [showBarcodeSettings, setShowBarcodeSettings] = useState(false);
 
   // Fetch current company details
   useEffect(() => {
@@ -317,6 +318,42 @@ export default function SettingsPage() {
                 </Button>
               </div>
             </Card>
+
+            {/* Barcode Settings Card */}
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setShowBarcodeSettings(true)}>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-3 bg-amber-100 rounded-lg">
+                      <FiHash className="h-6 w-6 text-amber-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Barcode Settings</h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Enable/disable barcode functionality for inventory items
+                      </p>
+                    </div>
+                  </div>
+                  {company?.settings?.barcode_enabled && (
+                    <div className="mt-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Enabled
+                      </span>
+                    </div>
+                  )}
+                  {company?.settings?.barcode_enabled === false && (
+                    <div className="mt-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        Disabled
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <Button variant="ghost" size="sm">
+                  <FiArrowRight className="h-5 w-5" />
+                </Button>
+              </div>
+            </Card>
           </div>
 
           {/* Edit Company Modal */}
@@ -473,6 +510,27 @@ export default function SettingsPage() {
             company={company}
             onSuccess={() => {
               setShowInvoiceNumbering(false);
+              // Refresh company data
+              const fetchCompany = async () => {
+                try {
+                  const response = await companyAPI.get(user.company_id);
+                  const companyData = response?.data?.data || response?.data;
+                  setCompany(companyData);
+                } catch (error) {
+                  console.error('Error fetching company:', error);
+                }
+              };
+              fetchCompany();
+            }}
+          />
+
+          {/* Barcode Settings Modal */}
+          <BarcodeSettingsModal
+            isOpen={showBarcodeSettings}
+            onClose={() => setShowBarcodeSettings(false)}
+            company={company}
+            onSuccess={() => {
+              setShowBarcodeSettings(false);
               // Refresh company data
               const fetchCompany = async () => {
                 try {
@@ -2122,6 +2180,156 @@ function DSCConfigModal({ isOpen, onClose, company, onSuccess }) {
           <Button onClick={handleSubmit} disabled={loading}>
             <FiSave className="h-4 w-4 mr-2" />
             {loading ? 'Saving...' : 'Save Configuration'}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// Barcode Settings Modal
+function BarcodeSettingsModal({ isOpen, onClose, company, onSuccess }) {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [barcodeEnabled, setBarcodeEnabled] = useState(false);
+  const [defaultBarcodeType, setDefaultBarcodeType] = useState('EAN13');
+  const [defaultBarcodePrefix, setDefaultBarcodePrefix] = useState('PRD');
+
+  useEffect(() => {
+    if (company && isOpen) {
+      const settings = company.settings || {};
+      setBarcodeEnabled(settings.barcode_enabled || false);
+      setDefaultBarcodeType(settings.default_barcode_type || 'EAN13');
+      setDefaultBarcodePrefix(settings.default_barcode_prefix || 'PRD');
+    }
+  }, [company, isOpen]);
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+      const currentSettings = company?.settings || {};
+      const updatedSettings = {
+        ...currentSettings,
+        barcode_enabled: barcodeEnabled,
+        default_barcode_type: defaultBarcodeType,
+        default_barcode_prefix: defaultBarcodePrefix,
+      };
+
+      await companyAPI.update(user.company_id, {
+        settings: updatedSettings,
+      });
+
+      toast.success('Barcode settings updated successfully');
+      onSuccess();
+    } catch (error) {
+      console.error('Error updating barcode settings:', error);
+      toast.error(error.response?.data?.message || 'Failed to update barcode settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Barcode Settings" size="md">
+      <div className="space-y-6">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <FiHash className="h-5 w-5 text-amber-600 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-amber-900 mb-1">
+                Barcode Configuration
+              </h4>
+              <p className="text-sm text-amber-700">
+                Enable barcode functionality for inventory items. When enabled, you can generate and use barcodes for purchase and sales operations.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Enable/Disable Barcode */}
+        <div className="space-y-4">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={barcodeEnabled}
+              onChange={(e) => setBarcodeEnabled(e.target.checked)}
+              className="h-5 w-5 text-primary-600 rounded focus:ring-primary-500"
+            />
+            <div>
+              <span className="text-sm font-medium text-gray-900">Enable Barcode Functionality</span>
+              <p className="text-xs text-gray-500 mt-1">
+                Allow barcode generation and scanning for inventory items
+              </p>
+            </div>
+          </label>
+        </div>
+
+        {/* Barcode Configuration (only show when enabled) */}
+        {barcodeEnabled && (
+          <div className="space-y-4 border-t pt-4">
+            <h5 className="font-medium text-gray-900">Default Barcode Settings</h5>
+            
+            <FormSelect
+              name="default_barcode_type"
+              label="Default Barcode Type"
+              value={defaultBarcodeType}
+              onChange={(name, value) => setDefaultBarcodeType(value)}
+              options={[
+                { value: 'EAN13', label: 'EAN-13 (International Standard)' },
+                { value: 'EAN8', label: 'EAN-8 (Short Format)' },
+                { value: 'CUSTOM', label: 'Custom Sequential' },
+              ]}
+              helperText="Default barcode format for new inventory items"
+            />
+
+            {defaultBarcodeType === 'CUSTOM' && (
+              <FormInput
+                name="default_barcode_prefix"
+                label="Default Barcode Prefix"
+                value={defaultBarcodePrefix}
+                onChange={(name, value) => setDefaultBarcodePrefix(value)}
+                placeholder="PRD"
+                helperText="Default prefix for custom sequential barcodes (e.g., PRD, ITEM, SKU)"
+                maxLength={10}
+              />
+            )}
+
+            <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+              <h6 className="font-medium text-gray-900 text-sm">Barcode Format Info:</h6>
+              <ul className="text-sm text-gray-600 space-y-1">
+                {defaultBarcodeType === 'EAN13' && (
+                  <>
+                    <li>• 13-digit international standard barcode</li>
+                    <li>• Includes country prefix (890 for India)</li>
+                    <li>• Suitable for retail products</li>
+                  </>
+                )}
+                {defaultBarcodeType === 'EAN8' && (
+                  <>
+                    <li>• 8-digit compact barcode format</li>
+                    <li>• Suitable for small products</li>
+                    <li>• Less common than EAN-13</li>
+                  </>
+                )}
+                {defaultBarcodeType === 'CUSTOM' && (
+                  <>
+                    <li>• Custom sequential numbering</li>
+                    <li>• Format: {defaultBarcodePrefix}XXXXXXXXXX</li>
+                    <li>• Suitable for internal inventory tracking</li>
+                  </>
+                )}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-end gap-3 pt-4 border-t">
+          <Button variant="outline" onClick={onClose} disabled={loading}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={loading}>
+            <FiSave className="h-4 w-4 mr-2" />
+            {loading ? 'Saving...' : 'Save Settings'}
           </Button>
         </div>
       </div>
