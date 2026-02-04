@@ -397,37 +397,64 @@ class TenantProvisioningService {
       const queryInterface = connection.getQueryInterface();
       const { Sequelize } = require('sequelize');
       
-      // Run consolidated tenant migration
-      const consolidatedMigrationFile = path.join(migrationsPath, '001-tenant-migration.js');
+      // Get all migration files that start with a number (e.g., 001-, 002-, etc.)
+      // Exclude admin-master migrations (those are for master DB only)
+      const migrationFiles = fs.readdirSync(migrationsPath)
+        .filter(file => file.match(/^\d{3}-.*\.js$/) && !file.includes('admin-master'))
+        .sort(); // Sort to ensure migrations run in order
       
-      if (fs.existsSync(consolidatedMigrationFile)) {
+      logger.info(`[MIGRATIONS] Found ${migrationFiles.length} tenant migration files`);
+      
+      if (migrationFiles.length === 0) {
+        logger.warn('⚠️  No tenant migration files found, falling back to sync');
+        const tenantModels = require('./tenantModels')(connection);
+        await connection.sync({ force: false });
+        return;
+      }
+      
+      // Run each migration file in order
+      for (const file of migrationFiles) {
+        const migrationFile = path.join(migrationsPath, file);
+        logger.info(`[MIGRATIONS] Running migration: ${file}`);
+        
         try {
-          const migration = require(consolidatedMigrationFile);
+          // Clear require cache to ensure fresh load
+          delete require.cache[require.resolve(migrationFile)];
+          
+          const migration = require(migrationFile);
           if (migration.up && typeof migration.up === 'function') {
             await migration.up(queryInterface, Sequelize);
-            logger.info('✅ Consolidated tenant migration completed');
+            logger.info(`[MIGRATIONS] ✅ Migration completed: ${file}`);
+          } else {
+            logger.warn(`[MIGRATIONS] ⚠️  Migration ${file} has no 'up' function`);
           }
         } catch (error) {
           if (error.message && (error.message.includes('already exists') || 
-                                error.message.includes('Duplicate'))) {
-            logger.debug('Consolidated migration already applied');
+                                error.message.includes('Duplicate') ||
+                                error.message.includes('Table') && error.message.includes('already exists'))) {
+            logger.info(`[MIGRATIONS] ℹ️  Migration ${file} already applied (tables exist)`);
           } else {
-            logger.warn(`⚠️  Consolidated migration failed: ${error.message}`);
+            logger.error(`[MIGRATIONS] ❌ Migration ${file} failed: ${error.message}`);
+            // Don't throw - continue with next migration
+            // This allows partial migrations to succeed
           }
         }
-      } else {
-        logger.warn('⚠️  Consolidated tenant migration file not found, falling back to sync');
-        const tenantModels = require('./tenantModels')(connection);
-        await connection.sync({ force: false });
       }
       
-      logger.info('✅ All tenant migrations completed successfully');
+      logger.info('[MIGRATIONS] ✅ All tenant migrations completed successfully');
       
     } catch (error) {
-      logger.warn('Error running tenant migrations, falling back to sync:', error.message);
+      logger.error('[MIGRATIONS] Error running tenant migrations:', error.message);
+      logger.warn('[MIGRATIONS] Falling back to sync...');
       // Fallback to sync
-      const tenantModels = require('./tenantModels')(connection);
-      await connection.sync({ force: false });
+      try {
+        const tenantModels = require('./tenantModels')(connection);
+        await connection.sync({ force: false });
+        logger.info('[MIGRATIONS] ✅ Sync completed successfully');
+      } catch (syncError) {
+        logger.error('[MIGRATIONS] ❌ Sync also failed:', syncError.message);
+        throw syncError;
+      }
     }
   }
 

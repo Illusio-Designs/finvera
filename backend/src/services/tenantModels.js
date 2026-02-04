@@ -652,6 +652,92 @@ module.exports = (sequelize) => {
     timestamps: true,
   });
 
+  // NumberingSeries model for advanced invoice numbering
+  models.NumberingSeries = sequelize.define('NumberingSeries', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    tenant_id: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    branch_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
+    voucher_type: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    series_name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    prefix: {
+      type: DataTypes.STRING(10),
+      allowNull: false,
+      validate: {
+        isUppercaseAlphanumeric(value) {
+          if (!/^[A-Z0-9]+$/.test(value)) {
+            throw new Error('Prefix must contain only uppercase letters and numbers');
+          }
+        },
+      },
+    },
+    format: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+      validate: {
+        containsRequiredTokens(value) {
+          if (!value.includes('PREFIX') || !value.includes('SEQUENCE')) {
+            throw new Error('Format must contain both PREFIX and SEQUENCE tokens');
+          }
+        },
+      },
+    },
+    separator: {
+      type: DataTypes.STRING(5),
+      defaultValue: '-',
+    },
+    sequence_length: {
+      type: DataTypes.INTEGER,
+      defaultValue: 4,
+    },
+    current_sequence: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    start_number: {
+      type: DataTypes.INTEGER,
+      defaultValue: 1,
+    },
+    end_number: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    reset_frequency: {
+      type: DataTypes.ENUM('never', 'monthly', 'yearly', 'financial_year'),
+      defaultValue: 'never',
+    },
+    last_reset_date: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    is_default: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    is_active: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
+  }, {
+    tableName: 'numbering_series',
+    timestamps: true,
+  });
+
   // NEW: Product Attribute models
   models.ProductAttribute = require('../models/ProductAttribute')(sequelize);
   models.ProductAttributeValue = require('../models/ProductAttributeValue')(sequelize);
@@ -706,6 +792,12 @@ module.exports = (sequelize) => {
   // TDS associations
   models.Voucher.hasMany(models.TDSDetail, { foreignKey: 'voucher_id', as: 'tdsDetails' });
   models.TDSDetail.belongsTo(models.Voucher, { foreignKey: 'voucher_id', as: 'voucher' });
+
+  // NumberingSeries associations
+  // Note: Branch model doesn't exist yet, so we'll skip that association for now
+  // When Branch model is added, uncomment the following:
+  // models.NumberingSeries.belongsTo(models.Branch, { foreignKey: 'branch_id', as: 'branch' });
+  // models.Branch.hasMany(models.NumberingSeries, { foreignKey: 'branch_id', as: 'numberingSeries' });
 
   // NEW: Inventory Item self-referencing for variants
   models.InventoryItem.belongsTo(models.InventoryItem, { as: 'ParentItem', foreignKey: 'parent_item_id' });
