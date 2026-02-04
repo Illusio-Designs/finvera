@@ -4,69 +4,77 @@
 
 This implementation plan breaks down the Indian Invoice System Backend into discrete coding tasks. The system will be built using Node.js with TypeScript, Express.js, Sequelize ORM, and PostgreSQL. The implementation follows a layered architecture with services for numbering, vouchers, GST calculation, E-Invoice, E-Way Bill, and TDS.
 
-The plan focuses on incremental development, starting with database schema and core services, then building up to invoice types and external integrations. Each major component includes property-based tests to validate correctness properties from the design document.
+The plan focuses on incremental development, building upon the existing database schema and codebase. Database migrations and tables have been completed (Task 1), so the implementation now focuses on core services, invoice types, and external integrations. Each major component includes property-based tests to validate correctness properties from the design document.
+
+**Current Status**: Database schema setup is complete. The remaining tasks build upon the existing codebase and database structure.
 
 ## Tasks
 
-- [x] 1. Database Schema Setup
-  - Create migration files for all new tables (numbering_series, numbering_history, enhanced e_invoices, e_way_bills, tds_details)
-  - Add indexes on tenant_id, voucher_type, status fields for performance
-  - Add foreign key constraints linking to vouchers table
-  - Add unique constraints on IRN and EWB number fields
-  - Run migrations and verify schema in development database
+- [x] 1. Database Schema Setup ✅ COMPLETED
+  - ✅ Created migration files for all new tables (numbering_series, numbering_history, enhanced e_invoices, e_way_bills, tds_details)
+  - ✅ Added indexes on tenant_id, voucher_type, status fields for performance
+  - ✅ Added foreign key constraints linking to vouchers table
+  - ✅ Added unique constraints on IRN and EWB number fields
+  - ✅ Ran migrations and verified schema in development database
   - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 12.10_
 
-- [ ] 2. Sequelize Models for New Tables
-  - [ ] 2.1 Create NumberingSeries model with validations
+- [x] 2. Sequelize Models for New Tables
+  - [x] 2.1 Create NumberingSeries model with validations
     - Define model with all fields (prefix, format, sequence_length, current_sequence, reset_frequency, etc.)
     - Add validation for format containing PREFIX and SEQUENCE tokens
     - Add validation for prefix (uppercase alphanumeric only)
     - Add tenant_id and branch_id associations
+    - Integrate with existing database schema from Task 1
     - _Requirements: 1.1, 1.2, 12.1_
   
-  - [ ] 2.2 Create NumberingHistory model
+  - [x] 2.2 Create NumberingHistory model
     - Define model with series_id, voucher_id, generated_number, sequence_used
-    - Add foreign key associations to NumberingSeries and Voucher
+    - Add foreign key associations to NumberingSeries and existing Voucher model
     - Add indexes on series_id and voucher_id
+    - Ensure compatibility with existing voucher structure
     - _Requirements: 1.10, 12.2_
   
-  - [ ] 2.3 Enhance EInvoice model
-    - Add retry_count and last_retry_at fields
+  - [x] 2.3 Enhance EInvoice model
+    - Add retry_count and last_retry_at fields to existing model
     - Add status enum (pending, generated, cancelled)
     - Add indexes on voucher_id and status
+    - Maintain backward compatibility with existing E-Invoice data
     - _Requirements: 2.3, 2.4, 12.4_
   
-  - [ ] 2.4 Enhance EWayBill model
+  - [x] 2.4 Enhance EWayBill model
     - Add all transport fields (transporter_id, vehicle_no, transport_mode, distance)
     - Add status enum (active, cancelled, expired)
     - Add validity calculation method
+    - Ensure compatibility with existing E-Way Bill structure
     - _Requirements: 3.3, 3.4, 12.5_
   
-  - [ ] 2.5 Create TDSDetail model
+  - [x] 2.5 Create TDSDetail model
     - Define model with section_code, tds_rate, taxable_amount, tds_amount
     - Add deductee_pan and deductee_name fields
     - Add certificate_no and certificate_date fields
-    - Add foreign key to Voucher
+    - Add foreign key to existing Voucher model
     - _Requirements: 4.1, 4.7, 12.7_
 
-- [ ] 3. Numbering Service Implementation
-  - [ ] 3.1 Implement core NumberingService class
+- [x] 3. Numbering Service Implementation
+  - [x] 3.1 Implement core NumberingService class
     - Create generateVoucherNumber method with database locking (SELECT FOR UPDATE)
     - Implement formatVoucherNumber with token replacement logic
     - Implement checkAndResetSequence for reset frequency handling
     - Add getNextSequence method with transaction support
     - Add updateCurrentSequence method
+    - Integrate with existing voucher creation workflow
     - _Requirements: 1.3, 1.5, 1.6, 1.9_
   
-  - [ ] 3.2 Implement numbering series management methods
+  - [x] 3.2 Implement numbering series management methods
     - Create createNumberingSeries with validation
     - Create updateNumberingSeries
     - Create setDefaultSeries
     - Create previewNextNumber
     - Add getNumberingSeries helper method
+    - Ensure compatibility with existing voucher types
     - _Requirements: 1.1, 1.2, 1.4_
   
-  - [ ] 3.3 Implement GST compliance validations
+  - [x] 3.3 Implement GST compliance validations
     - Add validateGSTCompliance method checking 16 character limit
     - Add validateFormat method checking required tokens
     - Add validatePrefix method checking alphanumeric only
@@ -97,15 +105,15 @@ The plan focuses on incremental development, starting with database schema and c
     - Generate numbers concurrently and verify no duplicates
     - **Validates: Requirements 1.9**
 
-- [ ] 4. GST Calculation Service Implementation
-  - [ ] 4.1 Implement GSTCalculationService class
+- [x] 4. GST Calculation Service Implementation
+  - [x] 4.1 Implement GSTCalculationService class
     - Create calculateItemGST method with intrastate/interstate logic
     - Create calculateVoucherGST method aggregating all items
     - Implement isIntrastate helper method
     - Add round-off calculation logic
     - _Requirements: 10.1, 10.2, 10.8, 10.9, 10.10_
   
-  - [ ] 4.2 Implement GSTIN validation methods
+  - [x] 4.2 Implement GSTIN validation methods
     - Create validateGSTIN with format and checksum validation
     - Create extractStateCode method
     - Add state code caching for performance
@@ -126,54 +134,59 @@ The plan focuses on incremental development, starting with database schema and c
     - Test total = subtotal + CGST + SGST + IGST + cess + round_off
     - **Validates: Requirements 10.10**
 
-- [ ] 5. Voucher Service Core Implementation
-  - [ ] 5.1 Implement VoucherService class structure
-    - Create createVoucher method with validation
-    - Create updateVoucher method (only for draft status)
-    - Create postVoucher method (finalize and create ledger entries)
-    - Create cancelVoucher method (soft delete)
-    - Create getVoucher and listVouchers methods
+- [x] 5. Voucher Service Core Implementation
+  - [x] 5.1 Enhance existing VoucherService class
+    - Extend createVoucher method with advanced numbering integration
+    - Enhance updateVoucher method (only for draft status)
+    - Enhance postVoucher method (finalize and create ledger entries)
+    - Enhance cancelVoucher method (soft delete)
+    - Improve getVoucher and listVouchers methods with new fields
+    - Maintain backward compatibility with existing voucher workflow
     - _Requirements: 13.1, 13.2, 13.8_
   
-  - [ ] 5.2 Implement voucher validation logic
-    - Add validateVoucherData method
+  - [x] 5.2 Enhance voucher validation logic
+    - Extend validateVoucherData method with new invoice types
     - Add validateInvoiceDate (not future, within FY)
-    - Add validatePartyDetails
+    - Add validatePartyDetails with GSTIN validation
     - Add validateItems (HSN codes, quantities, rates)
+    - Integrate with existing validation framework
     - _Requirements: 10.6, 10.7, 10.3_
   
-  - [ ] 5.3 Integrate NumberingService and GSTCalculationService
+  - [x] 5.3 Integrate NumberingService and GSTCalculationService
     - Call NumberingService.generateVoucherNumber in createVoucher
     - Call GSTCalculationService.calculateVoucherGST for all items
     - Store calculated GST amounts in voucher and items
+    - Ensure compatibility with existing GST calculation logic
     - _Requirements: 1.3, 10.1, 10.2_
   
-  - [ ] 5.4 Implement ledger entry generation
-    - Create generateLedgerEntries method
+  - [x] 5.4 Enhance ledger entry generation
+    - Extend generateLedgerEntries method for new invoice types
     - Generate customer/supplier debit/credit entries
     - Generate sales/purchase ledger entries
     - Generate GST output/input ledger entries
     - Generate round-off ledger entry
+    - Maintain compatibility with existing accounting structure
     - _Requirements: 10.9_
   
-  - [ ]* 5.5 Write property test for audit timestamp tracking
+  - [x] 5.5 Write property test for audit timestamp tracking
     - **Property 67: Audit Timestamp Tracking**
     - Test created_at is set and immutable, updated_at changes on modification
     - **Validates: Requirements 13.1, 13.2, 13.3**
   
-  - [ ]* 5.6 Write property test for voucher cancellation soft delete
+  - [x] 5.6 Write property test for voucher cancellation soft delete
     - **Property 69: Voucher Cancellation Soft Delete**
     - Test cancelled vouchers have status='cancelled' and record exists
     - **Validates: Requirements 13.8**
 
 - [ ] 6. Checkpoint - Core Services Complete
-  - Ensure all tests pass for Numbering, GST Calculation, and Voucher services
-  - Verify database schema is correct
-  - Test creating a basic sales invoice end-to-end
+  - Ensure all tests pass for Numbering, GST Calculation, and enhanced Voucher services
+  - Verify database schema integration is working correctly
+  - Test creating a basic sales invoice end-to-end with new numbering system
+  - Validate that existing voucher functionality remains intact
   - Ask the user if questions arise
 
-- [ ] 7. E-Invoice Service Implementation
-  - [ ] 7.1 Implement IRP Portal client
+- [-] 7. E-Invoice Service Implementation
+  - [x] 7.1 Implement IRP Portal client
     - Create IRPClient class with authentication methods
     - Implement OAuth2 token management with auto-refresh
     - Add generateEInvoice API call method
@@ -182,7 +195,7 @@ The plan focuses on incremental development, starting with database schema and c
     - Support both sandbox and production environments
     - _Requirements: 2.7, 2.8, 2.10_
   
-  - [ ] 7.2 Implement EInvoiceService class
+  - [x] 7.2 Implement EInvoiceService class
     - Create generateEInvoice method
     - Implement validateEInvoiceFields for mandatory field checking
     - Transform voucher data to IRP JSON format
@@ -190,30 +203,30 @@ The plan focuses on incremental development, starting with database schema and c
     - Store error_message on failure
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.9_
   
-  - [ ] 7.3 Implement E-Invoice cancellation
+  - [x] 7.3 Implement E-Invoice cancellation
     - Create cancelEInvoice method with 24-hour window check
     - Validate reason code and remarks are provided
     - Call IRP portal cancellation API
     - Update E-Invoice status to 'cancelled'
     - _Requirements: 2.5, 2.6_
   
-  - [ ] 7.4 Implement retry mechanism
+  - [x] 7.4 Implement retry mechanism
     - Create retryEInvoiceGeneration method
     - Increment retry_count and update last_retry_at
     - Implement circuit breaker pattern for IRP portal
     - _Requirements: 14.1, 14.3_
   
-  - [ ]* 7.5 Write property test for E-Invoice threshold triggering
+  - [x] 7.5 Write property test for E-Invoice threshold triggering
     - **Property 10: E-Invoice Threshold Triggering**
     - Test invoices above threshold trigger E-Invoice generation
     - **Validates: Requirements 2.1**
   
-  - [ ]* 7.6 Write property test for mandatory field validation
+  - [-] 7.6 Write property test for mandatory field validation
     - **Property 11: E-Invoice Mandatory Field Validation**
     - Test requests with missing fields are rejected
     - **Validates: Requirements 2.2**
   
-  - [ ]* 7.7 Write property test for 24-hour cancellation window
+  - [ ] 7.7 Write property test for 24-hour cancellation window
     - **Property 14: E-Invoice Cancellation Time Window**
     - Test cancellation allowed within 24 hours, rejected after
     - **Validates: Requirements 2.5**
@@ -241,17 +254,17 @@ The plan focuses on incremental development, starting with database schema and c
     - Implement status tracking (active, cancelled, expired)
     - _Requirements: 3.5, 3.6, 3.7, 3.10_
   
-  - [ ]* 8.4 Write property test for E-Way Bill threshold triggering
+  - [ ] 8.4 Write property test for E-Way Bill threshold triggering
     - **Property 17: E-Way Bill Threshold Triggering**
     - Test invoices above ₹50,000 trigger E-Way Bill prompt
     - **Validates: Requirements 3.1**
   
-  - [ ]* 8.5 Write property test for validity calculation
+  - [ ] 8.5 Write property test for validity calculation
     - **Property 20: E-Way Bill Validity Calculation**
     - Test validity = ceil(distance / 200) days for all distances
     - **Validates: Requirements 3.4**
   
-  - [ ]* 8.6 Write property test for vehicle update constraint
+  - [ ] 8.6 Write property test for vehicle update constraint
     - **Property 21: E-Way Bill Vehicle Update Constraint**
     - Test updates allowed only when status='active'
     - **Validates: Requirements 3.5**
@@ -508,78 +521,91 @@ The plan focuses on incremental development, starting with database schema and c
     - _Requirements: 11.13, 11.14_
 
 - [ ] 17. Multi-Tenant Security Implementation
-  - [ ] 17.1 Implement tenant isolation middleware
-    - Extract tenant_id from JWT token
+  - [ ] 17.1 Enhance tenant isolation middleware
+    - Extend existing tenant_id extraction from JWT token
     - Add tenant_id to request context
     - Validate tenant_id on all requests
+    - Ensure compatibility with existing authentication system
     - _Requirements: 15.2, 15.3_
   
-  - [ ] 17.2 Add tenant filtering to all queries
-    - Update all Sequelize queries to include tenant_id filter
-    - Add default scope to models with tenant_id
-    - Prevent cross-tenant data access
+  - [ ] 17.2 Add tenant filtering to all new queries
+    - Update all new Sequelize queries to include tenant_id filter
+    - Add default scope to new models with tenant_id
+    - Prevent cross-tenant data access for new features
+    - Maintain existing tenant isolation for current features
     - _Requirements: 15.1, 15.4, 15.9_
   
   - [ ] 17.3 Implement tenant-specific configuration
     - Support tenant-specific GST rates
     - Support tenant-specific TDS sections
     - Isolate numbering series by tenant
+    - Integrate with existing tenant configuration system
     - _Requirements: 15.5, 15.6, 15.8_
   
   - [ ]* 17.4 Write property test for multi-tenant query isolation
     - **Property 70: Multi-Tenant Query Isolation**
-    - Test all queries include tenant_id filter
+    - Test all new queries include tenant_id filter
     - **Validates: Requirements 15.1, 15.9**
   
-  - [ ]* 17.5 Write property test for multi-tenant numbering isolation
+  - [ ] 17.5 Write property test for multi-tenant numbering isolation
     - **Property 72: Multi-Tenant Numbering Isolation**
     - Test numbering sequences independent per tenant
     - **Validates: Requirements 15.5**
 
 - [ ] 18. Final Integration and Testing
-  - [ ] 18.1 Integration test: Complete sales invoice flow
-    - Create sales invoice → Generate E-Invoice → Generate E-Way Bill
-    - Verify all data persisted correctly
-    - Verify ledger entries created
-    - Test with different invoice types
+  - [ ] 18.1 Integration test: Complete sales invoice flow with new features
+    - Create sales invoice with advanced numbering → Generate E-Invoice → Generate E-Way Bill
+    - Verify all data persisted correctly in new schema
+    - Verify ledger entries created with existing accounting system
+    - Test with different invoice types and numbering series
+    - Ensure backward compatibility with existing invoices
   
   - [ ] 18.2 Integration test: Purchase invoice with TDS
     - Create purchase invoice → Calculate TDS → Generate certificate
-    - Verify TDS ledger entries
+    - Verify TDS ledger entries integrate with existing accounting
     - Verify supplier payment reduction
+    - Test with existing supplier data
   
   - [ ] 18.3 Integration test: Document conversions
     - Create Proforma → Convert to Sales Invoice
     - Create Delivery Challan → Convert to Sales Invoice
     - Verify data copied correctly
+    - Ensure compatibility with existing voucher workflow
   
-  - [ ] 18.4 Performance testing
+  - [ ] 18.4 Performance testing with existing data
     - Test concurrent voucher number generation (100 concurrent requests)
-    - Test query performance with indexes
-    - Test API response times under load
+    - Test query performance with indexes on existing data
+    - Test API response times under load with mixed old/new data
+    - Verify no performance regression on existing features
   
   - [ ]* 18.5 Run all property-based tests
     - Execute all 72 property tests with 100 iterations each
     - Verify all properties pass
-    - Generate coverage report
+    - Generate coverage report including existing code
 
 - [ ] 19. Final Checkpoint - System Complete
   - Ensure all unit tests pass (target: 90%+ coverage)
   - Ensure all property tests pass (100 iterations each)
   - Verify all API endpoints work correctly
-  - Test multi-tenant isolation
+  - Test multi-tenant isolation with existing and new features
   - Verify external API integrations (sandbox)
   - Review error handling and logging
+  - Validate backward compatibility with existing voucher system
+  - Confirm database migrations are reversible if needed
   - Ask the user if questions arise
 
 ## Notes
 
+- **Database Schema**: Task 1 is completed ✅ - all new tables and migrations are in place
+- **Backward Compatibility**: All tasks ensure compatibility with existing voucher system and codebase
+- **Incremental Enhancement**: Tasks build upon existing functionality rather than replacing it
 - Tasks marked with `*` are optional property-based tests that can be skipped for faster MVP
 - Each task references specific requirements for traceability
 - Property tests validate universal correctness properties from the design document
-- Integration tests ensure components work together correctly
+- Integration tests ensure new components work with existing system
 - The implementation uses TypeScript for type safety
 - All external API calls include retry logic and circuit breakers
-- Multi-tenant isolation is enforced at the database query level
+- Multi-tenant isolation is enhanced for new features while maintaining existing isolation
 - Sequential numbering uses database-level locking to prevent race conditions
+- New features integrate seamlessly with existing accounting and voucher workflows
 

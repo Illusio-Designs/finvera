@@ -712,12 +712,259 @@ module.exports = {
       });
     }
 
+    // ============================================
+    // INDIAN INVOICE SYSTEM ENHANCEMENTS
+    // ============================================
+    console.log('Adding Indian Invoice System enhancements...');
+
+    // ============================================
+    // 1. NUMBERING_SERIES TABLE
+    // ============================================
+    console.log('Creating numbering_series table...');
+    const [numberingSeriesTable] = await queryInterface.sequelize.query("SHOW TABLES LIKE 'numbering_series'");
+    if (numberingSeriesTable.length === 0) {
+      await queryInterface.createTable('numbering_series', {
+        id: {
+          type: Sequelize.UUID,
+          defaultValue: Sequelize.UUIDV4,
+          primaryKey: true,
+        },
+        tenant_id: {
+          type: Sequelize.STRING,
+          allowNull: false,
+        },
+        branch_id: {
+          type: Sequelize.UUID,
+          allowNull: true,
+          comment: 'Optional branch association for branch-specific numbering',
+        },
+        voucher_type: {
+          type: Sequelize.STRING,
+          allowNull: false,
+          comment: 'Type of voucher (Sales Invoice, Purchase Invoice, etc.)',
+        },
+        series_name: {
+          type: Sequelize.STRING,
+          allowNull: false,
+          comment: 'User-friendly name for the series',
+        },
+        prefix: {
+          type: Sequelize.STRING(10),
+          allowNull: false,
+          comment: 'Prefix for voucher numbers (e.g., INV, EXP)',
+        },
+        format: {
+          type: Sequelize.STRING(100),
+          allowNull: false,
+          defaultValue: '{PREFIX}{YEAR}{MONTH}{SEQUENCE}',
+          comment: 'Format string with tokens like {PREFIX}{YEAR}{MONTH}{SEQUENCE}',
+        },
+        separator: {
+          type: Sequelize.STRING(5),
+          defaultValue: '',
+          comment: 'Separator character between format tokens',
+        },
+        sequence_length: {
+          type: Sequelize.INTEGER,
+          defaultValue: 4,
+          comment: 'Number of digits for sequence padding (e.g., 4 = 0001)',
+        },
+        current_sequence: {
+          type: Sequelize.INTEGER,
+          defaultValue: 0,
+          comment: 'Current sequence number',
+        },
+        start_number: {
+          type: Sequelize.INTEGER,
+          defaultValue: 1,
+          comment: 'Starting sequence number',
+        },
+        end_number: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+          comment: 'Optional ending sequence number',
+        },
+        reset_frequency: {
+          type: Sequelize.ENUM('never', 'monthly', 'yearly', 'financial_year'),
+          defaultValue: 'yearly',
+          comment: 'When to reset the sequence',
+        },
+        last_reset_date: {
+          type: Sequelize.DATE,
+          allowNull: true,
+          comment: 'Last date when sequence was reset',
+        },
+        is_default: {
+          type: Sequelize.BOOLEAN,
+          defaultValue: false,
+          comment: 'Whether this is the default series for the voucher type',
+        },
+        is_active: {
+          type: Sequelize.BOOLEAN,
+          defaultValue: true,
+          comment: 'Whether this series is active',
+        },
+        tenant_id: { type: Sequelize.STRING, allowNull: false },
+        createdAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
+        updatedAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
+      });
+
+      // Add indexes for performance
+      await addIndexIfNotExists('numbering_series', ['tenant_id'], { 
+        name: 'idx_numbering_series_tenant_id' 
+      });
+      await addIndexIfNotExists('numbering_series', ['voucher_type'], { 
+        name: 'idx_numbering_series_voucher_type' 
+      });
+      await addIndexIfNotExists('numbering_series', ['tenant_id', 'voucher_type'], { 
+        name: 'idx_numbering_series_tenant_voucher_type' 
+      });
+      await addIndexIfNotExists('numbering_series', ['tenant_id', 'voucher_type', 'is_default'], { 
+        name: 'idx_numbering_series_default' 
+      });
+
+      console.log('✓ Created table numbering_series');
+    } else {
+      console.log('ℹ️  Table numbering_series already exists');
+    }
+
+    // ============================================
+    // 2. NUMBERING_HISTORY TABLE
+    // ============================================
+    console.log('Creating numbering_history table...');
+    const [numberingHistoryTable] = await queryInterface.sequelize.query("SHOW TABLES LIKE 'numbering_history'");
+    if (numberingHistoryTable.length === 0) {
+      await queryInterface.createTable('numbering_history', {
+        id: {
+          type: Sequelize.UUID,
+          defaultValue: Sequelize.UUIDV4,
+          primaryKey: true,
+        },
+        series_id: {
+          type: Sequelize.UUID,
+          allowNull: false,
+          comment: 'Reference to numbering series',
+        },
+        voucher_id: {
+          type: Sequelize.UUID,
+          allowNull: false,
+          comment: 'Reference to voucher',
+        },
+        generated_number: {
+          type: Sequelize.STRING,
+          allowNull: false,
+          comment: 'The generated voucher number',
+        },
+        sequence_used: {
+          type: Sequelize.INTEGER,
+          allowNull: false,
+          comment: 'The sequence number used',
+        },
+        generated_at: {
+          type: Sequelize.DATE,
+          defaultValue: Sequelize.NOW,
+          comment: 'Timestamp when number was generated',
+        },
+        tenant_id: { type: Sequelize.STRING, allowNull: false },
+        createdAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
+        updatedAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
+      });
+
+      // Add indexes for performance
+      await addIndexIfNotExists('numbering_history', ['series_id'], { 
+        name: 'idx_numbering_history_series_id' 
+      });
+      await addIndexIfNotExists('numbering_history', ['voucher_id'], { 
+        name: 'idx_numbering_history_voucher_id',
+        unique: true 
+      });
+      await addIndexIfNotExists('numbering_history', ['tenant_id'], { 
+        name: 'idx_numbering_history_tenant_id' 
+      });
+      await addIndexIfNotExists('numbering_history', ['generated_number', 'tenant_id'], { 
+        name: 'idx_numbering_history_number_tenant',
+        unique: true 
+      });
+
+      console.log('✓ Created table numbering_history');
+    } else {
+      console.log('ℹ️  Table numbering_history already exists');
+    }
+
+    // ============================================
+    // 3. ENHANCE EXISTING TABLES
+    // ============================================
+    
+    // Enhance E-Invoices table
+    console.log('Enhancing einvoices table...');
+    await addColumnIfNotExists('einvoices', 'retry_count', {
+      type: Sequelize.INTEGER,
+      defaultValue: 0,
+      comment: 'Number of retry attempts for E-Invoice generation',
+    });
+    await addColumnIfNotExists('einvoices', 'last_retry_at', {
+      type: Sequelize.DATE,
+      allowNull: true,
+      comment: 'Timestamp of last retry attempt',
+    });
+    await addColumnIfNotExists('einvoices', 'error_message', {
+      type: Sequelize.TEXT,
+      allowNull: true,
+      comment: 'Error message from failed E-Invoice generation',
+    });
+
+    // Enhance E-Way Bills table
+    console.log('Enhancing eway_bills table...');
+    await addColumnIfNotExists('eway_bills', 'distance', {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+      comment: 'Distance in kilometers for E-Way Bill validity calculation',
+    });
+    await addColumnIfNotExists('eway_bills', 'transport_mode', {
+      type: Sequelize.ENUM('road', 'rail', 'air', 'ship'),
+      allowNull: true,
+      defaultValue: 'road',
+      comment: 'Mode of transport',
+    });
+    await addColumnIfNotExists('eway_bills', 'vehicle_no', {
+      type: Sequelize.STRING,
+      allowNull: true,
+      comment: 'Vehicle number',
+    });
+    await addColumnIfNotExists('eway_bills', 'transporter_name', {
+      type: Sequelize.STRING,
+      allowNull: true,
+      comment: 'Name of the transporter',
+    });
+
+    // Enhance TDS Details table
+    console.log('Enhancing tds_details table...');
+    await addColumnIfNotExists('tds_details', 'deductee_name', {
+      type: Sequelize.STRING,
+      allowNull: true,
+      comment: 'Name of the deductee',
+    });
+    await addColumnIfNotExists('tds_details', 'certificate_date', {
+      type: Sequelize.DATE,
+      allowNull: true,
+      comment: 'Date of TDS certificate issuance',
+    });
+    await addColumnIfNotExists('tds_details', 'taxable_amount', {
+      type: Sequelize.DECIMAL(15, 2),
+      defaultValue: 0,
+      comment: 'Taxable amount on which TDS is calculated',
+    });
+
+    console.log('✓ Enhanced existing tables for Indian Invoice System');
+
     console.log('✅ All tenant tables created successfully');
 
   },
 
   async down(queryInterface, Sequelize) {
     // Drop tables in reverse order of creation to respect foreign keys
+    await queryInterface.dropTable('numbering_history');
+    await queryInterface.dropTable('numbering_series');
     await queryInterface.dropTable('finbox_consents');
     await queryInterface.dropTable('eway_bills');
     await queryInterface.dropTable('einvoices');

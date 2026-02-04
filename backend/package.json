@@ -9,7 +9,9 @@
     "migrate": "sequelize db:migrate",
     "migrate:undo": "sequelize db:migrate:undo",
     "seed": "sequelize db:seed:all",
-    "seed:undo": "sequelize db:seed:undo:all"
+    "seed:undo": "sequelize db:seed:undo:all",
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "keywords": [],
   "author": "",
@@ -45,6 +47,8 @@
   },
   "devDependencies": {
     "eslint": "^9.39.1",
+    "fast-check": "^4.5.3",
+    "jest": "^30.2.0",
     "nodemon": "^3.1.11",
     "prettier": "^3.7.4",
     "sequelize-cli": "^6.6.3"

@@ -431,11 +431,44 @@ module.exports = (sequelize) => {
       type: DataTypes.UUID,
       allowNull: false,
     },
-    ewb_number: DataTypes.STRING,
-    ewb_date: DataTypes.DATE,
+    ewb_number: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      unique: true,
+    },
+    ewb_date: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    valid_upto: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
     status: {
-      type: DataTypes.ENUM('generated', 'cancelled'),
-      defaultValue: 'generated',
+      type: DataTypes.ENUM('active', 'cancelled', 'expired'),
+      defaultValue: 'active',
+    },
+    vehicle_no: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+    },
+    transporter_id: {
+      type: DataTypes.STRING(15),
+      allowNull: true,
+      comment: 'Transporter GSTIN',
+    },
+    transporter_name: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    transport_mode: {
+      type: DataTypes.ENUM('road', 'rail', 'air', 'ship'),
+      defaultValue: 'road',
+    },
+    distance: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      comment: 'Distance in kilometers',
     },
     tenant_id: {
       type: DataTypes.STRING,
@@ -444,6 +477,47 @@ module.exports = (sequelize) => {
   }, {
     tableName: 'eway_bills',
     timestamps: true,
+    indexes: [
+      {
+        fields: ['voucher_id'],
+        name: 'idx_ewaybill_voucher_id',
+      },
+      {
+        fields: ['status'],
+        name: 'idx_ewaybill_status',
+      },
+      {
+        fields: ['tenant_id', 'status'],
+        name: 'idx_ewaybill_tenant_status',
+      },
+      {
+        fields: ['ewb_number'],
+        name: 'idx_ewaybill_number',
+      },
+    ],
+    instanceMethods: {
+      // Calculate validity period based on distance (1 day per 200 KM for normal goods)
+      calculateValidityPeriod() {
+        if (!this.distance || !this.ewb_date) {
+          return null;
+        }
+        
+        const validityDays = Math.ceil(this.distance / 200);
+        const validityDate = new Date(this.ewb_date);
+        validityDate.setDate(validityDate.getDate() + validityDays);
+        
+        return validityDate;
+      },
+      
+      // Check if E-Way Bill is expired
+      isExpired() {
+        if (!this.valid_upto) {
+          return false;
+        }
+        
+        return new Date() > new Date(this.valid_upto);
+      },
+    },
   });
 
   models.BillWiseDetail = sequelize.define('BillWiseDetail', {
@@ -550,15 +624,68 @@ module.exports = (sequelize) => {
     voucher_id: {
       type: DataTypes.UUID,
       allowNull: false,
+      references: {
+        model: 'vouchers',
+        key: 'id',
+      },
     },
-    tds_section: DataTypes.STRING,
-    tds_rate: DataTypes.DECIMAL(6, 2),
+    section_code: {
+      type: DataTypes.STRING(10),
+      allowNull: false,
+      comment: 'TDS section code like 194C, 194I, 194J, 194H',
+    },
+    tds_rate: {
+      type: DataTypes.DECIMAL(6, 2),
+      allowNull: false,
+      comment: 'TDS rate percentage',
+    },
+    taxable_amount: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: false,
+      comment: 'Amount on which TDS is calculated',
+    },
     tds_amount: {
       type: DataTypes.DECIMAL(15, 2),
-      defaultValue: 0,
+      allowNull: false,
+      comment: 'TDS amount deducted',
     },
-    quarter: DataTypes.STRING, // Add missing quarter field
-    financial_year: DataTypes.STRING, // Add missing financial_year field
+    deductee_pan: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+      comment: 'PAN of the deductee',
+      validate: {
+        isPAN(value) {
+          if (value && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value)) {
+            throw new Error('Invalid PAN format. Expected format: AAAAA9999A');
+          }
+        },
+      },
+    },
+    deductee_name: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      comment: 'Name of the deductee',
+    },
+    certificate_no: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      comment: 'TDS certificate number',
+    },
+    certificate_date: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'TDS certificate generation date',
+    },
+    quarter: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+      comment: 'Quarter for TDS return (Q1, Q2, Q3, Q4)',
+    },
+    financial_year: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+      comment: 'Financial year (e.g., 2024-25)',
+    },
     tenant_id: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -566,6 +693,28 @@ module.exports = (sequelize) => {
   }, {
     tableName: 'tds_details',
     timestamps: true,
+    indexes: [
+      {
+        fields: ['voucher_id'],
+        name: 'idx_tds_voucher_id',
+      },
+      {
+        fields: ['section_code'],
+        name: 'idx_tds_section_code',
+      },
+      {
+        fields: ['tenant_id', 'quarter', 'financial_year'],
+        name: 'idx_tds_tenant_period',
+      },
+      {
+        fields: ['certificate_no'],
+        name: 'idx_tds_certificate_no',
+      },
+      {
+        fields: ['deductee_pan'],
+        name: 'idx_tds_deductee_pan',
+      },
+    ],
   });
 
   models.EInvoice = sequelize.define('EInvoice', {
@@ -578,12 +727,42 @@ module.exports = (sequelize) => {
       type: DataTypes.UUID,
       allowNull: false,
     },
-    irn: DataTypes.STRING,
-    ack_number: DataTypes.STRING,
-    ack_date: DataTypes.DATE,
+    irn: {
+      type: DataTypes.STRING(64),
+      allowNull: true,
+      unique: true,
+    },
+    ack_number: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+    },
+    ack_date: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    signed_invoice: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    signed_qr_code: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
     status: {
-      type: DataTypes.ENUM('generated', 'cancelled'),
-      defaultValue: 'generated',
+      type: DataTypes.ENUM('pending', 'generated', 'cancelled'),
+      defaultValue: 'pending',
+    },
+    error_message: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    retry_count: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    last_retry_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
     },
     tenant_id: {
       type: DataTypes.STRING,
@@ -592,6 +771,24 @@ module.exports = (sequelize) => {
   }, {
     tableName: 'einvoices',
     timestamps: true,
+    indexes: [
+      {
+        fields: ['voucher_id'],
+        name: 'idx_einvoice_voucher_id',
+      },
+      {
+        fields: ['status'],
+        name: 'idx_einvoice_status',
+      },
+      {
+        fields: ['tenant_id', 'status'],
+        name: 'idx_einvoice_tenant_status',
+      },
+      {
+        fields: ['irn'],
+        name: 'idx_einvoice_irn',
+      },
+    ],
   });
 
   models.AuditLog = sequelize.define('AuditLog', {
@@ -738,6 +935,64 @@ module.exports = (sequelize) => {
     timestamps: true,
   });
 
+  // NumberingHistory model for tracking generated voucher numbers
+  models.NumberingHistory = sequelize.define('NumberingHistory', {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    series_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: 'numbering_series',
+        key: 'id',
+      },
+    },
+    voucher_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: 'vouchers',
+        key: 'id',
+      },
+    },
+    generated_number: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    sequence_used: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    generated_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    tenant_id: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+  }, {
+    tableName: 'numbering_history',
+    timestamps: false, // We use generated_at instead
+    indexes: [
+      {
+        fields: ['series_id', 'sequence_used'],
+        name: 'idx_series_sequence',
+      },
+      {
+        fields: ['voucher_id'],
+        name: 'idx_voucher_id',
+      },
+      {
+        fields: ['tenant_id', 'generated_at'],
+        name: 'idx_tenant_date',
+      },
+    ],
+  });
+
   // NEW: Product Attribute models
   models.ProductAttribute = require('../models/ProductAttribute')(sequelize);
   models.ProductAttributeValue = require('../models/ProductAttributeValue')(sequelize);
@@ -798,6 +1053,13 @@ module.exports = (sequelize) => {
   // When Branch model is added, uncomment the following:
   // models.NumberingSeries.belongsTo(models.Branch, { foreignKey: 'branch_id', as: 'branch' });
   // models.Branch.hasMany(models.NumberingSeries, { foreignKey: 'branch_id', as: 'numberingSeries' });
+
+  // NumberingHistory associations
+  models.NumberingSeries.hasMany(models.NumberingHistory, { foreignKey: 'series_id', as: 'history' });
+  models.NumberingHistory.belongsTo(models.NumberingSeries, { foreignKey: 'series_id', as: 'series' });
+  
+  models.Voucher.hasMany(models.NumberingHistory, { foreignKey: 'voucher_id', as: 'numberingHistory' });
+  models.NumberingHistory.belongsTo(models.Voucher, { foreignKey: 'voucher_id', as: 'voucher' });
 
   // NEW: Inventory Item self-referencing for variants
   models.InventoryItem.belongsTo(models.InventoryItem, { as: 'ParentItem', foreignKey: 'parent_item_id' });
