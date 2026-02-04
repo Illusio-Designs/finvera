@@ -178,7 +178,7 @@ The plan focuses on incremental development, building upon the existing database
     - Test cancelled vouchers have status='cancelled' and record exists
     - **Validates: Requirements 13.8**
 
-- [ ] 6. Checkpoint - Core Services Complete
+- [-] 6. Checkpoint - Core Services Complete
   - Ensure all tests pass for Numbering, GST Calculation, and enhanced Voucher services
   - Verify database schema integration is working correctly
   - Test creating a basic sales invoice end-to-end with new numbering system
@@ -221,7 +221,7 @@ The plan focuses on incremental development, building upon the existing database
     - Test invoices above threshold trigger E-Invoice generation
     - **Validates: Requirements 2.1**
   
-  - [-] 7.6 Write property test for mandatory field validation
+  - [~] 7.6 Write property test for mandatory field validation
     - **Property 11: E-Invoice Mandatory Field Validation**
     - Test requests with missing fields are rejected
     - **Validates: Requirements 2.2**

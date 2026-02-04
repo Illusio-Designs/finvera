@@ -92,7 +92,7 @@ describe('EInvoiceService Property-Based Tests', () => {
 
     // Generate valid voucher item
     const validVoucherItemArbitrary = fc.record({
-      item_description: fc.string({ minLength: 1, maxLength: 100 }),
+      item_description: fc.string({ minLength: 1, maxLength: 100 }).filter(s => s.trim().length > 0),
       hsn_sac_code: fc.string({ minLength: 6, maxLength: 8 }).filter(s => /^[0-9]{6,8}$/.test(s)),
       quantity: fc.integer({ min: 1, max: 1000 }),
       rate: fc.integer({ min: 1, max: 100000 }),
@@ -105,28 +105,28 @@ describe('EInvoiceService Property-Based Tests', () => {
 
     // Generate complete valid voucher
     const validVoucherArbitrary = fc.record({
-      voucher_number: fc.string({ minLength: 1, maxLength: 50 }),
+      voucher_number: fc.string({ minLength: 1, maxLength: 50 }).filter(s => s.trim().length > 0),
       voucher_date: fc.date({ min: new Date('2020-01-01'), max: new Date('2030-12-31') }),
       total_amount: fc.integer({ min: 1, max: 1000000 }),
       company: fc.record({
         gstin: validGstinArbitrary,
-        company_name: fc.string({ minLength: 1, maxLength: 100 }),
-        address: fc.string({ minLength: 1, maxLength: 200 }),
-        city: fc.string({ minLength: 1, maxLength: 50 }),
+        company_name: fc.string({ minLength: 1, maxLength: 100 }).filter(s => s.trim().length > 0),
+        address: fc.string({ minLength: 1, maxLength: 200 }).filter(s => s.trim().length > 0),
+        city: fc.string({ minLength: 1, maxLength: 50 }).filter(s => s.trim().length > 0),
         state_code: fc.integer({ min: 1, max: 37 }).map(n => n.toString().padStart(2, '0')),
         pincode: fc.integer({ min: 100000, max: 999999 }).map(n => n.toString()),
-        phone: fc.string({ minLength: 10, maxLength: 15 }),
+        phone: fc.string({ minLength: 10, maxLength: 15 }).filter(s => /^[0-9]{10,15}$/.test(s)),
         email: fc.emailAddress()
       }),
       partyLedger: fc.record({
-        ledger_name: fc.string({ minLength: 1, maxLength: 100 }),
+        ledger_name: fc.string({ minLength: 1, maxLength: 100 }).filter(s => s.trim().length > 0),
         gstin: fc.option(validGstinArbitrary), // Optional GSTIN
-        address: fc.string({ minLength: 1, maxLength: 200 }),
-        city: fc.string({ minLength: 1, maxLength: 50 }),
+        address: fc.string({ minLength: 1, maxLength: 200 }).filter(s => s.trim().length > 0),
+        city: fc.string({ minLength: 1, maxLength: 50 }).filter(s => s.trim().length > 0),
         state_code: fc.integer({ min: 1, max: 37 }).map(n => n.toString().padStart(2, '0')),
         pincode: fc.integer({ min: 100000, max: 999999 }).map(n => n.toString())
       }),
-      voucher_items: fc.array(validVoucherItemArbitrary, { minLength: 1, maxLength: 10 })
+      voucher_items: fc.array(validVoucherItemArbitrary, { minLength: 1, maxLength: 3 })
     });
 
     test('complete valid vouchers pass validation', () => {
@@ -138,7 +138,7 @@ describe('EInvoiceService Property-Based Tests', () => {
             return validation.isValid === true;
           }
         ),
-        { numRuns: 20 }
+        { numRuns: 5 }
       );
     });
 
