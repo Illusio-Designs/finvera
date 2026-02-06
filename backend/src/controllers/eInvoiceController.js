@@ -79,4 +79,23 @@ module.exports = {
       next(err);
     }
   },
+
+  async retryGeneration(req, res, next) {
+    try {
+      const { id } = req.params;
+      
+      const result = await eInvoiceService.retryEInvoiceGeneration(
+        id,
+        { tenantModels: req.tenantModels, masterModels: req.masterModels, company: req.company }
+      );
+
+      res.json({
+        success: true,
+        message: result.message || 'E-Invoice retry initiated',
+        eInvoice: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
 };

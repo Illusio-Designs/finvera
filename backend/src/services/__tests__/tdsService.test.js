@@ -1,5 +1,6 @@
 const tdsService = require('../tdsService');
 const { TDS_SECTIONS } = require('../tdsService');
+const fc = require('fast-check');
 
 describe('TDS Service - PAN Validation (Task 9.2)', () => {
   describe('validatePAN', () => {
@@ -1556,6 +1557,489 @@ describe('TDS Service - generateTDSCertificate Method (Task 9.4)', () => {
       expect(result.certificate.tds_details).toHaveProperty('tds_amount');
       expect(result.certificate.tds_details).toHaveProperty('voucher_number');
       expect(result.certificate.tds_details).toHaveProperty('voucher_date');
+    });
+  });
+});
+
+// ============================================================================
+// Property-Based Tests (Task 9.6)
+// ============================================================================
+
+describe('TDS Service - Property-Based Tests', () => {
+  describe('Property 25: TDS Calculation Formula', () => {
+    // Feature: indian-invoice-system-backend, Property 25: TDS Calculation Formula
+    // **Validates: Requirements 4.1**
+    test('TDS amount = (taxable_amount × section_rate) / 100 for all valid inputs', () => {
+      // Define arbitraries for test data generation
+      const validPANArbitrary = fc.tuple(
+        fc.array(fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'), { minLength: 5, maxLength: 5 }),
+        fc.array(fc.constantFrom('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'), { minLength: 4, maxLength: 4 }),
+        fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z')
+      ).map(([letters, digits, lastLetter]) => `${letters.join('')}${digits.join('')}${lastLetter}`);
+
+      const sectionArbitrary = fc.constantFrom('194C', '194I', '194J', '194H');
+      
+      const deducteeTypeArbitrary = fc.constantFrom('individual', 'company', 'professional', 'commission', 'land_building', 'plant_machinery');
+
+      // Taxable amount: reasonable range for testing (above thresholds to ensure TDS is calculated)
+      const taxableAmountArbitrary = fc.integer({ min: 250000, max: 10000000 });
+
+      fc.assert(
+        fc.property(
+          taxableAmountArbitrary,
+          sectionArbitrary,
+          validPANArbitrary,
+          deducteeTypeArbitrary,
+          (taxableAmount, sectionCode, pan, deducteeType) => {
+            // Calculate TDS using the service
+            const result = tdsService.calculateTDSAmount(taxableAmount, sectionCode, pan, deducteeType);
+
+            // Get the expected rate for this section and deductee type
+            const expectedRate = tdsService.getTDSRate(sectionCode, deducteeType);
+
+            // Calculate expected TDS amount using the formula: (A × rate) / 100
+            const expectedTDSAmount = parseFloat(((taxableAmount * expectedRate) / 100).toFixed(2));
+
+            // Property: TDS amount SHALL equal (taxable_amount × section_rate) / 100
+            // Allow for floating point precision (within 0.01 rupee)
+            const actualTDSAmount = result.tdsAmount;
+            const difference = Math.abs(actualTDSAmount - expectedTDSAmount);
+
+            // Assert the formula holds
+            return difference < 0.01 && 
+                   result.sectionCode === sectionCode &&
+                   result.taxableAmount === parseFloat(taxableAmount.toFixed(2)) &&
+                   result.tdsRate === expectedRate &&
+                   result.thresholdApplied === false; // Amount is above threshold
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    test('TDS calculation respects section-specific rates', () => {
+      const validPANArbitrary = fc.tuple(
+        fc.array(fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'), { minLength: 5, maxLength: 5 }),
+        fc.array(fc.constantFrom('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'), { minLength: 4, maxLength: 4 }),
+        fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z')
+      ).map(([letters, digits, lastLetter]) => `${letters.join('')}${digits.join('')}${lastLetter}`);
+
+      const taxableAmountArbitrary = fc.integer({ min: 250000, max: 5000000 });
+
+      fc.assert(
+        fc.property(
+          taxableAmountArbitrary,
+          validPANArbitrary,
+          (taxableAmount, pan) => {
+            // Test 194C individual (1%)
+            const result194CIndividual = tdsService.calculateTDSAmount(taxableAmount, '194C', pan, 'individual');
+            const expected194CIndividual = parseFloat(((taxableAmount * 1.0) / 100).toFixed(2));
+            
+            // Test 194C company (2%)
+            const result194CCompany = tdsService.calculateTDSAmount(taxableAmount, '194C', pan, 'company');
+            const expected194CCompany = parseFloat(((taxableAmount * 2.0) / 100).toFixed(2));
+            
+            // Test 194J professional (10%)
+            const result194JProfessional = tdsService.calculateTDSAmount(taxableAmount, '194J', pan, 'professional');
+            const expected194JProfessional = parseFloat(((taxableAmount * 10.0) / 100).toFixed(2));
+            
+            // Test 194H commission (5%)
+            const result194HCommission = tdsService.calculateTDSAmount(taxableAmount, '194H', pan, 'commission');
+            const expected194HCommission = parseFloat(((taxableAmount * 5.0) / 100).toFixed(2));
+            
+            // Test 194I land_building (10%)
+            const result194ILandBuilding = tdsService.calculateTDSAmount(taxableAmount, '194I', pan, 'land_building');
+            const expected194ILandBuilding = parseFloat(((taxableAmount * 10.0) / 100).toFixed(2));
+
+            // Verify all calculations match the formula
+            return Math.abs(result194CIndividual.tdsAmount - expected194CIndividual) < 0.01 &&
+                   Math.abs(result194CCompany.tdsAmount - expected194CCompany) < 0.01 &&
+                   Math.abs(result194JProfessional.tdsAmount - expected194JProfessional) < 0.01 &&
+                   Math.abs(result194HCommission.tdsAmount - expected194HCommission) < 0.01 &&
+                   Math.abs(result194ILandBuilding.tdsAmount - expected194ILandBuilding) < 0.01;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    test('TDS calculation produces consistent results for same inputs', () => {
+      const validPANArbitrary = fc.tuple(
+        fc.array(fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'), { minLength: 5, maxLength: 5 }),
+        fc.array(fc.constantFrom('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'), { minLength: 4, maxLength: 4 }),
+        fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z')
+      ).map(([letters, digits, lastLetter]) => `${letters.join('')}${digits.join('')}${lastLetter}`);
+
+      const sectionArbitrary = fc.constantFrom('194C', '194I', '194J', '194H');
+      const deducteeTypeArbitrary = fc.constantFrom('individual', 'company', 'professional', 'commission', 'land_building');
+      const taxableAmountArbitrary = fc.integer({ min: 250000, max: 5000000 });
+
+      fc.assert(
+        fc.property(
+          taxableAmountArbitrary,
+          sectionArbitrary,
+          validPANArbitrary,
+          deducteeTypeArbitrary,
+          (taxableAmount, sectionCode, pan, deducteeType) => {
+            // Calculate TDS twice with same inputs
+            const result1 = tdsService.calculateTDSAmount(taxableAmount, sectionCode, pan, deducteeType);
+            const result2 = tdsService.calculateTDSAmount(taxableAmount, sectionCode, pan, deducteeType);
+
+            // Property: Same inputs should produce identical results (deterministic)
+            return result1.tdsAmount === result2.tdsAmount &&
+                   result1.taxableAmount === result2.taxableAmount &&
+                   result1.netAmount === result2.netAmount &&
+                   result1.tdsRate === result2.tdsRate &&
+                   result1.sectionCode === result2.sectionCode;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    test('TDS net amount = taxable amount - TDS amount for all calculations', () => {
+      const validPANArbitrary = fc.tuple(
+        fc.array(fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'), { minLength: 5, maxLength: 5 }),
+        fc.array(fc.constantFrom('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'), { minLength: 4, maxLength: 4 }),
+        fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z')
+      ).map(([letters, digits, lastLetter]) => `${letters.join('')}${digits.join('')}${lastLetter}`);
+
+      const sectionArbitrary = fc.constantFrom('194C', '194I', '194J', '194H');
+      const deducteeTypeArbitrary = fc.constantFrom('individual', 'company', 'professional', 'commission', 'land_building');
+      const taxableAmountArbitrary = fc.integer({ min: 250000, max: 10000000 });
+
+      fc.assert(
+        fc.property(
+          taxableAmountArbitrary,
+          sectionArbitrary,
+          validPANArbitrary,
+          deducteeTypeArbitrary,
+          (taxableAmount, sectionCode, pan, deducteeType) => {
+            const result = tdsService.calculateTDSAmount(taxableAmount, sectionCode, pan, deducteeType);
+
+            // Property: Net amount = Taxable amount - TDS amount
+            const expectedNetAmount = parseFloat((result.taxableAmount - result.tdsAmount).toFixed(2));
+            const difference = Math.abs(result.netAmount - expectedNetAmount);
+
+            return difference < 0.01;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('Property 29: TDS Payment Reduction', () => {
+    // Feature: indian-invoice-system-backend, Property 29: TDS Payment Reduction
+    // **Validates: Requirements 4.6**
+    test('net amount = total amount - TDS amount for all purchase invoices', () => {
+      // Define arbitraries for test data generation
+      const validPANArbitrary = fc.tuple(
+        fc.array(fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'), { minLength: 5, maxLength: 5 }),
+        fc.array(fc.constantFrom('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'), { minLength: 4, maxLength: 4 }),
+        fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z')
+      ).map(([letters, digits, lastLetter]) => `${letters.join('')}${digits.join('')}${lastLetter}`);
+
+      const sectionArbitrary = fc.constantFrom('194C', '194I', '194J', '194H');
+      
+      const deducteeTypeArbitrary = fc.constantFrom('individual', 'company', 'professional', 'commission', 'land_building', 'plant_machinery');
+
+      // Taxable amount: above thresholds to ensure TDS is calculated
+      const taxableAmountArbitrary = fc.integer({ min: 250000, max: 10000000 });
+
+      fc.assert(
+        fc.property(
+          taxableAmountArbitrary,
+          sectionArbitrary,
+          validPANArbitrary,
+          deducteeTypeArbitrary,
+          (taxableAmount, sectionCode, pan, deducteeType) => {
+            // Calculate TDS using the service
+            const result = tdsService.calculateTDSAmount(taxableAmount, sectionCode, pan, deducteeType);
+
+            // Property: For any purchase invoice with TDS amount T and total amount A,
+            // the credit to supplier ledger SHALL equal (A - T)
+            // This is represented as netAmount in the result
+            const expectedNetAmount = parseFloat((taxableAmount - result.tdsAmount).toFixed(2));
+            const difference = Math.abs(result.netAmount - expectedNetAmount);
+
+            // Assert the payment reduction formula holds
+            return difference < 0.01 && 
+                   result.netAmount < taxableAmount && // Net amount should be less than total
+                   result.tdsAmount > 0; // TDS should be deducted (above threshold)
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    test('payment reduction applies consistently across all TDS sections', () => {
+      const validPANArbitrary = fc.tuple(
+        fc.array(fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'), { minLength: 5, maxLength: 5 }),
+        fc.array(fc.constantFrom('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'), { minLength: 4, maxLength: 4 }),
+        fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z')
+      ).map(([letters, digits, lastLetter]) => `${letters.join('')}${digits.join('')}${lastLetter}`);
+
+      const taxableAmountArbitrary = fc.integer({ min: 250000, max: 5000000 });
+
+      fc.assert(
+        fc.property(
+          taxableAmountArbitrary,
+          validPANArbitrary,
+          (taxableAmount, pan) => {
+            // Test payment reduction for all sections
+            const result194C = tdsService.calculateTDSAmount(taxableAmount, '194C', pan, 'individual');
+            const result194J = tdsService.calculateTDSAmount(taxableAmount, '194J', pan, 'professional');
+            const result194H = tdsService.calculateTDSAmount(taxableAmount, '194H', pan, 'commission');
+            const result194I = tdsService.calculateTDSAmount(taxableAmount, '194I', pan, 'land_building');
+
+            // Verify payment reduction formula for each section
+            const check194C = Math.abs(result194C.netAmount - (taxableAmount - result194C.tdsAmount)) < 0.01;
+            const check194J = Math.abs(result194J.netAmount - (taxableAmount - result194J.tdsAmount)) < 0.01;
+            const check194H = Math.abs(result194H.netAmount - (taxableAmount - result194H.tdsAmount)) < 0.01;
+            const check194I = Math.abs(result194I.netAmount - (taxableAmount - result194I.tdsAmount)) < 0.01;
+
+            return check194C && check194J && check194H && check194I;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    test('payment reduction is zero when TDS is not applicable (below threshold)', () => {
+      const validPANArbitrary = fc.tuple(
+        fc.array(fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'), { minLength: 5, maxLength: 5 }),
+        fc.array(fc.constantFrom('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'), { minLength: 4, maxLength: 4 }),
+        fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z')
+      ).map(([letters, digits, lastLetter]) => `${letters.join('')}${digits.join('')}${lastLetter}`);
+
+      const sectionArbitrary = fc.constantFrom('194C', '194I', '194J', '194H');
+      
+      const deducteeTypeArbitrary = fc.constantFrom('individual', 'company', 'professional', 'commission', 'land_building');
+
+      // Taxable amount: below thresholds to ensure TDS is NOT calculated
+      const taxableAmountArbitrary = fc.integer({ min: 1000, max: 14999 });
+
+      fc.assert(
+        fc.property(
+          taxableAmountArbitrary,
+          sectionArbitrary,
+          validPANArbitrary,
+          deducteeTypeArbitrary,
+          (taxableAmount, sectionCode, pan, deducteeType) => {
+            const result = tdsService.calculateTDSAmount(taxableAmount, sectionCode, pan, deducteeType);
+
+            // Property: When TDS is not applicable (below threshold),
+            // net amount should equal total amount (no reduction)
+            if (result.thresholdApplied) {
+              return result.tdsAmount === 0 && 
+                     result.netAmount === taxableAmount;
+            }
+            
+            // If threshold not applied (amount >= threshold), verify reduction
+            return result.netAmount === parseFloat((taxableAmount - result.tdsAmount).toFixed(2));
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    test('payment reduction maintains precision for decimal amounts', () => {
+      const validPANArbitrary = fc.tuple(
+        fc.array(fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'), { minLength: 5, maxLength: 5 }),
+        fc.array(fc.constantFrom('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'), { minLength: 4, maxLength: 4 }),
+        fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z')
+      ).map(([letters, digits, lastLetter]) => `${letters.join('')}${digits.join('')}${lastLetter}`);
+
+      const sectionArbitrary = fc.constantFrom('194C', '194I', '194J', '194H');
+      
+      const deducteeTypeArbitrary = fc.constantFrom('individual', 'company', 'professional', 'commission', 'land_building');
+
+      // Use float amounts with decimals
+      const taxableAmountArbitrary = fc.float({ min: 250000, max: 1000000, noNaN: true }).map(n => parseFloat(n.toFixed(2)));
+
+      fc.assert(
+        fc.property(
+          taxableAmountArbitrary,
+          sectionArbitrary,
+          validPANArbitrary,
+          deducteeTypeArbitrary,
+          (taxableAmount, sectionCode, pan, deducteeType) => {
+            const result = tdsService.calculateTDSAmount(taxableAmount, sectionCode, pan, deducteeType);
+
+            // Property: Payment reduction should maintain 2 decimal precision
+            const expectedNetAmount = parseFloat((taxableAmount - result.tdsAmount).toFixed(2));
+            const difference = Math.abs(result.netAmount - expectedNetAmount);
+
+            // Verify precision is maintained (within 0.01 rupee)
+            // Note: Integer amounts may not have decimal places, which is acceptable
+            const decimalPlaces = result.netAmount.toString().split('.')[1]?.length || 0;
+            return difference < 0.01 && decimalPlaces <= 2;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('Property 27: TDS Threshold Application', () => {
+    // Feature: indian-invoice-system-backend, Property 27: TDS Threshold Application
+    // **Validates: Requirements 4.3**
+    test('TDS is deducted if and only if taxable amount >= section threshold', () => {
+      // Define arbitraries for test data generation
+      const validPANArbitrary = fc.tuple(
+        fc.array(fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'), { minLength: 5, maxLength: 5 }),
+        fc.array(fc.constantFrom('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'), { minLength: 4, maxLength: 4 }),
+        fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z')
+      ).map(([letters, digits, lastLetter]) => `${letters.join('')}${digits.join('')}${lastLetter}`);
+
+      const sectionArbitrary = fc.constantFrom('194C', '194I', '194J', '194H');
+      
+      const deducteeTypeArbitrary = fc.constantFrom('individual', 'company', 'professional', 'commission', 'land_building', 'plant_machinery');
+
+      // Taxable amount: wide range to test both above and below thresholds
+      const taxableAmountArbitrary = fc.integer({ min: 0, max: 500000 });
+
+      fc.assert(
+        fc.property(
+          taxableAmountArbitrary,
+          sectionArbitrary,
+          validPANArbitrary,
+          deducteeTypeArbitrary,
+          (taxableAmount, sectionCode, pan, deducteeType) => {
+            // Calculate TDS using the service
+            const result = tdsService.calculateTDSAmount(taxableAmount, sectionCode, pan, deducteeType);
+
+            // Get the threshold for this section
+            const threshold = tdsService.getTDSThreshold(sectionCode);
+
+            // Property: TDS SHALL be deducted if and only if A >= section_threshold
+            if (taxableAmount >= threshold) {
+              // Above or equal to threshold: TDS should be deducted
+              return result.tdsAmount > 0 && 
+                     result.thresholdApplied === false &&
+                     result.netAmount < result.taxableAmount;
+            } else {
+              // Below threshold: TDS should NOT be deducted
+              return result.tdsAmount === 0 && 
+                     result.thresholdApplied === true &&
+                     result.netAmount === result.taxableAmount;
+            }
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    test('TDS threshold is correctly applied for each section', () => {
+      const validPANArbitrary = fc.tuple(
+        fc.array(fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'), { minLength: 5, maxLength: 5 }),
+        fc.array(fc.constantFrom('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'), { minLength: 4, maxLength: 4 }),
+        fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z')
+      ).map(([letters, digits, lastLetter]) => `${letters.join('')}${digits.join('')}${lastLetter}`);
+
+      fc.assert(
+        fc.property(
+          validPANArbitrary,
+          (pan) => {
+            // Test 194C threshold (30000)
+            const below194C = tdsService.calculateTDSAmount(29999, '194C', pan, 'individual');
+            const at194C = tdsService.calculateTDSAmount(30000, '194C', pan, 'individual');
+            const above194C = tdsService.calculateTDSAmount(30001, '194C', pan, 'individual');
+
+            // Test 194H threshold (15000)
+            const below194H = tdsService.calculateTDSAmount(14999, '194H', pan, 'commission');
+            const at194H = tdsService.calculateTDSAmount(15000, '194H', pan, 'commission');
+            const above194H = tdsService.calculateTDSAmount(15001, '194H', pan, 'commission');
+
+            // Test 194J threshold (30000)
+            const below194J = tdsService.calculateTDSAmount(29999, '194J', pan, 'professional');
+            const at194J = tdsService.calculateTDSAmount(30000, '194J', pan, 'professional');
+            const above194J = tdsService.calculateTDSAmount(30001, '194J', pan, 'professional');
+
+            // Test 194I threshold (240000)
+            const below194I = tdsService.calculateTDSAmount(239999, '194I', pan, 'land_building');
+            const at194I = tdsService.calculateTDSAmount(240000, '194I', pan, 'land_building');
+            const above194I = tdsService.calculateTDSAmount(240001, '194I', pan, 'land_building');
+
+            // Verify threshold behavior for all sections
+            return below194C.tdsAmount === 0 && below194C.thresholdApplied === true &&
+                   at194C.tdsAmount > 0 && at194C.thresholdApplied === false &&
+                   above194C.tdsAmount > 0 && above194C.thresholdApplied === false &&
+                   below194H.tdsAmount === 0 && below194H.thresholdApplied === true &&
+                   at194H.tdsAmount > 0 && at194H.thresholdApplied === false &&
+                   above194H.tdsAmount > 0 && above194H.thresholdApplied === false &&
+                   below194J.tdsAmount === 0 && below194J.thresholdApplied === true &&
+                   at194J.tdsAmount > 0 && at194J.thresholdApplied === false &&
+                   above194J.tdsAmount > 0 && above194J.thresholdApplied === false &&
+                   below194I.tdsAmount === 0 && below194I.thresholdApplied === true &&
+                   at194I.tdsAmount > 0 && at194I.thresholdApplied === false &&
+                   above194I.tdsAmount > 0 && above194I.thresholdApplied === false;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    test('TDS threshold boundary conditions are correctly handled', () => {
+      const validPANArbitrary = fc.tuple(
+        fc.array(fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'), { minLength: 5, maxLength: 5 }),
+        fc.array(fc.constantFrom('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'), { minLength: 4, maxLength: 4 }),
+        fc.constantFrom('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z')
+      ).map(([letters, digits, lastLetter]) => `${letters.join('')}${digits.join('')}${lastLetter}`);
+
+      const sectionArbitrary = fc.constantFrom('194C', '194I', '194J', '194H');
+      
+      const deducteeTypeArbitrary = fc.constantFrom('individual', 'company', 'professional', 'commission', 'land_building');
+
+      fc.assert(
+        fc.property(
+          sectionArbitrary,
+          validPANArbitrary,
+          deducteeTypeArbitrary,
+          (sectionCode, pan, deducteeType) => {
+            const threshold = tdsService.getTDSThreshold(sectionCode);
+
+            // Test exactly at threshold
+            const atThreshold = tdsService.calculateTDSAmount(threshold, sectionCode, pan, deducteeType);
+            
+            // Test one rupee below threshold
+            const belowThreshold = tdsService.calculateTDSAmount(threshold - 1, sectionCode, pan, deducteeType);
+            
+            // Test one rupee above threshold
+            const aboveThreshold = tdsService.calculateTDSAmount(threshold + 1, sectionCode, pan, deducteeType);
+
+            // Property: Boundary conditions
+            // At threshold: TDS should be deducted
+            // Below threshold: TDS should NOT be deducted
+            // Above threshold: TDS should be deducted
+            return atThreshold.tdsAmount > 0 && atThreshold.thresholdApplied === false &&
+                   belowThreshold.tdsAmount === 0 && belowThreshold.thresholdApplied === true &&
+                   aboveThreshold.tdsAmount > 0 && aboveThreshold.thresholdApplied === false;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    test('isTDSApplicable helper function matches threshold logic', () => {
+      const sectionArbitrary = fc.constantFrom('194C', '194I', '194J', '194H');
+      const taxableAmountArbitrary = fc.integer({ min: 0, max: 500000 });
+
+      fc.assert(
+        fc.property(
+          sectionArbitrary,
+          taxableAmountArbitrary,
+          (sectionCode, taxableAmount) => {
+            const threshold = tdsService.getTDSThreshold(sectionCode);
+            const isApplicable = tdsService.isTDSApplicable(sectionCode, taxableAmount);
+
+            // Property: isTDSApplicable should return true if and only if amount >= threshold
+            return isApplicable === (taxableAmount >= threshold);
+          }
+        ),
+        { numRuns: 100 }
+      );
     });
   });
 });

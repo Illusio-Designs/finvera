@@ -1142,6 +1142,201 @@ class TDSService {
 
     throw new Error('TDS API not configured');
   }
+
+  /**
+   * Generate TDS Return (Task 9.5)
+   * Generates quarterly TDS return with all TDS entries for specified quarter and FY
+   * 
+   * @param {Object} ctx - Context containing tenantModels, masterModels, tenant_id, company
+   * @param {string} quarter - Quarter (e.g., 'Q1-2024', 'Q2-2024', 'Q3-2024', 'Q4-2024')
+   * @param {string} financialYear - Financial year (e.g., '2024-2025' or '2024-25')
+   * @returns {Promise<Object>} TDS return data with all entries and summary
+   * 
+   * Validates Requirements: 4.8
+   */
+  async generateTDSReturn(ctx, quarter, financialYear) {
+    const { tenantModels, company, tenant_id } = ctx;
+
+    if (!quarter) {
+      throw new Error('Quarter is required for generating TDS return');
+    }
+
+    if (!financialYear) {
+      throw new Error('Financial year is required for generating TDS return');
+    }
+
+    // Normalize financial year format (2024-2025 -> 2024-25)
+    let fyNormalized = financialYear;
+    if (financialYear.includes('-')) {
+      const parts = financialYear.split('-');
+      if (parts.length === 2 && parts[1].length === 4) {
+        fyNormalized = `${parts[0]}-${parts[1].substring(2)}`;
+      }
+    }
+
+    // Requirement 4.8: Query all TDS entries for specified quarter and FY
+    const tdsEntries = await tenantModels.TDSDetail.findAll({
+      where: {
+        tenant_id: tenant_id,
+        quarter: quarter,
+        financial_year: fyNormalized,
+      },
+      include: [
+        {
+          model: tenantModels.Voucher,
+          as: 'voucher',
+          attributes: ['id', 'voucher_number', 'voucher_date', 'party_ledger_id'],
+          include: [
+            {
+              model: tenantModels.Ledger,
+              as: 'partyLedger',
+              attributes: ['id', 'ledger_name', 'name', 'pan', 'address', 'city', 'state', 'pincode'],
+            },
+          ],
+        },
+      ],
+      order: [
+        ['section_code', 'ASC'],
+        ['deductee_name', 'ASC'],
+        ['createdAt', 'ASC'],
+      ],
+    });
+
+    if (!tdsEntries || tdsEntries.length === 0) {
+      throw new Error(`No TDS entries found for quarter ${quarter} and financial year ${fyNormalized}`);
+    }
+
+    // Format return data according to requirements
+    // Group entries by deductee PAN and section for summary
+    const deducteeMap = new Map();
+    const sectionSummary = {};
+    let totalTaxableAmount = 0;
+    let totalTDSAmount = 0;
+
+    // Process each TDS entry
+    const returnEntries = tdsEntries.map((tds) => {
+      const voucher = tds.voucher;
+      const partyLedger = voucher?.partyLedger;
+
+      const taxableAmount = parseFloat(tds.taxable_amount || 0);
+      const tdsAmount = parseFloat(tds.tds_amount || 0);
+
+      // Update totals
+      totalTaxableAmount += taxableAmount;
+      totalTDSAmount += tdsAmount;
+
+      // Update section summary
+      if (!sectionSummary[tds.section_code]) {
+        sectionSummary[tds.section_code] = {
+          section_code: tds.section_code,
+          section_description: this.getTDSSection(tds.section_code)?.description || '',
+          count: 0,
+          total_taxable_amount: 0,
+          total_tds_amount: 0,
+        };
+      }
+      sectionSummary[tds.section_code].count += 1;
+      sectionSummary[tds.section_code].total_taxable_amount += taxableAmount;
+      sectionSummary[tds.section_code].total_tds_amount += tdsAmount;
+
+      // Group by deductee PAN
+      const deducteePAN = tds.deductee_pan || 'NO_PAN';
+      if (!deducteeMap.has(deducteePAN)) {
+        deducteeMap.set(deducteePAN, {
+          deductee_pan: tds.deductee_pan,
+          deductee_name: tds.deductee_name || partyLedger?.ledger_name || partyLedger?.name || '',
+          deductee_address: this.formatAddress(partyLedger),
+          entries: [],
+          total_taxable_amount: 0,
+          total_tds_amount: 0,
+        });
+      }
+
+      const deducteeData = deducteeMap.get(deducteePAN);
+      deducteeData.total_taxable_amount += taxableAmount;
+      deducteeData.total_tds_amount += tdsAmount;
+
+      // Create entry for return
+      const entry = {
+        tds_detail_id: tds.id,
+        voucher_number: voucher?.voucher_number || '',
+        voucher_date: voucher?.voucher_date || null,
+        section_code: tds.section_code,
+        section_description: this.getTDSSection(tds.section_code)?.description || '',
+        tds_rate: parseFloat(tds.tds_rate || 0),
+        taxable_amount: taxableAmount,
+        tds_amount: tdsAmount,
+        deductee_pan: tds.deductee_pan,
+        deductee_name: tds.deductee_name || partyLedger?.ledger_name || partyLedger?.name || '',
+        certificate_no: tds.certificate_no,
+        certificate_date: tds.certificate_date,
+      };
+
+      deducteeData.entries.push(entry);
+
+      return entry;
+    });
+
+    // Convert deductee map to array
+    const deducteeDetails = Array.from(deducteeMap.values());
+
+    // Convert section summary to array
+    const sectionSummaryArray = Object.values(sectionSummary);
+
+    // Prepare return data structure
+    const tdsReturn = {
+      return_type: 'Form 24Q', // Non-salary TDS return
+      quarter: quarter,
+      financial_year: fyNormalized,
+      
+      // Deductor details (company/organization deducting TDS)
+      deductor: {
+        name: company?.company_name || company?.name || '',
+        pan: company?.pan || '',
+        tan: company?.tan || '', // Tax Deduction Account Number
+        address: company?.registered_address || company?.address || '',
+      },
+      
+      // Summary statistics
+      summary: {
+        total_deductees: deducteeDetails.length,
+        total_entries: returnEntries.length,
+        total_sections: sectionSummaryArray.length,
+        total_taxable_amount: parseFloat(totalTaxableAmount.toFixed(2)),
+        total_tds_amount: parseFloat(totalTDSAmount.toFixed(2)),
+      },
+      
+      // Section-wise summary
+      section_summary: sectionSummaryArray.map(s => ({
+        ...s,
+        total_taxable_amount: parseFloat(s.total_taxable_amount.toFixed(2)),
+        total_tds_amount: parseFloat(s.total_tds_amount.toFixed(2)),
+      })),
+      
+      // Deductee-wise details
+      deductee_details: deducteeDetails.map(d => ({
+        ...d,
+        total_taxable_amount: parseFloat(d.total_taxable_amount.toFixed(2)),
+        total_tds_amount: parseFloat(d.total_tds_amount.toFixed(2)),
+        entry_count: d.entries.length,
+      })),
+      
+      // All entries (flat list)
+      entries: returnEntries,
+      
+      // Metadata
+      generated_date: new Date().toISOString(),
+      generated_by: ctx.user_id || 'system',
+      tenant_id: tenant_id,
+    };
+
+    return {
+      tdsReturn,
+      summary: tdsReturn.summary,
+      sectionSummary: tdsReturn.section_summary,
+      deducteeDetails: tdsReturn.deductee_details,
+    };
+  }
 }
 
 module.exports = new TDSService();

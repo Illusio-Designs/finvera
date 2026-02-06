@@ -71,5 +71,36 @@ module.exports = {
       next(err);
     }
   },
+
+  async updateVehicle(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { vehicle_no, reason_code, remarks } = req.body;
+
+      if (!vehicle_no) {
+        return res.status(400).json({ message: 'vehicle_no is required' });
+      }
+
+      if (!reason_code) {
+        return res.status(400).json({ message: 'reason_code is required' });
+      }
+
+      const eWayBill = await eWayBillService.updateVehicleDetails(
+        id,
+        vehicle_no,
+        reason_code,
+        remarks || '',
+        { tenantModels: req.tenantModels, masterModels: req.masterModels, company: req.company }
+      );
+
+      res.json({
+        success: true,
+        message: 'Vehicle details updated successfully',
+        eWayBill,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
 };
 

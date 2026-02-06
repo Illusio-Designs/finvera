@@ -53,8 +53,37 @@ class VoucherService {
     try {
       logger.info(`Creating voucher of type: ${voucherData.voucher_type}`);
       
+      // Check if company is a composition dealer and default to Bill of Supply for sales
+      if (company && company.is_composition_dealer) {
+        const salesTypes = ['sales', 'sales_invoice', 'tax_invoice'];
+        if (salesTypes.includes(voucherData.voucher_type?.toLowerCase())) {
+          logger.info('Company is composition dealer, defaulting to Bill of Supply');
+          voucherData.voucher_type = 'bill_of_supply';
+        }
+      }
+      
+      // Auto-detect Retail Invoice for B2C transactions
+      const salesTypes = ['sales', 'sales_invoice', 'tax_invoice'];
+      if (salesTypes.includes(voucherData.voucher_type?.toLowerCase())) {
+        const isRetail = await this.isRetailInvoice(voucherData, ctx);
+        if (isRetail) {
+          logger.info('Auto-classifying as Retail Invoice (amount ≤ ₹50,000 and no customer GSTIN)');
+          voucherData.voucher_type = 'retail_invoice';
+        }
+      }
+      
       // Validate voucher data
       await this.validateVoucherData(voucherData, ctx);
+      
+      // Apply currency conversion for export invoices with foreign currency
+      if (voucherData.voucher_type?.toLowerCase() === 'export_invoice' && 
+          voucherData.currency_code && 
+          voucherData.currency_code !== 'INR' && 
+          voucherData.exchange_rate && 
+          voucherData.items) {
+        logger.info(`Applying currency conversion: ${voucherData.currency_code} to INR at rate ${voucherData.exchange_rate}`);
+        voucherData.items = this.applyExchangeRateToItems(voucherData.items, voucherData.exchange_rate);
+      }
       
       // Generate voucher number using NumberingService
       let voucherNumber = voucherData.voucher_number;
@@ -66,7 +95,8 @@ class VoucherService {
           tenant_id,
           voucherData.voucher_type,
           voucherData.series_id,
-          voucherData.branch_id
+          voucherData.branch_id,
+          voucherData.company_id || company?.id
         );
         voucherNumber = numberResult.voucherNumber;
         
@@ -105,7 +135,21 @@ class VoucherService {
         reference_number: voucherData.reference_number,
         due_date: voucherData.due_date,
         status: voucherData.status || 'draft',
+        // Export Invoice fields
+        currency_code: voucherData.currency_code || 'INR',
+        exchange_rate: voucherData.exchange_rate || 1.0,
+        shipping_bill_number: voucherData.shipping_bill_number || null,
+        shipping_bill_date: voucherData.shipping_bill_date || null,
+        port_of_loading: voucherData.port_of_loading || null,
+        destination_country: voucherData.destination_country || null,
+        has_lut: voucherData.has_lut || false,
+        // Delivery Challan fields
+        purpose: voucherData.purpose || null,
+        converted_to_invoice_id: voucherData.converted_to_invoice_id || null,
+        // Multi-tenant, multi-company, multi-branch isolation
         tenant_id: tenant_id,
+        company_id: voucherData.company_id || company?.id || null,
+        branch_id: voucherData.branch_id || null,
         created_by: voucherData.created_by,
       };
       
@@ -430,37 +474,62 @@ class VoucherService {
    */
   async convertVoucher(sourceVoucherId, targetType, ctx) {
     const { tenantModels } = ctx;
+    const transaction = await tenantModels.sequelize.transaction();
     
-    const sourceVoucher = await this.getVoucher(sourceVoucherId, ctx);
-    
-    if (!sourceVoucher) {
-      throw new Error('Source voucher not found');
+    try {
+      const sourceVoucher = await this.getVoucher(sourceVoucherId, ctx);
+      
+      if (!sourceVoucher) {
+        throw new Error('Source voucher not found');
+      }
+      
+      // Check if already converted
+      if (sourceVoucher.converted_to_invoice_id) {
+        throw new Error('This voucher has already been converted to an invoice');
+      }
+      
+      // Create new voucher data based on source
+      const newVoucherData = {
+        voucher_type: targetType,
+        voucher_date: new Date(), // Use current date for conversion
+        party_ledger_id: sourceVoucher.party_ledger_id,
+        place_of_supply: sourceVoucher.place_of_supply,
+        is_reverse_charge: sourceVoucher.is_reverse_charge,
+        narration: `Converted from ${sourceVoucher.voucher_type} ${sourceVoucher.voucher_number}`,
+        reference_number: sourceVoucher.voucher_number,
+        items: sourceVoucher.items ? sourceVoucher.items.map(item => ({
+          inventory_item_id: item.inventory_item_id,
+          warehouse_id: item.warehouse_id,
+          item_code: item.item_code,
+          item_description: item.item_description,
+          hsn_sac_code: item.hsn_sac_code,
+          uqc: item.uqc,
+          quantity: item.quantity,
+          rate: item.rate,
+          discount_percent: item.discount_percent,
+          gst_rate: item.gst_rate,
+        })) : [],
+      };
+      
+      // Create the new voucher
+      const newVoucher = await this.createVoucher(ctx, newVoucherData);
+      
+      // Update source voucher with converted_to_invoice_id
+      await tenantModels.Voucher.update(
+        { converted_to_invoice_id: newVoucher.id },
+        { where: { id: sourceVoucherId }, transaction }
+      );
+      
+      await transaction.commit();
+      
+      logger.info(`Converted ${sourceVoucher.voucher_type} ${sourceVoucher.voucher_number} to ${targetType} ${newVoucher.voucher_number}`);
+      return newVoucher;
+      
+    } catch (error) {
+      await transaction.rollback();
+      logger.error('Error converting voucher:', error);
+      throw error;
     }
-    
-    // Create new voucher data based on source
-    const newVoucherData = {
-      voucher_type: targetType,
-      voucher_date: new Date(), // Use current date for conversion
-      party_ledger_id: sourceVoucher.party_ledger_id,
-      place_of_supply: sourceVoucher.place_of_supply,
-      is_reverse_charge: sourceVoucher.is_reverse_charge,
-      narration: `Converted from ${sourceVoucher.voucher_type} ${sourceVoucher.voucher_number}`,
-      reference_number: sourceVoucher.voucher_number,
-      items: sourceVoucher.items ? sourceVoucher.items.map(item => ({
-        inventory_item_id: item.inventory_item_id,
-        warehouse_id: item.warehouse_id,
-        item_code: item.item_code,
-        item_description: item.item_description,
-        hsn_sac_code: item.hsn_sac_code,
-        uqc: item.uqc,
-        quantity: item.quantity,
-        rate: item.rate,
-        discount_percent: item.discount_percent,
-        gst_rate: item.gst_rate,
-      })) : [],
-    };
-    
-    return await this.createVoucher(ctx, newVoucherData);
   }
   
   /**
@@ -567,7 +636,7 @@ class VoucherService {
    */
   async calculateVoucherWithGST(ctx, voucherData) {
     const { tenantModels, company } = ctx;
-    const { party_ledger_id, items = [], place_of_supply, is_reverse_charge = false } = voucherData;
+    const { party_ledger_id, items = [], place_of_supply, is_reverse_charge = false, has_lut = false } = voucherData;
 
     // Get party ledger for state information
     const partyLedger = await tenantModels.Ledger.findByPk(party_ledger_id);
@@ -575,6 +644,12 @@ class VoucherService {
 
     const supplierState = company?.state || 'Maharashtra';
     const pos = place_of_supply || partyLedger?.state || supplierState;
+    
+    // Check if this is an export invoice
+    const isExportInvoice = voucherData.voucher_type?.toLowerCase() === 'export_invoice' || pos === 'Export';
+    
+    // Check if this is a delivery challan (no tax liability)
+    const isDeliveryChallan = voucherData.voucher_type?.toLowerCase() === 'delivery_challan';
 
     let subtotal = 0;
     let totalCGST = 0;
@@ -593,14 +668,42 @@ class VoucherService {
 
       const gstRate = toNum(item.gst_rate, 0);
       
-      // Use GSTCalculationService for GST calculation
-      const gst = GSTCalculationService.calculateItemGST(
-        taxableAmount, 
-        gstRate, 
-        supplierState, 
-        pos, 
-        is_reverse_charge
-      );
+      let gst;
+      // For delivery challan, GST is zero (no tax liability)
+      if (isDeliveryChallan) {
+        gst = {
+          cgstAmount: 0,
+          sgstAmount: 0,
+          igstAmount: 0,
+          totalGSTAmount: 0
+        };
+      } else if (isExportInvoice && has_lut) {
+        // For export invoices with LUT, GST is zero-rated
+        gst = {
+          cgstAmount: 0,
+          sgstAmount: 0,
+          igstAmount: 0,
+          totalGSTAmount: 0
+        };
+      } else if (isExportInvoice && !has_lut) {
+        // For export invoices without LUT, calculate IGST (refundable)
+        const igstAmount = (taxableAmount * gstRate) / 100;
+        gst = {
+          cgstAmount: 0,
+          sgstAmount: 0,
+          igstAmount: igstAmount,
+          totalGSTAmount: igstAmount
+        };
+      } else {
+        // Use GSTCalculationService for normal GST calculation
+        gst = GSTCalculationService.calculateItemGST(
+          taxableAmount, 
+          gstRate, 
+          supplierState, 
+          pos, 
+          is_reverse_charge
+        );
+      }
 
       totalCGST += gst.cgstAmount;
       totalSGST += gst.sgstAmount;
@@ -648,6 +751,7 @@ class VoucherService {
       round_off: roundOffAmount,
       total_amount: roundedTotal,
       is_reverse_charge,
+      has_lut: has_lut || false,
       narration: voucherData.narration
     });
 
@@ -661,6 +765,7 @@ class VoucherService {
       total_amount: roundedTotal,
       place_of_supply: pos,
       is_reverse_charge: !!is_reverse_charge,
+      has_lut: !!has_lut,
       items: processedItems,
       ledger_entries: ledgerEntries,
     };
@@ -929,14 +1034,24 @@ class VoucherService {
       narration: 'Export sales revenue',
     });
 
-    // GST entries (only if no LUT)
-    if (!has_lut && (cgst_amount > 0 || sgst_amount > 0 || igst_amount > 0)) {
-      await this.addGSTOutputLedgerEntries(ctx, {
-        cgst_amount,
-        sgst_amount,
-        igst_amount,
-        cess_amount
-      }, ledgerEntries);
+    // GST entries
+    if (has_lut) {
+      // With LUT: Zero-rated GST, no ledger entries for GST
+      logger.info('Export Invoice with LUT: Zero-rated GST applied');
+    } else if (igst_amount > 0) {
+      // Without LUT: IGST is calculated and marked as refundable
+      const igstRefundableLedger = await getOrCreateSystemLedger(
+        { tenantModels, masterModels, tenant_id },
+        { ledgerCode: 'IGST_REFUNDABLE', ledgerName: 'IGST Refundable (Export)', groupCode: 'CA' }
+      );
+      ledgerEntries.push({
+        ledger_id: igstRefundableLedger.id,
+        debit_amount: igst_amount,
+        credit_amount: 0,
+        narration: 'IGST Refundable on Export (without LUT)',
+      });
+      
+      logger.info(`Export Invoice without LUT: IGST ${igst_amount} marked as refundable`);
     }
 
     // Round-off entry
@@ -1475,6 +1590,108 @@ class VoucherService {
       end: new Date(currentFY.end.getFullYear() - 1, 2, 31)
     };
   }
+  
+  /**
+   * Check if invoice qualifies as Retail Invoice
+   * Retail Invoice criteria: amount ≤ ₹50,000 AND no customer GSTIN
+   * @param {Object} voucherData - Voucher data
+   * @param {Object} ctx - Context
+   * @returns {Promise<boolean>} True if qualifies as retail invoice
+   */
+  async isRetailInvoice(voucherData, ctx) {
+    const { tenantModels } = ctx;
+    
+    // Calculate total amount if not provided
+    let totalAmount = toNum(voucherData.total_amount, 0);
+    
+    // If total amount is not calculated yet, estimate from items
+    if (totalAmount === 0 && voucherData.items && voucherData.items.length > 0) {
+      let estimatedTotal = 0;
+      voucherData.items.forEach(item => {
+        const quantity = toNum(item.quantity, 1);
+        const rate = toNum(item.rate, 0);
+        const discountPercent = toNum(item.discount_percent, 0);
+        const taxableAmount = quantity * rate * (1 - discountPercent / 100);
+        const gstRate = toNum(item.gst_rate, 0);
+        const gstAmount = (taxableAmount * gstRate) / 100;
+        estimatedTotal += taxableAmount + gstAmount;
+      });
+      totalAmount = estimatedTotal;
+    }
+    
+    // Check if amount is ≤ ₹50,000
+    if (totalAmount > 50000) {
+      return false;
+    }
+    
+    // Check if customer GSTIN is not provided
+    if (voucherData.party_ledger_id) {
+      const partyLedger = await tenantModels.Ledger.findByPk(voucherData.party_ledger_id);
+      if (partyLedger && partyLedger.gstin) {
+        // Customer has GSTIN, not a retail invoice
+        return false;
+      }
+    }
+    
+    // Both conditions met: amount ≤ ₹50,000 AND no customer GSTIN
+    return true;
+  }
+  
+  /**
+   * Convert foreign currency amount to base currency (INR)
+   * @param {number} foreignAmount - Amount in foreign currency
+   * @param {number} exchangeRate - Exchange rate to INR
+   * @returns {number} Amount in base currency (INR)
+   */
+  convertToBaseCurrency(foreignAmount, exchangeRate) {
+    const amount = toNum(foreignAmount, 0);
+    const rate = toNum(exchangeRate, 1.0);
+    
+    if (rate <= 0) {
+      throw new Error('Exchange rate must be greater than 0');
+    }
+    
+    // Base amount = Foreign amount × Exchange rate
+    const baseAmount = amount * rate;
+    
+    // Round to 2 decimal places
+    return Math.round(baseAmount * 100) / 100;
+  }
+  
+  /**
+   * Apply currency conversion to voucher items
+   * @param {Array} items - Voucher items with foreign currency amounts
+   * @param {number} exchangeRate - Exchange rate to INR
+   * @returns {Array} Items with converted amounts
+   */
+  applyExchangeRateToItems(items, exchangeRate) {
+    const rate = toNum(exchangeRate, 1.0);
+    
+    if (rate <= 0) {
+      throw new Error('Exchange rate must be greater than 0');
+    }
+    
+    return items.map(item => {
+      // Convert rate to base currency
+      const foreignRate = toNum(item.rate, 0);
+      const baseRate = this.convertToBaseCurrency(foreignRate, rate);
+      
+      // Recalculate amounts in base currency
+      const quantity = toNum(item.quantity, 1);
+      const discountPercent = toNum(item.discount_percent, 0);
+      const discountAmount = (quantity * baseRate * discountPercent) / 100;
+      const taxableAmount = quantity * baseRate - discountAmount;
+      
+      return {
+        ...item,
+        rate: baseRate, // Store converted rate
+        foreign_rate: foreignRate, // Store original foreign rate for reference
+        discount_amount: discountAmount,
+        taxable_amount: taxableAmount,
+      };
+    });
+  }
+  
   async createSalesInvoice(ctx, invoiceData) {
     const { tenantModels, masterModels, company, tenant_id } = ctx;
     const { party_ledger_id, items = [], place_of_supply, is_reverse_charge = false, narration } = invoiceData || {};

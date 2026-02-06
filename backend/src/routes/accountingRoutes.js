@@ -9,8 +9,11 @@ const inventoryController = require('../controllers/inventoryController');
 const warehouseController = require('../controllers/warehouseController');
 const stockAdjustmentController = require('../controllers/stockAdjustmentController');
 const stockTransferController = require('../controllers/stockTransferController');
+const numberingSeriesController = require('../controllers/numberingSeriesController');
 const { authenticate } = require('../middleware/auth');
 const { setTenantContext, requireTenant, resolveTenant } = require('../middleware/tenant');
+const validator = require('../middleware/validator');
+const { convertVoucherValidator, createVoucherValidator, updateVoucherValidator } = require('../validators/voucherValidator');
 
 const router = Router();
 
@@ -36,6 +39,15 @@ router.put('/ledgers/:id', ledgerController.update);
 router.delete('/ledgers/:id', ledgerController.delete);
 router.get('/ledgers/:id/balance', ledgerController.getBalance);
 
+// Numbering Series
+router.get('/numbering-series', numberingSeriesController.list);
+router.post('/numbering-series', numberingSeriesController.create);
+router.get('/numbering-series/:id', numberingSeriesController.getById);
+router.put('/numbering-series/:id', numberingSeriesController.update);
+router.delete('/numbering-series/:id', numberingSeriesController.delete);
+router.post('/numbering-series/:id/set-default', numberingSeriesController.setDefault);
+router.get('/numbering-series/:id/preview', numberingSeriesController.preview);
+
 // Voucher Types
 router.get('/voucher-types', voucherTypeController.list);
 router.post('/voucher-types', voucherTypeController.create);
@@ -44,11 +56,12 @@ router.put('/voucher-types/:id', voucherTypeController.update);
 
 // Vouchers (Generic)
 router.get('/vouchers', voucherController.list);
-router.post('/vouchers', voucherController.create);
+router.post('/vouchers', validator(createVoucherValidator), voucherController.create);
 router.get('/vouchers/:id', voucherController.getById);
-router.put('/vouchers/:id', voucherController.update);
+router.put('/vouchers/:id', validator(updateVoucherValidator), voucherController.update);
 router.post('/vouchers/:id/post', voucherController.post);
 router.post('/vouchers/:id/cancel', voucherController.cancel);
+router.post('/vouchers/:id/convert', validator(convertVoucherValidator), voucherController.convert);
 
 // Transaction Types (Specific)
 router.post('/invoices/sales', transactionController.createSalesInvoice);

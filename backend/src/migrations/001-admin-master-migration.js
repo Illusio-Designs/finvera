@@ -297,6 +297,12 @@ module.exports = {
         pan: Sequelize.STRING(10),
         tan: Sequelize.STRING(10),
         gstin: Sequelize.STRING(15),
+        is_composition_dealer: {
+          type: Sequelize.BOOLEAN,
+          defaultValue: false,
+          allowNull: false,
+          comment: 'Whether the company is registered as a composition dealer under GST',
+        },
         registered_address: Sequelize.TEXT,
         state: Sequelize.STRING(100),
         pincode: Sequelize.STRING(10),
@@ -337,6 +343,14 @@ module.exports = {
       await addIndexIfNotExists('companies', ['created_by_user_id'], { name: 'idx_companies_created_by' });
       await addIndexIfNotExists('companies', ['company_name'], { name: 'idx_companies_name' });
       await addIndexIfNotExists('companies', ['db_name'], { name: 'idx_companies_db_name' });
+    } else {
+      // Add is_composition_dealer column if it doesn't exist
+      await addColumnIfNotExists('companies', 'is_composition_dealer', {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+        allowNull: false,
+        comment: 'Whether the company is registered as a composition dealer under GST',
+      });
     }
 
     // 3. TENANT_REVIEWS TABLE (in master DB)

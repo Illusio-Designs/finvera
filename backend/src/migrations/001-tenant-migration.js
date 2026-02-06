@@ -181,6 +181,14 @@ module.exports = {
         status: { type: Sequelize.ENUM('draft', 'posted', 'cancelled'), defaultValue: 'draft' },
         reference_number: { type: Sequelize.STRING, allowNull: true },
         due_date: { type: Sequelize.DATE, allowNull: true },
+        // Export Invoice fields
+        currency_code: { type: Sequelize.STRING(3), allowNull: true, defaultValue: 'INR', comment: 'Currency code for foreign currency invoices (ISO 4217 format: USD, EUR, GBP, etc.)' },
+        exchange_rate: { type: Sequelize.DECIMAL(15, 6), allowNull: true, defaultValue: 1.0, comment: 'Exchange rate to convert foreign currency to base currency (INR)' },
+        shipping_bill_number: { type: Sequelize.STRING(50), allowNull: true, comment: 'Shipping bill number for export invoices' },
+        shipping_bill_date: { type: Sequelize.DATE, allowNull: true, comment: 'Date of shipping bill for export invoices' },
+        port_of_loading: { type: Sequelize.STRING(100), allowNull: true, comment: 'Port from which goods are shipped for export' },
+        destination_country: { type: Sequelize.STRING(100), allowNull: true, comment: 'Destination country for export invoices' },
+        has_lut: { type: Sequelize.BOOLEAN, defaultValue: false, comment: 'Whether LUT (Letter of Undertaking) is present for zero-rated GST on exports' },
         tenant_id: { type: Sequelize.STRING, allowNull: false },
         created_by: { type: Sequelize.UUID, allowNull: true },
         createdAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
@@ -191,6 +199,15 @@ module.exports = {
       console.log('✓ Created table vouchers');
     } else {
       console.log('ℹ️  Table vouchers already exists');
+      
+      // Add export invoice fields if they don't exist
+      await addColumnIfNotExists('vouchers', 'currency_code', { type: Sequelize.STRING(3), allowNull: true, defaultValue: 'INR', comment: 'Currency code for foreign currency invoices (ISO 4217 format: USD, EUR, GBP, etc.)' });
+      await addColumnIfNotExists('vouchers', 'exchange_rate', { type: Sequelize.DECIMAL(15, 6), allowNull: true, defaultValue: 1.0, comment: 'Exchange rate to convert foreign currency to base currency (INR)' });
+      await addColumnIfNotExists('vouchers', 'shipping_bill_number', { type: Sequelize.STRING(50), allowNull: true, comment: 'Shipping bill number for export invoices' });
+      await addColumnIfNotExists('vouchers', 'shipping_bill_date', { type: Sequelize.DATE, allowNull: true, comment: 'Date of shipping bill for export invoices' });
+      await addColumnIfNotExists('vouchers', 'port_of_loading', { type: Sequelize.STRING(100), allowNull: true, comment: 'Port from which goods are shipped for export' });
+      await addColumnIfNotExists('vouchers', 'destination_country', { type: Sequelize.STRING(100), allowNull: true, comment: 'Destination country for export invoices' });
+      await addColumnIfNotExists('vouchers', 'has_lut', { type: Sequelize.BOOLEAN, defaultValue: false, comment: 'Whether LUT (Letter of Undertaking) is present for zero-rated GST on exports' });
     }
 
     // VOUCHER_ITEMS TABLE

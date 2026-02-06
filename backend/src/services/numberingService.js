@@ -33,9 +33,10 @@ class NumberingService {
    * @param {string} voucherType - Type of voucher (Sales Invoice, Purchase Invoice, etc.)
    * @param {string} seriesId - Optional specific series ID
    * @param {string} branchId - Optional branch ID
+   * @param {string} companyId - Optional company ID
    * @returns {Promise<{voucherNumber: string, seriesId: string, sequence: number}>}
    */
-  async generateVoucherNumber(tenantId, voucherType, seriesId = null, branchId = null) {
+  async generateVoucherNumber(tenantId, voucherType, seriesId = null, branchId = null, companyId = null) {
     if (!tenantId || !voucherType) {
       throw new Error('tenantId and voucherType are required');
     }
@@ -67,21 +68,50 @@ class NumberingService {
           throw new Error(`Numbering series not found: ${seriesId}`);
         }
       } else {
-        // Use default series for voucher type
+        // Use default series for voucher type with company and branch filtering
+        const whereClause = {
+          tenant_id: tenantId,
+          voucher_type: voucherType,
+          is_default: true,
+          is_active: true
+        };
+        
+        // Add company_id filter if provided
+        if (companyId) {
+          whereClause.company_id = companyId;
+        }
+        
+        // Add branch_id filter if provided
+        if (branchId) {
+          whereClause.branch_id = branchId;
+        }
+        
         series = await tenantModels.NumberingSeries.findOne({
-          where: {
-            tenant_id: tenantId,
-            voucher_type: voucherType,
-            is_default: true,
-            is_active: true,
-            ...(branchId && { branch_id: branchId })
-          },
+          where: whereClause,
           lock: transaction.LOCK.UPDATE,
           transaction
         });
         
         if (!series) {
-          throw new Error(`No default numbering series found for voucher type: ${voucherType}`);
+          // If no company/branch-specific series found, try tenant-level default
+          if (companyId || branchId) {
+            series = await tenantModels.NumberingSeries.findOne({
+              where: {
+                tenant_id: tenantId,
+                voucher_type: voucherType,
+                is_default: true,
+                is_active: true,
+                company_id: null,
+                branch_id: null
+              },
+              lock: transaction.LOCK.UPDATE,
+              transaction
+            });
+          }
+          
+          if (!series) {
+            throw new Error(`No default numbering series found for voucher type: ${voucherType}`);
+          }
         }
       }
 
@@ -275,6 +305,7 @@ class NumberingService {
       end_number = null,
       reset_frequency = 'never',
       is_default = false,
+      company_id = null,
       branch_id = null,
       separator = '-'
     } = seriesConfig;
@@ -292,16 +323,30 @@ class NumberingService {
     const transaction = await tenantModels.sequelize.transaction();
     
     try {
-      // If this is set as default, unset other defaults for the same voucher type
+      // If this is set as default, unset other defaults for the same voucher type/company/branch
       if (is_default) {
+        const whereClause = {
+          tenant_id: tenantId,
+          voucher_type: voucher_type
+        };
+        
+        // Match company_id and branch_id for proper scoping
+        if (company_id) {
+          whereClause.company_id = company_id;
+        } else {
+          whereClause.company_id = null;
+        }
+        
+        if (branch_id) {
+          whereClause.branch_id = branch_id;
+        } else {
+          whereClause.branch_id = null;
+        }
+        
         await tenantModels.NumberingSeries.update(
           { is_default: false },
           {
-            where: {
-              tenant_id: tenantId,
-              voucher_type: voucher_type,
-              ...(branch_id && { branch_id })
-            },
+            where: whereClause,
             transaction
           }
         );
@@ -310,6 +355,7 @@ class NumberingService {
       // Create the series
       const series = await tenantModels.NumberingSeries.create({
         tenant_id: tenantId,
+        company_id,
         branch_id,
         voucher_type,
         series_name,
@@ -425,16 +471,30 @@ class NumberingService {
         throw new Error(`Numbering series not found: ${seriesId}`);
       }
 
-      // Unset other defaults for the same voucher type
+      // Unset other defaults for the same voucher type/company/branch scope
+      const whereClause = {
+        tenant_id: series.tenant_id,
+        voucher_type: series.voucher_type,
+        id: { [Op.ne]: seriesId }
+      };
+      
+      // Match company_id and branch_id for proper scoping
+      if (series.company_id) {
+        whereClause.company_id = series.company_id;
+      } else {
+        whereClause.company_id = null;
+      }
+      
+      if (series.branch_id) {
+        whereClause.branch_id = series.branch_id;
+      } else {
+        whereClause.branch_id = null;
+      }
+      
       await tenantModels.NumberingSeries.update(
         { is_default: false },
         {
-          where: {
-            tenant_id: series.tenant_id,
-            voucher_type: series.voucher_type,
-            id: { [Op.ne]: seriesId },
-            ...(series.branch_id && { branch_id: series.branch_id })
-          },
+          where: whereClause,
           transaction
         }
       );

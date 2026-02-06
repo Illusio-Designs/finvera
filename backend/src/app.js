@@ -5,7 +5,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const routes = require('./routes');
-const errorHandler = require('./middleware/errorHandler');
+const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const sanitizeInput = require('./middleware/sanitize');
 const { uploadDir } = require('./config/multer');
 const { decryptRequest, encryptResponse } = require('./middleware/payloadEncryption');
@@ -56,6 +56,9 @@ app.use('/api', routes);
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// 404 handler for undefined routes
+app.use(notFoundHandler);
 
 // Error handler (must be last)
 app.use(errorHandler);

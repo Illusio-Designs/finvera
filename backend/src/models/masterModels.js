@@ -72,6 +72,12 @@ models.Company = masterSequelize.define('Company', {
     type: DataTypes.STRING(15),
     allowNull: true,
   },
+  is_composition_dealer: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    allowNull: false,
+    comment: 'Whether the company is registered as a composition dealer under GST',
+  },
 
   // Registered Office Details
   registered_address: {

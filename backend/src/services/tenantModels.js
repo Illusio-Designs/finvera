@@ -156,9 +156,31 @@ module.exports = (sequelize) => {
     },
     reference_number: DataTypes.STRING,
     due_date: DataTypes.DATE,
+    // Delivery Challan fields
+    purpose: {
+      type: DataTypes.ENUM('job_work', 'stock_transfer', 'sample'),
+      allowNull: true,
+      comment: 'Purpose of delivery challan (job_work, stock_transfer, sample)',
+    },
+    converted_to_invoice_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      comment: 'Reference to sales invoice if this voucher was converted',
+    },
+    // Multi-tenant, multi-company, multi-branch isolation
     tenant_id: {
       type: DataTypes.STRING,
       allowNull: false,
+    },
+    company_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      comment: 'Company ID for explicit company-level isolation',
+    },
+    branch_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      comment: 'Branch ID for explicit branch-level isolation',
     },
     created_by: DataTypes.UUID,
   }, {
@@ -477,6 +499,16 @@ module.exports = (sequelize) => {
   }, {
     tableName: 'eway_bills',
     timestamps: true,
+    defaultScope: {
+      // Default scope filters by tenant_id from context
+      // This will be overridden by explicit where clauses
+    },
+    scopes: {
+      // Scope to bypass tenant filtering when needed (e.g., admin operations)
+      withoutTenantFilter: {
+        where: {}
+      }
+    },
     indexes: [
       {
         fields: ['voucher_id'],
@@ -693,6 +725,16 @@ module.exports = (sequelize) => {
   }, {
     tableName: 'tds_details',
     timestamps: true,
+    defaultScope: {
+      // Default scope filters by tenant_id from context
+      // This will be overridden by explicit where clauses
+    },
+    scopes: {
+      // Scope to bypass tenant filtering when needed (e.g., admin operations)
+      withoutTenantFilter: {
+        where: {}
+      }
+    },
     indexes: [
       {
         fields: ['voucher_id'],
@@ -771,6 +813,16 @@ module.exports = (sequelize) => {
   }, {
     tableName: 'einvoices',
     timestamps: true,
+    defaultScope: {
+      // Default scope filters by tenant_id from context
+      // This will be overridden by explicit where clauses
+    },
+    scopes: {
+      // Scope to bypass tenant filtering when needed (e.g., admin operations)
+      withoutTenantFilter: {
+        where: {}
+      }
+    },
     indexes: [
       {
         fields: ['voucher_id'],
@@ -860,6 +912,11 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING,
       allowNull: false,
     },
+    company_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      comment: 'Company ID for company-specific numbering sequences',
+    },
     branch_id: {
       type: DataTypes.UUID,
       allowNull: true,
@@ -933,6 +990,16 @@ module.exports = (sequelize) => {
   }, {
     tableName: 'numbering_series',
     timestamps: true,
+    defaultScope: {
+      // Default scope filters by tenant_id from context
+      // This will be overridden by explicit where clauses
+    },
+    scopes: {
+      // Scope to bypass tenant filtering when needed (e.g., admin operations)
+      withoutTenantFilter: {
+        where: {}
+      }
+    }
   });
 
   // NumberingHistory model for tracking generated voucher numbers
@@ -977,6 +1044,16 @@ module.exports = (sequelize) => {
   }, {
     tableName: 'numbering_history',
     timestamps: false, // We use generated_at instead
+    defaultScope: {
+      // Default scope filters by tenant_id from context
+      // This will be overridden by explicit where clauses
+    },
+    scopes: {
+      // Scope to bypass tenant filtering when needed (e.g., admin operations)
+      withoutTenantFilter: {
+        where: {}
+      }
+    },
     indexes: [
       {
         fields: ['series_id', 'sequence_used'],
@@ -1008,6 +1085,10 @@ module.exports = (sequelize) => {
   // Party Ledger association for Voucher
   models.Voucher.belongsTo(models.Ledger, { foreignKey: 'party_ledger_id', as: 'partyLedger' });
   models.Ledger.hasMany(models.Voucher, { foreignKey: 'party_ledger_id', as: 'partyVouchers' });
+  
+  // Voucher conversion association (self-referencing)
+  models.Voucher.belongsTo(models.Voucher, { foreignKey: 'converted_to_invoice_id', as: 'convertedToInvoice' });
+  models.Voucher.hasMany(models.Voucher, { foreignKey: 'converted_to_invoice_id', as: 'sourceVouchers' });
   
   // Ledger associations
   models.Ledger.hasMany(models.VoucherLedgerEntry, { foreignKey: 'ledger_id', as: 'ledgerEntries' });

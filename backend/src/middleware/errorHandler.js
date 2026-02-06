@@ -19,6 +19,7 @@ const errorHandler = (err, req, res, next) => {
       errors: err.errors.map((e) => ({
         field: e.path,
         message: e.message,
+        value: e.value,
       })),
     });
   }
@@ -29,6 +30,7 @@ const errorHandler = (err, req, res, next) => {
       success: false,
       message: 'Duplicate entry',
       error: err.errors[0]?.message || 'A record with this value already exists',
+      field: err.errors[0]?.path,
     });
   }
 
@@ -38,6 +40,16 @@ const errorHandler = (err, req, res, next) => {
       success: false,
       message: 'Foreign key constraint violation',
       error: 'The referenced record does not exist',
+      field: err.fields?.[0],
+    });
+  }
+
+  // Sequelize database connection errors
+  if (err.name === 'SequelizeConnectionError') {
+    return res.status(503).json({
+      success: false,
+      message: 'Database connection error',
+      error: 'Unable to connect to the database. Please try again later.',
     });
   }
 
@@ -46,6 +58,7 @@ const errorHandler = (err, req, res, next) => {
     return res.status(401).json({
       success: false,
       message: 'Invalid token',
+      error: 'Authentication token is invalid',
     });
   }
 
@@ -53,11 +66,22 @@ const errorHandler = (err, req, res, next) => {
     return res.status(401).json({
       success: false,
       message: 'Token expired',
+      error: 'Authentication token has expired. Please login again.',
+    });
+  }
+
+  // Custom application errors with statusCode
+  if (err.statusCode) {
+    return res.status(err.statusCode).json({
+      success: false,
+      message: err.message,
+      ...(err.details && { details: err.details }),
+      ...(err.field && { field: err.field }),
     });
   }
 
   // Default error response
-  const statusCode = err.statusCode || err.status || 500;
+  const statusCode = err.status || 500;
   const message = err.message || 'Internal server error';
 
   res.status(statusCode).json({
@@ -67,4 +91,16 @@ const errorHandler = (err, req, res, next) => {
   });
 };
 
-module.exports = errorHandler;
+/**
+ * 404 Not Found handler
+ */
+const notFoundHandler = (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Resource not found',
+    error: `Cannot ${req.method} ${req.url}`,
+  });
+};
+
+module.exports = { errorHandler, notFoundHandler };
+

@@ -482,5 +482,92 @@ module.exports = {
     } catch (err) {
       next(err);
     }
+  },
+
+  async convert(req, res, next) {
+    const transaction = await req.tenantModels.sequelize.transaction();
+    
+    try {
+      const { target_type } = req.body;
+      
+      if (!target_type) {
+        return res.status(400).json({ 
+          message: 'target_type is required',
+          details: 'Please specify the target voucher type (e.g., sales_invoice)'
+        });
+      }
+
+      // Validate target type
+      const validTargetTypes = ['sales_invoice', 'tax_invoice'];
+      if (!validTargetTypes.includes(target_type.toLowerCase())) {
+        return res.status(400).json({ 
+          message: 'Invalid target_type',
+          details: `target_type must be one of: ${validTargetTypes.join(', ')}`
+        });
+      }
+
+      // Check if source voucher exists
+      const sourceVoucher = await req.tenantModels.Voucher.findByPk(req.params.id, {
+        include: [
+          { model: req.tenantModels.VoucherItem, as: 'items' }
+        ],
+        transaction
+      });
+      
+      if (!sourceVoucher) {
+        await transaction.rollback();
+        return res.status(404).json({ message: 'Voucher not found' });
+      }
+
+      // Validate source voucher type
+      const validSourceTypes = ['proforma_invoice', 'delivery_challan'];
+      if (!validSourceTypes.includes(sourceVoucher.voucher_type.toLowerCase())) {
+        await transaction.rollback();
+        return res.status(400).json({ 
+          message: 'Invalid source voucher type',
+          details: `Only ${validSourceTypes.join(' and ')} can be converted to sales invoice`
+        });
+      }
+
+      // Check if already converted
+      if (sourceVoucher.converted_to_invoice_id) {
+        await transaction.rollback();
+        return res.status(400).json({ 
+          message: 'Voucher has already been converted',
+          details: `This voucher was already converted to invoice ID: ${sourceVoucher.converted_to_invoice_id}`
+        });
+      }
+
+      // Import voucher service
+      const voucherService = require('../services/voucherService');
+      
+      // Convert the voucher
+      const convertedVoucher = await voucherService.convertVoucher(
+        req.params.id,
+        target_type,
+        { 
+          tenantModels: req.tenantModels, 
+          masterModels: req.masterModels,
+          company: req.company,
+          tenant_id: req.tenant_id
+        }
+      );
+
+      await transaction.commit();
+      
+      logger.info(`Voucher ${sourceVoucher.voucher_number} converted to ${target_type} successfully`);
+      
+      res.status(201).json({ 
+        success: true,
+        message: 'Voucher converted successfully',
+        data: convertedVoucher,
+        source_voucher_id: req.params.id,
+        converted_voucher_id: convertedVoucher.id
+      });
+    } catch (err) {
+      await transaction.rollback();
+      logger.error('Error converting voucher:', err);
+      next(err);
+    }
   }
 };

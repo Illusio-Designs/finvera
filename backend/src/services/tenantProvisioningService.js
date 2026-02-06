@@ -552,7 +552,10 @@ class TenantProvisioningService {
     const tenantId = tenantOrCompany.id || tenantOrCompany.tenant_id;
     await this.createDefaultLedgers(models, masterModels, tenantId);
 
-    logger.info('Default data seeded (admin user, GSTIN, and default ledgers)');
+    // Create default numbering series for invoice types
+    await this.createDefaultNumberingSeries(models, tenantId);
+
+    logger.info('Default data seeded (admin user, GSTIN, default ledgers, and numbering series)');
   }
 
   /**
@@ -851,6 +854,106 @@ class TenantProvisioningService {
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
     return decrypted;
+  }
+
+  /**
+   * Create default numbering series for invoice types
+   * @param {Object} tenantModels - Tenant database models
+   * @param {string} tenantId - Tenant ID
+   */
+  async createDefaultNumberingSeries(tenantModels, tenantId) {
+    try {
+      logger.info('[NUMBERING] Starting default numbering series creation...');
+      
+      if (!tenantModels || !tenantModels.NumberingSeries) {
+        throw new Error('Tenant NumberingSeries model is not available');
+      }
+
+      // Default numbering series configurations
+      const defaultSeries = [
+        {
+          voucher_type: 'bill_of_supply',
+          series_name: 'Bill of Supply Series',
+          prefix: 'BOS',
+          format: 'PREFIXSEPARATORYEARSEPARATORSEQUENCE',
+          separator: '-',
+          sequence_length: 4,
+          start_number: 1,
+          end_number: null,
+          reset_frequency: 'yearly',
+          is_default: true,
+          branch_id: null,
+        },
+        {
+          voucher_type: 'retail_invoice',
+          series_name: 'Retail Invoice Series',
+          prefix: 'RI',
+          format: 'PREFIXSEPARATORYEARSEPARATORSEQUENCE',
+          separator: '-',
+          sequence_length: 4,
+          start_number: 1,
+          end_number: null,
+          reset_frequency: 'yearly',
+          is_default: true,
+          branch_id: null,
+        },
+        {
+          voucher_type: 'export_invoice',
+          series_name: 'Export Invoice Series',
+          prefix: 'EXP',
+          format: 'PREFIXSEPARATORYEARSEPARATORSEQUENCE',
+          separator: '-',
+          sequence_length: 4,
+          start_number: 1,
+          end_number: null,
+          reset_frequency: 'yearly',
+          is_default: true,
+          branch_id: null,
+        },
+      ];
+
+      let createdCount = 0;
+      let skippedCount = 0;
+
+      for (const seriesConfig of defaultSeries) {
+        try {
+          // Check if series already exists
+          const existing = await tenantModels.NumberingSeries.findOne({
+            where: {
+              tenant_id: tenantId,
+              voucher_type: seriesConfig.voucher_type,
+              is_default: true,
+            },
+          });
+
+          if (!existing) {
+            await tenantModels.NumberingSeries.create({
+              ...seriesConfig,
+              tenant_id: tenantId,
+              current_number: seriesConfig.start_number,
+            });
+            logger.info(`[NUMBERING] ✓ Created ${seriesConfig.series_name} (${seriesConfig.prefix})`);
+            createdCount++;
+          } else {
+            logger.info(`[NUMBERING] ℹ️  ${seriesConfig.series_name} already exists, skipping`);
+            skippedCount++;
+          }
+        } catch (seriesError) {
+          logger.error(`[NUMBERING] ✗ Failed to create ${seriesConfig.series_name}:`, seriesError);
+          // Continue with next series instead of failing completely
+        }
+      }
+
+      logger.info(`[NUMBERING] Default numbering series creation completed: ${createdCount} created, ${skippedCount} skipped`);
+    } catch (error) {
+      logger.error('[NUMBERING] ✗ Critical error creating default numbering series:', error);
+      logger.error('[NUMBERING] Error details:', {
+        message: error.message,
+        stack: error.stack,
+      });
+      // Don't throw - allow tenant creation to continue even if numbering series fail
+      logger.error('[NUMBERING] ⚠️  WARNING: Default numbering series were not created. Tenant provisioning will continue, but series need to be created manually.');
+    }
   }
 
   calculateTrialEnd(days = 30) {
