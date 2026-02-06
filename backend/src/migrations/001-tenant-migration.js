@@ -189,6 +189,15 @@ module.exports = {
         port_of_loading: { type: Sequelize.STRING(100), allowNull: true, comment: 'Port from which goods are shipped for export' },
         destination_country: { type: Sequelize.STRING(100), allowNull: true, comment: 'Destination country for export invoices' },
         has_lut: { type: Sequelize.BOOLEAN, defaultValue: false, comment: 'Whether LUT (Letter of Undertaking) is present for zero-rated GST on exports' },
+        // Delivery Challan fields
+        purpose: { type: Sequelize.ENUM('job_work', 'stock_transfer', 'sample'), allowNull: true, comment: 'Purpose of delivery challan (job_work, stock_transfer, sample)' },
+        converted_to_invoice_id: { type: Sequelize.UUID, allowNull: true, references: { model: 'vouchers', key: 'id' }, onUpdate: 'CASCADE', onDelete: 'SET NULL', comment: 'Reference to sales invoice if this voucher was converted' },
+        // Proforma Invoice fields
+        validity_period: { type: Sequelize.INTEGER, allowNull: true, comment: 'Number of days the proforma invoice is valid (e.g., 30, 60, 90 days)' },
+        valid_until: { type: Sequelize.DATE, allowNull: true, comment: 'Calculated date when the proforma invoice expires (voucher_date + validity_period)' },
+        // Company and Branch isolation
+        company_id: { type: Sequelize.UUID, allowNull: true, comment: 'Company ID for explicit company-level isolation' },
+        branch_id: { type: Sequelize.UUID, allowNull: true, comment: 'Branch ID for explicit branch-level isolation' },
         tenant_id: { type: Sequelize.STRING, allowNull: false },
         created_by: { type: Sequelize.UUID, allowNull: true },
         createdAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
@@ -196,6 +205,13 @@ module.exports = {
       });
       await addIndexIfNotExists('vouchers', ['tenant_id'], { name: 'idx_vouchers_tenant_id' });
       await addIndexIfNotExists('vouchers', ['voucher_number', 'tenant_id'], { name: 'idx_vouchers_number_tenant', unique: true });
+      await addIndexIfNotExists('vouchers', ['converted_to_invoice_id'], { name: 'idx_vouchers_converted_to_invoice_id' });
+      await addIndexIfNotExists('vouchers', ['purpose'], { name: 'idx_vouchers_purpose' });
+      await addIndexIfNotExists('vouchers', ['valid_until'], { name: 'idx_vouchers_valid_until' });
+      await addIndexIfNotExists('vouchers', ['tenant_id', 'company_id'], { name: 'idx_vouchers_tenant_company' });
+      await addIndexIfNotExists('vouchers', ['tenant_id', 'company_id', 'branch_id'], { name: 'idx_vouchers_tenant_company_branch' });
+      await addIndexIfNotExists('vouchers', ['company_id', 'voucher_date'], { name: 'idx_vouchers_company_date' });
+      await addIndexIfNotExists('vouchers', ['branch_id', 'voucher_date'], { name: 'idx_vouchers_branch_date' });
       console.log('✓ Created table vouchers');
     } else {
       console.log('ℹ️  Table vouchers already exists');
@@ -208,6 +224,27 @@ module.exports = {
       await addColumnIfNotExists('vouchers', 'port_of_loading', { type: Sequelize.STRING(100), allowNull: true, comment: 'Port from which goods are shipped for export' });
       await addColumnIfNotExists('vouchers', 'destination_country', { type: Sequelize.STRING(100), allowNull: true, comment: 'Destination country for export invoices' });
       await addColumnIfNotExists('vouchers', 'has_lut', { type: Sequelize.BOOLEAN, defaultValue: false, comment: 'Whether LUT (Letter of Undertaking) is present for zero-rated GST on exports' });
+      
+      // Add delivery challan fields if they don't exist
+      await addColumnIfNotExists('vouchers', 'purpose', { type: Sequelize.ENUM('job_work', 'stock_transfer', 'sample'), allowNull: true, comment: 'Purpose of delivery challan (job_work, stock_transfer, sample)' });
+      await addColumnIfNotExists('vouchers', 'converted_to_invoice_id', { type: Sequelize.UUID, allowNull: true, references: { model: 'vouchers', key: 'id' }, onUpdate: 'CASCADE', onDelete: 'SET NULL', comment: 'Reference to sales invoice if this voucher was converted' });
+      
+      // Add proforma invoice fields if they don't exist
+      await addColumnIfNotExists('vouchers', 'validity_period', { type: Sequelize.INTEGER, allowNull: true, comment: 'Number of days the proforma invoice is valid (e.g., 30, 60, 90 days)' });
+      await addColumnIfNotExists('vouchers', 'valid_until', { type: Sequelize.DATE, allowNull: true, comment: 'Calculated date when the proforma invoice expires (voucher_date + validity_period)' });
+      
+      // Add company and branch isolation fields if they don't exist
+      await addColumnIfNotExists('vouchers', 'company_id', { type: Sequelize.UUID, allowNull: true, comment: 'Company ID for explicit company-level isolation' });
+      await addColumnIfNotExists('vouchers', 'branch_id', { type: Sequelize.UUID, allowNull: true, comment: 'Branch ID for explicit branch-level isolation' });
+      
+      // Add indexes if they don't exist
+      await addIndexIfNotExists('vouchers', ['converted_to_invoice_id'], { name: 'idx_vouchers_converted_to_invoice_id' });
+      await addIndexIfNotExists('vouchers', ['purpose'], { name: 'idx_vouchers_purpose' });
+      await addIndexIfNotExists('vouchers', ['valid_until'], { name: 'idx_vouchers_valid_until' });
+      await addIndexIfNotExists('vouchers', ['tenant_id', 'company_id'], { name: 'idx_vouchers_tenant_company' });
+      await addIndexIfNotExists('vouchers', ['tenant_id', 'company_id', 'branch_id'], { name: 'idx_vouchers_tenant_company_branch' });
+      await addIndexIfNotExists('vouchers', ['company_id', 'voucher_date'], { name: 'idx_vouchers_company_date' });
+      await addIndexIfNotExists('vouchers', ['branch_id', 'voucher_date'], { name: 'idx_vouchers_branch_date' });
     }
 
     // VOUCHER_ITEMS TABLE
@@ -750,6 +787,11 @@ module.exports = {
           type: Sequelize.STRING,
           allowNull: false,
         },
+        company_id: {
+          type: Sequelize.UUID,
+          allowNull: true,
+          comment: 'Company ID for company-specific numbering sequences',
+        },
         branch_id: {
           type: Sequelize.UUID,
           allowNull: true,
@@ -839,10 +881,31 @@ module.exports = {
       await addIndexIfNotExists('numbering_series', ['tenant_id', 'voucher_type', 'is_default'], { 
         name: 'idx_numbering_series_default' 
       });
+      await addIndexIfNotExists('numbering_series', ['tenant_id', 'company_id', 'voucher_type'], {
+        name: 'idx_numbering_tenant_company_type'
+      });
+      await addIndexIfNotExists('numbering_series', ['company_id', 'branch_id', 'voucher_type'], {
+        name: 'idx_numbering_company_branch_type'
+      });
 
       console.log('✓ Created table numbering_series');
     } else {
       console.log('ℹ️  Table numbering_series already exists');
+      
+      // Add company_id and branch_id if they don't exist
+      await addColumnIfNotExists('numbering_series', 'company_id', {
+        type: Sequelize.UUID,
+        allowNull: true,
+        comment: 'Company ID for company-specific numbering sequences',
+      });
+      
+      // Add indexes if they don't exist
+      await addIndexIfNotExists('numbering_series', ['tenant_id', 'company_id', 'voucher_type'], {
+        name: 'idx_numbering_tenant_company_type'
+      });
+      await addIndexIfNotExists('numbering_series', ['company_id', 'branch_id', 'voucher_type'], {
+        name: 'idx_numbering_company_branch_type'
+      });
     }
 
     // ============================================
@@ -973,6 +1036,78 @@ module.exports = {
     });
 
     console.log('✓ Enhanced existing tables for Indian Invoice System');
+
+    // ============================================
+    // 4. CREATE DEFAULT NUMBERING SERIES
+    // ============================================
+    console.log('Creating default numbering series...');
+    
+    // Get tenant_id from the database name or context
+    const [dbResult] = await queryInterface.sequelize.query('SELECT DATABASE() as db_name');
+    const dbName = dbResult[0].db_name;
+    const tenantId = dbName.replace('tenant_', ''); // Extract tenant ID from database name
+    
+    // Check and create Delivery Challan numbering series
+    const [existingDC] = await queryInterface.sequelize.query(
+      `SELECT id FROM numbering_series WHERE tenant_id = :tenantId AND voucher_type = 'delivery_challan' AND is_default = true`,
+      { replacements: { tenantId }, type: queryInterface.sequelize.QueryTypes.SELECT }
+    );
+    
+    if (!existingDC) {
+      await queryInterface.bulkInsert('numbering_series', [{
+        id: Sequelize.literal('UUID()'),
+        tenant_id: tenantId,
+        voucher_type: 'delivery_challan',
+        series_name: 'Delivery Challan Default',
+        prefix: 'DC',
+        format: 'PREFIX-SEPARATOR-YEAR-SEPARATOR-SEQUENCE',
+        separator: '-',
+        sequence_length: 4,
+        current_sequence: 0,
+        start_number: 1,
+        end_number: null,
+        reset_frequency: 'yearly',
+        last_reset_date: null,
+        is_default: true,
+        is_active: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }]);
+      console.log('✓ Created default Delivery Challan numbering series');
+    } else {
+      console.log('ℹ️  Delivery Challan numbering series already exists');
+    }
+    
+    // Check and create Proforma Invoice numbering series
+    const [existingPI] = await queryInterface.sequelize.query(
+      `SELECT id FROM numbering_series WHERE tenant_id = :tenantId AND voucher_type = 'proforma_invoice' AND is_default = true`,
+      { replacements: { tenantId }, type: queryInterface.sequelize.QueryTypes.SELECT }
+    );
+    
+    if (!existingPI) {
+      await queryInterface.bulkInsert('numbering_series', [{
+        id: Sequelize.literal('UUID()'),
+        tenant_id: tenantId,
+        voucher_type: 'proforma_invoice',
+        series_name: 'Proforma Invoice Default',
+        prefix: 'PI',
+        format: 'PREFIX-SEPARATOR-YEAR-SEPARATOR-SEQUENCE',
+        separator: '-',
+        sequence_length: 4,
+        current_sequence: 0,
+        start_number: 1,
+        end_number: null,
+        reset_frequency: 'yearly',
+        last_reset_date: null,
+        is_default: true,
+        is_active: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }]);
+      console.log('✓ Created default Proforma Invoice numbering series');
+    } else {
+      console.log('ℹ️  Proforma Invoice numbering series already exists');
+    }
 
     console.log('✅ All tenant tables created successfully');
 
