@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../../utils/fonts';;
 import TopBar from '../../../components/navigation/TopBar';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
@@ -326,17 +327,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h2,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 8,
+    marginBottom: 8
   },
   subtitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    textAlign: 'center',
+    textAlign: 'center'
   },
   formContainer: {
     backgroundColor: 'white',
@@ -352,11 +350,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '500',
+    ...FONT_STYLES.label,
     color: '#374151',
-    marginBottom: 8,
-    fontFamily: 'Agency',
+    marginBottom: 8
   },
   passwordContainer: {
     flexDirection: 'row',
@@ -370,12 +366,11 @@ const styles = StyleSheet.create({
     borderColor: '#ef4444',
   },
   passwordInput: {
+    ...FONT_STYLES.h5,
     flex: 1,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    fontSize: 16,
-    color: '#111827',
-    fontFamily: 'Agency',
+    color: '#111827'
   },
   eyeButton: {
     padding: 12,
@@ -397,15 +392,12 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   strengthText: {
-    fontSize: 12,
-    fontWeight: '500',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.caption,
   },
   errorText: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#ef4444',
-    marginTop: 4,
-    fontFamily: 'Agency',
+    marginTop: 4
   },
   requirementsContainer: {
     backgroundColor: '#f0f4ff',
@@ -414,19 +406,16 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   requirementsTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: '#3e60ab',
-    marginBottom: 8,
-    fontFamily: 'Agency',
+    marginBottom: 8
   },
   requirementsList: {
     gap: 4,
   },
   requirementItem: {
-    fontSize: 14,
-    color: '#6366f1',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#6366f1'
   },
   actionButtons: {
     flexDirection: 'row',
@@ -448,10 +437,8 @@ const styles = StyleSheet.create({
     borderColor: '#d1d5db',
   },
   cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#6b7280'
   },
   saveButton: {
     backgroundColor: '#3e60ab',
@@ -460,9 +447,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#9ca3af',
   },
   saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: 'white'
   },
 });

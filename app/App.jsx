@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer, useNavigationState } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { LogBox, Platform, Text, TextInput, StyleSheet } from 'react-native';
 import * as Font from 'expo-font';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext.jsx';
 import { NotificationProvider } from './src/contexts/NotificationContext.jsx';
@@ -8,6 +9,23 @@ import { DrawerProvider, useDrawer } from './src/contexts/DrawerContext.jsx';
 import { SubscriptionProvider } from './src/contexts/SubscriptionContext.jsx';
 import CustomDrawer from './src/components/navigation/CustomDrawer.jsx';
 import BottomTabBar from './src/components/navigation/BottomTabBar.jsx';
+
+// Completely disable LogBox overlay (the black box)
+LogBox.ignoreAllLogs(true);
+
+// Also disable console warnings in production
+if (!__DEV__) {
+  console.warn = () => {};
+  console.error = () => {};
+}
+
+// Set default font family globally for all Text components
+Text.defaultProps = Text.defaultProps || {};
+Text.defaultProps.style = { fontFamily: 'Agency' };
+
+// Set default font family globally for all TextInput components
+TextInput.defaultProps = TextInput.defaultProps || {};
+TextInput.defaultProps.style = { fontFamily: 'Agency' };
 
 // Auth Screens
 import LoginScreen from './src/screens/auth/LoginScreen.jsx';
@@ -92,14 +110,22 @@ function AppNavigator() {
 
   const loadFonts = async () => {
     try {
+      console.log('🔤 Starting font loading...');
       await Font.loadAsync({
         'Agency': require('./assets/fonts/agency.otf'),
         'Agency-Bold': require('./assets/fonts/agency.otf'), // Using same file as fallback
       });
-      console.log('Fonts loaded successfully');
+      console.log('✅ Fonts loaded successfully!');
+      console.log('✅ Agency font is now available');
+      
+      // Verify font is loaded
+      const loadedFonts = Font.isLoaded('Agency');
+      console.log('✅ Font verification - Agency loaded:', loadedFonts);
+      
       setFontsLoaded(true);
     } catch (error) {
-      console.warn('Error loading fonts:', error);
+      console.error('❌ Error loading fonts:', error);
+      console.error('❌ Font loading failed, app will use system fonts');
       setFontsLoaded(true); // Continue without custom fonts
     }
   };

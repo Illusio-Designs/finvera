@@ -881,6 +881,7 @@ const styles = StyleSheet.create({
   summaryAmount: {
     fontWeight: 'bold',
     fontSize: 14,
+    fontFamily: 'Agency',
   },
 
   // Tally-Style Table - Fixed and Scrollable
@@ -1093,5 +1094,6 @@ const styles = StyleSheet.create({
   summaryAmount: {
     fontWeight: 'bold',
     fontSize: 16,
+    fontFamily: 'Agency',
   },
 });

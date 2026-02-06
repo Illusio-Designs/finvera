@@ -1,19 +1,69 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, Easing, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FONT_STYLES } from '../../utils/fonts';
 
 export default function SplashScreen() {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const dotsAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Logo animation
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Loading dots animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(dotsAnim, {
+          toValue: 1,
+          duration: 1500,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.timing(dotsAnim, {
+          toValue: 0,
+          duration: 0,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
+
   return (
     <LinearGradient
       colors={['#2140D7', '#3665E6', '#4A85EE']}
       style={styles.container}
     >
-      <View style={styles.content}>
+      <Animated.View 
+        style={[
+          styles.content,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }],
+          },
+        ]}
+      >
         {/* Logo */}
         <View style={styles.logoContainer}>
           <View style={styles.logoCircle}>
-            <Text style={styles.logoText}>F</Text>
+            <Image
+              source={require('../../../assets/icon.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
         </View>
 
@@ -21,13 +71,28 @@ export default function SplashScreen() {
         <Text style={styles.brandName}>Finvera</Text>
         <Text style={styles.tagline}>Financial Excellence Simplified</Text>
 
-        {/* Loading Indicator */}
+        {/* Animated Loading Dots */}
         <View style={styles.loadingContainer}>
-          <View style={styles.loadingDot} />
-          <View style={[styles.loadingDot, styles.loadingDotDelay1]} />
-          <View style={[styles.loadingDot, styles.loadingDotDelay2]} />
+          {[0, 1, 2].map((index) => {
+            const dotOpacity = dotsAnim.interpolate({
+              inputRange: [0, 0.33, 0.66, 1],
+              outputRange: index === 0 ? [0.3, 1, 0.3, 0.3] :
+                           index === 1 ? [0.3, 0.3, 1, 0.3] :
+                           [0.3, 0.3, 0.3, 1],
+            });
+
+            return (
+              <Animated.View
+                key={index}
+                style={[
+                  styles.loadingDot,
+                  { opacity: dotOpacity },
+                ]}
+              />
+            );
+          })}
         </View>
-      </View>
+      </Animated.View>
 
       {/* Footer */}
       <View style={styles.footer}>
@@ -54,64 +119,75 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   logoCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
+    borderWidth: 4,
     borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+    overflow: 'hidden',
   },
-  logoText: {
-    ...FONT_STYLES.h1,
-    fontSize: 48,
-    color: 'white',
+  logoImage: {
+    width: 100,
+    height: 100,
+    tintColor: 'white',
   },
   brandName: {
     ...FONT_STYLES.h1,
-    fontSize: 36,
+    fontSize: 42,
+    fontFamily: 'Agency',
     color: 'white',
-    marginBottom: 8,
-    letterSpacing: 2,
+    marginBottom: 12,
+    letterSpacing: 3,
+    fontWeight: '700',
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   tagline: {
     ...FONT_STYLES.h5,
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 16,
+    fontFamily: 'Agency',
+    color: 'rgba(255, 255, 255, 0.95)',
     textAlign: 'center',
     marginBottom: 60,
+    letterSpacing: 0.5,
   },
   loadingContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 8,
   },
   loadingDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: 'white',
-    marginHorizontal: 4,
-    opacity: 0.3,
-  },
-  loadingDotDelay1: {
-    opacity: 0.6,
-  },
-  loadingDotDelay2: {
-    opacity: 1,
   },
   footer: {
     position: 'absolute',
-    bottom: 40,
+    bottom: 50,
     alignItems: 'center',
   },
   footerText: {
     ...FONT_STYLES.caption,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 4,
+    color: 'rgba(255, 255, 255, 0.85)',
+    marginBottom: 6,
+    fontSize: 13,
+    fontFamily: 'Agency',
   },
   versionText: {
     ...FONT_STYLES.captionSmall,
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 11,
+    fontFamily: 'Agency',
   },
 });

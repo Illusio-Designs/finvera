@@ -665,6 +665,7 @@ const styles = StyleSheet.create({
   summaryAmount: {
     fontWeight: 'bold',
     fontSize: 14,
+    fontFamily: 'Agency',
   },
 
   // Scrollable Table - Fixed and Scrollable

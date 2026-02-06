@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../../utils/fonts';;
 import { useNavigation } from '@react-navigation/native';
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
@@ -295,28 +296,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#6b7280'
   },
   header: {
     padding: 20,
     alignItems: 'center',
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h2,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: 'center'
   },
   subtitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 22
   },
   billingToggle: {
     flexDirection: 'row',
@@ -344,10 +341,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   toggleText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#6b7280'
   },
   toggleTextActive: {
     color: '#111827',
@@ -360,10 +355,8 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   discountText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.captionSmall,
+    color: 'white'
   },
   plansContainer: {
     paddingHorizontal: 20,
@@ -394,40 +387,32 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   popularText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.caption,
+    color: 'white'
   },
   planHeader: {
     marginBottom: 20,
   },
   planName: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h3,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 4,
+    marginBottom: 4
   },
   planDescription: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    marginBottom: 16,
+    marginBottom: 16
   },
   priceContainer: {
     alignItems: 'flex-start',
   },
   price: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h3,
   },
   pricePeriod: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    marginTop: 2,
+    marginTop: 2
   },
   savingsBadge: {
     backgroundColor: '#ecfdf5',
@@ -437,20 +422,16 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   savingsText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#059669',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.caption,
+    color: '#059669'
   },
   featuresContainer: {
     marginBottom: 20,
   },
   featuresTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 12,
+    marginBottom: 12
   },
   featureItem: {
     flexDirection: 'row',
@@ -458,11 +439,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   featureText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#374151',
-    fontFamily: 'Agency',
     marginLeft: 8,
-    flex: 1,
+    flex: 1
   },
   selectButton: {
     paddingVertical: 12,
@@ -471,9 +451,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   selectButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
   },
   bottomMargin: {
     height: 40,

@@ -11,7 +11,8 @@ import {
   Keyboard,
   SafeAreaView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../utils/fonts';;
 import { useNavigation } from '@react-navigation/native';
 
 export default function SearchModal({ 
@@ -372,11 +373,10 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   searchInput: {
+    ...FONT_STYLES.h5,
     flex: 1,
-    fontSize: 16,
     paddingVertical: 8,
-    color: '#111827',
-    fontFamily: 'Agency',
+    color: '#111827'
   },
   clearButton: {
     padding: 4,
@@ -386,9 +386,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   cancelButtonText: {
-    fontSize: 16,
-    color: '#3e60ab',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#3e60ab'
   },
   searchContent: {
     flex: 1,
@@ -399,17 +398,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#6b7280'
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h5,
     color: '#111827',
     marginTop: 20,
-    marginBottom: 12,
-    fontFamily: 'Agency',
+    marginBottom: 12
   },
   resultsSection: {
     marginBottom: 20,
@@ -433,16 +429,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   resultTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#111827'
   },
   resultSubtitle: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    marginTop: 2,
+    marginTop: 2
   },
   recentSection: {
     marginBottom: 20,
@@ -455,10 +448,9 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f3f4f6',
   },
   recentText: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#374151',
-    marginLeft: 12,
-    fontFamily: 'Agency',
+    marginLeft: 12
   },
   quickActionsSection: {
     marginBottom: 20,
@@ -479,27 +471,23 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   quickActionText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#374151',
-    marginTop: 8,
-    fontFamily: 'Agency',
+    marginTop: 8
   },
   noResultsContainer: {
     alignItems: 'center',
     paddingVertical: 40,
   },
   noResultsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    marginTop: 16,
-    fontFamily: 'Agency',
+    marginTop: 16
   },
   noResultsSubtitle: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
     marginTop: 8,
-    textAlign: 'center',
-    fontFamily: 'Agency',
+    textAlign: 'center'
   },
 });

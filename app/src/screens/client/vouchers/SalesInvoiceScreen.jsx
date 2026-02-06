@@ -12,7 +12,8 @@ import {
   KeyboardAvoidingView,
   Platform
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../../utils/fonts';;
 import TopBar from '../../../components/navigation/TopBar';
 import CreateLedgerModal from '../../../components/modals/CreateLedgerModal';
 import CreateInventoryItemModal from '../../../components/modals/CreateInventoryItemModal';
@@ -924,16 +925,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h3,
     color: '#111827',
-    marginBottom: 4,
-    fontFamily: 'Agency',
+    marginBottom: 4
   },
   headerSubtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#6b7280'
   },
   statusBadge: {
     backgroundColor: '#10b981',
@@ -942,10 +940,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.caption,
+    color: 'white'
   },
   section: {
     backgroundColor: 'white',
@@ -959,11 +955,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    marginBottom: 16,
-    fontFamily: 'Agency',
+    marginBottom: 16
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -980,21 +974,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    ...FONT_STYLES.label,
     color: '#374151',
-    marginBottom: 8,
-    fontFamily: 'Agency',
+    marginBottom: 8
   },
   input: {
+    ...FONT_STYLES.h5,
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 8,
     padding: 12,
-    fontSize: 16,
     color: '#111827',
-    backgroundColor: 'white',
-    fontFamily: 'Agency',
+    backgroundColor: 'white'
   },
   selectInput: {
     flexDirection: 'row',
@@ -1002,9 +993,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   inputText: {
-    fontSize: 16,
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#111827'
   },
   placeholder: {
     color: '#9ca3af',
@@ -1023,27 +1013,22 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   addButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: 'white'
   },
   emptyItems: {
     alignItems: 'center',
     paddingVertical: 40,
   },
   emptyItemsText: {
-    fontSize: 16,
-    fontWeight: '500',
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    marginTop: 12,
-    fontFamily: 'Agency',
+    marginTop: 12
   },
   emptyItemsSubtext: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#9ca3af',
-    marginTop: 4,
-    fontFamily: 'Agency',
+    marginTop: 4
   },
   itemsList: {
     gap: 12,
@@ -1062,11 +1047,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   itemName: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    flex: 1,
-    fontFamily: 'Agency',
+    flex: 1
   },
   removeButton: {
     padding: 4,
@@ -1077,22 +1060,20 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   itemInput: {
+    ...FONT_STYLES.label,
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 6,
     padding: 8,
-    fontSize: 14,
     color: '#111827',
     backgroundColor: 'white',
-    textAlign: 'center',
-    fontFamily: 'Agency',
+    textAlign: 'center'
   },
   itemValue: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
     textAlign: 'center',
-    paddingVertical: 8,
-    fontFamily: 'Agency',
+    paddingVertical: 8
   },
   itemTotals: {
     borderTopWidth: 1,
@@ -1106,15 +1087,12 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   totalLabel: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#6b7280'
   },
   totalValue: {
-    fontSize: 14,
-    color: '#111827',
-    fontWeight: '500',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#111827'
   },
   finalTotal: {
     borderTopWidth: 1,
@@ -1123,16 +1101,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   finalTotalLabel: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#111827'
   },
   finalTotalValue: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#10b981',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#10b981'
   },
   totalsCard: {
     backgroundColor: '#f9fafb',
@@ -1148,16 +1122,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   grandTotalLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#111827'
   },
   grandTotalValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#10b981',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#10b981'
   },
   actionButtons: {
     flexDirection: 'row',
@@ -1185,10 +1155,8 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   actionButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: 'white'
   },
   modalContainer: {
     flex: 1,
@@ -1220,16 +1188,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   addSupplierText: {
-    fontSize: 14,
-    color: '#3e60ab',
-    fontWeight: '500',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#3e60ab'
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#111827'
   },
   closeButton: {
     padding: 4,
@@ -1247,10 +1211,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   searchInput: {
+    ...FONT_STYLES.h5,
     flex: 1,
-    fontSize: 16,
-    color: '#111827',
-    fontFamily: 'Agency',
+    color: '#111827'
   },
   modalList: {
     flex: 1,
@@ -1273,16 +1236,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalItemName: {
-    fontSize: 16,
-    fontWeight: '500',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    marginBottom: 4,
-    fontFamily: 'Agency',
+    marginBottom: 4
   },
   modalItemDetail: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#6b7280'
   },
   // Customer item styles
   customerItem: {
@@ -1302,23 +1262,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   customerName: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    marginBottom: 4,
-    fontFamily: 'Agency',
+    marginBottom: 4
   },
   customerGroup: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#3b82f6',
-    fontWeight: '500',
-    marginBottom: 4,
-    fontFamily: 'Agency',
+    marginBottom: 4
   },
   customerContact: {
-    fontSize: 12,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.caption,
+    color: '#6b7280'
   },
   // Item option styles
   itemOption: {
@@ -1338,22 +1293,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   itemName: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    marginBottom: 4,
-    fontFamily: 'Agency',
+    marginBottom: 4
   },
   itemDetails: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    marginBottom: 2,
-    fontFamily: 'Agency',
+    marginBottom: 2
   },
   itemHsn: {
-    fontSize: 12,
-    color: '#9ca3af',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.caption,
+    color: '#9ca3af'
   },
   // Empty state styles
   emptyState: {
@@ -1362,17 +1313,14 @@ const styles = StyleSheet.create({
     paddingVertical: 48,
   },
   emptyStateText: {
-    fontSize: 16,
-    fontWeight: '500',
+    ...FONT_STYLES.h5,
     color: '#6b7280',
     marginTop: 12,
-    marginBottom: 4,
-    fontFamily: 'Agency',
+    marginBottom: 4
   },
   emptyStateSubtext: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#9ca3af',
-    textAlign: 'center',
-    fontFamily: 'Agency',
+    textAlign: 'center'
   },
 });

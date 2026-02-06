@@ -189,6 +189,7 @@ const styles = StyleSheet.create({
   },
   countryFlag: {
     fontSize: 18,
+    fontFamily: 'Agency',
   },
   selectedCountryCode: {
     ...FONT_STYLES.h5,

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../../utils/fonts';;
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
@@ -353,9 +354,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#6b7280'
   },
   section: {
     marginBottom: 24,
@@ -365,16 +365,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 4,
+    marginBottom: 4
   },
   sectionDescription: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#6b7280'
   },
   sectionContent: {
     backgroundColor: 'white',
@@ -416,16 +413,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   preferenceLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 2,
+    marginBottom: 2
   },
   preferenceDescription: {
-    fontSize: 12,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.caption,
+    color: '#6b7280'
   },
   preferenceItemRight: {
     flexDirection: 'row',
@@ -440,18 +434,15 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   testButtonText: {
-    fontSize: 12,
-    color: '#3e60ab',
-    fontWeight: '600',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.caption,
+    color: '#3e60ab'
   },
   savingIndicator: {
     alignItems: 'center',
     paddingVertical: 16,
   },
   savingText: {
-    fontSize: 14,
-    color: '#3e60ab',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#3e60ab'
   },
 });

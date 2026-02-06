@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../../utils/fonts';;
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
@@ -322,16 +323,13 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   statValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#111827'
   },
   statLabel: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    marginTop: 2,
+    marginTop: 2
   },
   markAllButton: {
     flex: 1,
@@ -348,10 +346,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   markAllButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Agency',
-    marginLeft: 4,
+    ...FONT_STYLES.label,
+    marginLeft: 4
   },
   filterContainer: {
     paddingHorizontal: 16,
@@ -373,10 +369,9 @@ const styles = StyleSheet.create({
     borderColor: '#3e60ab',
   },
   filterTabText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    marginLeft: 4,
+    marginLeft: 4
   },
   filterTabTextActive: {
     color: 'white',
@@ -388,9 +383,8 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#6b7280'
   },
   emptyContainer: {
     flex: 1,
@@ -400,18 +394,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h3,
     color: '#111827',
-    fontFamily: 'Agency',
     marginTop: 16,
-    marginBottom: 8,
+    marginBottom: 8
   },
   emptySubtitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    textAlign: 'center',
+    textAlign: 'center'
   },
   notificationsList: {
     paddingHorizontal: 16,
@@ -449,16 +440,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   notificationTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 2,
+    marginBottom: 2
   },
   notificationTime: {
-    fontSize: 12,
-    color: '#9ca3af',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.caption,
+    color: '#9ca3af'
   },
   notificationMeta: {
     flexDirection: 'row',
@@ -475,10 +463,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   notificationMessage: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    lineHeight: 20,
+    lineHeight: 20
   },
   notificationCardFooter: {
     paddingTop: 8,
@@ -492,10 +479,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   actionButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: '#3e60ab',
-    fontFamily: 'Agency',
-    marginRight: 4,
+    marginRight: 4
   },
 });

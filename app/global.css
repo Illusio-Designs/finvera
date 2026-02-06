@@ -14,6 +14,11 @@
   * {
     font-family: 'Agency', 'Arial Black', 'Arial', sans-serif;
   }
+  
+  /* Ensure all text elements use Agency font */
+  body, html, div, span, p, a, button, input, textarea, select, label, h1, h2, h3, h4, h5, h6 {
+    font-family: 'Agency', 'Arial Black', 'Arial', sans-serif !important;
+  }
 }
 
 /* Custom scrollbar for mobile */
@@ -36,4 +41,5 @@
   --finvera-tagline: #3D78E0;
   --finvera-white: #FFFFFF;
   --finvera-black: #000000;
+  --finvera-font-family: 'Agency', 'Arial Black', 'Arial', sans-serif;
 }

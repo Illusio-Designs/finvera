@@ -8,7 +8,8 @@ import {
   Platform,
   StatusBar 
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../utils/fonts';;
 
 const { width } = Dimensions.get('window');
 
@@ -184,12 +185,10 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   message: {
+    ...FONT_STYLES.body,
     flex: 1,
-    fontSize: 15,
     color: '#ffffff',
-    fontFamily: 'Agency',
-    fontWeight: '600',
     lineHeight: 20,
-    letterSpacing: -0.1,
+    letterSpacing: -0.1
   },
 });

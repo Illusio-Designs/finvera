@@ -10,7 +10,8 @@ import {
   Alert,
   FlatList
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../utils/fonts';;
 import { accountingAPI } from '../../lib/api';
 import { useNotification } from '../../contexts/NotificationContext';
 import PhoneInput from '../ui/PhoneInput';
@@ -582,10 +583,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
   },
   title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#111827'
   },
   closeButton: {
     padding: 4,
@@ -600,11 +599,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    marginBottom: 16,
-    fontFamily: 'Agency',
+    marginBottom: 16
   },
   inputRow: {
     flexDirection: 'row',
@@ -615,21 +612,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    ...FONT_STYLES.label,
     color: '#374151',
-    marginBottom: 8,
-    fontFamily: 'Agency',
+    marginBottom: 8
   },
   input: {
+    ...FONT_STYLES.h5,
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 8,
     padding: 12,
-    fontSize: 16,
     color: '#111827',
-    backgroundColor: 'white',
-    fontFamily: 'Agency',
+    backgroundColor: 'white'
   },
   selectInput: {
     flexDirection: 'row',
@@ -637,9 +631,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   inputText: {
-    fontSize: 16,
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#111827'
   },
   placeholder: {
     color: '#9ca3af',
@@ -669,10 +662,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#3e60ab',
   },
   actionButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: 'white'
   },
   searchContainer: {
     flexDirection: 'row',
@@ -687,10 +678,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   searchInput: {
+    ...FONT_STYLES.h5,
     flex: 1,
-    fontSize: 16,
-    color: '#111827',
-    fontFamily: 'Agency',
+    color: '#111827'
   },
   accountGroupList: {
     flex: 1,
@@ -713,23 +703,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   accountGroupName: {
-    fontSize: 16,
-    fontWeight: '500',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    marginBottom: 4,
-    fontFamily: 'Agency',
+    marginBottom: 4
   },
   accountGroupDetail: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#6b7280'
   },
   accountGroupParent: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#9ca3af',
     fontStyle: 'italic',
-    marginTop: 2,
-    fontFamily: 'Agency',
+    marginTop: 2
   },
   panExtracted: {
     borderColor: '#10b981',
@@ -742,10 +728,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   panIndicatorText: {
-    fontSize: 12,
-    color: '#10b981',
-    fontFamily: 'Agency',
-    fontWeight: '500',
+    ...FONT_STYLES.caption,
+    color: '#10b981'
   },
   validInput: {
     borderColor: '#10b981',
@@ -762,9 +746,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   validationText: {
-    fontSize: 12,
-    color: '#10b981',
-    fontFamily: 'Agency',
-    fontWeight: '500',
+    ...FONT_STYLES.caption,
+    color: '#10b981'
   },
 });

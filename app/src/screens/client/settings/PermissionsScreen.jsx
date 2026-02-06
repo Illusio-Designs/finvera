@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../../utils/fonts';;
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext';
 import { useNotification } from '../../../contexts/NotificationContext';
@@ -272,17 +273,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h2,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 8,
+    marginBottom: 8
   },
   subtitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    textAlign: 'center',
+    textAlign: 'center'
   },
   permissionsContainer: {
     backgroundColor: 'white',
@@ -320,17 +318,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   permissionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 4,
+    marginBottom: 4
   },
   permissionDescription: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    marginBottom: 8,
+    marginBottom: 8
   },
   statusContainer: {
     flexDirection: 'row',
@@ -343,9 +338,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   statusText: {
-    fontSize: 12,
-    fontWeight: '500',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.caption,
   },
   permissionActions: {
     marginLeft: 12,
@@ -357,10 +350,8 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   requestButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: 'white'
   },
   settingsButton: {
     padding: 8,
@@ -376,18 +367,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   infoTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#3e60ab',
-    fontFamily: 'Agency',
-    marginLeft: 8,
+    marginLeft: 8
   },
   infoText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6366f1',
-    fontFamily: 'Agency',
     lineHeight: 20,
-    marginBottom: 16,
+    marginBottom: 16
   },
   settingsLinkButton: {
     flexDirection: 'row',
@@ -398,11 +386,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   settingsLinkText: {
-    fontSize: 14,
-    fontWeight: '500',
+    ...FONT_STYLES.label,
     color: '#3e60ab',
-    fontFamily: 'Agency',
     flex: 1,
-    marginLeft: 8,
+    marginLeft: 8
   },
 });

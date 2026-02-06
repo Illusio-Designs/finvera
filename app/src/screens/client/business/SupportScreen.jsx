@@ -6,6 +6,7 @@ import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { clientSupportAPI } from '../../../lib/api';
+import { FONT_STYLES } from '../../../utils/fonts';
 
 export default function SupportScreen() {
   const navigation = useNavigation();
@@ -556,17 +557,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    ...FONT_STYLES.h1,
     color: '#111827',
     marginBottom: 8,
-    fontFamily: 'Agency',
   },
   sectionSubtitle: {
-    fontSize: 16,
+    ...FONT_STYLES.body,
     color: '#6b7280',
     marginBottom: 24,
-    fontFamily: 'Agency',
     lineHeight: 24,
   },
   statsRow: {
@@ -588,15 +586,12 @@ const styles = StyleSheet.create({
     borderColor: '#f3f4f6',
   },
   statNumber: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...FONT_STYLES.h4,
     color: '#3e60ab',
-    fontFamily: 'Agency',
   },
   statLabel: {
-    fontSize: 12,
+    ...FONT_STYLES.captionSmall,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginTop: 2,
   },
   categoriesSection: {
@@ -604,10 +599,8 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionHeaderTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    ...FONT_STYLES.h3,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 16,
   },
   categoriesGrid: {
@@ -640,16 +633,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   categoryTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 4,
   },
   categoryDescription: {
-    fontSize: 14,
+    ...FONT_STYLES.bodySmall,
     color: '#6b7280',
-    fontFamily: 'Agency',
     lineHeight: 20,
   },
   createButton: {
@@ -669,10 +659,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   createButtonText: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...FONT_STYLES.h4,
     color: 'white',
-    fontFamily: 'Agency',
     marginLeft: 12,
   },
   filtersSection: {
@@ -702,11 +690,9 @@ const styles = StyleSheet.create({
     borderColor: '#3e60ab',
   },
   filterTabText: {
-    fontSize: 14,
+    ...FONT_STYLES.labelSmall,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginLeft: 6,
-    fontWeight: '500',
   },
   filterTabTextActive: {
     color: 'white',
@@ -731,9 +717,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   loadingText: {
-    fontSize: 16,
+    ...FONT_STYLES.body,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   emptyContainer: {
     flex: 1,
@@ -757,18 +742,15 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   emptyTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    ...FONT_STYLES.h2,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 8,
     marginTop: 16,
     textAlign: 'center',
   },
   emptySubtitle: {
-    fontSize: 16,
+    ...FONT_STYLES.body,
     color: '#6b7280',
-    fontFamily: 'Agency',
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 24,
@@ -788,10 +770,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   emptyButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: 'white',
-    fontFamily: 'Agency',
   },
   ticketsList: {
     paddingHorizontal: 20,
@@ -821,17 +801,13 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   ticketNumber: {
-    fontSize: 12,
-    fontWeight: '600',
+    ...FONT_STYLES.caption,
     color: '#3e60ab',
-    fontFamily: 'Agency',
     marginBottom: 4,
   },
   ticketTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   statusBadge: {
     flexDirection: 'row',
@@ -842,16 +818,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   statusText: {
-    fontSize: 11,
-    fontWeight: '600',
+    ...FONT_STYLES.captionSmall,
     color: 'white',
-    fontFamily: 'Agency',
     textTransform: 'capitalize',
   },
   ticketDescription: {
-    fontSize: 14,
+    ...FONT_STYLES.bodySmall,
     color: '#6b7280',
-    fontFamily: 'Agency',
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -874,9 +847,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   ticketStatText: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   priorityBadge: {
     paddingHorizontal: 8,
@@ -886,9 +858,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   priorityText: {
-    fontSize: 10,
-    fontWeight: '600',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.captionSmall,
     textTransform: 'capitalize',
   },
   contactSection: {
@@ -927,16 +897,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contactLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 2,
   },
   contactValue: {
-    fontSize: 13,
+    ...FONT_STYLES.bodySmall,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   // Modal Styles
   modalContainer: {
@@ -963,15 +930,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...FONT_STYLES.h4,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   modalSubtitle: {
-    fontSize: 14,
+    ...FONT_STYLES.bodySmall,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginTop: 2,
   },
   closeButton: {
@@ -1003,22 +967,19 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: '#374151',
     marginBottom: 8,
-    fontFamily: 'Agency',
   },
   input: {
+    ...FONT_STYLES.body,
     borderWidth: 1,
     borderColor: '#e5e7eb',
     borderRadius: 12,
     backgroundColor: '#f9fafb',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    fontSize: 16,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   textarea: {
     minHeight: 100,
@@ -1043,9 +1004,7 @@ const styles = StyleSheet.create({
     borderColor: '#3e60ab',
   },
   priorityOptionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
     color: '#6b7280',
   },
   priorityOptionTextActive: {
@@ -1067,10 +1026,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   primaryButton: {
     flex: 1,
@@ -1093,9 +1050,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
   },
   primaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: 'white',
-    fontFamily: 'Agency',
   },
 });

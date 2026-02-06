@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Image } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../utils/fonts';;
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { authAPI } from '../../lib/api';
@@ -393,22 +394,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   profileInitial: {
-    fontSize: 20,
-    fontWeight: '800',
+    ...FONT_STYLES.h3,
     color: 'white',
-    fontFamily: 'Agency',
-    letterSpacing: 0.3,
+    letterSpacing: 0.3
   },
   profileInfo: {
     flex: 1,
     justifyContent: 'center',
   },
   profileName: {
-    fontSize: 18,
-    fontWeight: '800',
+    ...FONT_STYLES.h4,
     color: 'white',
-    fontFamily: 'Agency',
-    letterSpacing: 0.3,
+    letterSpacing: 0.3
   },
   closeButton: {
     width: 32,
@@ -446,12 +443,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
+    ...FONT_STYLES.label,
     color: '#64748b',
-    fontFamily: 'Agency',
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1
   },
   sectionItems: {
     paddingHorizontal: 8,
@@ -491,17 +486,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   itemText: {
-    fontSize: 15,
-    fontWeight: '600',
+    ...FONT_STYLES.body,
     color: '#1e293b',
-    fontFamily: 'Agency',
-    letterSpacing: 0.2,
+    letterSpacing: 0.2
   },
   itemDescription: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#64748b',
-    fontFamily: 'Agency',
-    marginTop: 2,
+    marginTop: 2
   },
   chevronContainer: {
     width: 24,
@@ -533,22 +525,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   appName: {
-    fontSize: 16,
-    fontWeight: '800',
+    ...FONT_STYLES.h5,
     color: '#3e60ab',
-    fontFamily: 'Agency',
     marginBottom: 4,
-    letterSpacing: 0.3,
+    letterSpacing: 0.3
   },
   appVersion: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#64748b',
-    fontFamily: 'Agency',
-    marginBottom: 2,
+    marginBottom: 2
   },
   appCopyright: {
-    fontSize: 10,
-    color: '#94a3b8',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.captionSmall,
+    color: '#94a3b8'
   },
 });

@@ -8,7 +8,8 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../utils/fonts';;
 
 const { width } = Dimensions.get('window');
 
@@ -148,11 +149,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '500',
+    ...FONT_STYLES.label,
     color: '#374151',
-    fontFamily: 'Agency',
-    marginBottom: 8,
+    marginBottom: 8
   },
   required: {
     color: '#dc2626',
@@ -177,10 +176,9 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   dropdownText: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
-    flex: 1,
+    flex: 1
   },
   placeholderText: {
     color: '#9ca3af',
@@ -189,10 +187,9 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
   },
   errorText: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#dc2626',
-    fontFamily: 'Agency',
-    marginTop: 4,
+    marginTop: 4
   },
   overlay: {
     flex: 1,
@@ -222,10 +219,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#111827'
   },
   closeButton: {
     padding: 4,
@@ -246,10 +241,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f4ff',
   },
   optionText: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
-    flex: 1,
+    flex: 1
   },
   selectedOptionText: {
     color: '#3e60ab',

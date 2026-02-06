@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../../utils/fonts';;
 import TopBar from '../../../components/navigation/TopBar';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
@@ -312,32 +313,25 @@ const styles = StyleSheet.create({
     borderRadius: 23,
   },
   profileInitial: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h3,
+    color: 'white'
   },
   profileInfo: {
     flex: 1,
   },
   profileName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#111827'
   },
   profileEmail: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    marginTop: 2,
-    fontFamily: 'Agency',
+    marginTop: 2
   },
   companyName: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#3e60ab',
-    marginTop: 2,
-    fontFamily: 'Agency',
-    fontWeight: '600',
+    marginTop: 2
   },
   profileEdit: {
     padding: 8,
@@ -346,11 +340,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    marginBottom: 16,
-    fontFamily: 'Agency',
+    marginBottom: 16
   },
   menuGrid: {
     flexDirection: 'row',
@@ -395,24 +387,19 @@ const styles = StyleSheet.create({
     borderColor: 'white',
   },
   badgeText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: 'white'
   },
   menuName: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: '#111827',
     textAlign: 'center',
-    fontFamily: 'Agency',
-    marginBottom: 4,
+    marginBottom: 4
   },
   menuDescription: {
-    fontSize: 11,
+    ...FONT_STYLES.captionSmall,
     color: '#6b7280',
-    textAlign: 'center',
-    fontFamily: 'Agency',
+    textAlign: 'center'
   },
   quickActions: {
     flexDirection: 'row',
@@ -438,25 +425,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#fef2f2',
   },
   actionText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: '#111827',
-    marginLeft: 8,
-    fontFamily: 'Agency',
+    marginLeft: 8
   },
   appInfo: {
     alignItems: 'center',
     paddingVertical: 24,
   },
   appVersion: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    marginBottom: 4,
+    marginBottom: 4
   },
   appCopyright: {
-    fontSize: 12,
-    color: '#9ca3af',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.caption,
+    color: '#9ca3af'
   },
 });

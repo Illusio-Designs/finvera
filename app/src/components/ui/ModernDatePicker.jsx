@@ -6,7 +6,8 @@ import {
   StyleSheet,
   Modal,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../utils/fonts';;
 
 const ModernDatePicker = ({ 
   value, 
@@ -231,11 +232,9 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: '#374151',
-    fontFamily: 'Agency',
-    marginBottom: 8,
+    marginBottom: 8
   },
   dateButton: {
     flexDirection: 'row',
@@ -273,11 +272,9 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   dateText: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
-    flex: 1,
-    fontWeight: '500',
+    flex: 1
   },
   placeholderText: {
     color: '#9ca3af',
@@ -321,10 +318,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
   },
   monthText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1e293b',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#1e293b'
   },
 
   // Calendar Grid Styles
@@ -337,13 +332,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   weekDayText: {
+    ...FONT_STYLES.caption,
     flex: 1,
     textAlign: 'center',
-    fontSize: 12,
     color: '#64748b',
-    fontFamily: 'Agency',
-    fontWeight: '600',
-    paddingVertical: 8,
+    paddingVertical: 8
   },
   daysGrid: {
     flexDirection: 'row',
@@ -365,10 +358,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#e0e7ff',
   },
   dayText: {
-    fontSize: 16,
-    color: '#1e293b',
-    fontFamily: 'Agency',
-    fontWeight: '500',
+    ...FONT_STYLES.h5,
+    color: '#1e293b'
   },
   selectedDayText: {
     color: 'white',
@@ -392,10 +383,8 @@ const styles = StyleSheet.create({
     borderTopColor: '#e2e8f0',
   },
   selectedDateText: {
-    fontSize: 14,
-    color: '#64748b',
-    fontFamily: 'Agency',
-    fontWeight: '500',
+    ...FONT_STYLES.label,
+    color: '#64748b'
   },
   footerButtons: {
     flexDirection: 'row',
@@ -410,10 +399,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   cancelButtonText: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontFamily: 'Agency',
-    fontWeight: '600',
+    ...FONT_STYLES.label,
+    color: '#6b7280'
   },
   applyButton: {
     paddingVertical: 10,
@@ -425,10 +412,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#e2e8f0',
   },
   applyButtonText: {
-    fontSize: 14,
-    color: 'white',
-    fontFamily: 'Agency',
-    fontWeight: '600',
+    ...FONT_STYLES.label,
+    color: 'white'
   },
   applyButtonTextDisabled: {
     color: '#94a3b8',

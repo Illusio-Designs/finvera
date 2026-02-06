@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../utils/fonts';;
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function DrawerContent() {
@@ -111,17 +112,14 @@ const styles = StyleSheet.create({
     height: 40,
   },
   appName: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h2,
     color: 'white',
-    fontFamily: 'Agency',
-    marginBottom: 4,
+    marginBottom: 4
   },
   tagline: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#e0e7ff',
-    fontFamily: 'Agency',
-    marginBottom: 16,
+    marginBottom: 16
   },
   userInfo: {
     alignItems: 'center',
@@ -131,16 +129,13 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   userName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: 'white'
   },
   userEmail: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#e0e7ff',
-    fontFamily: 'Agency',
-    marginTop: 2,
+    marginTop: 2
   },
   menuContainer: {
     flex: 1,
@@ -155,11 +150,10 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f3f4f6',
   },
   menuLabel: {
+    ...FONT_STYLES.h5,
     flex: 1,
-    fontSize: 16,
     color: '#374151',
-    marginLeft: 16,
-    fontFamily: 'Agency',
+    marginLeft: 16
   },
   footer: {
     paddingHorizontal: 20,
@@ -174,18 +168,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   logoutText: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#ef4444',
-    marginLeft: 16,
-    fontFamily: 'Agency',
-    fontWeight: '600',
+    marginLeft: 16
   },
   versionInfo: {
     alignItems: 'center',
   },
   versionText: {
-    fontSize: 12,
-    color: '#9ca3af',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.caption,
+    color: '#9ca3af'
   },
 });

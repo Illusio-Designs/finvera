@@ -17,6 +17,22 @@ export default function BottomTabBar({ currentRoute = 'Dashboard' }) {
 
   const tabs = [
     {
+      icon: 'document-text-outline',
+      activeIcon: 'document-text',
+      label: 'Vouchers',
+      action: 'navigate',
+      screen: 'Vouchers',
+      isActive: currentRoute === 'Vouchers'
+    },
+    {
+      icon: 'analytics-outline',
+      activeIcon: 'analytics',
+      label: 'Reports',
+      action: 'navigate',
+      screen: 'Reports',
+      isActive: currentRoute === 'Reports'
+    },
+    {
       icon: 'home-outline',
       activeIcon: 'home',
       label: 'Home',
@@ -25,28 +41,20 @@ export default function BottomTabBar({ currentRoute = 'Dashboard' }) {
       isActive: currentRoute === 'Dashboard'
     },
     {
-      icon: 'search-outline',
-      activeIcon: 'search',
-      label: 'Search',
+      icon: 'bookmark-outline',
+      activeIcon: 'bookmark',
+      label: 'Ledgers',
       action: 'navigate',
       screen: 'Ledgers',
       isActive: currentRoute === 'Ledgers'
     },
     {
-      icon: 'notifications-outline',
-      activeIcon: 'notifications',
-      label: 'Notifications',
+      icon: 'headset-outline',
+      activeIcon: 'headset',
+      label: 'Support',
       action: 'navigate',
-      screen: 'NotificationDemo',
-      isActive: currentRoute === 'NotificationDemo'
-    },
-    {
-      icon: 'person-outline',
-      activeIcon: 'person',
-      label: 'Profile',
-      action: 'navigate',
-      screen: 'Profile',
-      isActive: currentRoute === 'Profile'
+      screen: 'Support',
+      isActive: currentRoute === 'Support'
     }
   ];
 
@@ -71,29 +79,27 @@ function AnimatedTab({ tab, onPress }) {
 
   useEffect(() => {
     Animated.parallel([
-      Animated.spring(scaleAnim, {
+      Animated.timing(scaleAnim, {
         toValue: tab.isActive ? 1 : 0,
+        duration: 250,
         useNativeDriver: true,
-        tension: 50,
-        friction: 7,
       }),
-      Animated.spring(widthAnim, {
+      Animated.timing(widthAnim, {
         toValue: tab.isActive ? 1 : 0,
+        duration: 250,
         useNativeDriver: false,
-        tension: 50,
-        friction: 7,
       }),
     ]).start();
   }, [tab.isActive, scaleAnim, widthAnim]);
 
   const iconScale = scaleAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.1],
+    outputRange: [1, 1.05],
   });
 
   const pillWidth = widthAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [48, 120],
+    outputRange: [48, 90],
   });
 
   const labelOpacity = widthAnim.interpolate({
@@ -117,8 +123,8 @@ function AnimatedTab({ tab, onPress }) {
         <Animated.View style={{ transform: [{ scale: iconScale }] }}>
           <Ionicons
             name={tab.isActive ? tab.activeIcon : tab.icon}
-            size={24}
-            color={tab.isActive ? '#ffffff' : '#6b7280'}
+            size={21}
+            color={tab.isActive ? '#ffffff' : '#9ca3af'}
           />
         </Animated.View>
         {tab.isActive && (
@@ -145,42 +151,55 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: 'transparent',
     zIndex: 1000,
+    paddingBottom: 12,
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: 'white',
-    marginHorizontal: 16,
-    marginBottom: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 24,
-    shadowColor: '#000',
+    backgroundColor: '#ffffff',
+    marginHorizontal: 20,
+    marginBottom: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 26,
+    shadowColor: '#3e60ab',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 12,
-    elevation: 8,
-    justifyContent: 'space-around',
+    elevation: 4,
+    justifyContent: 'space-evenly',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
   },
   tab: {
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 2,
+    minWidth: 48,
   },
   tabContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    gap: 8,
+    paddingHorizontal: 12,
+    borderRadius: 18,
+    gap: 5,
+    minHeight: 40,
   },
   activeTabContent: {
-    backgroundColor: '#1f2937',
+    backgroundColor: '#3e60ab',
+    shadowColor: '#3e60ab',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
   },
   tabLabel: {
-    ...FONT_STYLES.labelSmall,
+    ...FONT_STYLES.captionSmall,
     color: '#ffffff',
-    fontWeight: '600',
+    fontWeight: '700',
+    fontSize: 11,
+    letterSpacing: 0.2,
   },
 });

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, Share } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../../utils/fonts';;
 import * as Clipboard from 'expo-clipboard';
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
@@ -503,9 +504,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#6b7280'
   },
   
   // Header Section
@@ -531,20 +531,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h2,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: 'center'
   },
   headerSubtitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
     textAlign: 'center',
-    lineHeight: 22,
-    fontWeight: '400',
+    lineHeight: 22
   },
   
   // Section Styles
@@ -552,12 +548,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h5,
     color: '#111827',
     marginBottom: 12,
-    fontFamily: 'Agency',
-    paddingHorizontal: 4,
+    paddingHorizontal: 4
   },
   sectionCard: {
     backgroundColor: 'white',
@@ -600,18 +594,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 4,
+    marginBottom: 4
   },
   statLabel: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    textAlign: 'center',
-    fontWeight: '500',
+    textAlign: 'center'
   },
   
   // Referral Code Section
@@ -634,16 +624,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   referralCodeTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    ...FONT_STYLES.h3,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 6,
+    marginBottom: 6
   },
   referralCodeSubtitle: {
-    fontSize: 15,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.body,
+    color: '#6b7280'
   },
   referralCodeDisplay: {
     flexDirection: 'row',
@@ -659,12 +646,10 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
   },
   referralCodeText: {
+    ...FONT_STYLES.h3,
     flex: 1,
-    fontSize: 20,
-    fontWeight: 'bold',
     color: '#3e60ab',
-    fontFamily: 'Agency',
-    letterSpacing: 2,
+    letterSpacing: 2
   },
   copyCodeButton: {
     padding: 10,
@@ -687,10 +672,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   benefitText: {
-    fontSize: 15,
-    color: '#6b7280',
-    fontFamily: 'Agency',
-    fontWeight: '500',
+    ...FONT_STYLES.body,
+    color: '#6b7280'
   },
   referralActions: {
     flexDirection: 'row',
@@ -715,10 +698,8 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   shareButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.body,
+    color: 'white'
   },
   linkButton: {
     flex: 1,
@@ -739,10 +720,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   linkButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#3e60ab',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.body,
+    color: '#3e60ab'
   },
   
   // Steps Section
@@ -769,28 +748,22 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   stepNumberText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: 'white'
   },
   stepContent: {
     flex: 1,
     paddingTop: 2,
   },
   stepTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...FONT_STYLES.h4,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 8,
+    marginBottom: 8
   },
   stepDescription: {
-    fontSize: 15,
+    ...FONT_STYLES.body,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    lineHeight: 22,
-    fontWeight: '500',
+    lineHeight: 22
   },
   
   // Benefits Section
@@ -819,20 +792,16 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   benefitTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    ...FONT_STYLES.h3,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 12,
-    textAlign: 'center',
+    textAlign: 'center'
   },
   benefitDescription: {
-    fontSize: 15,
+    ...FONT_STYLES.body,
     color: '#6b7280',
-    fontFamily: 'Agency',
     textAlign: 'center',
-    lineHeight: 22,
-    fontWeight: '500',
+    lineHeight: 22
   },
   
   // Terms Section
@@ -846,11 +815,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   termText: {
+    ...FONT_STYLES.label,
     flex: 1,
-    fontSize: 14,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    lineHeight: 20,
+    lineHeight: 20
   },
   
   // Modal Styles
@@ -868,10 +836,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#111827'
   },
   closeButton: {
     padding: 4,
@@ -894,20 +860,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   shareTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    ...FONT_STYLES.h3,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: 'center'
   },
   shareDescription: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 32,
+    marginBottom: 32
   },
   shareOptions: {
     width: '100%',
@@ -927,9 +890,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   shareOptionText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#111827'
   },
 });

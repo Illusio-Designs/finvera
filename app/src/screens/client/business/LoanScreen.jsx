@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, TextInput } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../../utils/fonts';;
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
@@ -840,9 +841,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#6b7280'
   },
   
   // Header Section
@@ -868,19 +868,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h2,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: 'center'
   },
   headerSubtitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 22
   },
   
   // Section Styles
@@ -888,11 +885,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    marginBottom: 12,
-    fontFamily: 'Agency',
+    marginBottom: 12
   },
   sectionCard: {
     backgroundColor: 'white',
@@ -919,20 +914,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   consentTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    ...FONT_STYLES.h3,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: 'center'
   },
   consentDescription: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 24,
+    marginBottom: 24
   },
   consentButton: {
     flexDirection: 'row',
@@ -944,10 +936,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   consentButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: 'white'
   },
   
   // Credit Score Section
@@ -961,32 +951,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   creditScoreNumber: {
-    fontSize: 48,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h3,
     color: '#3e60ab',
-    fontFamily: 'Agency',
-    marginBottom: 4,
+    marginBottom: 4
   },
   creditScoreLabel: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#6b7280'
   },
   creditScoreInfo: {
     flex: 1,
   },
   creditScoreStatus: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...FONT_STYLES.h4,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 4,
+    marginBottom: 4
   },
   creditScoreDescription: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    lineHeight: 20,
+    lineHeight: 20
   },
   
   // Eligibility Section
@@ -1009,17 +993,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   eligibilityTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...FONT_STYLES.h4,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 4,
+    marginBottom: 4
   },
   eligibilitySubtitle: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    lineHeight: 20,
+    lineHeight: 20
   },
   eligibilityDetails: {
     paddingHorizontal: 20,
@@ -1038,18 +1019,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   eligibilityLabel: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginBottom: 4,
-    textAlign: 'center',
+    textAlign: 'center'
   },
   eligibilityValue: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#3e60ab',
-    fontFamily: 'Agency',
-    textAlign: 'center',
+    textAlign: 'center'
   },
   applyButton: {
     flexDirection: 'row',
@@ -1063,10 +1041,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   applyButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: 'white'
   },
   
   // Features Section
@@ -1091,17 +1067,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   featureTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 4,
+    marginBottom: 4
   },
   featureDescription: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    lineHeight: 20,
+    lineHeight: 20
   },
   
   // Steps Section
@@ -1123,26 +1096,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   stepNumberText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: 'white'
   },
   stepContent: {
     flex: 1,
   },
   stepTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 4,
+    marginBottom: 4
   },
   stepDescription: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    lineHeight: 20,
+    lineHeight: 20
   },
   
   // FinBox Section
@@ -1160,19 +1128,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   finboxTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...FONT_STYLES.h4,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: 'center'
   },
   finboxDescription: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 20
   },
   
   // Modal Styles
@@ -1190,10 +1155,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#111827'
   },
   closeButton: {
     padding: 4,
@@ -1208,11 +1171,10 @@ const styles = StyleSheet.create({
     gap: 24,
   },
   consentFormDescription: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
     lineHeight: 22,
-    marginBottom: 8,
+    marginBottom: 8
   },
   consentItems: {
     gap: 16,
@@ -1237,17 +1199,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   consentItemTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 4,
+    marginBottom: 4
   },
   consentItemDescription: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    lineHeight: 20,
+    lineHeight: 20
   },
   
   // Form Styles
@@ -1255,38 +1214,33 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '500',
+    ...FONT_STYLES.label,
     color: '#374151',
-    marginBottom: 8,
-    fontFamily: 'Agency',
+    marginBottom: 8
   },
   input: {
+    ...FONT_STYLES.h5,
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    fontSize: 16,
     color: '#111827',
-    backgroundColor: 'white',
-    fontFamily: 'Agency',
+    backgroundColor: 'white'
   },
   inputError: {
     borderColor: '#ef4444',
   },
   formHint: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginTop: 6,
-    lineHeight: 16,
+    lineHeight: 16
   },
   errorText: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#ef4444',
-    marginTop: 4,
-    fontFamily: 'Agency',
+    marginTop: 4
   },
   
   // Purpose Grid
@@ -1308,9 +1262,8 @@ const styles = StyleSheet.create({
     borderColor: '#3e60ab',
   },
   purposeOptionText: {
-    fontSize: 14,
-    color: '#64748b',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#64748b'
   },
   purposeOptionTextSelected: {
     color: 'white',
@@ -1337,9 +1290,8 @@ const styles = StyleSheet.create({
     borderColor: '#3e60ab',
   },
   tenureOptionText: {
-    fontSize: 14,
-    color: '#64748b',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#64748b'
   },
   tenureOptionTextSelected: {
     color: 'white',
@@ -1357,11 +1309,9 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   loanSummaryTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 16,
+    marginBottom: 16
   },
   loanSummaryItem: {
     flexDirection: 'row',
@@ -1370,15 +1320,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   loanSummaryLabel: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#6b7280'
   },
   loanSummaryValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#111827'
   },
   
   // Action Buttons
@@ -1404,10 +1351,8 @@ const styles = StyleSheet.create({
     borderColor: '#d1d5db',
   },
   cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#6b7280'
   },
   saveButton: {
     backgroundColor: '#3e60ab',
@@ -1416,10 +1361,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#9ca3af',
   },
   saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: 'white'
   },
   submitButton: {
     backgroundColor: '#3e60ab',
@@ -1428,9 +1371,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#9ca3af',
   },
   submitButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: 'white'
   },
 });

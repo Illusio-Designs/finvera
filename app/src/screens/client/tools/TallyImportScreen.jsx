@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../../utils/fonts';;
 import * as DocumentPicker from 'expo-document-picker';
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
@@ -517,9 +518,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#6b7280'
   },
   section: {
     marginBottom: 24,
@@ -531,10 +531,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#111827'
   },
   configButton: {
     flexDirection: 'row',
@@ -546,10 +544,9 @@ const styles = StyleSheet.create({
     borderColor: '#3e60ab',
   },
   configButtonText: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#3e60ab',
-    fontFamily: 'Agency',
-    marginLeft: 4,
+    marginLeft: 4
   },
   sectionCard: {
     backgroundColor: 'white',
@@ -582,17 +579,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   instructionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 4,
+    marginBottom: 4
   },
   instructionDescription: {
-    fontSize: 13,
+    ...FONT_STYLES.bodySmall,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    lineHeight: 18,
+    lineHeight: 18
   },
   uploadButton: {
     alignItems: 'center',
@@ -605,18 +599,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#fafbfc',
   },
   uploadButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#3e60ab',
-    fontFamily: 'Agency',
-    marginTop: 8,
+    marginTop: 8
   },
   uploadButtonSubtext: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginTop: 4,
-    textAlign: 'center',
+    textAlign: 'center'
   },
   selectedFileContainer: {
     flexDirection: 'row',
@@ -642,16 +633,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   fileName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#111827'
   },
   fileSize: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    marginTop: 2,
+    marginTop: 2
   },
   removeFileButton: {
     padding: 4,
@@ -681,10 +669,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   optionLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#111827'
   },
   optionToggle: {
     width: 24,
@@ -704,27 +690,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
   },
   voucherLimitLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#374151',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.bodySmall,
+    color: '#374151'
   },
   voucherLimitSubtext: {
-    fontSize: 11,
+    ...FONT_STYLES.captionSmall,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    marginTop: 2,
+    marginTop: 2
   },
   progressContainer: {
     padding: 16,
   },
   progressText: {
-    fontSize: 14,
-    fontWeight: '500',
+    ...FONT_STYLES.label,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: 'center'
   },
   progressBar: {
     height: 8,
@@ -749,10 +730,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   resultTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#111827'
   },
   resultBadge: {
     paddingHorizontal: 8,
@@ -760,10 +739,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   resultBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    fontFamily: 'Agency',
-    textTransform: 'uppercase',
+    ...FONT_STYLES.captionSmall,
+    textTransform: 'uppercase'
   },
   resultStats: {
     flexDirection: 'row',
@@ -774,16 +751,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resultStatValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h3,
+    color: '#111827'
   },
   resultStatLabel: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    marginTop: 2,
+    marginTop: 2
   },
   errorContainer: {
     backgroundColor: '#fef2f2',
@@ -791,16 +765,14 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   errorText: {
-    fontSize: 11,
+    ...FONT_STYLES.captionSmall,
     color: '#dc2626',
-    fontFamily: 'Agency',
-    marginBottom: 4,
+    marginBottom: 4
   },
   moreErrorsText: {
-    fontSize: 11,
+    ...FONT_STYLES.captionSmall,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    fontStyle: 'italic',
+    fontStyle: 'italic'
   },
   actionContainer: {
     paddingHorizontal: 16,
@@ -819,10 +791,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#9ca3af',
   },
   importButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: 'white'
   },
   modalContainer: {
     flex: 1,
@@ -838,10 +808,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#111827'
   },
   closeButton: {
     padding: 4,
@@ -879,10 +847,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   modalOptionLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#111827'
   },
   modalOptionToggle: {
     width: 28,
@@ -907,18 +873,15 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   voucherLimitTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 8,
+    marginBottom: 8
   },
   voucherLimitDescription: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginBottom: 16,
-    lineHeight: 20,
+    lineHeight: 20
   },
   voucherLimitOptions: {
     flexDirection: 'row',
@@ -938,10 +901,8 @@ const styles = StyleSheet.create({
     borderColor: '#3e60ab',
   },
   limitOptionText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#6b7280'
   },
   limitOptionTextActive: {
     color: 'white',

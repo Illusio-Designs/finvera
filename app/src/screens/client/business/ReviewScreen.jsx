@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, TextInput } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../../utils/fonts';;
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
@@ -610,9 +611,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#6b7280'
   },
   
   // Header Section
@@ -638,19 +638,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h2,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: 'center'
   },
   headerSubtitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 22
   },
   
   // Section Styles
@@ -658,11 +655,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    marginBottom: 12,
-    fontFamily: 'Agency',
+    marginBottom: 12
   },
   sectionCard: {
     backgroundColor: 'white',
@@ -688,11 +683,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   myReviewTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...FONT_STYLES.h4,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 8,
+    marginBottom: 8
   },
   myReviewMeta: {
     flexDirection: 'row',
@@ -704,9 +697,8 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   myReviewDate: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#6b7280'
   },
   myReviewStatus: {
     alignItems: 'flex-end',
@@ -717,17 +709,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: 'Agency',
-    textTransform: 'uppercase',
+    ...FONT_STYLES.caption,
+    textTransform: 'uppercase'
   },
   myReviewComment: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#374151',
-    fontFamily: 'Agency',
     lineHeight: 24,
-    marginBottom: 20,
+    marginBottom: 20
   },
   editReviewButton: {
     flexDirection: 'row',
@@ -741,10 +730,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   editReviewButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#3e60ab',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#3e60ab'
   },
   
   // No Review State
@@ -762,20 +749,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   noReviewTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    ...FONT_STYLES.h3,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: 'center'
   },
   noReviewDescription: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 24,
+    marginBottom: 24
   },
   writeReviewButton: {
     flexDirection: 'row',
@@ -787,10 +771,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   writeReviewButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: 'white'
   },
   
   // Overall Rating
@@ -802,11 +784,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   ratingNumber: {
-    fontSize: 48,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h3,
     color: '#3e60ab',
-    fontFamily: 'Agency',
-    marginBottom: 12,
+    marginBottom: 12
   },
   ratingStars: {
     flexDirection: 'row',
@@ -814,9 +794,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   ratingCount: {
-    fontSize: 16,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#6b7280'
   },
   
   // Reviews List
@@ -854,49 +833,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   reviewAvatarText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: 'white'
   },
   reviewUserInfo: {
     flex: 1,
   },
   reviewUserName: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 2,
+    marginBottom: 2
   },
   reviewUserDesignation: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    marginBottom: 4,
+    marginBottom: 4
   },
   reviewDate: {
-    fontSize: 12,
-    color: '#9ca3af',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.caption,
+    color: '#9ca3af'
   },
   reviewRating: {
     flexDirection: 'row',
     gap: 2,
   },
   reviewTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...FONT_STYLES.h4,
     color: '#111827',
-    fontFamily: 'Agency',
-    marginBottom: 12,
+    marginBottom: 12
   },
   reviewComment: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#374151',
-    fontFamily: 'Agency',
     lineHeight: 24,
-    marginBottom: 16,
+    marginBottom: 16
   },
   featuredBadge: {
     flexDirection: 'row',
@@ -909,10 +879,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   featuredText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#92400e',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.caption,
+    color: '#92400e'
   },
   
   // App Store Section
@@ -930,20 +898,17 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   appStoreTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    ...FONT_STYLES.h3,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: 'center'
   },
   appStoreDescription: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 24,
+    marginBottom: 24
   },
   appStoreButtons: {
     flexDirection: 'row',
@@ -961,10 +926,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   appStoreButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: 'white'
   },
   playStoreButton: {
     flex: 1,
@@ -977,10 +940,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   playStoreButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: 'white'
   },
   
   // Modal Styles
@@ -998,10 +959,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#111827'
   },
   closeButton: {
     padding: 4,
@@ -1016,22 +975,19 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '500',
+    ...FONT_STYLES.label,
     color: '#374151',
-    marginBottom: 8,
-    fontFamily: 'Agency',
+    marginBottom: 8
   },
   input: {
+    ...FONT_STYLES.h5,
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    fontSize: 16,
     color: '#111827',
-    backgroundColor: 'white',
-    fontFamily: 'Agency',
+    backgroundColor: 'white'
   },
   inputError: {
     borderColor: '#ef4444',
@@ -1041,17 +997,15 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   formHint: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginTop: 6,
-    lineHeight: 16,
+    lineHeight: 16
   },
   errorText: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#ef4444',
-    marginTop: 4,
-    fontFamily: 'Agency',
+    marginTop: 4
   },
   
   // Interactive Stars
@@ -1065,11 +1019,9 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   ratingDescription: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#3e60ab',
-    fontFamily: 'Agency',
-    textAlign: 'center',
+    textAlign: 'center'
   },
   
   // Action Buttons
@@ -1095,10 +1047,8 @@ const styles = StyleSheet.create({
     borderColor: '#d1d5db',
   },
   cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#6b7280'
   },
   submitButton: {
     backgroundColor: '#3e60ab',
@@ -1107,9 +1057,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#9ca3af',
   },
   submitButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: 'white'
   },
 });

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../../utils/fonts';;
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
@@ -293,18 +294,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    ...FONT_STYLES.h1,
     color: '#0f172a',
     marginBottom: 8,
-    fontFamily: 'Agency',
-    letterSpacing: -0.5,
+    letterSpacing: -0.5
   },
   sectionSubtitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#64748b',
-    fontFamily: 'Agency',
-    lineHeight: 24,
+    lineHeight: 24
   },
   searchSection: {
     paddingHorizontal: 20,
@@ -323,11 +321,9 @@ const styles = StyleSheet.create({
     borderColor: '#f1f5f9',
   },
   searchCardTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...FONT_STYLES.h5,
     color: '#0f172a',
-    fontFamily: 'Agency',
-    marginBottom: 16,
+    marginBottom: 16
   },
   searchBar: {
     flexDirection: 'row',
@@ -341,10 +337,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   searchInput: {
+    ...FONT_STYLES.h5,
     flex: 1,
-    fontSize: 16,
-    color: '#0f172a',
-    fontFamily: 'Agency',
+    color: '#0f172a'
   },
   loadingIndicator: {
     flexDirection: 'row',
@@ -362,9 +357,8 @@ const styles = StyleSheet.create({
     borderTopColor: '#3e60ab',
   },
   loadingText: {
-    fontSize: 14,
-    color: '#64748b',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#64748b'
   },
   rateResultCard: {
     marginTop: 16,
@@ -388,24 +382,19 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   ratePercentage: {
-    fontSize: 18,
-    fontWeight: '800',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h4,
   },
   rateInfo: {
     flex: 1,
   },
   rateHsn: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...FONT_STYLES.h5,
     color: '#0f172a',
-    fontFamily: 'Agency',
-    marginBottom: 4,
+    marginBottom: 4
   },
   rateDescription: {
-    fontSize: 14,
-    color: '#64748b',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#64748b'
   },
   rateBreakdown: {
     gap: 8,
@@ -416,26 +405,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rateLabel: {
-    fontSize: 14,
-    color: '#64748b',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#64748b'
   },
   rateValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#0f172a',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#0f172a'
   },
   slabsSection: {
     paddingHorizontal: 20,
     marginBottom: 24,
   },
   slabsTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    ...FONT_STYLES.h3,
     color: '#0f172a',
-    fontFamily: 'Agency',
-    marginBottom: 16,
+    marginBottom: 16
   },
   slabsGrid: {
     gap: 12,
@@ -454,34 +438,27 @@ const styles = StyleSheet.create({
     borderColor: '#f1f5f9',
   },
   slabRate: {
-    fontSize: 24,
-    fontWeight: '800',
-    fontFamily: 'Agency',
-    marginBottom: 4,
+    ...FONT_STYLES.h2,
+    marginBottom: 4
   },
   slabLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#0f172a',
-    fontFamily: 'Agency',
-    marginBottom: 4,
+    marginBottom: 4
   },
   slabDescription: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#64748b',
-    fontFamily: 'Agency',
-    lineHeight: 20,
+    lineHeight: 20
   },
   commonSection: {
     paddingHorizontal: 20,
     marginBottom: 24,
   },
   commonTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    ...FONT_STYLES.h3,
     color: '#0f172a',
-    fontFamily: 'Agency',
-    marginBottom: 16,
+    marginBottom: 16
   },
   commonList: {
     gap: 12,
@@ -506,16 +483,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   commonHsn: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#0f172a',
-    fontFamily: 'Agency',
-    marginBottom: 4,
+    marginBottom: 4
   },
   commonDescription: {
-    fontSize: 14,
-    color: '#64748b',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#64748b'
   },
   commonRate: {
     paddingHorizontal: 12,
@@ -523,10 +497,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   commonRateText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: 'white'
   },
   infoSection: {
     paddingHorizontal: 20,
@@ -551,10 +523,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   infoTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0f172a',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#0f172a'
   },
   infoContent: {
     gap: 12,
@@ -572,10 +542,9 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   infoText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#64748b',
-    fontFamily: 'Agency',
     lineHeight: 20,
-    flex: 1,
+    flex: 1
   },
 });

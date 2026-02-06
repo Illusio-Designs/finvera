@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, TextInput } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../../utils/fonts';;
 import { useNavigation } from '@react-navigation/native';
 import TopBar from '../../../components/navigation/TopBar';
 import ProfileImagePicker from '../../../components/ui/ProfileImagePicker';
@@ -510,9 +511,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#6b7280'
   },
   profileHeader: {
     backgroundColor: 'white',
@@ -527,18 +527,15 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   profileName: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h2,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 4,
-    marginTop: 12,
+    marginTop: 12
   },
   profileEmail: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    marginBottom: 8,
+    marginBottom: 8
   },
   profileBadge: {
     backgroundColor: '#3e60ab',
@@ -548,11 +545,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   profileBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
+    ...FONT_STYLES.caption,
     color: 'white',
-    fontFamily: 'Agency',
-    textTransform: 'capitalize',
+    textTransform: 'capitalize'
   },
   editButton: {
     flexDirection: 'row',
@@ -564,20 +559,17 @@ const styles = StyleSheet.create({
     borderColor: '#3e60ab',
   },
   editButtonText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#3e60ab',
-    fontFamily: 'Agency',
-    marginLeft: 4,
+    marginLeft: 4
   },
   section: {
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    marginBottom: 12,
-    fontFamily: 'Agency',
+    marginBottom: 12
   },
   sectionCard: {
     backgroundColor: 'white',
@@ -616,16 +608,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileItemLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#111827'
   },
   profileItemValue: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    marginTop: 2,
+    marginTop: 2
   },
   modalContainer: {
     flex: 1,
@@ -641,10 +630,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#111827'
   },
   closeButton: {
     padding: 4,
@@ -657,31 +644,27 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '500',
+    ...FONT_STYLES.label,
     color: '#374151',
-    marginBottom: 8,
-    fontFamily: 'Agency',
+    marginBottom: 8
   },
   input: {
+    ...FONT_STYLES.h5,
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    fontSize: 16,
     color: '#111827',
-    backgroundColor: 'white',
-    fontFamily: 'Agency',
+    backgroundColor: 'white'
   },
   inputError: {
     borderColor: '#ef4444',
   },
   errorText: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#ef4444',
-    marginTop: 4,
-    fontFamily: 'Agency',
+    marginTop: 4
   },
   actionButtons: {
     flexDirection: 'row',
@@ -705,10 +688,8 @@ const styles = StyleSheet.create({
     borderColor: '#d1d5db',
   },
   cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#6b7280'
   },
   saveButton: {
     backgroundColor: '#3e60ab',
@@ -717,9 +698,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#9ca3af',
   },
   saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: 'white'
   },
 });

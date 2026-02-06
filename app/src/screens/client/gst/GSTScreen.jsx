@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, TextInput, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../../utils/fonts';;
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
@@ -618,11 +619,10 @@ const styles = StyleSheet.create({
     borderColor: '#3e60ab',
   },
   tabButtonText: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginLeft: 8,
-    textAlign: 'center',
+    textAlign: 'center'
   },
   tabButtonTextActive: {
     color: '#3e60ab',
@@ -643,11 +643,9 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    marginBottom: 16,
-    fontFamily: 'Agency',
+    marginBottom: 16
   },
   formGroup: {
     marginBottom: 16,
@@ -661,22 +659,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '500',
+    ...FONT_STYLES.label,
     color: '#374151',
-    marginBottom: 8,
-    fontFamily: 'Agency',
+    marginBottom: 8
   },
   input: {
+    ...FONT_STYLES.h5,
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 16,
     color: '#111827',
-    backgroundColor: 'white',
-    fontFamily: 'Agency',
+    backgroundColor: 'white'
   },
   submitButton: {
     flexDirection: 'row',
@@ -692,11 +687,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#9ca3af',
   },
   submitButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: 'white',
-    marginLeft: 8,
-    fontFamily: 'Agency',
+    marginLeft: 8
   },
   addButton: {
     flexDirection: 'row',
@@ -711,26 +704,21 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   addButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#3e60ab',
-    marginLeft: 8,
-    fontFamily: 'Agency',
+    marginLeft: 8
   },
   jobDetail: {
     marginBottom: 12,
   },
   jobDetailLabel: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#6b7280'
   },
   jobDetailValue: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#111827',
-    fontWeight: '600',
-    fontFamily: 'Agency',
-    marginTop: 2,
+    marginTop: 2
   },
   statusButton: {
     flexDirection: 'row',
@@ -745,11 +733,9 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   statusButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: '#3e60ab',
-    marginLeft: 8,
-    fontFamily: 'Agency',
+    marginLeft: 8
   },
   statusCard: {
     backgroundColor: '#f9fafb',
@@ -765,10 +751,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statusLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#374151'
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -777,19 +761,16 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   statusBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.caption,
+    color: 'white'
   },
   progressContainer: {
     marginBottom: 8,
   },
   progressText: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    marginBottom: 4,
-    fontFamily: 'Agency',
+    marginBottom: 4
   },
   progressBar: {
     height: 8,
@@ -805,19 +786,16 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   resultText: {
-    fontSize: 12,
-    color: '#374151',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.caption,
+    color: '#374151'
   },
   invoicesList: {
     marginBottom: 16,
   },
   invoicesListTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: '#374151',
-    marginBottom: 8,
-    fontFamily: 'Agency',
+    marginBottom: 8
   },
   invoicesContainer: {
     maxHeight: 120,
@@ -837,39 +815,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   invoiceSupplier: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#111827'
   },
   invoiceNumber: {
-    fontSize: 12,
-    color: '#6b7280',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.caption,
+    color: '#6b7280'
   },
   invoiceAmount: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#3e60ab',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#3e60ab'
   },
   comingSoon: {
     alignItems: 'center',
     paddingVertical: 40,
   },
   comingSoonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h5,
     color: '#111827',
     marginTop: 16,
-    marginBottom: 8,
-    fontFamily: 'Agency',
+    marginBottom: 8
   },
   comingSoonSubtext: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    textAlign: 'center',
-    fontFamily: 'Agency',
+    textAlign: 'center'
   },
   section: {
     paddingHorizontal: 16,
@@ -882,10 +852,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#111827'
   },
   managementGrid: {
     gap: 12,
@@ -915,16 +883,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   managementTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#111827'
   },
   managementSubtitle: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    marginTop: 2,
+    marginTop: 2
   },
   managementArrow: {
     padding: 8,

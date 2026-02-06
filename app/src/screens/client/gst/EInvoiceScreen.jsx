@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'
+import { FONT_STYLES } from '../../../utils/fonts';;
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
@@ -452,18 +453,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    ...FONT_STYLES.h1,
     color: '#0f172a',
     marginBottom: 8,
-    fontFamily: 'Agency',
-    letterSpacing: -0.5,
+    letterSpacing: -0.5
   },
   sectionSubtitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#64748b',
-    fontFamily: 'Agency',
-    lineHeight: 24,
+    lineHeight: 24
   },
   statsContainer: {
     flexDirection: 'row',
@@ -498,16 +496,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#0f172a',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h3,
+    color: '#0f172a'
   },
   statLabel: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#64748b',
-    fontFamily: 'Agency',
-    marginTop: 2,
+    marginTop: 2
   },
   loadingContainer: {
     flex: 1,
@@ -537,9 +532,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   loadingText: {
-    fontSize: 16,
-    color: '#64748b',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#64748b'
   },
   emptyContainer: {
     flex: 1,
@@ -566,19 +560,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   emptyTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    ...FONT_STYLES.h2,
     color: '#0f172a',
-    fontFamily: 'Agency',
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: 'center'
   },
   emptySubtitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#64748b',
-    fontFamily: 'Agency',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 24
   },
   einvoicesList: {
     paddingHorizontal: 20,
@@ -627,17 +618,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   einvoiceNumber: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...FONT_STYLES.h5,
     color: '#0f172a',
-    fontFamily: 'Agency',
     marginBottom: 4,
-    letterSpacing: -0.3,
+    letterSpacing: -0.3
   },
   einvoiceDate: {
-    fontSize: 14,
-    color: '#64748b',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.label,
+    color: '#64748b'
   },
   einvoiceStatus: {
     alignItems: 'flex-end',
@@ -653,10 +641,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   statusText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.captionSmall,
+    color: 'white'
   },
   einvoiceCardBody: {
     marginBottom: 16,
@@ -668,10 +654,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   einvoiceDetailText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#64748b',
-    fontFamily: 'Agency',
-    flex: 1,
+    flex: 1
   },
   einvoiceCardFooter: {
     flexDirection: 'row',
@@ -685,10 +670,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   einvoiceReference: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#3e60ab',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.caption,
+    color: '#3e60ab'
   },
   einvoiceAction: {
     width: 32,
@@ -740,10 +723,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   infoTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0f172a',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#0f172a'
   },
   infoContent: {
     gap: 12,
@@ -761,11 +742,10 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   infoText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#64748b',
-    fontFamily: 'Agency',
     lineHeight: 20,
-    flex: 1,
+    flex: 1
   },
   // Modal Styles
   modalContainer: {
@@ -799,16 +779,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0f172a',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
+    color: '#0f172a'
   },
   modalSubtitle: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#64748b',
-    fontFamily: 'Agency',
-    marginTop: 2,
+    marginTop: 2
   },
   closeButton: {
     width: 40,
@@ -836,11 +813,9 @@ const styles = StyleSheet.create({
     borderColor: '#f1f5f9',
   },
   detailCardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#0f172a',
-    fontFamily: 'Agency',
-    marginBottom: 16,
+    marginBottom: 16
   },
   detailRow: {
     flexDirection: 'row',
@@ -848,17 +823,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   detailLabel: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#64748b',
-    fontWeight: '500',
-    width: 120,
-    fontFamily: 'Agency',
+    width: 120
   },
   detailValue: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#0f172a',
-    fontWeight: '600',
-    flex: 1,
-    fontFamily: 'Agency',
+    flex: 1
   },
 });
