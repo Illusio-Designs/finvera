@@ -178,14 +178,14 @@ The plan focuses on incremental development, building upon the existing database
     - Test cancelled vouchers have status='cancelled' and record exists
     - **Validates: Requirements 13.8**
 
-- [-] 6. Checkpoint - Core Services Complete
+- [x] 6. Checkpoint - Core Services Complete
   - Ensure all tests pass for Numbering, GST Calculation, and enhanced Voucher services
   - Verify database schema integration is working correctly
   - Test creating a basic sales invoice end-to-end with new numbering system
   - Validate that existing voucher functionality remains intact
   - Ask the user if questions arise
 
-- [-] 7. E-Invoice Service Implementation
+- [x] 7. E-Invoice Service Implementation
   - [x] 7.1 Implement IRP Portal client
     - Create IRPClient class with authentication methods
     - Implement OAuth2 token management with auto-refresh
@@ -221,18 +221,18 @@ The plan focuses on incremental development, building upon the existing database
     - Test invoices above threshold trigger E-Invoice generation
     - **Validates: Requirements 2.1**
   
-  - [~] 7.6 Write property test for mandatory field validation
+  - [x] 7.6 Write property test for mandatory field validation
     - **Property 11: E-Invoice Mandatory Field Validation**
     - Test requests with missing fields are rejected
     - **Validates: Requirements 2.2**
   
-  - [ ] 7.7 Write property test for 24-hour cancellation window
+  - [x] 7.7 Write property test for 24-hour cancellation window
     - **Property 14: E-Invoice Cancellation Time Window**
     - Test cancellation allowed within 24 hours, rejected after
     - **Validates: Requirements 2.5**
 
-- [ ] 8. E-Way Bill Service Implementation
-  - [ ] 8.1 Implement E-Way Bill Portal client
+- [x] 8. E-Way Bill Service Implementation
+  - [x] 8.1 Implement E-Way Bill Portal client
     - Create EWayBillClient class with authentication
     - Implement generateEWayBill API call method
     - Implement cancelEWayBill API call method
@@ -240,50 +240,50 @@ The plan focuses on incremental development, building upon the existing database
     - Add retry logic with exponential backoff
     - _Requirements: 3.9_
   
-  - [ ] 8.2 Implement EWayBillService class
+  - [x] 8.2 Implement EWayBillService class
     - Create generateEWayBill method with threshold check (₹50,000)
     - Validate transporter GSTIN, vehicle number, transport mode
     - Calculate validity period based on distance (1 day per 200 KM)
     - Store EWB number, dates, transport details on success
     - _Requirements: 3.1, 3.2, 3.3, 3.4_
   
-  - [ ] 8.3 Implement E-Way Bill management methods
+  - [x] 8.3 Implement E-Way Bill management methods
     - Create cancelEWayBill with reason code validation
     - Create updateVehicleDetails (only for active status)
     - Create isEWayBillRequired helper method
     - Implement status tracking (active, cancelled, expired)
     - _Requirements: 3.5, 3.6, 3.7, 3.10_
   
-  - [ ] 8.4 Write property test for E-Way Bill threshold triggering
+  - [x] 8.4 Write property test for E-Way Bill threshold triggering
     - **Property 17: E-Way Bill Threshold Triggering**
     - Test invoices above ₹50,000 trigger E-Way Bill prompt
     - **Validates: Requirements 3.1**
   
-  - [ ] 8.5 Write property test for validity calculation
+  - [x] 8.5 Write property test for validity calculation
     - **Property 20: E-Way Bill Validity Calculation**
     - Test validity = ceil(distance / 200) days for all distances
     - **Validates: Requirements 3.4**
   
-  - [ ] 8.6 Write property test for vehicle update constraint
+  - [x] 8.6 Write property test for vehicle update constraint
     - **Property 21: E-Way Bill Vehicle Update Constraint**
     - Test updates allowed only when status='active'
     - **Validates: Requirements 3.5**
 
 - [ ] 9. TDS Service Implementation
-  - [ ] 9.1 Implement TDS sections configuration
+  - [x] 9.1 Implement TDS sections configuration
     - Create TDS_SECTIONS constant with 194C, 194I, 194J, 194H
     - Define rates, thresholds, and descriptions for each section
     - Add helper method to get section configuration
     - _Requirements: 4.4_
   
-  - [ ] 9.2 Implement TDSService class
+  - [x] 9.2 Implement TDSService class
     - Create calculateTDS method with formula: (amount × rate) / 100
     - Validate PAN format before TDS calculation
     - Apply threshold check (no TDS if amount < threshold)
     - Return TDSCalculation object with all details
     - _Requirements: 4.1, 4.2, 4.3_
   
-  - [ ] 9.3 Implement TDS entry and ledger creation
+  - [x] 9.3 Implement TDS entry and ledger creation
     - Create createTDSEntry method
     - Generate TDS payable ledger entry
     - Reduce supplier payment by TDS amount
@@ -303,17 +303,21 @@ The plan focuses on incremental development, building upon the existing database
     - Format return data according to requirements
     - _Requirements: 4.8_
   
-  - [ ]* 9.6 Write property test for TDS calculation formula
+  - [ ] 9.6 Write property test for TDS calculation formula
+
+
     - **Property 25: TDS Calculation Formula**
     - Test TDS = (amount × rate) / 100 for all amounts and rates
     - **Validates: Requirements 4.1**
   
-  - [ ]* 9.7 Write property test for TDS threshold application
+  - [ ] 9.7 Write property test for TDS threshold application
+
     - **Property 27: TDS Threshold Application**
     - Test TDS deducted only when amount ≥ threshold
     - **Validates: Requirements 4.3**
   
-  - [ ]* 9.8 Write property test for TDS payment reduction
+  - [ ] 9.8 Write property test for TDS payment reduction
+
     - **Property 29: TDS Payment Reduction**
     - Test supplier credit = invoice amount - TDS amount
     - **Validates: Requirements 4.6**
@@ -344,12 +348,14 @@ The plan focuses on incremental development, building upon the existing database
     - Add validation to prevent taxable items in Bill of Supply
     - _Requirements: 5.7, 5.8_
   
-  - [ ]* 11.4 Write property test for Bill of Supply zero GST
+  - [ ] 11.4 Write property test for Bill of Supply zero GST
+
     - **Property 34: Bill of Supply Zero GST**
     - Test all GST amounts are zero for Bill of Supply
     - **Validates: Requirements 5.2**
   
-  - [ ]* 11.5 Write property test for Bill of Supply no GST ledgers
+  - [ ] 11.5 Write property test for Bill of Supply no GST ledgers
+
     - **Property 35: Bill of Supply No GST Ledgers**
     - Test no GST ledger entries created for Bill of Supply
     - **Validates: Requirements 5.6**
@@ -372,12 +378,14 @@ The plan focuses on incremental development, building upon the existing database
     - Generate same ledger entry pattern as Tax Invoice
     - _Requirements: 6.4, 6.7_
   
-  - [ ]* 12.4 Write property test for Retail Invoice threshold detection
+  - [ ] 12.4 Write property test for Retail Invoice threshold detection
+
     - **Property 38: Retail Invoice Threshold Detection**
     - Test classification when amount ≤ ₹50,000 and no GSTIN
     - **Validates: Requirements 6.1**
   
-  - [ ]* 12.5 Write property test for high value invoice mandatory GSTIN
+  - [ ] 12.5 Write property test for high value invoice mandatory GSTIN
+
     - **Property 41: High Value Invoice Mandatory GSTIN**
     - Test GSTIN required when amount > ₹50,000
     - **Validates: Requirements 6.6**
@@ -403,12 +411,14 @@ The plan focuses on incremental development, building upon the existing database
     - Create ledger entries in base currency
     - _Requirements: 7.6, 7.9_
   
-  - [ ]* 13.4 Write property test for Export Invoice zero GST with LUT
+  - [ ] 13.4 Write property test for Export Invoice zero GST with LUT
+
     - **Property 43: Export Invoice Zero GST with LUT**
     - Test all GST amounts are zero when LUT present
     - **Validates: Requirements 7.3**
   
-  - [ ]* 13.5 Write property test for currency conversion
+  - [ ] 13.5 Write property test for currency conversion
+
     - **Property 46: Export Invoice Currency Conversion**
     - Test base amount = foreign amount × exchange rate
     - **Validates: Requirements 7.6**
@@ -434,12 +444,14 @@ The plan focuses on incremental development, building upon the existing database
     - Maintain reference to original Delivery Challan
     - _Requirements: 8.5, 8.8_
   
-  - [ ]* 14.4 Write property test for Delivery Challan no tax liability
+  - [ ] 14.4 Write property test for Delivery Challan no tax liability
+
     - **Property 49: Delivery Challan No Tax Liability**
     - Test GST=0 and no sales ledger entries for Delivery Challan
     - **Validates: Requirements 8.2**
   
-  - [ ]* 14.5 Write property test for Delivery Challan conversion
+  - [ ] 14.5 Write property test for Delivery Challan conversion
+
     - **Property 51: Delivery Challan to Sales Invoice Conversion**
     - Test Sales Invoice contains same items as Delivery Challan
     - **Validates: Requirements 8.5**
@@ -465,12 +477,14 @@ The plan focuses on incremental development, building upon the existing database
     - Recalculate GST with new date
     - _Requirements: 9.6, 9.7_
   
-  - [ ]* 15.4 Write property test for Proforma Invoice no ledger entries
+  - [ ] 15.4 Write property test for Proforma Invoice no ledger entries
+
     - **Property 54: Proforma Invoice No Ledger Entries**
     - Test no ledger entries created for Proforma Invoice
     - **Validates: Requirements 9.4**
   
-  - [ ]* 15.5 Write property test for Proforma conversion
+  - [ ] 15.5 Write property test for Proforma conversion
+
     - **Property 56: Proforma to Sales Invoice Conversion**
     - Test Sales Invoice has same items, new date
     - **Validates: Requirements 9.7**
@@ -542,7 +556,8 @@ The plan focuses on incremental development, building upon the existing database
     - Integrate with existing tenant configuration system
     - _Requirements: 15.5, 15.6, 15.8_
   
-  - [ ]* 17.4 Write property test for multi-tenant query isolation
+  - [ ] 17.4 Write property test for multi-tenant query isolation
+
     - **Property 70: Multi-Tenant Query Isolation**
     - Test all new queries include tenant_id filter
     - **Validates: Requirements 15.1, 15.9**
@@ -578,7 +593,8 @@ The plan focuses on incremental development, building upon the existing database
     - Test API response times under load with mixed old/new data
     - Verify no performance regression on existing features
   
-  - [ ]* 18.5 Run all property-based tests
+  - [ ] 18.5 Run all property-based tests
+
     - Execute all 72 property tests with 100 iterations each
     - Verify all properties pass
     - Generate coverage report including existing code
