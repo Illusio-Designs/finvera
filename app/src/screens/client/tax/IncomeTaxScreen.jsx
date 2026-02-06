@@ -5,6 +5,7 @@ import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { taxAPI } from '../../../lib/api';
+import { FONT_STYLES } from '../../../utils/fonts';
 
 export default function IncomeTaxScreen() {
   const { openDrawer } = useDrawer();
@@ -362,18 +363,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    ...FONT_STYLES.h1,
     color: '#0f172a',
     marginBottom: 8,
-    fontFamily: 'Agency',
-    letterSpacing: -0.5,
   },
   sectionSubtitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#64748b',
-    fontFamily: 'Agency',
-    lineHeight: 24,
   },
   quickActionsContainer: {
     flexDirection: 'row',
@@ -409,19 +405,15 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   quickActionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...FONT_STYLES.h5,
     color: '#0f172a',
-    fontFamily: 'Agency',
     marginBottom: 4,
     textAlign: 'center',
   },
   quickActionSubtitle: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#64748b',
-    fontFamily: 'Agency',
     textAlign: 'center',
-    lineHeight: 16,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -456,15 +448,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statValue: {
-    fontSize: 20,
-    fontWeight: '700',
+    ...FONT_STYLES.h3,
     color: '#0f172a',
-    fontFamily: 'Agency',
   },
   statLabel: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#64748b',
-    fontFamily: 'Agency',
     marginTop: 2,
   },
   loadingContainer: {
@@ -495,9 +484,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   loadingText: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#64748b',
-    fontFamily: 'Agency',
   },
   emptyContainer: {
     flex: 1,
@@ -524,19 +512,15 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   emptyTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    ...FONT_STYLES.h3,
     color: '#0f172a',
-    fontFamily: 'Agency',
     marginBottom: 8,
     textAlign: 'center',
   },
   emptySubtitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#64748b',
-    fontFamily: 'Agency',
     textAlign: 'center',
-    lineHeight: 24,
   },
   returnsList: {
     paddingHorizontal: 20,
@@ -586,19 +570,13 @@ const styles = StyleSheet.create({
     paddingRight: 12,
   },
   returnTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...FONT_STYLES.h4,
     color: '#0f172a',
-    fontFamily: 'Agency',
     marginBottom: 4,
-    letterSpacing: -0.3,
-    lineHeight: 22,
   },
   returnDate: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#64748b',
-    fontFamily: 'Agency',
-    lineHeight: 18,
   },
   returnStatus: {
     alignItems: 'flex-end',
@@ -617,10 +595,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusText: {
-    fontSize: 10,
-    fontWeight: '600',
+    ...FONT_STYLES.captionSmall,
     color: 'white',
-    fontFamily: 'Agency',
   },
   returnCardBody: {
     marginBottom: 16,
@@ -633,11 +609,9 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   returnDetailText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#64748b',
-    fontFamily: 'Agency',
     flex: 1,
-    lineHeight: 18,
   },
   returnCardFooter: {
     flexDirection: 'row',
@@ -651,10 +625,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   returnReference: {
-    fontSize: 12,
-    fontWeight: '600',
+    ...FONT_STYLES.labelSmall,
     color: '#3e60ab',
-    fontFamily: 'Agency',
   },
   returnAction: {
     width: 32,
@@ -716,15 +688,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...FONT_STYLES.h4,
     color: '#0f172a',
-    fontFamily: 'Agency',
   },
   modalSubtitle: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#64748b',
-    fontFamily: 'Agency',
     marginTop: 2,
   },
   closeButton: {
@@ -752,36 +721,28 @@ const styles = StyleSheet.create({
     borderColor: '#f1f5f9',
   },
   calculatorTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    ...FONT_STYLES.h3,
     color: '#0f172a',
-    fontFamily: 'Agency',
     marginBottom: 8,
   },
   calculatorSubtitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#64748b',
-    fontFamily: 'Agency',
     marginBottom: 32,
-    lineHeight: 24,
   },
   comingSoonContainer: {
     alignItems: 'center',
     paddingVertical: 40,
   },
   comingSoonTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...FONT_STYLES.h4,
     color: '#0f172a',
-    fontFamily: 'Agency',
     marginTop: 16,
     marginBottom: 8,
   },
   comingSoonText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#64748b',
-    fontFamily: 'Agency',
     textAlign: 'center',
-    lineHeight: 20,
   },
 });

@@ -7,6 +7,7 @@ import { useNotification } from '../../../contexts/NotificationContext';
 import { voucherAPI } from '../../../lib/api';
 import { formatCurrency } from '../../../utils/businessLogic';
 import { useNavigation } from '@react-navigation/native';
+import { FONT_STYLES } from '../../../utils/fonts';
 
 const VOUCHER_TYPES = [
   { 
@@ -491,33 +492,27 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   statNumber: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h4,
     color: '#3e60ab',
     marginBottom: 4,
-    fontFamily: 'Agency',
   },
   statLabel: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
     textAlign: 'center',
-    fontFamily: 'Agency',
   },
   section: {
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h4,
     color: '#111827',
     marginBottom: 8,
-    fontFamily: 'Agency',
   },
   sectionSubtitle: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
     marginBottom: 16,
-    fontFamily: 'Agency',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -562,19 +557,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   typeLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: '#374151',
     textAlign: 'center',
     marginBottom: 4,
-    fontFamily: 'Agency',
   },
   typeDescription: {
-    fontSize: 11,
+    ...FONT_STYLES.captionSmall,
     color: '#6b7280',
     textAlign: 'center',
-    lineHeight: 14,
-    fontFamily: 'Agency',
   },
   vouchersList: {
     gap: 12,
@@ -599,30 +590,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   voucherNumber: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h5,
     color: '#111827',
     marginBottom: 4,
-    fontFamily: 'Agency',
   },
   voucherType: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   voucherAmount: {
     alignItems: 'flex-end',
   },
   amountText: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h5,
     color: '#3e60ab',
     marginBottom: 4,
-    fontFamily: 'Agency',
   },
   amountValue: {
     color: '#3e60ab',
-    fontWeight: 'bold',
   },
   typeBadge: {
     paddingHorizontal: 8,
@@ -631,10 +616,8 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   typeBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
+    ...FONT_STYLES.labelSmall,
     color: 'white',
-    fontFamily: 'Agency',
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -643,10 +626,8 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   statusText: {
-    fontSize: 12,
-    fontWeight: '600',
+    ...FONT_STYLES.labelSmall,
     color: 'white',
-    fontFamily: 'Agency',
   },
   voucherFooter: {
     flexDirection: 'row',
@@ -659,9 +640,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   detailText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   loadingContainer: {
     backgroundColor: 'white',
@@ -675,9 +655,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   loadingText: {
-    fontSize: 16,
+    ...FONT_STYLES.body,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   emptyState: {
     alignItems: 'center',
@@ -692,19 +671,15 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h4,
     color: '#374151',
     marginTop: 16,
     marginBottom: 8,
-    fontFamily: 'Agency',
   },
   emptySubtitle: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#9ca3af',
     textAlign: 'center',
-    lineHeight: 20,
-    fontFamily: 'Agency',
   },
   modalContainer: {
     flex: 1,
@@ -720,10 +695,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h4,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   closeButton: {
     padding: 4,
@@ -744,11 +717,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   detailCardTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h5,
     color: '#111827',
     marginBottom: 12,
-    fontFamily: 'Agency',
   },
   detailRow: {
     flexDirection: 'row',
@@ -759,19 +730,15 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f3f4f6',
   },
   detailLabel: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontWeight: '500',
     flex: 1,
-    fontFamily: 'Agency',
   },
   detailValue: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#111827',
-    fontWeight: '600',
     flex: 1,
     textAlign: 'right',
-    fontFamily: 'Agency',
   },
   modalActions: {
     flexDirection: 'row',
@@ -794,9 +761,7 @@ const styles = StyleSheet.create({
     borderColor: '#3e60ab',
   },
   modalActionText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: 'white',
-    fontFamily: 'Agency',
   },
 });

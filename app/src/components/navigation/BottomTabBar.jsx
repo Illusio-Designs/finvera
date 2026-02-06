@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, TouchableOpacity, StyleSheet, Animated, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { FONT_STYLES } from '../../utils/fonts';
 
 export default function BottomTabBar({ currentRoute = 'Dashboard' }) {
   const navigation = useNavigation();
@@ -16,39 +17,36 @@ export default function BottomTabBar({ currentRoute = 'Dashboard' }) {
 
   const tabs = [
     {
-      icon: 'document-text-outline',
-      activeIcon: 'document-text',
-      action: 'navigate',
-      screen: 'Vouchers',
-      isActive: currentRoute === 'Vouchers'
-    },
-    {
-      icon: 'analytics-outline',
-      activeIcon: 'analytics',
-      action: 'navigate',
-      screen: 'Reports',
-      isActive: currentRoute === 'Reports'
-    },
-    {
       icon: 'home-outline',
       activeIcon: 'home',
+      label: 'Home',
       action: 'home',
       screen: 'Dashboard',
       isActive: currentRoute === 'Dashboard'
     },
     {
-      icon: 'bookmark-outline',
-      activeIcon: 'bookmark',
+      icon: 'search-outline',
+      activeIcon: 'search',
+      label: 'Search',
       action: 'navigate',
       screen: 'Ledgers',
       isActive: currentRoute === 'Ledgers'
     },
     {
-      icon: 'headset-outline',
-      activeIcon: 'headset',
+      icon: 'notifications-outline',
+      activeIcon: 'notifications',
+      label: 'Notifications',
       action: 'navigate',
-      screen: 'Support',
-      isActive: currentRoute === 'Support'
+      screen: 'NotificationDemo',
+      isActive: currentRoute === 'NotificationDemo'
+    },
+    {
+      icon: 'person-outline',
+      activeIcon: 'person',
+      label: 'Profile',
+      action: 'navigate',
+      screen: 'Profile',
+      isActive: currentRoute === 'Profile'
     }
   ];
 
@@ -56,30 +54,86 @@ export default function BottomTabBar({ currentRoute = 'Dashboard' }) {
     <View style={styles.container}>
       <View style={styles.tabBar}>
         {tabs.map((tab, index) => (
-          <TouchableOpacity
+          <AnimatedTab
             key={index}
-            style={styles.tab}
+            tab={tab}
             onPress={() => handleTabPress(tab.action, tab.screen)}
-            activeOpacity={0.7}
-          >
-            <View style={[
-              styles.tabContent,
-              tab.isActive && styles.activeTab
-            ]}>
-              <Ionicons
-                name={tab.isActive ? tab.activeIcon : tab.icon}
-                size={22}
-                color={tab.isActive ? '#3e60ab' : '#9ca3af'}
-              />
-            </View>
-            {/* Active indicator dot */}
-            {tab.isActive && (
-              <View style={styles.activeIndicator} />
-            )}
-          </TouchableOpacity>
+          />
         ))}
       </View>
     </View>
+  );
+}
+
+function AnimatedTab({ tab, onPress }) {
+  const scaleAnim = useRef(new Animated.Value(tab.isActive ? 1 : 0)).current;
+  const widthAnim = useRef(new Animated.Value(tab.isActive ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: tab.isActive ? 1 : 0,
+        useNativeDriver: true,
+        tension: 50,
+        friction: 7,
+      }),
+      Animated.spring(widthAnim, {
+        toValue: tab.isActive ? 1 : 0,
+        useNativeDriver: false,
+        tension: 50,
+        friction: 7,
+      }),
+    ]).start();
+  }, [tab.isActive, scaleAnim, widthAnim]);
+
+  const iconScale = scaleAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.1],
+  });
+
+  const pillWidth = widthAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [48, 120],
+  });
+
+  const labelOpacity = widthAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0, 0, 1],
+  });
+
+  return (
+    <TouchableOpacity
+      style={styles.tab}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Animated.View
+        style={[
+          styles.tabContent,
+          tab.isActive && styles.activeTabContent,
+          { width: pillWidth },
+        ]}
+      >
+        <Animated.View style={{ transform: [{ scale: iconScale }] }}>
+          <Ionicons
+            name={tab.isActive ? tab.activeIcon : tab.icon}
+            size={24}
+            color={tab.isActive ? '#ffffff' : '#6b7280'}
+          />
+        </Animated.View>
+        {tab.isActive && (
+          <Animated.Text
+            style={[
+              styles.tabLabel,
+              { opacity: labelOpacity },
+            ]}
+            numberOfLines={1}
+          >
+            {tab.label}
+          </Animated.Text>
+        )}
+      </Animated.View>
+    </TouchableOpacity>
   );
 }
 
@@ -90,44 +144,43 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: 'transparent',
-    zIndex: 1000, // Ensure it stays on top
+    zIndex: 1000,
   },
   tabBar: {
     flexDirection: 'row',
     backgroundColor: 'white',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    paddingBottom: 24, // Extra padding for safe area
-    borderTopWidth: 0.5, // Made even thinner
-    borderTopColor: '#f9fafb', // Made even lighter
-    // shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 }, // Reduced shadow offset
-    shadowOpacity: 0.03, // Further reduced shadow opacity
-    shadowRadius: 4, // Further reduced shadow radius
-    elevation: 4, // Further reduced elevation
+    marginHorizontal: 16,
+    marginBottom: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+    justifyContent: 'space-around',
+    alignItems: 'center',
   },
   tab: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 4,
   },
   tabContent: {
-    padding: 10,
-    borderRadius: 16,
-    minWidth: 44,
-    minHeight: 44,
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    gap: 8,
   },
-  activeTab: {
-    backgroundColor: '#f0f4fc', // Light Finvera blue background for active state
+  activeTabContent: {
+    backgroundColor: '#1f2937',
   },
-  activeIndicator: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#3e60ab',
-    marginTop: 2,
+  tabLabel: {
+    ...FONT_STYLES.labelSmall,
+    color: '#ffffff',
+    fontWeight: '600',
   },
 });

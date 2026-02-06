@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNotification } from '../../contexts/NotificationContext';
 import { authAPI } from '../../lib/api';
+import { FONT_STYLES } from '../../utils/fonts';
 
 export default function ForgotPasswordScreen() {
   const navigation = useNavigation();
@@ -140,10 +141,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h4,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   content: {
     flex: 1,
@@ -164,35 +163,27 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   logoText: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h1,
     color: 'white',
-    fontFamily: 'Agency',
   },
   brandName: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h2,
     color: '#3e60ab',
-    fontFamily: 'Agency',
   },
   instructionsContainer: {
     marginBottom: 32,
     alignItems: 'center',
   },
   instructionsTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h3,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 12,
     textAlign: 'center',
   },
   instructionsText: {
-    fontSize: 14,
+    ...FONT_STYLES.body,
     color: '#6b7280',
-    fontFamily: 'Agency',
     textAlign: 'center',
-    lineHeight: 20,
   },
   form: {
     marginBottom: 32,
@@ -217,10 +208,9 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   input: {
+    ...FONT_STYLES.body,
     flex: 1,
-    fontSize: 16,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   resetButton: {
     backgroundColor: '#3e60ab',
@@ -239,18 +229,15 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   resetButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    ...FONT_STYLES.button,
     color: 'white',
-    fontFamily: 'Agency',
   },
   backToLogin: {
     alignItems: 'center',
   },
   backToLoginText: {
-    fontSize: 14,
+    ...FONT_STYLES.body,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   loginLink: {
     color: '#3e60ab',

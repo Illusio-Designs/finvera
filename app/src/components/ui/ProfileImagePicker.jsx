@@ -12,6 +12,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useCameraPermissions } from '../../hooks/usePermissions';
+import { FONT_STYLES } from '../../utils/fonts';
 
 export default function ProfileImagePicker({ 
   imageUri, 
@@ -215,9 +216,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   initials: {
+    ...FONT_STYLES.bold,
     color: 'white',
-    fontWeight: 'bold',
-    fontFamily: 'Agency',
   },
   editButton: {
     position: 'absolute',
@@ -253,10 +253,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f3f4f6',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h4,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   modalContent: {
     paddingHorizontal: 20,
@@ -272,9 +270,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   optionText: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#374151',
     marginLeft: 16,
-    fontFamily: 'Agency',
   },
 });

@@ -7,6 +7,7 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { reportsAPI } from '../../../lib/api';
 import { useNavigation } from '@react-navigation/native';
+import { FONT_STYLES } from '../../../utils/fonts';
 
 export default function ReportsScreen() {
   const { openDrawer } = useDrawer();
@@ -404,10 +405,8 @@ const styles = StyleSheet.create({
     minWidth: 200,
   },
   createButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.button,
     color: 'white',
-    fontFamily: 'Agency',
     marginLeft: 8,
   },
 
@@ -420,10 +419,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
   },
   categoryTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 12,
   },
   categoryTabs: {
@@ -446,10 +443,8 @@ const styles = StyleSheet.create({
     borderColor: '#3e60ab',
   },
   categoryTabText: {
-    fontSize: 12,
+    ...FONT_STYLES.labelSmall,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    fontWeight: '600',
   },
   categoryTabTextActive: {
     color: 'white',
@@ -461,16 +456,13 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h4,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 4,
   },
   sectionSubtitle: {
-    fontSize: 14,
+    ...FONT_STYLES.body,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginBottom: 16,
   },
   reportsList: {
@@ -497,16 +489,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   reportName: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 4,
   },
   reportDescription: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginBottom: 8,
   },
   categoryBadge: {
@@ -517,10 +506,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
   },
   categoryBadgeText: {
-    fontSize: 10,
+    ...FONT_STYLES.captionSmall,
     fontWeight: '600',
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   reportIcon: {
     width: 48,
@@ -548,8 +536,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   actionButtonText: {
-    fontSize: 10,
-    fontFamily: 'Agency',
+    ...FONT_STYLES.captionSmall,
     fontWeight: '600',
   },
 
@@ -569,10 +556,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h4,
     color: '#111827',
-    fontFamily: 'Agency',
     flex: 1,
   },
   modalContent: {
@@ -592,10 +577,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   formHeaderText: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 16,
   },
   dateInputsRow: {
@@ -612,11 +595,9 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: '#374151',
     marginBottom: 8,
-    fontFamily: 'Agency',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -633,9 +614,8 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: 14,
+    ...FONT_STYLES.body,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   actionButtons: {
     flexDirection: 'row',
@@ -653,10 +633,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cancelButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.button,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   primaryButton: {
     flex: 1,
@@ -669,9 +647,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   primaryButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.button,
     color: 'white',
-    fontFamily: 'Agency',
   },
 });

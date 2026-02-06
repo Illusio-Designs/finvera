@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_CONFIG, buildStorageKey, API_CONFIG } from '../../config/env';
+import { FONT_STYLES } from '../../utils/fonts';
 
 /**
  * LoginScreen with integrated company selection
@@ -529,16 +530,13 @@ const styles = StyleSheet.create({
     height: 80,
   },
   appName: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h2,
     color: '#3e60ab',
     marginBottom: 4,
-    fontFamily: 'Agency',
   },
   tagline: {
-    fontSize: 14,
+    ...FONT_STYLES.body,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   clearBiometricButton: {
     flexDirection: 'row',
@@ -550,9 +548,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(107, 114, 128, 0.1)',
   },
   clearBiometricText: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginLeft: 4,
   },
   formContainer: {
@@ -571,33 +568,28 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   formTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h3,
     color: '#111827',
     textAlign: 'center',
     marginBottom: 16,
-    fontFamily: 'Agency',
   },
   inputContainer: {
     marginBottom: 20,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: '#374151',
     marginBottom: 8,
-    fontFamily: 'Agency',
   },
   input: {
+    ...FONT_STYLES.body,
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    fontSize: 16,
     backgroundColor: '#f9fafb',
     color: '#111827',
-    fontFamily: 'Agency',
     textAlignVertical: 'center',
   },
   passwordContainer: {
@@ -610,12 +602,11 @@ const styles = StyleSheet.create({
     paddingRight: 4,
   },
   passwordInput: {
+    ...FONT_STYLES.body,
     flex: 1,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    fontSize: 16,
     color: '#111827',
-    fontFamily: 'Agency',
     textAlignVertical: 'center',
   },
   eyeButton: {
@@ -639,11 +630,9 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   buttonText: {
+    ...FONT_STYLES.button,
     color: 'white',
     textAlign: 'center',
-    fontWeight: 'bold',
-    fontSize: 16,
-    fontFamily: 'Agency',
   },
   biometricButton: {
     borderWidth: 1,
@@ -659,11 +648,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   biometricButtonText: {
+    ...FONT_STYLES.button,
     color: '#3e60ab',
     textAlign: 'center',
-    fontWeight: '600',
-    fontSize: 16,
-    fontFamily: 'Agency',
     marginLeft: 8,
   },
   divider: {
@@ -677,10 +664,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#e5e7eb',
   },
   dividerText: {
+    ...FONT_STYLES.body,
     paddingHorizontal: 16,
-    fontSize: 14,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   googleButton: {
     borderWidth: 1,
@@ -701,11 +687,9 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   googleButtonText: {
+    ...FONT_STYLES.button,
     color: '#374151',
     textAlign: 'center',
-    fontWeight: '600',
-    fontSize: 16,
-    fontFamily: 'Agency',
   },
   // Company Selection Styles
   backButton: {
@@ -715,18 +699,15 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   backButtonText: {
+    ...FONT_STYLES.button,
     marginLeft: 8,
-    fontSize: 16,
     color: '#3e60ab',
-    fontWeight: '600',
-    fontFamily: 'Agency',
   },
   companySubtitle: {
-    fontSize: 14,
+    ...FONT_STYLES.body,
     color: '#6b7280',
     textAlign: 'center',
     marginBottom: 24,
-    fontFamily: 'Agency',
   },
   companiesContainer: {
     marginBottom: 20,
@@ -763,27 +744,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   companyName: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.button,
     color: '#111827',
     marginBottom: 4,
-    fontFamily: 'Agency',
   },
   selectedCompanyName: {
     color: '#3e60ab',
   },
   companyType: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   loadingContainer: {
     alignItems: 'center',
     paddingVertical: 20,
   },
   loadingText: {
-    fontSize: 16,
+    ...FONT_STYLES.body,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
 });

@@ -5,12 +5,13 @@ import { useNavigation } from '@react-navigation/native';
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
-import { quickNotifications } from '../../../utils/notifications';
+import { quickNotifications } from '../../../services/globalNotificationService';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useSubscription } from '../../../contexts/SubscriptionContext';
 import { companyAPI, branchAPI } from '../../../lib/api';
 import CreateCompanyModal from '../../../components/modals/CreateCompanyModal';
 import CreateBranchModal from '../../../components/modals/CreateBranchModal';
+import { FONT_STYLES } from '../../../utils/fonts';
 
 const { width } = Dimensions.get('window');
 
@@ -713,9 +714,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   
   // Header Styles
@@ -724,16 +724,13 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h1,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
 
   // Tab Styles
@@ -764,10 +761,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   tabText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     fontWeight: '600',
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   activeTabText: {
     color: '#3e60ab',
@@ -798,10 +794,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   planText: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     fontWeight: '600',
     color: '#111827',
-    fontFamily: 'Agency',
   },
   planTypeIndicator: {
     backgroundColor: '#3e60ab15',
@@ -810,10 +805,9 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   planTypeText: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     fontWeight: '600',
     color: '#3e60ab',
-    fontFamily: 'Agency',
   },
   planLimitsContainer: {
     flexDirection: 'row',
@@ -825,16 +819,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   planLimitLabel: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginBottom: 4,
   },
   planLimitValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h4,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   planLimitReached: {
     color: '#ef4444',
@@ -856,10 +847,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   planCreateButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.button,
     color: '#3e60ab',
-    fontFamily: 'Agency',
   },
 
   // Company Card Styles
@@ -896,10 +885,9 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   currentBadgeText: {
-    fontSize: 10,
+    ...FONT_STYLES.captionSmall,
     fontWeight: '600',
     color: 'white',
-    fontFamily: 'Agency',
   },
   companyHeader: {
     flexDirection: 'row',
@@ -918,10 +906,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   companyName: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h4,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 6,
   },
   companyTypeBadge: {
@@ -931,9 +917,8 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   companyTypeText: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     fontWeight: '600',
-    fontFamily: 'Agency',
   },
   companyDetails: {
     gap: 8,
@@ -945,15 +930,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   detailLabel: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
     minWidth: 60,
   },
   detailValue: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#111827',
-    fontFamily: 'Agency',
     flex: 1,
   },
   companyActions: {
@@ -970,10 +953,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   switchButtonText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     fontWeight: '600',
     color: '#3e60ab',
-    fontFamily: 'Agency',
   },
   viewButton: {
     flexDirection: 'row',
@@ -985,10 +967,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   viewButtonText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     fontWeight: '600',
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
 
   // Branch Card Styles
@@ -1016,22 +997,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   branchName: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     fontWeight: '600',
     color: '#111827',
-    fontFamily: 'Agency',
   },
   branchCode: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginTop: 2,
   },
   branchAddress: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    lineHeight: 20,
   },
 
   // Empty State Styles
@@ -1044,19 +1021,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h3,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 8,
     textAlign: 'center',
   },
   emptyDescription: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
     textAlign: 'center',
-    lineHeight: 24,
     marginBottom: 24,
   },
   createButton: {
@@ -1069,10 +1042,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   createButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.button,
     color: 'white',
-    fontFamily: 'Agency',
   },
 
   // Upgrade Prompt Styles
@@ -1090,9 +1061,8 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   upgradePromptText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
     textAlign: 'center',
     marginVertical: 8,
   },
@@ -1103,10 +1073,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   upgradeButtonText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     fontWeight: '600',
     color: 'white',
-    fontFamily: 'Agency',
   },
 
   // Modal Styles
@@ -1128,10 +1097,8 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h4,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   modalHeaderSpacer: {
     width: 32,
@@ -1171,10 +1138,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalCompanyName: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h2,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 8,
   },
   modalCompanyTypeBadge: {
@@ -1185,9 +1150,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   modalCompanyTypeText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     fontWeight: '600',
-    fontFamily: 'Agency',
   },
   modalCurrentBadge: {
     flexDirection: 'row',
@@ -1195,10 +1159,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   modalCurrentBadgeText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     fontWeight: '600',
     color: '#10b981',
-    fontFamily: 'Agency',
   },
   modalSection: {
     backgroundColor: 'white',
@@ -1212,10 +1175,9 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   modalSectionTitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     fontWeight: 'bold',
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 12,
   },
   modalSectionContent: {
@@ -1228,15 +1190,13 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   modalDetailLabel: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
     flex: 1,
   },
   modalDetailValue: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#111827',
-    fontFamily: 'Agency',
     flex: 2,
     textAlign: 'right',
   },
@@ -1253,9 +1213,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   modalSwitchButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.button,
     color: 'white',
-    fontFamily: 'Agency',
   },
 });

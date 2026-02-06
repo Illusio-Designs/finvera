@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { FONT_STYLES } from '../../utils/fonts';
 
 export default function SplashScreen() {
   return (
@@ -63,23 +64,20 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   logoText: {
+    ...FONT_STYLES.h1,
     fontSize: 48,
-    fontWeight: 'bold',
     color: 'white',
-    fontFamily: 'Agency',
   },
   brandName: {
+    ...FONT_STYLES.h1,
     fontSize: 36,
-    fontWeight: 'bold',
     color: 'white',
-    fontFamily: 'Agency',
     marginBottom: 8,
     letterSpacing: 2,
   },
   tagline: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: 'rgba(255, 255, 255, 0.9)',
-    fontFamily: 'Agency',
     textAlign: 'center',
     marginBottom: 60,
   },
@@ -108,14 +106,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: 'rgba(255, 255, 255, 0.8)',
-    fontFamily: 'Agency',
     marginBottom: 4,
   },
   versionText: {
-    fontSize: 10,
+    ...FONT_STYLES.captionSmall,
     color: 'rgba(255, 255, 255, 0.6)',
-    fontFamily: 'Agency',
   },
 });

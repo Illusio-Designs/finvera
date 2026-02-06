@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import CompaniesScreen from './CompaniesScreen.jsx';
 import { useAuth } from '../../../contexts/AuthContext';
 import { companyAPI, branchAPI } from '../../../lib/api';
+import { FONT_STYLES } from '../../../utils/fonts';
 
 export default function CompanyBranchSelectionScreen() {
   const navigation = useNavigation();
@@ -86,8 +87,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
   },
   loadingText: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
 });

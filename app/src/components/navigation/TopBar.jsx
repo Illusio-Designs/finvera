@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-nativ
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import SearchModal from '../ui/SearchModal';
+import { FONT_STYLES } from '../../utils/fonts';
 
 export default function TopBar({ 
   title = 'Finvera', 
@@ -92,10 +93,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h3,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   rightSection: {
     flexDirection: 'row',

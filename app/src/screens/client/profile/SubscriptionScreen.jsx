@@ -6,6 +6,7 @@ import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { subscriptionAPI } from '../../../lib/api';
+import { FONT_STYLES } from '../../../utils/fonts';
 
 export default function SubscriptionScreen() {
   const navigation = useNavigation();
@@ -342,9 +343,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   planCard: {
     backgroundColor: 'white',
@@ -367,10 +367,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   planName: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h3,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 8,
   },
   statusContainer: {
@@ -378,40 +376,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusText: {
-    fontSize: 12,
+    ...FONT_STYLES.captionSmall,
     fontWeight: '600',
-    fontFamily: 'Agency',
     marginLeft: 4,
   },
   planPrice: {
     alignItems: 'flex-end',
   },
   priceAmount: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h2,
     color: '#3e60ab',
-    fontFamily: 'Agency',
   },
   pricePeriod: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   planDescription: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
     lineHeight: 20,
   },
   section: {
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h4,
     color: '#111827',
     marginBottom: 12,
-    fontFamily: 'Agency',
   },
   sectionCard: {
     backgroundColor: 'white',
@@ -442,15 +433,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   detailLabel: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     fontWeight: '600',
     color: '#111827',
-    fontFamily: 'Agency',
   },
   detailValue: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginTop: 2,
   },
   featureItem: {
@@ -461,9 +450,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f3f4f6',
   },
   featureText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#374151',
-    fontFamily: 'Agency',
     marginLeft: 12,
   },
   actionButtons: {
@@ -488,10 +476,8 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   upgradeButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.button,
     color: 'white',
-    fontFamily: 'Agency',
   },
   bottomMargin: {
     height: 60, // Increase bottom margin
@@ -510,16 +496,13 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   noSubscriptionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h3,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 8,
   },
   noSubscriptionText: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
     textAlign: 'center',
     marginBottom: 24,
     paddingHorizontal: 32,
@@ -534,9 +517,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   choosePlanButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.button,
     color: 'white',
-    fontFamily: 'Agency',
   },
 });

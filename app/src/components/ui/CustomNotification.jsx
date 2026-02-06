@@ -10,6 +10,7 @@ import {
   StatusBar 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { FONT_STYLES, getFontStyle } from '../../utils/fonts';
 
 const { width } = Dimensions.get('window');
 
@@ -97,58 +98,53 @@ export default function CustomNotification({
     switch (type) {
       case 'success':
         return {
-          backgroundColor: '#ffffff',
-          borderColor: '#10b981',
+          backgroundColor: '#d1fae5',
           iconName: 'checkmark-circle',
           iconColor: '#10b981',
-          iconBackgroundColor: '#ecfdf5',
+          iconBackgroundColor: '#ffffff',
           titleColor: '#111827',
           messageColor: '#6b7280',
           progressColor: '#10b981',
         };
       case 'error':
         return {
-          backgroundColor: '#ffffff',
-          borderColor: '#ef4444',
-          iconName: 'close-circle',
+          backgroundColor: '#fee2e2',
+          iconName: 'alert-circle',
           iconColor: '#ef4444',
-          iconBackgroundColor: '#fef2f2',
+          iconBackgroundColor: '#ffffff',
           titleColor: '#111827',
           messageColor: '#6b7280',
           progressColor: '#ef4444',
         };
       case 'warning':
         return {
-          backgroundColor: '#ffffff',
-          borderColor: '#f59e0b',
+          backgroundColor: '#fef3c7',
           iconName: 'warning',
           iconColor: '#f59e0b',
-          iconBackgroundColor: '#fffbeb',
+          iconBackgroundColor: '#ffffff',
           titleColor: '#111827',
           messageColor: '#6b7280',
           progressColor: '#f59e0b',
         };
       case 'info':
         return {
-          backgroundColor: '#ffffff',
-          borderColor: '#3e60ab',
+          backgroundColor: '#dbeafe',
           iconName: 'information-circle',
-          iconColor: '#3e60ab',
-          iconBackgroundColor: '#eff6ff',
+          iconColor: '#3b82f6',
+          iconBackgroundColor: '#ffffff',
           titleColor: '#111827',
           messageColor: '#6b7280',
-          progressColor: '#3e60ab',
+          progressColor: '#3b82f6',
         };
       default:
         return {
-          backgroundColor: '#ffffff',
-          borderColor: '#3e60ab',
+          backgroundColor: '#dbeafe',
           iconName: 'information-circle',
-          iconColor: '#3e60ab',
-          iconBackgroundColor: '#eff6ff',
+          iconColor: '#3b82f6',
+          iconBackgroundColor: '#ffffff',
           titleColor: '#111827',
           messageColor: '#6b7280',
-          progressColor: '#3e60ab',
+          progressColor: '#3b82f6',
         };
     }
   };
@@ -183,7 +179,6 @@ export default function CustomNotification({
         styles.notificationContent,
         {
           backgroundColor: notificationStyle.backgroundColor,
-          borderLeftColor: notificationStyle.borderColor,
         }
       ]}>
         <View style={styles.content}>
@@ -193,7 +188,7 @@ export default function CustomNotification({
           ]}>
             <Ionicons
               name={notificationStyle.iconName}
-              size={24}
+              size={28}
               color={notificationStyle.iconColor}
             />
           </View>
@@ -211,47 +206,29 @@ export default function CustomNotification({
             )}
           </View>
 
-          <View style={styles.actionsContainer}>
-            {actionText && onActionPress && (
-              <TouchableOpacity
-                style={[styles.actionButton, { borderColor: notificationStyle.borderColor }]}
-                onPress={onActionPress}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.actionText, { color: notificationStyle.iconColor }]}>
-                  {actionText}
-                </Text>
-              </TouchableOpacity>
-            )}
-            
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={hideNotification}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="close" size={24} color="#9ca3af" />
+          </TouchableOpacity>
+        </View>
+        
+        {actionText && onActionPress && (
+          <View style={styles.actionContainer}>
             <TouchableOpacity
-              style={styles.closeButton}
-              onPress={hideNotification}
+              style={[styles.actionButton, { borderColor: notificationStyle.iconColor }]}
+              onPress={onActionPress}
               activeOpacity={0.7}
             >
-              <Ionicons name="close" size={18} color="#9ca3af" />
+              <Text style={[styles.actionText, { color: notificationStyle.iconColor }]}>
+                {actionText}
+              </Text>
             </TouchableOpacity>
           </View>
-        </View>
+        )}
       </View>
-      
-      {/* Enhanced progress bar */}
-      {duration > 0 && (
-        <View style={styles.progressBarContainer}>
-          <Animated.View 
-            style={[
-              styles.progressBar,
-              { 
-                backgroundColor: notificationStyle.progressColor,
-                width: progressAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ['0%', '100%'],
-                }),
-              }
-            ]}
-          />
-        </View>
-      )}
     </Animated.View>
   );
 }
@@ -265,103 +242,64 @@ const styles = StyleSheet.create({
   },
   notificationContent: {
     borderRadius: 16,
-    borderLeftWidth: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 16,
-    // Enhanced backdrop for better contrast
-    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
   },
   content: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: 18,
+    alignItems: 'center',
+    padding: 16,
   },
   iconContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
-    // Add subtle shadow to icon container
+    marginRight: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
   },
   textContainer: {
     flex: 1,
-    marginRight: 10,
-    paddingTop: 4,
+    marginRight: 12,
   },
   title: {
-    fontSize: 17,
-    fontWeight: '700',
-    fontFamily: 'Agency',
-    marginBottom: 6,
-    lineHeight: 22,
-    letterSpacing: -0.2,
+    ...FONT_STYLES.h4,
+    marginBottom: 4,
   },
   message: {
-    fontSize: 15,
-    fontFamily: 'Agency',
-    lineHeight: 21,
-    fontWeight: '400',
-    letterSpacing: -0.1,
-  },
-  actionsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 4,
-  },
-  actionButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderWidth: 1.5,
-    borderRadius: 10,
-    marginRight: 10,
-    // Add subtle shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
-    backgroundColor: '#ffffff',
-  },
-  actionText: {
-    fontSize: 13,
-    fontWeight: '700',
-    fontFamily: 'Agency',
-    letterSpacing: -0.1,
+    ...FONT_STYLES.body,
   },
   closeButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: 'rgba(156, 163, 175, 0.1)',
+    padding: 4,
+    borderRadius: 12,
   },
-  progressBarContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 4,
-    backgroundColor: 'rgba(0, 0, 0, 0.08)',
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
-    overflow: 'hidden',
+  actionContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    paddingTop: 0,
   },
-  progressBar: {
-    height: '100%',
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
-    // Add subtle glow effect
-    shadowColor: 'currentColor',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+  actionButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderWidth: 1.5,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  actionText: {
+    ...FONT_STYLES.button,
   },
 });

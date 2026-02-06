@@ -9,6 +9,7 @@ import {
   FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { FONT_STYLES } from '../../utils/fonts';
 
 const COUNTRY_CODES = [
   { code: '+91', country: 'India', flag: '🇮🇳', iso: 'IN' },
@@ -190,18 +191,16 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   selectedCountryCode: {
-    fontSize: 16,
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
     fontWeight: '600',
+    color: '#111827',
   },
   phoneInput: {
     flex: 1,
     paddingHorizontal: 12,
     paddingVertical: 14,
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
   },
 
   // Modal Styles
@@ -227,10 +226,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h4,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   modalCloseButton: {
     padding: 4,
@@ -251,15 +248,13 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   countryName: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 2,
   },
   countryCode: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
 });
 

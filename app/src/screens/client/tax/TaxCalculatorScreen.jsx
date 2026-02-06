@@ -5,6 +5,7 @@ import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { taxAPI } from '../../../lib/api';
+import { FONT_STYLES } from '../../../utils/fonts';
 
 export default function TaxCalculatorScreen() {
   const { openDrawer } = useDrawer();
@@ -341,18 +342,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    ...FONT_STYLES.h1,
     color: '#0f172a',
     marginBottom: 8,
-    fontFamily: 'Agency',
-    letterSpacing: -0.5,
   },
   sectionSubtitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#64748b',
-    fontFamily: 'Agency',
-    lineHeight: 24,
   },
   formCard: {
     backgroundColor: 'white',
@@ -369,20 +365,16 @@ const styles = StyleSheet.create({
     borderColor: '#f1f5f9',
   },
   formTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    ...FONT_STYLES.h3,
     color: '#0f172a',
-    fontFamily: 'Agency',
     marginBottom: 24,
   },
   inputGroup: {
     marginBottom: 20,
   },
   inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: '#374151',
-    fontFamily: 'Agency',
     marginBottom: 8,
   },
   inputContainer: {
@@ -398,9 +390,8 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#0f172a',
-    fontFamily: 'Agency',
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -423,10 +414,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   calculateButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: 'white',
-    fontFamily: 'Agency',
   },
   clearButton: {
     flex: 1,
@@ -441,10 +430,8 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
   },
   clearButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#64748b',
-    fontFamily: 'Agency',
   },
   loadingSpinner: {
     width: 20,
@@ -483,10 +470,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resultTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    ...FONT_STYLES.h3,
     color: '#0f172a',
-    fontFamily: 'Agency',
   },
   resultGrid: {
     gap: 16,
@@ -500,16 +485,13 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f1f5f9',
   },
   resultLabel: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#64748b',
-    fontFamily: 'Agency',
     flex: 1,
   },
   resultValue: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#0f172a',
-    fontFamily: 'Agency',
   },
   totalTaxItem: {
     backgroundColor: '#f8fafc',
@@ -520,17 +502,13 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   totalTaxLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#0f172a',
-    fontFamily: 'Agency',
     flex: 1,
   },
   totalTaxValue: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...FONT_STYLES.h4,
     color: '#3e60ab',
-    fontFamily: 'Agency',
   },
   finalResultItem: {
     backgroundColor: '#f0f9ff',
@@ -541,16 +519,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   finalResultLabel: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...FONT_STYLES.h5,
     color: '#0f172a',
-    fontFamily: 'Agency',
     flex: 1,
   },
   finalResultValue: {
-    fontSize: 20,
-    fontWeight: '800',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h3,
   },
   taxSlabsContainer: {
     marginTop: 24,
@@ -559,10 +533,8 @@ const styles = StyleSheet.create({
     borderTopColor: '#e2e8f0',
   },
   taxSlabsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#0f172a',
-    fontFamily: 'Agency',
     marginBottom: 16,
   },
   taxSlabItem: {
@@ -576,24 +548,19 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   taxSlabRange: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#64748b',
-    fontFamily: 'Agency',
     flex: 2,
   },
   taxSlabRate: {
-    fontSize: 12,
-    fontWeight: '600',
+    ...FONT_STYLES.labelSmall,
     color: '#0f172a',
-    fontFamily: 'Agency',
     flex: 1,
     textAlign: 'center',
   },
   taxSlabTax: {
-    fontSize: 12,
-    fontWeight: '600',
+    ...FONT_STYLES.labelSmall,
     color: '#3e60ab',
-    fontFamily: 'Agency',
     flex: 1,
     textAlign: 'right',
   },
@@ -618,10 +585,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   tipsTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...FONT_STYLES.h4,
     color: '#0f172a',
-    fontFamily: 'Agency',
   },
   tipsList: {
     gap: 12,
@@ -632,10 +597,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   tipText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#64748b',
-    fontFamily: 'Agency',
     flex: 1,
-    lineHeight: 20,
   },
 });

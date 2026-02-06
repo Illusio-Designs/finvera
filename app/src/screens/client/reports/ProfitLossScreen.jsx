@@ -8,6 +8,7 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { reportsAPI } from '../../../lib/api';
 import { formatCurrency } from '../../../utils/businessLogic';
+import { FONT_STYLES } from '../../../utils/fonts';
 
 export default function ProfitLossScreen() {
   const { openDrawer } = useDrawer();
@@ -798,10 +799,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   exportButtonText: {
+    ...FONT_STYLES.button,
     color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Agency',
   },
   refreshButton: {
     flexDirection: 'row',
@@ -815,10 +814,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   refreshButtonText: {
+    ...FONT_STYLES.button,
     color: '#3e60ab',
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Agency',
   },
 
   // Loading and Empty States - Same as LedgersScreen
@@ -829,9 +826,8 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   loadingText: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   emptyContainer: {
     flex: 1,
@@ -841,17 +837,14 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h4,
     color: '#111827',
-    fontFamily: 'Agency',
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtitle: {
-    fontSize: 14,
+    ...FONT_STYLES.body,
     color: '#6b7280',
-    fontFamily: 'Agency',
     textAlign: 'center',
   },
 
@@ -865,17 +858,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   reportTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h4,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 4,
     textAlign: 'center',
   },
   reportDate: {
-    fontSize: 13,
+    ...FONT_STYLES.bodySmall,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginBottom: 12,
   },
   reportSummary: {
@@ -884,9 +874,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   summaryText: {
-    fontSize: 13,
+    ...FONT_STYLES.bodySmall,
     color: '#374151',
-    fontFamily: 'Agency',
     textAlign: 'center',
   },
   summaryAmount: {
@@ -910,9 +899,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   scrollHintText: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
     fontStyle: 'italic',
   },
   tableScrollView: {
@@ -961,10 +949,8 @@ const styles = StyleSheet.create({
     borderLeftColor: '#d1d5db',
   },
   tableHeaderText: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    ...FONT_STYLES.label,
     color: '#374151',
-    fontFamily: 'Agency',
     textAlign: 'center',
   },
   tableBodyScrollView: {
@@ -1004,29 +990,23 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   tableCellText: {
-    fontSize: 13,
+    ...FONT_STYLES.bodySmall,
     color: '#374151',
-    fontFamily: 'Agency',
     lineHeight: 18,
   },
   tableCellAmountText: {
-    fontSize: 13,
+    ...FONT_STYLES.bodySmall,
     color: '#374151',
-    fontFamily: 'Agency',
     textAlign: 'right',
     fontWeight: '500',
   },
   totalText: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    ...FONT_STYLES.label,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   totalAmount: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    ...FONT_STYLES.label,
     color: '#111827',
-    fontFamily: 'Agency',
     textAlign: 'right',
   },
 
@@ -1040,32 +1020,27 @@ const styles = StyleSheet.create({
     borderLeftColor: '#3e60ab',
   },
   debugTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    ...FONT_STYLES.label,
     color: '#374151',
-    fontFamily: 'Agency',
     marginBottom: 8,
   },
   debugText: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
     lineHeight: 16,
     marginBottom: 4,
   },
 
   // Section and Detail Styles - Improved for Fixed Layout
   sectionLabel: {
-    fontSize: 10,
+    ...FONT_STYLES.captionSmall,
     color: '#9ca3af',
-    fontFamily: 'Agency',
     fontStyle: 'italic',
     marginTop: 2,
   },
   detailText: {
-    fontSize: 10,
+    ...FONT_STYLES.captionSmall,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginTop: 2,
     lineHeight: 12,
   },
@@ -1081,10 +1056,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sectionHeader: {
-    fontSize: 11,
-    fontWeight: 'bold',
+    ...FONT_STYLES.labelSmall,
     color: '#374151',
-    fontFamily: 'Agency',
     backgroundColor: '#e5e7eb',
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -1113,9 +1086,8 @@ const styles = StyleSheet.create({
     borderTopColor: '#e5e7eb',
   },
   summaryText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#374151',
-    fontFamily: 'Agency',
     textAlign: 'center',
   },
   summaryAmount: {

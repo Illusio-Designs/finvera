@@ -347,5 +347,62 @@ export const referralAPI = {
   getAllCodes: (params) => apiClient.get('/referrals', { params }),
 };
 
+// E-Invoice APIs
+export const eInvoiceAPI = {
+  generate: (data) => apiClient.post('/einvoice/generate', data),
+  cancel: (voucherId, data) => apiClient.delete(`/einvoice/${voucherId}`, { data }),
+  getStatus: (voucherId) => apiClient.get(`/einvoice/${voucherId}`),
+  retry: (id) => apiClient.post(`/einvoice/${id}/retry`),
+  list: (params) => apiClient.get('/einvoice', { params }),
+};
+
+// E-Way Bill APIs
+export const eWayBillAPI = {
+  generate: (data) => apiClient.post('/ewaybill/generate', data),
+  cancel: (voucherId, data) => apiClient.delete(`/ewaybill/${voucherId}`, { data }),
+  getStatus: (voucherId) => apiClient.get(`/ewaybill/${voucherId}`),
+  updateVehicle: (id, data) => apiClient.put(`/ewaybill/${id}/vehicle`, data),
+  retry: (id) => apiClient.post(`/ewaybill/${id}/retry`),
+  list: (params) => apiClient.get('/ewaybill', { params }),
+};
+
+// TDS APIs (Extended from existing taxAPI.tds)
+export const tdsAPI = {
+  // Existing TDS endpoints from taxAPI
+  list: (params) => apiClient.get('/tds', { params }),
+  calculate: (data) => apiClient.post('/tds/calculate', data),
+  generateReturn: (data) => apiClient.post('/tds/generate-return', data),
+  generateCertificate: (id) => apiClient.post(`/tds/${id}/generate-certificate`),
+  getReturnStatus: (returnId) => apiClient.get(`/tds/return-status/${returnId}`),
+  
+  // New endpoints for voucher integration
+  getDetails: (voucherId) => apiClient.get('/tds', { params: { voucher_id: voucherId } }),
+  getRates: () => apiClient.get('/tds/rates'),
+  
+  // Analytics APIs
+  createPotentialNoticeJob: (data) => apiClient.post('/tds/analytics/potential-notice', data),
+  getAnalyticsJobStatus: (jobId) => apiClient.get(`/tds/analytics/job-status/${jobId}`),
+  
+  // Calculator APIs
+  calculateNonSalary: (data) => apiClient.post('/tds/calculator/non-salary', data),
+  
+  // Compliance APIs
+  check206AB: (data) => apiClient.post('/tds/compliance/206ab', data),
+  generateCSIOTP: (data) => apiClient.post('/tds/compliance/csi-otp', data),
+  downloadCSI: (data) => apiClient.post('/tds/compliance/download-csi', data),
+  
+  // Reports APIs
+  submitTCSReport: (data) => apiClient.post('/tds/reports/tcs-report', data),
+  getTCSReportStatus: (jobId) => apiClient.get(`/tds/reports/tcs-report/${jobId}`),
+  searchTCSReports: (data) => apiClient.post('/tds/reports/search-tcs', data),
+};
+
+// Settings APIs (Company Settings)
+export const settingsAPI = {
+  getCompanySettings: () => apiClient.get('/tenants/profile'),
+  updateCompanySettings: (data) => apiClient.put('/tenants/profile', data),
+  refreshSettings: () => apiClient.get('/tenants/profile'),
+};
+
 // Legacy export for backward compatibility
 export { apiClient as api };

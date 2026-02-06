@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { inventoryAPI, gstAPI } from '../../lib/api';
 import { useNotification } from '../../contexts/NotificationContext';
+import { FONT_STYLES } from '../../utils/fonts';
 
 export default function CreateInventoryItemModal({ 
   visible, 
@@ -443,10 +444,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
   },
   title: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h4,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   closeButton: {
     padding: 4,
@@ -461,11 +460,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     fontWeight: 'bold',
     color: '#111827',
     marginBottom: 16,
-    fontFamily: 'Agency',
   },
   inputRow: {
     flexDirection: 'row',
@@ -476,21 +474,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    ...FONT_STYLES.label,
     color: '#374151',
     marginBottom: 8,
-    fontFamily: 'Agency',
   },
   input: {
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 8,
     padding: 12,
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#111827',
     backgroundColor: 'white',
-    fontFamily: 'Agency',
   },
   selectInput: {
     flexDirection: 'row',
@@ -498,9 +493,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   inputText: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   textArea: {
     height: 80,
@@ -520,16 +514,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   toggleTitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     fontWeight: '500',
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 4,
   },
   toggleSubtitle: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   toggle: {
     width: 48,
@@ -577,10 +569,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#3e60ab',
   },
   actionButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.button,
     color: 'white',
-    fontFamily: 'Agency',
   },
   modalList: {
     flex: 1,
@@ -601,9 +591,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   modalItemName: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     fontWeight: '500',
     color: '#111827',
-    fontFamily: 'Agency',
   },
 });

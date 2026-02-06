@@ -5,6 +5,7 @@ import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { voucherAPI } from '../../../lib/api';
+import { FONT_STYLES } from '../../../utils/fonts';
 
 export default function DebitNoteScreen() {
   const { openDrawer } = useDrawer();
@@ -23,11 +24,11 @@ export default function DebitNoteScreen() {
 
   const fetchDebitNotes = useCallback(async () => {
     try {
-      const response = await voucherAPI.list({ 
+      const response = await voucherAPI.list({
         voucher_type: 'debit_note',
         search: searchQuery,
         status: filter === 'all' ? undefined : filter,
-        limit: 50 
+        limit: 50
       });
       const data = response.data?.data || response.data || [];
       setDebitNotes(Array.isArray(data) ? data : []);
@@ -151,8 +152,8 @@ export default function DebitNoteScreen() {
         </View>
 
         {/* Filter Tabs */}
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.filterContainer}
         >
@@ -165,9 +166,9 @@ export default function DebitNoteScreen() {
               ]}
               onPress={() => setFilter(option.key)}
             >
-              <Ionicons 
-                name={option.icon} 
-                size={16} 
+              <Ionicons
+                name={option.icon}
+                size={16}
                 color={filter === option.key ? 'white' : '#64748b'} 
               />
               <Text style={[
@@ -256,7 +257,7 @@ export default function DebitNoteScreen() {
                         styles.debitNoteIcon,
                         { backgroundColor: getDebitNoteStatusColor(debitNote.status) + '20' }
                       ]}>
-                        <Ionicons 
+                        <Ionicons
                           name={getDebitNoteStatusIcon(debitNote.status)} 
                           size={24} 
                           color={getDebitNoteStatusColor(debitNote.status)} 
@@ -326,10 +327,12 @@ export default function DebitNoteScreen() {
                   
                   {/* Decorative elements */}
                   <View style={[
+                    styles.decorativeCircle,
                     styles.decorativeCircle, 
                     { backgroundColor: getDebitNoteStatusColor(debitNote.status) + '20' }
                   ]} />
                   <View style={[
+                    styles.decorativeLine,
                     styles.decorativeLine, 
                     { backgroundColor: getDebitNoteStatusColor(debitNote.status) }
                   ]} />
@@ -354,10 +357,10 @@ export default function DebitNoteScreen() {
                 styles.modalIcon,
                 { backgroundColor: selectedDebitNote ? getDebitNoteStatusColor(selectedDebitNote.status) + '20' : '#fee2e2' }
               ]}>
-                <Ionicons 
-                  name={selectedDebitNote ? getDebitNoteStatusIcon(selectedDebitNote.status) : 'remove-circle'} 
-                  size={20} 
-                  color={selectedDebitNote ? getDebitNoteStatusColor(selectedDebitNote.status) : '#ef4444'} 
+                <Ionicons
+                  name={selectedDebitNote ? getDebitNoteStatusIcon(selectedDebitNote.status) : 'remove-circle'}
+                  size={20}
+                  color={selectedDebitNote ? getDebitNoteStatusColor(selectedDebitNote.status) : '#ef4444'}
                 />
               </View>
               <View>
@@ -367,10 +370,10 @@ export default function DebitNoteScreen() {
                 </Text>
               </View>
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity> 
               onPress={() => setShowDetailModal(false)}
               style={styles.closeButton}
-            >
+            
               <Ionicons name="close" size={24} color="#64748b" />
             </TouchableOpacity>
           </View>
@@ -454,17 +457,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    ...FONT_STYLES.h1,
     color: '#0f172a',
     marginBottom: 8,
-    fontFamily: 'Agency',
     letterSpacing: -0.5,
   },
   sectionSubtitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#64748b',
-    fontFamily: 'Agency',
     lineHeight: 24,
   },
   searchContainer: {
@@ -489,9 +489,8 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#0f172a',
-    fontFamily: 'Agency',
   },
   filterContainer: {
     paddingHorizontal: 20,
@@ -521,10 +520,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
   },
   filterTabText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#64748b',
-    fontFamily: 'Agency',
-    fontWeight: '500',
   },
   filterTabTextActive: {
     color: 'white',
@@ -563,15 +560,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statValue: {
-    fontSize: 20,
-    fontWeight: '700',
+    ...FONT_STYLES.h3,
     color: '#0f172a',
-    fontFamily: 'Agency',
   },
   statLabel: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#64748b',
-    fontFamily: 'Agency',
     marginTop: 2,
   },
   loadingContainer: {
@@ -602,9 +596,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   loadingText: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#64748b',
-    fontFamily: 'Agency',
   },
   emptyContainer: {
     flex: 1,
@@ -631,17 +624,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   emptyTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    ...FONT_STYLES.h2,
     color: '#0f172a',
-    fontFamily: 'Agency',
     marginBottom: 8,
     textAlign: 'center',
   },
   emptySubtitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#64748b',
-    fontFamily: 'Agency',
     textAlign: 'center',
     lineHeight: 24,
   },
@@ -693,18 +683,15 @@ const styles = StyleSheet.create({
     paddingRight: 12,
   },
   debitNoteTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...FONT_STYLES.h4,
     color: '#0f172a',
-    fontFamily: 'Agency',
     marginBottom: 4,
     letterSpacing: -0.3,
     lineHeight: 22,
   },
   debitNoteDate: {
-    fontSize: 14,
+    ...FONT_STYLES.body,
     color: '#64748b',
-    fontFamily: 'Agency',
     lineHeight: 18,
   },
   debitNoteStatus: {
@@ -724,10 +711,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusText: {
-    fontSize: 10,
+    ...FONT_STYLES.captionSmall,
     fontWeight: '600',
     color: 'white',
-    fontFamily: 'Agency',
   },
   debitNoteCardBody: {
     marginBottom: 16,
@@ -740,9 +726,8 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   debitNoteDetailText: {
-    fontSize: 14,
+    ...FONT_STYLES.body,
     color: '#64748b',
-    fontFamily: 'Agency',
     flex: 1,
     lineHeight: 18,
   },
@@ -758,15 +743,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   debitNoteAmountValue: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...FONT_STYLES.h4,
     color: '#ef4444',
-    fontFamily: 'Agency',
   },
   debitNoteAmountLabel: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#64748b',
-    fontFamily: 'Agency',
     marginTop: 2,
   },
   debitNoteAction: {
@@ -828,15 +810,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...FONT_STYLES.h4,
     color: '#0f172a',
-    fontFamily: 'Agency',
   },
   modalSubtitle: {
-    fontSize: 14,
+    ...FONT_STYLES.body,
     color: '#64748b',
-    fontFamily: 'Agency',
     marginTop: 2,
   },
   closeButton: {
@@ -865,10 +844,8 @@ const styles = StyleSheet.create({
     borderColor: '#f1f5f9',
   },
   detailCardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#0f172a',
-    fontFamily: 'Agency',
     marginBottom: 16,
   },
   detailRow: {
@@ -877,23 +854,20 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   detailLabel: {
-    fontSize: 14,
+    ...FONT_STYLES.body,
     color: '#64748b',
     fontWeight: '500',
     width: 120,
-    fontFamily: 'Agency',
   },
   detailValue: {
-    fontSize: 14,
+    ...FONT_STYLES.body,
     color: '#0f172a',
     fontWeight: '600',
     flex: 1,
-    fontFamily: 'Agency',
   },
   reasonText: {
-    fontSize: 14,
+    ...FONT_STYLES.body,
     color: '#0f172a',
-    fontFamily: 'Agency',
     lineHeight: 20,
   },
 });

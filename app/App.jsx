@@ -94,6 +94,7 @@ function AppNavigator() {
     try {
       await Font.loadAsync({
         'Agency': require('./assets/fonts/agency.otf'),
+        'Agency-Bold': require('./assets/fonts/agency.otf'), // Using same file as fallback
       });
       console.log('Fonts loaded successfully');
       setFontsLoaded(true);

@@ -14,10 +14,11 @@ import { Ionicons } from '@expo/vector-icons';
 import Dropdown from '../ui/Dropdown';
 import { companyAPI } from '../../lib/api';
 import { useNotification } from '../../contexts/NotificationContext';
-import { quickNotifications } from '../../utils/notifications';
+import { quickNotifications } from '../../services/globalNotificationService';
 import { extractPANFromGSTIN, validateGSTIN, validatePAN, validateEmail, validatePhone } from '../../utils/formatters';
 import DatePicker from '../ui/ModernDatePicker';
 import PhoneInput from '../ui/PhoneInput';
+import { FONT_STYLES } from '../../utils/fonts';
 
 const { width } = Dimensions.get('window');
 
@@ -854,10 +855,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h3,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   closeButton: {
     padding: 4,
@@ -895,10 +894,8 @@ const styles = StyleSheet.create({
     borderColor: '#3e60ab',
   },
   stepNumber: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   stepNumberActive: {
     color: 'white',
@@ -920,16 +917,13 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   stepTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h2,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 8,
   },
   stepDescription: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginBottom: 24,
   },
 
@@ -962,10 +956,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   companyTypeName: {
-    fontSize: 16,
-    color: '#111827',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.h5,
     fontWeight: '500',
+    color: '#111827',
     flex: 1,
   },
 
@@ -973,11 +966,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     fontWeight: '600',
     color: '#374151',
     marginBottom: 8,
-    fontFamily: 'Agency',
   },
   input: {
     borderWidth: 1,
@@ -985,10 +977,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#111827',
     backgroundColor: 'white',
-    fontFamily: 'Agency',
   },
   inputError: {
     borderColor: '#ef4444',
@@ -1002,9 +993,8 @@ const styles = StyleSheet.create({
     top: 14,
   },
   errorText: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#ef4444',
-    fontFamily: 'Agency',
     marginTop: 4,
   },
   successIndicator: {
@@ -1014,9 +1004,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   successText: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#10b981',
-    fontFamily: 'Agency',
   },
 
   // Compliance Section
@@ -1024,10 +1013,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   complianceTitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     fontWeight: '600',
     color: '#374151',
-    fontFamily: 'Agency',
     marginBottom: 12,
   },
   checkboxRow: {
@@ -1051,9 +1039,8 @@ const styles = StyleSheet.create({
     borderColor: '#3e60ab',
   },
   checkboxLabel: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#374151',
-    fontFamily: 'Agency',
     flex: 1,
   },
 
@@ -1066,10 +1053,9 @@ const styles = StyleSheet.create({
     borderTopColor: '#e5e7eb',
   },
   sectionTitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     fontWeight: '600',
     color: '#374151',
-    fontFamily: 'Agency',
   },
   textArea: {
     height: 100,
@@ -1107,19 +1093,15 @@ const styles = StyleSheet.create({
     borderColor: '#d1d5db',
   },
   backButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.button,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   nextButton: {
     backgroundColor: '#3e60ab',
   },
   nextButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.button,
     color: 'white',
-    fontFamily: 'Agency',
   },
   disabledButton: {
     opacity: 0.6,

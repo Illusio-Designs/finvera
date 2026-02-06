@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSearch } from '../../contexts/SearchContext';
 import { useNavigation } from '@react-navigation/native';
+import { FONT_STYLES } from '../../utils/fonts';
 
 export default function SearchBar({ 
   placeholder = "Search ledgers, vouchers, inventory...", 
@@ -355,9 +356,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   searchPlaceholder: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#9ca3af',
-    fontFamily: 'Agency',
   },
 
   // Modal styles
@@ -395,10 +395,9 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     paddingVertical: 8,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   clearButton: {
     padding: 4,
@@ -408,9 +407,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   cancelButtonText: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#3e60ab',
-    fontFamily: 'Agency',
   },
   searchContent: {
     flex: 1,
@@ -421,17 +419,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h4,
     color: '#111827',
     marginTop: 20,
     marginBottom: 12,
-    fontFamily: 'Agency',
   },
   resultsSection: {
     marginBottom: 20,
@@ -455,15 +450,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   resultTitle: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     fontWeight: '600',
     color: '#111827',
-    fontFamily: 'Agency',
   },
   resultSubtitle: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginTop: 2,
   },
   recentSection: {
@@ -477,10 +470,9 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f3f4f6',
   },
   recentText: {
-    fontSize: 16,
+    ...FONT_STYLES.h5,
     color: '#374151',
     marginLeft: 12,
-    fontFamily: 'Agency',
   },
   quickActionsSection: {
     marginBottom: 20,
@@ -501,27 +493,23 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   quickActionText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#374151',
     marginTop: 8,
-    fontFamily: 'Agency',
   },
   noResultsContainer: {
     alignItems: 'center',
     paddingVertical: 40,
   },
   noResultsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h4,
     color: '#111827',
     marginTop: 16,
-    fontFamily: 'Agency',
   },
   noResultsSubtitle: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
     marginTop: 8,
     textAlign: 'center',
-    fontFamily: 'Agency',
   },
 });

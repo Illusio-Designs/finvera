@@ -8,6 +8,8 @@ import { accountingAPI, companyAPI, clientSupportAPI } from '../../../lib/api.js
 import { formatCurrency } from '../../../utils/businessLogic.js';
 import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../../components/navigation/TopBar';
+import { FONT_STYLES } from '../../../utils/fonts';
+import { SkeletonStatCard, SkeletonActivityItem, SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
 export default function DashboardScreen() {
   const navigation = useNavigation();
@@ -37,7 +39,9 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [companyName, setCompanyName] = useState('Your Business');
   const [recentTickets, setRecentTickets] = useState([]);
-  const [ticketsLoading, setTicketsLoading] = useState(false);
+  const [ticketsLoading, setTicketsLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [activityLoading, setActivityLoading] = useState(true);
   const { user } = useAuth();
 
   const handleMenuPress = () => {
@@ -51,12 +55,27 @@ export default function DashboardScreen() {
 
   const fetchDashboardData = useCallback(async () => {
     try {
+      setStatsLoading(true);
+      setActivityLoading(true);
+      
+      // Minimum display time for skeleton (3 seconds)
+      const startTime = Date.now();
+      
       const response = await accountingAPI.dashboard();
       const data = response.data?.data || response.data || {};
       setDashboardData({
         stats: data.stats || {},
         recent_activity: data.recent_activity || [],
       });
+      
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setStatsLoading(false);
+        setActivityLoading(false);
+      }, remainingTime);
     } catch (error) {
       console.error('Dashboard error:', error);
       // Use default empty data for any error
@@ -81,6 +100,12 @@ export default function DashboardScreen() {
         },
         recent_activity: [],
       });
+      
+      // Still show skeleton for 3 seconds even on error
+      setTimeout(() => {
+        setStatsLoading(false);
+        setActivityLoading(false);
+      }, 3000);
     }
   }, []);
 
@@ -107,17 +132,32 @@ export default function DashboardScreen() {
   const fetchRecentTickets = useCallback(async () => {
     try {
       setTicketsLoading(true);
+      
+      // Minimum display time for skeleton (3 seconds)
+      const startTime = Date.now();
+      
       const response = await clientSupportAPI.tickets.list({
         page: 1,
         limit: 3, // Show only 3 tickets on mobile
       });
       const data = response.data?.data || response.data || [];
       setRecentTickets(Array.isArray(data) ? data : []);
+      
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setTicketsLoading(false);
+      }, remainingTime);
     } catch (error) {
       console.error('Error fetching recent tickets:', error);
       setRecentTickets([]);
-    } finally {
-      setTicketsLoading(false);
+      
+      // Still show skeleton for 3 seconds even on error
+      setTimeout(() => {
+        setTicketsLoading(false);
+      }, 3000);
     }
   }, []);
 
@@ -240,20 +280,29 @@ export default function DashboardScreen() {
 
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
-          {statCards.map((card, index) => (
-            <TouchableOpacity key={index} style={[styles.statCard, { backgroundColor: card.bgColor }]}>
-              <View style={styles.statCardContent}>
-                <View style={styles.statCardLeft}>
-                  <Text style={styles.statCardTitle}>{card.title}</Text>
-                  <Text style={[styles.statCardValue, { color: card.color }]}>{card.value}</Text>
-                  <Text style={styles.statCardSubtitle}>{card.subtitle}</Text>
+          {statsLoading ? (
+            <>
+              <SkeletonStatCard />
+              <SkeletonStatCard />
+              <SkeletonStatCard />
+              <SkeletonStatCard />
+            </>
+          ) : (
+            statCards.map((card, index) => (
+              <TouchableOpacity key={index} style={[styles.statCard, { backgroundColor: card.bgColor }]}>
+                <View style={styles.statCardContent}>
+                  <View style={styles.statCardLeft}>
+                    <Text style={styles.statCardTitle}>{card.title}</Text>
+                    <Text style={[styles.statCardValue, { color: card.color }]}>{card.value}</Text>
+                    <Text style={styles.statCardSubtitle}>{card.subtitle}</Text>
+                  </View>
+                  <View style={[styles.statCardIcon, { backgroundColor: card.color }]}>
+                    <Ionicons name={card.icon} size={24} color="white" />
+                  </View>
                 </View>
-                <View style={[styles.statCardIcon, { backgroundColor: card.color }]}>
-                  <Ionicons name={card.icon} size={24} color="white" />
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
+              </TouchableOpacity>
+            ))
+          )}
         </View>
 
         {/* Quick Actions */}
@@ -288,8 +337,10 @@ export default function DashboardScreen() {
           </View>
           <View style={styles.supportTicketsCard}>
             {ticketsLoading ? (
-              <View style={styles.loadingContainer}>
-                <Text style={styles.loadingText}>Loading tickets...</Text>
+              <View style={styles.ticketsList}>
+                <SkeletonListItem />
+                <SkeletonListItem />
+                <SkeletonListItem />
               </View>
             ) : recentTickets.length > 0 ? (
               <View style={styles.ticketsList}>
@@ -439,16 +490,13 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   loanBannerTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h5,
     color: 'white',
-    fontFamily: 'Agency',
     marginBottom: 4,
   },
   loanBannerSubtitle: {
-    fontSize: 12,
+    ...FONT_STYLES.bodySmall,
     color: '#e0e7ff',
-    fontFamily: 'Agency',
   },
   loanBannerButton: {
     backgroundColor: 'white',
@@ -460,10 +508,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   loanBannerButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
+    ...FONT_STYLES.labelSmall,
     color: '#3e60ab',
-    fontFamily: 'Agency',
   },
   header: {
     paddingHorizontal: 20,
@@ -475,15 +521,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   welcomeText: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   companyName: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h3,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   statsGrid: {
     flexDirection: 'row',
@@ -506,21 +549,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statCardTitle: {
-    fontSize: 12,
+    ...FONT_STYLES.captionSmall,
     color: '#6b7280',
     marginBottom: 4,
-    fontFamily: 'Agency',
   },
   statCardValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h3,
     marginBottom: 2,
-    fontFamily: 'Agency',
   },
   statCardSubtitle: {
-    fontSize: 10,
+    ...FONT_STYLES.captionSmall,
     color: '#9ca3af',
-    fontFamily: 'Agency',
   },
   statCardIcon: {
     width: 40,
@@ -534,11 +573,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h3,
     color: '#111827',
     marginBottom: 16,
-    fontFamily: 'Agency',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -553,10 +590,8 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   viewAllText: {
-    fontSize: 12,
+    ...FONT_STYLES.labelSmall,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    fontWeight: '600',
   },
   quickActionsGrid: {
     flexDirection: 'row',
@@ -584,10 +619,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   quickActionText: {
-    fontSize: 12,
+    ...FONT_STYLES.labelSmall,
     color: '#374151',
     textAlign: 'center',
-    fontFamily: 'Agency',
   },
   supportTicketsCard: {
     backgroundColor: 'white',
@@ -604,9 +638,8 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   loadingText: {
-    fontSize: 14,
+    ...FONT_STYLES.body,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   ticketsList: {
     gap: 12,
@@ -638,10 +671,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   ticketNumber: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   statusBadge: {
     paddingHorizontal: 6,
@@ -649,31 +680,27 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   statusText: {
-    fontSize: 10,
+    ...FONT_STYLES.captionSmall,
     fontWeight: '600',
-    fontFamily: 'Agency',
   },
   ticketSubject: {
-    fontSize: 12,
+    ...FONT_STYLES.bodySmall,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginBottom: 2,
   },
   ticketDate: {
-    fontSize: 10,
+    ...FONT_STYLES.captionSmall,
     color: '#9ca3af',
-    fontFamily: 'Agency',
   },
   emptyTickets: {
     alignItems: 'center',
     paddingVertical: 20,
   },
   emptyTicketsText: {
-    fontSize: 14,
+    ...FONT_STYLES.body,
     color: '#9ca3af',
     marginTop: 8,
     marginBottom: 12,
-    fontFamily: 'Agency',
   },
   createTicketButton: {
     flexDirection: 'row',
@@ -685,10 +712,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   createTicketText: {
-    fontSize: 12,
+    ...FONT_STYLES.labelSmall,
     color: 'white',
-    fontWeight: '600',
-    fontFamily: 'Agency',
   },
   activityCard: {
     backgroundColor: 'white',
@@ -725,10 +750,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   activityTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   activityStatusBadge: {
     paddingHorizontal: 6,
@@ -736,36 +759,30 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   activityStatusText: {
-    fontSize: 10,
+    ...FONT_STYLES.captionSmall,
     fontWeight: '600',
-    fontFamily: 'Agency',
   },
   activitySubtitle: {
-    fontSize: 12,
+    ...FONT_STYLES.bodySmall,
     color: '#6b7280',
     marginBottom: 2,
-    fontFamily: 'Agency',
   },
   activityDate: {
-    fontSize: 10,
+    ...FONT_STYLES.captionSmall,
     color: '#9ca3af',
-    fontFamily: 'Agency',
   },
   activityAmount: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   emptyActivity: {
     alignItems: 'center',
     paddingVertical: 20,
   },
   emptyActivityText: {
-    fontSize: 14,
+    ...FONT_STYLES.body,
     color: '#9ca3af',
     marginTop: 8,
-    fontFamily: 'Agency',
   },
   bottomPadding: {
     height: 20,

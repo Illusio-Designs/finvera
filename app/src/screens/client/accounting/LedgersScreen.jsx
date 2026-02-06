@@ -8,6 +8,7 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { accountingAPI } from '../../../lib/api';
 import { formatCurrency } from '../../../utils/businessLogic';
+import { FONT_STYLES } from '../../../utils/fonts';
 
 export default function LedgersScreen() {
   const { openDrawer } = useDrawer();
@@ -649,10 +650,8 @@ const styles = StyleSheet.create({
     minWidth: 200,
   },
   createButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: 'white',
-    fontFamily: 'Agency',
     marginLeft: 8,
   },
   loadingContainer: {
@@ -662,9 +661,8 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   loadingText: {
-    fontSize: 16,
+    ...FONT_STYLES.body,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   emptyContainer: {
     flex: 1,
@@ -724,31 +722,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   ledgerName: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 4,
   },
   ledgerCode: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginBottom: 2,
   },
   ledgerGroup: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#9ca3af',
-    fontFamily: 'Agency',
   },
   ledgerAmount: {
     alignItems: 'flex-end',
   },
   ledgerBalance: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 4,
   },
   balanceTypeBadge: {
@@ -757,9 +749,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   balanceTypeText: {
-    fontSize: 10,
-    fontWeight: '600',
-    fontFamily: 'Agency',
+    ...FONT_STYLES.captionSmall,
   },
   ledgerCardActions: {
     flexDirection: 'row',
@@ -777,10 +767,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
   },
   actionButtonText: {
-    fontSize: 10,
-    fontFamily: 'Agency',
+    ...FONT_STYLES.captionSmall,
     marginLeft: 4,
-    fontWeight: '600',
   },
   // Modal Styles
   modalContainer: {
@@ -798,10 +786,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h4,
     color: '#111827',
-    fontFamily: 'Agency',
     flex: 1,
   },
   modalContent: {
@@ -828,16 +814,13 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   balanceCardLabel: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginBottom: 8,
   },
   balanceCardValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h2,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 8,
   },
   infoSection: {
@@ -851,10 +834,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   infoSectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h5,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 16,
   },
   infoGrid: {
@@ -864,15 +845,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   infoLabel: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
     marginBottom: 4,
   },
   infoValue: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#111827',
-    fontFamily: 'Agency',
   },
   modalActions: {
     flexDirection: 'row',
@@ -898,10 +877,8 @@ const styles = StyleSheet.create({
     borderColor: '#3e60ab',
   },
   modalActionText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: 'white',
-    fontFamily: 'Agency',
     marginLeft: 8,
   },
   statementContainer: {
@@ -914,17 +891,14 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   comingSoonTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    ...FONT_STYLES.h3,
     color: '#111827',
-    fontFamily: 'Agency',
     marginTop: 16,
     marginBottom: 8,
   },
   comingSoonSubtitle: {
-    fontSize: 16,
+    ...FONT_STYLES.body,
     color: '#6b7280',
-    fontFamily: 'Agency',
     textAlign: 'center',
   },
   // Date Filter Styles
@@ -950,10 +924,8 @@ const styles = StyleSheet.create({
     borderColor: '#d1d5db',
   },
   quickDateButtonText: {
-    fontSize: 12,
+    ...FONT_STYLES.labelSmall,
     color: '#6b7280',
-    fontFamily: 'Agency',
-    fontWeight: '600',
   },
   datePickersRow: {
     flexDirection: 'row',
@@ -985,10 +957,8 @@ const styles = StyleSheet.create({
     minWidth: 100,
   },
   clearButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   filterButton: {
     flexDirection: 'row',
@@ -1001,10 +971,8 @@ const styles = StyleSheet.create({
     minWidth: 120,
   },
   filterButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...FONT_STYLES.label,
     color: 'white',
-    fontFamily: 'Agency',
   },
   // Transaction Styles
   transactionsList: {
@@ -1028,20 +996,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   transactionDate: {
-    fontSize: 12,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    fontFamily: 'Agency',
   },
   transactionVoucher: {
-    fontSize: 12,
+    ...FONT_STYLES.labelSmall,
     color: '#3e60ab',
-    fontFamily: 'Agency',
-    fontWeight: '600',
   },
   transactionDescription: {
-    fontSize: 14,
+    ...FONT_STYLES.label,
     color: '#111827',
-    fontFamily: 'Agency',
     marginBottom: 8,
   },
   transactionAmounts: {
@@ -1049,15 +1013,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   debitAmount: {
-    fontSize: 12,
+    ...FONT_STYLES.labelSmall,
     color: '#dc2626',
-    fontFamily: 'Agency',
-    fontWeight: '600',
   },
   creditAmount: {
-    fontSize: 12,
+    ...FONT_STYLES.labelSmall,
     color: '#059669',
-    fontFamily: 'Agency',
-    fontWeight: '600',
   },
 });
