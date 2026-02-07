@@ -297,15 +297,51 @@ module.exports = {
 
       const vouchers = await req.tenantModels.Voucher.findAndCountAll({
         where,
-        include: [{ model: req.tenantModels.Ledger, as: 'partyLedger', attributes: ['id', 'ledger_name'] }],
+        include: [
+          { 
+            model: req.tenantModels.Ledger, 
+            as: 'partyLedger', 
+            attributes: ['id', 'ledger_name'] 
+          },
+          {
+            model: req.tenantModels.VoucherItem,
+            as: 'items',
+            attributes: ['id', 'item_description', 'item_name', 'quantity', 'rate', 'amount', 'taxable_amount', 'cgst_amount', 'sgst_amount', 'igst_amount', 'cess_amount']
+          }
+        ],
         limit: parseInt(limit, 10),
         offset,
         order: [['voucher_date', 'DESC'], ['voucher_number', 'DESC']],
       });
 
+      // Calculate subtotal and tax_amount for each voucher
+      const vouchersWithCalculations = vouchers.rows.map(voucher => {
+        const voucherData = voucher.toJSON();
+        
+        if (voucherData.items && voucherData.items.length > 0) {
+          // Calculate subtotal (sum of taxable amounts)
+          voucherData.subtotal = voucherData.items.reduce((sum, item) => {
+            return sum + parseFloat(item.taxable_amount || 0);
+          }, 0);
+          
+          // Calculate total tax (sum of all tax amounts)
+          voucherData.tax_amount = voucherData.items.reduce((sum, item) => {
+            return sum + parseFloat(item.cgst_amount || 0) + 
+                       parseFloat(item.sgst_amount || 0) + 
+                       parseFloat(item.igst_amount || 0) + 
+                       parseFloat(item.cess_amount || 0);
+          }, 0);
+        } else {
+          voucherData.subtotal = 0;
+          voucherData.tax_amount = 0;
+        }
+        
+        return voucherData;
+      });
+
       res.json({
-        data: vouchers.rows,
-        vouchers: vouchers.rows, // Keep for backward compatibility
+        data: vouchersWithCalculations,
+        vouchers: vouchersWithCalculations, // Keep for backward compatibility
         pagination: {
           total: vouchers.count,
           page: parseInt(page, 10),

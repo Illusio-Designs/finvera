@@ -92,6 +92,7 @@ import CreditNoteScreen from './src/screens/client/vouchers/CreditNoteScreen.jsx
 import CreditNoteFormScreen from './src/screens/client/vouchers/CreditNoteFormScreen.jsx';
 import PurchaseInvoiceScreen from './src/screens/client/vouchers/PurchaseInvoiceScreen.jsx';
 import SalesInvoiceScreen from './src/screens/client/vouchers/SalesInvoiceScreen.jsx';
+import CreateSalesInvoiceScreen from './src/screens/client/vouchers/CreateSalesInvoiceScreen.jsx';
 
 // Phase 5: Tools Screens
 import TallyImportScreen from './src/screens/client/tools/TallyImportScreen.jsx';
@@ -367,6 +368,7 @@ function AppNavigator() {
             <Stack.Screen name="CreditNoteForm" component={CreditNoteFormScreen} />
             <Stack.Screen name="PurchaseInvoice" component={PurchaseInvoiceScreen} />
             <Stack.Screen name="SalesInvoice" component={SalesInvoiceScreen} />
+            <Stack.Screen name="CreateSalesInvoice" component={CreateSalesInvoiceScreen} />
             
             {/* Phase 5: Tools Screens */}
             <Stack.Screen name="TallyImport" component={TallyImportScreen} />

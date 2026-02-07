@@ -28,8 +28,9 @@ export const SettingsProvider = ({ children }) => {
       const companySettings = await SettingsService.getCompanySettings();
       setSettings(companySettings);
     } catch (err) {
-      console.error('Error loading settings:', err);
-      setError(err.message || 'Failed to load settings');
+      const errorMessage = err.message || 'Failed to load company settings';
+      console.error('Settings load error:', errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -43,8 +44,9 @@ export const SettingsProvider = ({ children }) => {
       setSettings(companySettings);
       return companySettings;
     } catch (err) {
-      console.error('Error refreshing settings:', err);
-      setError(err.message || 'Failed to refresh settings');
+      const errorMessage = err.message || 'Failed to refresh company settings';
+      console.error('Settings refresh error:', errorMessage);
+      setError(errorMessage);
       throw err;
     } finally {
       setLoading(false);

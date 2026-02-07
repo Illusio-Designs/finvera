@@ -5,7 +5,7 @@ module.exports = {
     try {
       const tenant = await TenantMaster.findByPk(req.tenant_id);
       if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
-      return res.json({ success: true, data: tenant });
+      return res.json({ success: true, data: { tenant } });
     } catch (err) {
       return next(err);
     }

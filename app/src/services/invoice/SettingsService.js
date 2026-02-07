@@ -35,7 +35,7 @@ class SettingsService {
       // Fetch from backend if cache is invalid or expired
       return await this.refreshSettings();
     } catch (error) {
-      console.error('Error getting company settings:', error);
+      console.error('Failed to get company settings:', error.message || error);
       
       // Return cached settings even if expired, as fallback
       if (this.cachedSettings) {
@@ -43,7 +43,7 @@ class SettingsService {
         return this.cachedSettings;
       }
       
-      throw error;
+      throw new Error(`Unable to load company settings: ${error.message || 'Network error'}`);
     }
   }
 
@@ -56,8 +56,16 @@ class SettingsService {
       // Fetch tenant profile from backend
       const response = await tenantAPI.getProfile();
       
-      if (!response.data || !response.data.tenant) {
-        throw new Error('Invalid response from tenant API');
+      if (!response) {
+        throw new Error('No response received from server');
+      }
+
+      if (!response.data) {
+        throw new Error('Server returned empty response');
+      }
+
+      if (!response.data.tenant) {
+        throw new Error('Tenant information not found in response');
       }
 
       // Parse settings from tenant profile
@@ -72,8 +80,9 @@ class SettingsService {
       
       return settings;
     } catch (error) {
-      console.error('Error refreshing settings:', error);
-      throw error;
+      const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+      console.error('Failed to refresh settings:', errorMessage);
+      throw new Error(`Settings refresh failed: ${errorMessage}`);
     }
   }
 

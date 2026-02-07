@@ -10,7 +10,7 @@ import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 import { formatCurrency } from '../../../utils/businessLogic';
 import { useNavigation } from '@react-navigation/native';
 
-export default function SalesInvoiceScreen() {
+export default function CreateSalesInvoiceScreen() {
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
   const navigation = useNavigation();
@@ -19,7 +19,7 @@ export default function SalesInvoiceScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState(null);
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState('all'); // all, draft, posted, cancelled
 
   const handleMenuPress = () => {
     openDrawer();
@@ -31,10 +31,10 @@ export default function SalesInvoiceScreen() {
     
     try {
       const params = { 
-        voucher_type: 'sales_invoice',
         limit: 100 
       };
       
+      // Apply status filter
       if (filter === 'draft') {
         params.status = 'draft';
       } else if (filter === 'posted') {
@@ -57,10 +57,12 @@ export default function SalesInvoiceScreen() {
     } finally {
       const elapsedTime = Date.now() - startTime;
       const remainingTime = Math.max(0, 3000 - elapsedTime);
-      setTimeout(() => setLoading(false), remainingTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
     }
   }, [filter, showNotification]);
-
 
   useEffect(() => {
     fetchVouchers();
@@ -78,6 +80,7 @@ export default function SalesInvoiceScreen() {
   };
 
   const handleCreateInvoice = () => {
+    // Navigate to create screen (we'll keep the old screen for now as create screen)
     navigation.navigate('CreateSalesInvoice');
   };
 
@@ -127,13 +130,19 @@ export default function SalesInvoiceScreen() {
 
   return (
     <View style={styles.container}>
-      <TopBar title="Sales Invoices" onMenuPress={handleMenuPress} />
+      <TopBar 
+        title="Sales Invoices" 
+        onMenuPress={handleMenuPress}
+      />
       
       <ScrollView 
         style={styles.content}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
+        {/* Header Actions */}
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.createButton} onPress={handleCreateInvoice}>
             <Ionicons name="add" size={16} color="white" />
@@ -141,6 +150,7 @@ export default function SalesInvoiceScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Filter Tabs */}
         <ScrollView 
           horizontal 
           showsHorizontalScrollIndicator={false}
@@ -181,6 +191,7 @@ export default function SalesInvoiceScreen() {
           </TouchableOpacity>
         </ScrollView>
 
+        {/* Vouchers List */}
         {loading ? (
           <View style={styles.loadingContainer}>
             <SkeletonListItem />
@@ -276,7 +287,7 @@ export default function SalesInvoiceScreen() {
         )}
       </ScrollView>
 
-
+      {/* Detail Modal */}
       <Modal
         visible={showDetailModal}
         animationType="slide"
@@ -296,6 +307,7 @@ export default function SalesInvoiceScreen() {
           <ScrollView style={styles.modalContent}>
             {selectedVoucher && (
               <View style={styles.detailContainer}>
+                {/* Invoice Information */}
                 <View style={styles.infoSection}>
                   <Text style={styles.infoSectionTitle}>Invoice Information</Text>
                   <View style={styles.infoGrid}>
@@ -335,6 +347,7 @@ export default function SalesInvoiceScreen() {
                   </View>
                 </View>
 
+                {/* Items */}
                 {selectedVoucher.items && selectedVoucher.items.length > 0 && (
                   <View style={styles.infoSection}>
                     <Text style={styles.infoSectionTitle}>Items</Text>
@@ -352,6 +365,7 @@ export default function SalesInvoiceScreen() {
                   </View>
                 )}
 
+                {/* Totals */}
                 <View style={styles.infoSection}>
                   <Text style={styles.infoSectionTitle}>Summary</Text>
                   <View style={styles.totalsGrid}>
@@ -390,59 +404,291 @@ export default function SalesInvoiceScreen() {
 
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
-  content: { flex: 1 },
-  scrollContent: { paddingBottom: 100 },
-  headerActions: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 16 },
-  createButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8, backgroundColor: '#3e60ab', minWidth: 200 },
-  createButtonText: { ...FONT_STYLES.label, color: 'white', marginLeft: 8 },
-  filterTabsContainer: { paddingHorizontal: 16, paddingBottom: 16 },
-  filterTabs: { flexDirection: 'row', gap: 8, paddingRight: 16 },
-  filterTab: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8, backgroundColor: 'white', borderWidth: 1, borderColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center', minWidth: 90 },
-  filterTabActive: { backgroundColor: '#3e60ab', borderColor: '#3e60ab' },
-  filterTabText: { ...FONT_STYLES.label, color: '#6b7280' },
-  filterTabTextActive: { color: 'white' },
-  loadingContainer: { paddingHorizontal: 16 },
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60, paddingHorizontal: 32 },
-  emptyTitle: { ...FONT_STYLES.h3, color: '#111827', marginTop: 16, marginBottom: 8 },
-  emptySubtitle: { ...FONT_STYLES.body, color: '#6b7280', textAlign: 'center' },
-  vouchersList: { paddingHorizontal: 16, paddingBottom: 16 },
-  voucherCard: { backgroundColor: 'white', borderRadius: 12, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
-  voucherCardHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
-  voucherMainInfo: { flex: 1 },
-  voucherNumber: { ...FONT_STYLES.h5, color: '#111827', marginBottom: 4 },
-  voucherDate: { ...FONT_STYLES.caption, color: '#6b7280', marginBottom: 2 },
-  voucherParty: { ...FONT_STYLES.caption, color: '#9ca3af' },
-  voucherAmount: { alignItems: 'flex-end' },
-  voucherTotal: { ...FONT_STYLES.h5, color: '#111827', marginBottom: 4 },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
-  statusText: { ...FONT_STYLES.captionSmall },
-  voucherCardActions: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
-  actionButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f9fafb' },
-  actionButtonText: { ...FONT_STYLES.captionSmall, marginLeft: 4 },
-  modalContainer: { flex: 1, backgroundColor: '#f9fafb' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  modalTitle: { ...FONT_STYLES.h4, color: '#111827', flex: 1 },
-  modalContent: { flex: 1, paddingHorizontal: 20, paddingVertical: 16 },
-  detailContainer: { gap: 20 },
-  infoSection: { backgroundColor: 'white', borderRadius: 12, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
-  infoSectionTitle: { ...FONT_STYLES.h5, color: '#111827', marginBottom: 16 },
-  infoGrid: { gap: 12 },
-  infoItem: { marginBottom: 8 },
-  infoLabel: { ...FONT_STYLES.caption, color: '#6b7280', marginBottom: 4 },
-  infoValue: { ...FONT_STYLES.label, color: '#111827' },
-  itemCard: { backgroundColor: '#f9fafb', padding: 12, borderRadius: 8, marginBottom: 8 },
-  itemName: { ...FONT_STYLES.label, color: '#111827', marginBottom: 4 },
-  itemDetails: { ...FONT_STYLES.caption, color: '#6b7280' },
-  totalsGrid: { gap: 8 },
-  totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },
-  totalLabel: { ...FONT_STYLES.label, color: '#6b7280' },
-  totalValue: { ...FONT_STYLES.label, color: '#111827' },
-  grandTotalRow: { borderTopWidth: 2, borderTopColor: '#10b981', paddingTop: 8, marginTop: 4 },
-  grandTotalLabel: { ...FONT_STYLES.h5, color: '#111827' },
-  grandTotalValue: { ...FONT_STYLES.h5, color: '#10b981' },
-  modalActions: { flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 16, backgroundColor: 'white', borderTopWidth: 1, borderTopColor: '#e5e7eb', gap: 12 },
-  modalActionButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 8, backgroundColor: '#3e60ab' },
-  modalActionButtonSecondary: { backgroundColor: 'white', borderWidth: 1, borderColor: '#3e60ab' },
-  modalActionText: { ...FONT_STYLES.label, color: 'white', marginLeft: 8 },
+  container: {
+    flex: 1,
+    backgroundColor: '#f9fafb',
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 100,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  createButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#3e60ab',
+    minWidth: 200,
+  },
+  createButtonText: {
+    ...FONT_STYLES.label,
+    color: 'white',
+    marginLeft: 8,
+  },
+  filterTabsContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  filterTabs: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingRight: 16,
+  },
+  filterTab: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 90,
+  },
+  filterTabActive: {
+    backgroundColor: '#3e60ab',
+    borderColor: '#3e60ab',
+  },
+  filterTabText: {
+    ...FONT_STYLES.label,
+    color: '#6b7280',
+  },
+  filterTabTextActive: {
+    color: 'white',
+  },
+  loadingContainer: {
+    paddingHorizontal: 16,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 32,
+  },
+  emptyTitle: {
+    ...FONT_STYLES.h3,
+    color: '#111827',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    ...FONT_STYLES.body,
+    color: '#6b7280',
+    textAlign: 'center',
+  },
+  vouchersList: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  voucherCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  voucherCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  voucherMainInfo: {
+    flex: 1,
+  },
+  voucherNumber: {
+    ...FONT_STYLES.h5,
+    color: '#111827',
+    marginBottom: 4,
+  },
+  voucherDate: {
+    ...FONT_STYLES.caption,
+    color: '#6b7280',
+    marginBottom: 2,
+  },
+  voucherParty: {
+    ...FONT_STYLES.caption,
+    color: '#9ca3af',
+  },
+  voucherAmount: {
+    alignItems: 'flex-end',
+  },
+  voucherTotal: {
+    ...FONT_STYLES.h5,
+    color: '#111827',
+    marginBottom: 4,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  statusText: {
+    ...FONT_STYLES.captionSmall,
+  },
+  voucherCardActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#f9fafb',
+  },
+  actionButtonText: {
+    ...FONT_STYLES.captionSmall,
+    marginLeft: 4,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#f9fafb',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  modalTitle: {
+    ...FONT_STYLES.h4,
+    color: '#111827',
+    flex: 1,
+  },
+  modalContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  detailContainer: {
+    gap: 20,
+  },
+  infoSection: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  infoSectionTitle: {
+    ...FONT_STYLES.h5,
+    color: '#111827',
+    marginBottom: 16,
+  },
+  infoGrid: {
+    gap: 12,
+  },
+  infoItem: {
+    marginBottom: 8,
+  },
+  infoLabel: {
+    ...FONT_STYLES.caption,
+    color: '#6b7280',
+    marginBottom: 4,
+  },
+  infoValue: {
+    ...FONT_STYLES.label,
+    color: '#111827',
+  },
+  itemCard: {
+    backgroundColor: '#f9fafb',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  itemName: {
+    ...FONT_STYLES.label,
+    color: '#111827',
+    marginBottom: 4,
+  },
+  itemDetails: {
+    ...FONT_STYLES.caption,
+    color: '#6b7280',
+  },
+  totalsGrid: {
+    gap: 8,
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  totalLabel: {
+    ...FONT_STYLES.label,
+    color: '#6b7280',
+  },
+  totalValue: {
+    ...FONT_STYLES.label,
+    color: '#111827',
+  },
+  grandTotalRow: {
+    borderTopWidth: 2,
+    borderTopColor: '#10b981',
+    paddingTop: 8,
+    marginTop: 4,
+  },
+  grandTotalLabel: {
+    ...FONT_STYLES.h5,
+    color: '#111827',
+  },
+  grandTotalValue: {
+    ...FONT_STYLES.h5,
+    color: '#10b981',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: 'white',
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    gap: 12,
+  },
+  modalActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#3e60ab',
+  },
+  modalActionButtonSecondary: {
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#3e60ab',
+  },
+  modalActionText: {
+    ...FONT_STYLES.label,
+    color: 'white',
+    marginLeft: 8,
+  },
 });

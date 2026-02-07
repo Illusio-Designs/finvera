@@ -79,6 +79,16 @@ export const accountingAPI = {
     transactions: (id, params) => apiClient.get(`/accounting/ledgers/${id}/transactions`, { params }),
   },
   outstanding: (params) => apiClient.get('/accounting/outstanding', { params }),
+  // Numbering Series
+  numberingSeries: {
+    list: (params) => apiClient.get('/accounting/numbering-series', { params }),
+    create: (data) => apiClient.post('/accounting/numbering-series', data),
+    update: (id, data) => apiClient.put(`/accounting/numbering-series/${id}`, data),
+    delete: (id) => apiClient.delete(`/accounting/numbering-series/${id}`),
+    get: (id) => apiClient.get(`/accounting/numbering-series/${id}`),
+    setDefault: (id) => apiClient.post(`/accounting/numbering-series/${id}/set-default`),
+    preview: (id) => apiClient.get(`/accounting/numbering-series/${id}/preview`),
+  },
   // Tally Import
   tallyImport: {
     getTemplate: () => apiClient.get('/accounting/tally-import/template'),
@@ -106,11 +116,13 @@ export const voucherAPI = {
   get: (id) => apiClient.get(`/accounting/vouchers/${id}`),
   types: () => apiClient.get('/accounting/voucher-types'),
   salesInvoice: {
+    list: (params) => apiClient.get('/accounting/vouchers', { params: { ...params, voucher_type: 'Sales' } }),
     create: (data) => apiClient.post('/accounting/invoices/sales', data),
     update: (id, data) => apiClient.put(`/accounting/vouchers/sales-invoice/${id}`, data),
     get: (id) => apiClient.get(`/accounting/vouchers/sales-invoice/${id}`),
   },
   purchaseInvoice: {
+    list: (params) => apiClient.get('/accounting/vouchers', { params: { ...params, voucher_type: 'Purchase' } }),
     create: (data) => apiClient.post('/accounting/invoices/purchase', data),
     update: (id, data) => apiClient.put(`/accounting/vouchers/purchase-invoice/${id}`, data),
     get: (id) => apiClient.get(`/accounting/vouchers/purchase-invoice/${id}`),
