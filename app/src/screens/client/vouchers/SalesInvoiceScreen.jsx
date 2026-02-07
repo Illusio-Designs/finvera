@@ -78,7 +78,19 @@ export default function SalesInvoiceScreen() {
   };
 
   const handleCreateInvoice = () => {
-    navigation.navigate('CreateSalesInvoice');
+    console.log('🚀 Navigating to CreateSalesInvoice...');
+    console.log('📍 Navigation object:', navigation);
+    try {
+      navigation.navigate('CreateSalesInvoice');
+      console.log('✅ Navigation called successfully');
+    } catch (error) {
+      console.error('❌ Navigation error:', error);
+      showNotification({
+        type: 'error',
+        title: 'Navigation Error',
+        message: error.message || 'Failed to navigate to create screen'
+      });
+    }
   };
 
   const handleEditVoucher = (voucher) => {
