@@ -78,6 +78,9 @@ export default function LoginScreen() {
         const credentials = JSON.parse(saved);
         setSavedCredentials(credentials);
         setEmail(credentials.email || '');
+        console.log('✅ Biometric credentials found for:', credentials.email);
+      } else {
+        console.log('ℹ️  No biometric credentials saved yet');
       }
     } catch (error) {
       console.error('Error checking saved credentials:', error);
@@ -481,6 +484,26 @@ export default function LoginScreen() {
               </TouchableOpacity>
             )}
 
+            {/* Biometric Setup Message */}
+            {biometricAvailable && !savedCredentials && (
+              <View style={styles.biometricInfoContainer}>
+                <Ionicons 
+                  name={
+                    biometricType === 'facial' ? 'scan-outline' : 
+                    biometricType === 'fingerprint' ? 'finger-print-outline' :
+                    'information-circle-outline'
+                  } 
+                  size={16} 
+                  color="#6b7280" 
+                />
+                <Text style={styles.biometricInfoText}>
+                  {biometricType === 'facial' ? 'Face ID' :
+                   biometricType === 'fingerprint' ? 'Touch ID' :
+                   'Biometric'} will be available after your first login
+                </Text>
+              </View>
+            )}
+
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
               <Text style={styles.dividerText}>Or continue with</Text>
@@ -644,6 +667,24 @@ const styles = StyleSheet.create({
     color: '#3e60ab',
     textAlign: 'center',
     marginLeft: 8,
+  },
+  biometricInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    gap: 8,
+  },
+  biometricInfoText: {
+    ...FONT_STYLES.caption,
+    color: '#6b7280',
+    fontSize: 12,
+    textAlign: 'center',
+    flex: 1,
   },
   divider: {
     flexDirection: 'row',

@@ -143,16 +143,36 @@ export const AuthProvider = ({ children }) => {
       const tokenKey = buildStorageKey(STORAGE_CONFIG.AUTH_TOKEN_KEY);
       const userKey = buildStorageKey(STORAGE_CONFIG.USER_DATA_KEY);
       
+      // Only remove auth tokens, NOT biometric credentials
       await AsyncStorage.removeItem(tokenKey);
       await AsyncStorage.removeItem(userKey);
       setToken(null);
       setUser(null);
       
       if (showMessage && __DEV__) {
-        console.log('🔓 User logged out successfully');
+        console.log('🔓 User logged out successfully (biometric credentials preserved)');
       }
     } catch (error) {
       console.error('Error during logout:', error);
+    }
+  };
+
+  const clearAllData = async () => {
+    try {
+      const tokenKey = buildStorageKey(STORAGE_CONFIG.AUTH_TOKEN_KEY);
+      const userKey = buildStorageKey(STORAGE_CONFIG.USER_DATA_KEY);
+      const biometricKey = buildStorageKey('biometric_credentials');
+      
+      // Remove everything including biometric credentials
+      await AsyncStorage.multiRemove([tokenKey, userKey, biometricKey]);
+      setToken(null);
+      setUser(null);
+      
+      if (__DEV__) {
+        console.log('🗑️ All auth data cleared (including biometric credentials)');
+      }
+    } catch (error) {
+      console.error('Error clearing all data:', error);
     }
   };
 
@@ -285,6 +305,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     logout,
+    clearAllData, // New function to clear everything including biometric
     updateUser,
     updateProfile,
     uploadProfileImage,

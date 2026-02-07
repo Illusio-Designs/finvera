@@ -306,7 +306,7 @@ module.exports = {
           {
             model: req.tenantModels.VoucherItem,
             as: 'items',
-            attributes: ['id', 'item_description', 'item_name', 'quantity', 'rate', 'amount', 'taxable_amount', 'cgst_amount', 'sgst_amount', 'igst_amount', 'cess_amount']
+            attributes: ['id', 'item_description', 'quantity', 'rate', 'amount', 'hsn_sac_code', 'gst_rate', 'cgst_amount', 'sgst_amount', 'igst_amount']
           }
         ],
         limit: parseInt(limit, 10),

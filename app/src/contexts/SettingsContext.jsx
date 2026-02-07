@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import SettingsService from '../services/invoice/SettingsService';
+import { useAuth } from './AuthContext';
 
 const SettingsContext = createContext();
 
@@ -13,13 +14,21 @@ export const useSettings = () => {
 
 export const SettingsProvider = ({ children }) => {
   const [settings, setSettings] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const { isAuthenticated } = useAuth();
 
-  // Load settings on mount
+  // Load settings only when user is authenticated
   useEffect(() => {
-    loadSettings();
-  }, []);
+    if (isAuthenticated) {
+      loadSettings();
+    } else {
+      // Clear settings when user logs out
+      setSettings(null);
+      setError(null);
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
 
   const loadSettings = async () => {
     try {
@@ -31,12 +40,18 @@ export const SettingsProvider = ({ children }) => {
       const errorMessage = err.message || 'Failed to load company settings';
       console.error('Settings load error:', errorMessage);
       setError(errorMessage);
+      // Don't throw - allow app to continue without settings
     } finally {
       setLoading(false);
     }
   };
 
   const refreshSettings = async () => {
+    if (!isAuthenticated) {
+      console.warn('Cannot refresh settings: User not authenticated');
+      return null;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -47,7 +62,8 @@ export const SettingsProvider = ({ children }) => {
       const errorMessage = err.message || 'Failed to refresh company settings';
       console.error('Settings refresh error:', errorMessage);
       setError(errorMessage);
-      throw err;
+      // Don't throw - allow app to continue
+      return null;
     } finally {
       setLoading(false);
     }

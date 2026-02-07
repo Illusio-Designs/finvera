@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { View, TouchableOpacity, StyleSheet, Animated, Text } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Animated, Text, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { FONT_STYLES } from '../../utils/fonts';
@@ -58,8 +58,11 @@ export default function BottomTabBar({ currentRoute = 'Dashboard' }) {
     }
   ];
 
+  // Calculate bottom padding for iOS devices
+  const bottomPadding = Platform.OS === 'ios' ? 34 : 12;
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: bottomPadding }]}>
       <View style={styles.tabBar}>
         {tabs.map((tab, index) => (
           <AnimatedTab
@@ -151,7 +154,6 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: 'transparent',
     zIndex: 1000,
-    paddingBottom: 12,
   },
   tabBar: {
     flexDirection: 'row',
