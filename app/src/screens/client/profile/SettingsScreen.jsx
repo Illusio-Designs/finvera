@@ -229,10 +229,25 @@ export default function SettingsScreen() {
     try {
       const hasHardware = await LocalAuthentication.hasHardwareAsync();
       const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+      const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
       
       if (!hasHardware || !isEnrolled) {
         // If biometric is not available, ensure it's disabled
         setPreferences(prev => ({ ...prev, biometric: false }));
+      }
+
+      // Store biometric type for better messaging
+      if (hasHardware && isEnrolled && supportedTypes.length > 0) {
+        let biometricName = 'Biometric';
+        if (supportedTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+          biometricName = 'Face ID';
+        } else if (supportedTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+          biometricName = 'Touch ID/Fingerprint';
+        } else if (supportedTypes.includes(LocalAuthentication.AuthenticationType.IRIS)) {
+          biometricName = 'Iris';
+        }
+        // Store for use in messages
+        global.biometricName = biometricName;
       }
     } catch (error) {
       console.error('Error checking biometric availability:', error);
@@ -284,24 +299,36 @@ export default function SettingsScreen() {
             showNotification({
               type: 'error',
               title: 'Setup Required',
-              message: 'Please set up fingerprint or face ID in your device settings first'
+              message: 'Please set up Face ID, Touch ID, or fingerprint in your device settings first'
             });
             return;
           }
 
+          // Get biometric type for better messaging
+          const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
+          let biometricName = 'Biometric';
+          if (supportedTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+            biometricName = 'Face ID';
+          } else if (supportedTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+            biometricName = 'Touch ID/Fingerprint';
+          } else if (supportedTypes.includes(LocalAuthentication.AuthenticationType.IRIS)) {
+            biometricName = 'Iris';
+          }
+
           // Test biometric authentication
           const result = await LocalAuthentication.authenticateAsync({
-            promptMessage: 'Verify your identity to enable biometric login',
+            promptMessage: `Verify your identity with ${biometricName} to enable biometric login`,
             cancelLabel: 'Cancel',
             fallbackLabel: 'Use Password',
+            disableDeviceFallback: false,
           });
 
           if (result.success) {
             setPreferences(prev => ({ ...prev, biometric: true }));
             showNotification({
               type: 'success',
-              title: 'Biometric Login Enabled',
-              message: 'You can now use fingerprint or face ID to login'
+              title: `${biometricName} Login Enabled`,
+              message: `You can now use ${biometricName} to login quickly and securely`
             });
           } else {
             showNotification({
