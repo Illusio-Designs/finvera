@@ -70,6 +70,16 @@ module.exports = (sequelize) => {
       type: DataTypes.DECIMAL(15, 2),
       defaultValue: 0,
     },
+    credit_limit: {
+      type: DataTypes.DECIMAL(15, 2),
+      defaultValue: 0,
+      comment: 'Credit limit for the ledger',
+    },
+    credit_days: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      comment: 'Credit period in days',
+    },
     address: DataTypes.TEXT,
     city: DataTypes.STRING,
     state: DataTypes.STRING,
@@ -82,6 +92,26 @@ module.exports = (sequelize) => {
     pan: DataTypes.STRING,
     email: DataTypes.STRING,
     contact_number: DataTypes.STRING,
+    bank_name: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Bank name for bank ledgers',
+    },
+    bank_account_number: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      comment: 'Bank account number',
+    },
+    bank_ifsc: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      comment: 'Bank IFSC code',
+    },
+    bank_branch: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Bank branch name',
+    },
     is_default: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
@@ -156,6 +186,42 @@ module.exports = (sequelize) => {
     },
     reference_number: DataTypes.STRING,
     due_date: DataTypes.DATE,
+    // Export/Import fields
+    currency_code: {
+      type: DataTypes.STRING(3),
+      allowNull: true,
+      comment: 'Currency code for export invoices (e.g., USD, EUR)',
+    },
+    exchange_rate: {
+      type: DataTypes.DECIMAL(10, 4),
+      allowNull: true,
+      comment: 'Exchange rate for foreign currency transactions',
+    },
+    shipping_bill_number: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Shipping bill number for export invoices',
+    },
+    shipping_bill_date: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'Shipping bill date for export invoices',
+    },
+    port_of_loading: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Port of loading for export invoices',
+    },
+    destination_country: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Destination country for export invoices',
+    },
+    has_lut: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      comment: 'Whether export is under Letter of Undertaking (LUT)',
+    },
     // Delivery Challan fields
     purpose: {
       type: DataTypes.ENUM('job_work', 'stock_transfer', 'sample'),
@@ -166,6 +232,16 @@ module.exports = (sequelize) => {
       type: DataTypes.UUID,
       allowNull: true,
       comment: 'Reference to sales invoice if this voucher was converted',
+    },
+    validity_period: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      comment: 'Validity period in days for proforma invoice or quotation',
+    },
+    valid_until: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'Valid until date for proforma invoice or quotation',
     },
     // Multi-tenant, multi-company, multi-branch isolation
     tenant_id: {
@@ -199,6 +275,18 @@ module.exports = (sequelize) => {
       allowNull: false,
     },
     inventory_item_id: DataTypes.UUID,
+    barcode: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    item_code: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    item_name: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
     item_description: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -207,9 +295,25 @@ module.exports = (sequelize) => {
       type: DataTypes.DECIMAL(15, 3),
       defaultValue: 1,
     },
+    uqc: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+    },
     rate: {
       type: DataTypes.DECIMAL(15, 4),
       allowNull: false,
+    },
+    discount_percentage: {
+      type: DataTypes.DECIMAL(6, 2),
+      defaultValue: 0,
+    },
+    discount_amount: {
+      type: DataTypes.DECIMAL(15, 2),
+      defaultValue: 0,
+    },
+    taxable_amount: {
+      type: DataTypes.DECIMAL(15, 2),
+      defaultValue: 0,
     },
     amount: {
       type: DataTypes.DECIMAL(15, 2),
@@ -231,6 +335,15 @@ module.exports = (sequelize) => {
     igst_amount: {
       type: DataTypes.DECIMAL(15, 2),
       defaultValue: 0,
+    },
+    cess_amount: {
+      type: DataTypes.DECIMAL(15, 2),
+      defaultValue: 0,
+    },
+    variant_attributes: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      comment: 'Variant attributes for the item',
     },
     tenant_id: {
       type: DataTypes.STRING,
@@ -324,6 +437,31 @@ module.exports = (sequelize) => {
       type: DataTypes.DECIMAL(15, 4),
       defaultValue: 0,
     },
+    mrp: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: true,
+      comment: 'Maximum Retail Price',
+    },
+    selling_price: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: true,
+      comment: 'Default selling price',
+    },
+    purchase_price: {
+      type: DataTypes.DECIMAL(15, 2),
+      allowNull: true,
+      comment: 'Last purchase price',
+    },
+    reorder_level: {
+      type: DataTypes.DECIMAL(15, 3),
+      defaultValue: 0,
+      comment: 'Minimum stock level before reorder',
+    },
+    reorder_quantity: {
+      type: DataTypes.DECIMAL(15, 3),
+      defaultValue: 0,
+      comment: 'Quantity to reorder when stock falls below reorder level',
+    },
     is_active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
@@ -344,6 +482,16 @@ module.exports = (sequelize) => {
       allowNull: false,
     },
     warehouse_id: DataTypes.UUID,
+    from_warehouse_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      comment: 'Source warehouse for transfers',
+    },
+    to_warehouse_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      comment: 'Destination warehouse for transfers',
+    },
     voucher_id: DataTypes.UUID,
     movement_type: {
       type: DataTypes.ENUM('IN', 'OUT', 'ADJUSTMENT', 'TRANSFER'),
@@ -360,6 +508,16 @@ module.exports = (sequelize) => {
     amount: {
       type: DataTypes.DECIMAL(15, 2),
       defaultValue: 0,
+    },
+    batch_number: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      comment: 'Batch or lot number',
+    },
+    expiry_date: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'Expiry date for batch',
     },
     reference_number: DataTypes.STRING,
     narration: DataTypes.TEXT,

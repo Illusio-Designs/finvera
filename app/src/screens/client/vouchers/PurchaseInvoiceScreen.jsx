@@ -10,7 +10,8 @@ import {
   Modal,
   FlatList,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'
 import { FONT_STYLES } from '../../../utils/fonts';;
@@ -20,10 +21,18 @@ import CreateInventoryItemModal from '../../../components/modals/CreateInventory
 import ModernDatePicker from '../../../components/ui/ModernDatePicker';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useSettings } from '../../../contexts/SettingsContext';
+import { useVoucher } from '../../../contexts/VoucherContext';
 import { voucherAPI, accountingAPI, inventoryAPI } from '../../../lib/api';
 import { formatCurrency } from '../../../utils/businessLogic';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import FormSkeleton from '../../../components/ui/skeletons/FormSkeleton';
+import EInvoiceStatusCard from '../../../components/invoice/EInvoiceStatusCard';
+import EWayBillStatusCard from '../../../components/invoice/EWayBillStatusCard';
+import TDSCalculationCard from '../../../components/invoice/TDSCalculationCard';
+import EInvoiceService from '../../../services/invoice/EInvoiceService';
+import EWayBillService from '../../../services/invoice/EWayBillService';
+import TDSService from '../../../services/invoice/TDSService';
 
 // Voucher number generation
 const generateVoucherNumber = (type) => {
@@ -41,6 +50,25 @@ export default function PurchaseInvoiceScreen() {
   const { showNotification } = useNotification();
   const navigation = useNavigation();
   const route = useRoute();
+  
+  // Settings and Voucher contexts
+  const { 
+    eInvoiceEnabled, 
+    eWayBillEnabled, 
+    tdsEnabled,
+    eWayBillThreshold,
+    autoGenerateEInvoice,
+    autoGenerateEWayBill
+  } = useSettings();
+  
+  const {
+    eInvoiceStatus,
+    eWayBillStatus,
+    tdsDetails,
+    updateEInvoiceStatus,
+    updateEWayBillStatus,
+    updateTdsDetails
+  } = useVoucher();
   
   const [formData, setFormData] = useState({
     voucher_number: '',
@@ -63,6 +91,14 @@ export default function PurchaseInvoiceScreen() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
+  
+  // Feature-specific loading states
+  const [eInvoiceLoading, setEInvoiceLoading] = useState(false);
+  const [eWayBillLoading, setEWayBillLoading] = useState(false);
+  const [tdsLoading, setTdsLoading] = useState(false);
+  
+  // Saved voucher ID for post-save operations
+  const [savedVoucherId, setSavedVoucherId] = useState(null);
   
   // Debug loading state changes
   useEffect(() => {
@@ -470,14 +506,27 @@ export default function PurchaseInvoiceScreen() {
       console.log(`\n✅ API Call Successful (${endTime - startTime}ms)`);
       console.log('📥 API Response:', JSON.stringify(response.data, null, 2));
       
+      // Extract voucher ID from response
+      const voucherId = response.data?.data?.id || response.data?.id;
+      setSavedVoucherId(voucherId);
+      
       showNotification({
         type: 'success',
         title: 'Success',
         message: `Purchase invoice ${status === 'draft' ? 'saved as draft' : 'posted'} successfully`
       });
       
+      // Auto-generate e-invoice, e-way bill, and calculate TDS if enabled
+      if (status === 'posted' && voucherId) {
+        await handlePostSaveOperations(voucherId);
+      }
+      
       console.log('🎉 === PURCHASE INVOICE SAVE COMPLETED ===\n');
-      navigation.goBack();
+      
+      // Navigate back after a short delay to allow operations to complete
+      setTimeout(() => {
+        navigation.goBack();
+      }, 1500);
     } catch (error) {
       const endTime = Date.now();
       console.log(`\n❌ API Call Failed (${endTime - (Date.now() - 1000)}ms)`);
@@ -505,6 +554,404 @@ export default function PurchaseInvoiceScreen() {
       console.log('💔 === PURCHASE INVOICE SAVE FAILED ===\n');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle post-save operations (e-invoice, e-way bill, TDS)
+  const handlePostSaveOperations = async (voucherId) => {
+    console.log('\n🔄 === POST-SAVE OPERATIONS STARTED ===');
+    console.log('📋 Voucher ID:', voucherId);
+    console.log('📋 E-Invoice Enabled:', eInvoiceEnabled);
+    console.log('📋 E-Way Bill Enabled:', eWayBillEnabled);
+    console.log('📋 TDS Enabled:', tdsEnabled);
+    
+    // Auto-generate e-invoice if enabled
+    if (eInvoiceEnabled && autoGenerateEInvoice) {
+      try {
+        console.log('📄 Generating e-invoice...');
+        setEInvoiceLoading(true);
+        const eInvoiceResult = await EInvoiceService.generateEInvoice({
+          voucherId: voucherId,
+          voucherType: 'PURCHASE_INVOICE'
+        });
+        updateEInvoiceStatus(eInvoiceResult);
+        console.log('✅ E-Invoice generated successfully');
+        showNotification({
+          type: 'success',
+          title: 'E-Invoice Generated',
+          message: `IRN: ${eInvoiceResult.irn || 'Pending'}`
+        });
+      } catch (error) {
+        console.error('❌ E-Invoice generation failed:', error);
+        showNotification({
+          type: 'error',
+          title: 'E-Invoice Failed',
+          message: error.message || 'Failed to generate e-invoice'
+        });
+      } finally {
+        setEInvoiceLoading(false);
+      }
+    }
+    
+    // Auto-generate e-way bill if enabled and threshold met
+    if (eWayBillEnabled && autoGenerateEWayBill) {
+      try {
+        const meetsThreshold = await EWayBillService.checkThreshold(formData.total_amount);
+        if (meetsThreshold) {
+          console.log('🚚 Generating e-way bill...');
+          setEWayBillLoading(true);
+          const eWayBillResult = await EWayBillService.generateEWayBill({
+            voucherId: voucherId,
+            voucherType: 'PURCHASE_INVOICE',
+            amount: formData.total_amount
+          });
+          updateEWayBillStatus(eWayBillResult);
+          console.log('✅ E-Way Bill generated successfully');
+          showNotification({
+            type: 'success',
+            title: 'E-Way Bill Generated',
+            message: `EWB No: ${eWayBillResult.ewbNumber || 'Pending'}`
+          });
+        } else {
+          console.log('ℹ️ E-Way Bill not required (below threshold)');
+        }
+      } catch (error) {
+        console.error('❌ E-Way Bill generation failed:', error);
+        showNotification({
+          type: 'error',
+          title: 'E-Way Bill Failed',
+          message: error.message || 'Failed to generate e-way bill'
+        });
+      } finally {
+        setEWayBillLoading(false);
+      }
+    }
+    
+    // Calculate TDS if enabled
+    if (tdsEnabled) {
+      try {
+        console.log('🧮 Calculating TDS...');
+        setTdsLoading(true);
+        // Note: TDS calculation requires section selection, so we'll just show the card
+        // The actual calculation will happen when user selects a section
+        console.log('ℹ️ TDS card will be shown for user to select section');
+      } catch (error) {
+        console.error('❌ TDS calculation failed:', error);
+      } finally {
+        setTdsLoading(false);
+      }
+    }
+    
+    console.log('✅ === POST-SAVE OPERATIONS COMPLETED ===\n');
+  };
+
+  // E-Invoice handlers
+  const handleEInvoiceGenerate = async () => {
+    if (!savedVoucherId) {
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Please save the invoice first'
+      });
+      return;
+    }
+
+    try {
+      setEInvoiceLoading(true);
+      const result = await EInvoiceService.generateEInvoice({
+        voucherId: savedVoucherId,
+        voucherType: 'PURCHASE_INVOICE'
+      });
+      updateEInvoiceStatus(result);
+      showNotification({
+        type: 'success',
+        title: 'Success',
+        message: 'E-Invoice generated successfully'
+      });
+    } catch (error) {
+      console.error('E-Invoice generation error:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: error.message || 'Failed to generate e-invoice'
+      });
+    } finally {
+      setEInvoiceLoading(false);
+    }
+  };
+
+  const handleEInvoiceCancel = async (reason, reasonCode) => {
+    if (!savedVoucherId || !eInvoiceStatus?.irn) {
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'No e-invoice to cancel'
+      });
+      return;
+    }
+
+    try {
+      setEInvoiceLoading(true);
+      const result = await EInvoiceService.cancelEInvoice({
+        voucherId: savedVoucherId,
+        irn: eInvoiceStatus.irn,
+        reason,
+        reasonCode
+      });
+      updateEInvoiceStatus(result);
+      showNotification({
+        type: 'success',
+        title: 'Success',
+        message: 'E-Invoice cancelled successfully'
+      });
+    } catch (error) {
+      console.error('E-Invoice cancellation error:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: error.message || 'Failed to cancel e-invoice'
+      });
+    } finally {
+      setEInvoiceLoading(false);
+    }
+  };
+
+  const handleEInvoiceRetry = async () => {
+    if (!savedVoucherId) {
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Please save the invoice first'
+      });
+      return;
+    }
+
+    try {
+      setEInvoiceLoading(true);
+      const result = await EInvoiceService.retryEInvoiceGeneration(savedVoucherId);
+      updateEInvoiceStatus(result);
+      showNotification({
+        type: 'success',
+        title: 'Success',
+        message: 'E-Invoice retry successful'
+      });
+    } catch (error) {
+      console.error('E-Invoice retry error:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: error.message || 'Failed to retry e-invoice generation'
+      });
+    } finally {
+      setEInvoiceLoading(false);
+    }
+  };
+
+  // E-Way Bill handlers
+  const handleEWayBillGenerate = async (vehicleNumber, transporterId) => {
+    if (!savedVoucherId) {
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Please save the invoice first'
+      });
+      return;
+    }
+
+    try {
+      setEWayBillLoading(true);
+      const result = await EWayBillService.generateEWayBill({
+        voucherId: savedVoucherId,
+        voucherType: 'PURCHASE_INVOICE',
+        vehicleNumber,
+        transporterId,
+        amount: formData.total_amount
+      });
+      updateEWayBillStatus(result);
+      showNotification({
+        type: 'success',
+        title: 'Success',
+        message: 'E-Way Bill generated successfully'
+      });
+    } catch (error) {
+      console.error('E-Way Bill generation error:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: error.message || 'Failed to generate e-way bill'
+      });
+    } finally {
+      setEWayBillLoading(false);
+    }
+  };
+
+  const handleEWayBillCancel = async (reason, reasonCode) => {
+    if (!savedVoucherId || !eWayBillStatus?.ewbNumber) {
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'No e-way bill to cancel'
+      });
+      return;
+    }
+
+    try {
+      setEWayBillLoading(true);
+      const result = await EWayBillService.cancelEWayBill({
+        ewbNumber: eWayBillStatus.ewbNumber,
+        reason,
+        reasonCode
+      });
+      updateEWayBillStatus(result);
+      showNotification({
+        type: 'success',
+        title: 'Success',
+        message: 'E-Way Bill cancelled successfully'
+      });
+    } catch (error) {
+      console.error('E-Way Bill cancellation error:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: error.message || 'Failed to cancel e-way bill'
+      });
+    } finally {
+      setEWayBillLoading(false);
+    }
+  };
+
+  const handleEWayBillUpdateVehicle = async (vehicleNumber, reason) => {
+    if (!savedVoucherId || !eWayBillStatus?.ewbNumber) {
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'No e-way bill to update'
+      });
+      return;
+    }
+
+    try {
+      setEWayBillLoading(true);
+      const result = await EWayBillService.updateVehicleDetails({
+        ewbNumber: eWayBillStatus.ewbNumber,
+        vehicleNumber,
+        reasonCode: 'VEHICLE_CHANGE',
+        reasonRemark: reason
+      });
+      updateEWayBillStatus(result);
+      showNotification({
+        type: 'success',
+        title: 'Success',
+        message: 'Vehicle details updated successfully'
+      });
+    } catch (error) {
+      console.error('E-Way Bill vehicle update error:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: error.message || 'Failed to update vehicle details'
+      });
+    } finally {
+      setEWayBillLoading(false);
+    }
+  };
+
+  const handleEWayBillRetry = async () => {
+    if (!savedVoucherId) {
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Please save the invoice first'
+      });
+      return;
+    }
+
+    try {
+      setEWayBillLoading(true);
+      const result = await EWayBillService.retryEWayBillGeneration(savedVoucherId);
+      updateEWayBillStatus(result);
+      showNotification({
+        type: 'success',
+        title: 'Success',
+        message: 'E-Way Bill retry successful'
+      });
+    } catch (error) {
+      console.error('E-Way Bill retry error:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: error.message || 'Failed to retry e-way bill generation'
+      });
+    } finally {
+      setEWayBillLoading(false);
+    }
+  };
+
+  // TDS handlers
+  const handleTDSCalculate = async () => {
+    if (!tdsDetails?.section) {
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Please select a TDS section first'
+      });
+      return;
+    }
+
+    if (!savedVoucherId) {
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Please save the invoice first'
+      });
+      return;
+    }
+
+    try {
+      setTdsLoading(true);
+      const result = await TDSService.calculateTDS({
+        voucherId: savedVoucherId,
+        amount: formData.total_amount,
+        section: tdsDetails.section,
+        deducteeType: 'COMPANY'
+      });
+      updateTdsDetails(result);
+      showNotification({
+        type: 'success',
+        title: 'Success',
+        message: `TDS calculated: ${formatCurrency(result.amount)}`
+      });
+    } catch (error) {
+      console.error('TDS calculation error:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: error.message || 'Failed to calculate TDS'
+      });
+    } finally {
+      setTdsLoading(false);
+    }
+  };
+
+  const handleTDSSectionChange = async (section) => {
+    updateTdsDetails({ ...tdsDetails, section });
+    
+    // Auto-calculate if voucher is saved
+    if (savedVoucherId) {
+      try {
+        setTdsLoading(true);
+        const result = await TDSService.calculateTDS({
+          voucherId: savedVoucherId,
+          amount: formData.total_amount,
+          section,
+          deducteeType: 'COMPANY'
+        });
+        updateTdsDetails(result);
+      } catch (error) {
+        console.error('TDS auto-calculation error:', error);
+      } finally {
+        setTdsLoading(false);
+      }
     }
   };
 
@@ -780,6 +1227,40 @@ export default function PurchaseInvoiceScreen() {
               </View>
             </View>
           </View>
+        )}
+
+        {/* E-Invoice Status Card - Conditional */}
+        {eInvoiceEnabled && savedVoucherId && eInvoiceStatus && (
+          <EInvoiceStatusCard
+            status={eInvoiceStatus}
+            onGenerate={handleEInvoiceGenerate}
+            onCancel={handleEInvoiceCancel}
+            onRetry={handleEInvoiceRetry}
+            loading={eInvoiceLoading}
+          />
+        )}
+
+        {/* E-Way Bill Status Card - Conditional */}
+        {eWayBillEnabled && savedVoucherId && eWayBillStatus && (
+          <EWayBillStatusCard
+            status={eWayBillStatus}
+            onGenerate={handleEWayBillGenerate}
+            onCancel={handleEWayBillCancel}
+            onUpdateVehicle={handleEWayBillUpdateVehicle}
+            onRetry={handleEWayBillRetry}
+            loading={eWayBillLoading}
+          />
+        )}
+
+        {/* TDS Calculation Card - Conditional */}
+        {tdsEnabled && savedVoucherId && (
+          <TDSCalculationCard
+            tdsDetails={tdsDetails}
+            amount={formData.total_amount}
+            onSectionChange={handleTDSSectionChange}
+            onCalculate={handleTDSCalculate}
+            loading={tdsLoading}
+          />
         )}
 
         {/* Narration */}

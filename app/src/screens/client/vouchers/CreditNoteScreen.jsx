@@ -7,10 +7,12 @@ import { useNotification } from '../../../contexts/NotificationContext';
 import { voucherAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
 import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
+import { useNavigation } from '@react-navigation/native';
 
 export default function CreditNoteScreen() {
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
+  const navigation = useNavigation();
   const [creditNotes, setCreditNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -70,6 +72,10 @@ export default function CreditNoteScreen() {
     setShowDetailModal(true);
   };
 
+  const handleCreateCreditNote = () => {
+    navigation.navigate('CreditNoteForm');
+  };
+
   const handleSearch = (query) => {
     setSearchQuery(query);
   };
@@ -125,6 +131,11 @@ export default function CreditNoteScreen() {
       <TopBar 
         title="Credit Notes" 
         onMenuPress={handleMenuPress}
+        rightComponent={
+          <TouchableOpacity onPress={handleCreateCreditNote} style={styles.createButton}>
+            <Ionicons name="add-circle" size={28} color="#10b981" />
+          </TouchableOpacity>
+        }
       />
       
       <ScrollView 
@@ -873,5 +884,8 @@ const styles = StyleSheet.create({
   reasonText: {
     ...FONT_STYLES.body,
     color: '#0f172a',
+  },
+  createButton: {
+    padding: 4,
   },
 });

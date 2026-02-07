@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
@@ -11,6 +12,7 @@ import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 export default function PaymentScreen() {
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
+  const navigation = useNavigation();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -120,11 +122,20 @@ export default function PaymentScreen() {
     { key: 'draft', label: 'Draft', icon: 'document-text-outline' },
   ];
 
+  const handleCreatePayment = () => {
+    navigation.navigate('PaymentForm');
+  };
+
   return (
     <View style={styles.container}>
       <TopBar 
         title="Payment Vouchers" 
         onMenuPress={handleMenuPress}
+        rightComponent={
+          <TouchableOpacity onPress={handleCreatePayment} style={styles.createButton}>
+            <Ionicons name="add-circle" size={28} color="#10b981" />
+          </TouchableOpacity>
+        }
       />
       
       <ScrollView 
@@ -458,6 +469,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
+  },
+  createButton: {
+    padding: 4,
   },
   content: {
     flex: 1,

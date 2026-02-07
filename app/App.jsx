@@ -8,6 +8,8 @@ import { AuthProvider, useAuth } from './src/contexts/AuthContext.jsx';
 import { NotificationProvider } from './src/contexts/NotificationContext.jsx';
 import { DrawerProvider, useDrawer } from './src/contexts/DrawerContext.jsx';
 import { SubscriptionProvider } from './src/contexts/SubscriptionContext.jsx';
+import { SettingsProvider } from './src/contexts/SettingsContext.jsx';
+import { VoucherProvider } from './src/contexts/VoucherContext.jsx';
 import CustomDrawer from './src/components/navigation/CustomDrawer.jsx';
 import BottomTabBar from './src/components/navigation/BottomTabBar.jsx';
 import { navigationRef } from './src/services/navigationService';
@@ -87,6 +89,7 @@ import JournalScreen from './src/screens/client/vouchers/JournalScreen.jsx';
 import ContraScreen from './src/screens/client/vouchers/ContraScreen.jsx';
 import DebitNoteScreen from './src/screens/client/vouchers/DebitNoteScreen.jsx';
 import CreditNoteScreen from './src/screens/client/vouchers/CreditNoteScreen.jsx';
+import CreditNoteFormScreen from './src/screens/client/vouchers/CreditNoteFormScreen.jsx';
 import PurchaseInvoiceScreen from './src/screens/client/vouchers/PurchaseInvoiceScreen.jsx';
 import SalesInvoiceScreen from './src/screens/client/vouchers/SalesInvoiceScreen.jsx';
 
@@ -361,6 +364,7 @@ function AppNavigator() {
             <Stack.Screen name="Contra" component={ContraScreen} />
             <Stack.Screen name="DebitNote" component={DebitNoteScreen} />
             <Stack.Screen name="CreditNote" component={CreditNoteScreen} />
+            <Stack.Screen name="CreditNoteForm" component={CreditNoteFormScreen} />
             <Stack.Screen name="PurchaseInvoice" component={PurchaseInvoiceScreen} />
             <Stack.Screen name="SalesInvoice" component={SalesInvoiceScreen} />
             
@@ -404,9 +408,13 @@ export default function App() {
     <AuthProvider>
       <NotificationProvider>
         <SubscriptionProvider>
-          <DrawerProvider>
-            <AppNavigator />
-          </DrawerProvider>
+          <SettingsProvider>
+            <VoucherProvider>
+              <DrawerProvider>
+                <AppNavigator />
+              </DrawerProvider>
+            </VoucherProvider>
+          </SettingsProvider>
         </SubscriptionProvider>
       </NotificationProvider>
     </AuthProvider>

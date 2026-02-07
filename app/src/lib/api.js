@@ -123,6 +123,11 @@ export const voucherAPI = {
     create: (data) => apiClient.post('/accounting/vouchers/receipt', data),
     update: (id, data) => apiClient.put(`/accounting/vouchers/receipt/${id}`, data),
   },
+  creditNote: {
+    create: (data) => apiClient.post('/accounting/vouchers/credit-note', data),
+    update: (id, data) => apiClient.put(`/accounting/vouchers/credit-note/${id}`, data),
+    get: (id) => apiClient.get(`/accounting/vouchers/credit-note/${id}`),
+  },
 };
 
 // Inventory APIs

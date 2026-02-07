@@ -65,7 +65,7 @@ This implementation plan breaks down the mobile invoice system enhancement into 
     - Test validation error handling
     - _Requirements: 2.1, 2.4, 2.5, 9.1_
 
-- [ ] 4. Implement E-Way Bill Service
+- [x] 4. Implement E-Way Bill Service
   - [x] 4.1 Create EWayBillService (app/src/services/invoice/EWayBillService.js)
     - Implement generateEWayBill() method calling backend POST /ewaybill/generate
     - Implement cancelEWayBill() method calling backend DELETE /ewaybill/:voucher_id
@@ -320,8 +320,8 @@ This implementation plan breaks down the mobile invoice system enhancement into 
     - Test complete TDS calculation flow
     - _Requirements: 1.1, 2.1, 3.1, 4.1_
 
-- [ ] 16. Integrate features into Purchase Invoice screen (EXISTING SCREEN - app/src/screens/client/vouchers/PurchaseInvoiceScreen.jsx)
-  - [ ] 16.1 Update PurchaseInvoiceScreen component
+- [x] 16. Integrate features into Purchase Invoice screen (EXISTING SCREEN - app/src/screens/client/vouchers/PurchaseInvoiceScreen.jsx)
+  - [x] 16.1 Update PurchaseInvoiceScreen component
     - Apply same integration pattern as Sales Invoice
     - Add conditional rendering based on settings
     - Integrate all three feature cards after invoice summary
@@ -329,45 +329,45 @@ This implementation plan breaks down the mobile invoice system enhancement into 
     - Use existing loading state and CustomNotification
     - _Requirements: 1.1, 2.1, 3.1, 4.1_
   
-  - [ ] 16.2 Write integration tests for Purchase Invoice flow
+  - [x] 16.2 Write integration tests for Purchase Invoice flow
     - Test e-invoice generation
     - Test e-way bill generation
     - Test TDS calculation
     - _Requirements: 1.1, 2.1, 3.1, 4.1_
 
-- [ ] 17. Integrate features into Credit Note screen (EXISTING LIST SCREEN - app/src/screens/client/vouchers/CreditNoteScreen.jsx)
-  - [ ] 17.1 Create CreditNoteFormScreen component (NEW SCREEN)
+- [x] 17. Integrate features into Credit Note screen (EXISTING LIST SCREEN - app/src/screens/client/vouchers/CreditNoteScreen.jsx)
+  - [x] 17.1 Create CreditNoteFormScreen component (NEW SCREEN)
     - Create new form screen similar to SalesInvoiceScreen structure
     - Add conditional rendering based on settings
     - Integrate EInvoiceStatusCard component
     - Add navigation from CreditNoteScreen list to form
     - _Requirements: 1.1, 2.1_
   
-  - [ ] 17.2 Write integration tests for Credit Note flow
+  - [x] 17.2 Write integration tests for Credit Note flow
     - Test e-invoice generation
     - _Requirements: 1.1, 2.1_
 
-- [ ] 18. Integrate features into Debit Note screen (EXISTING LIST SCREEN - app/src/screens/client/vouchers/DebitNoteScreen.jsx)
-  - [ ] 18.1 Create DebitNoteFormScreen component (NEW SCREEN)
+- [x] 18. Integrate features into Debit Note screen (EXISTING LIST SCREEN - app/src/screens/client/vouchers/DebitNoteScreen.jsx)
+  - [x] 18.1 Create DebitNoteFormScreen component (NEW SCREEN)
     - Create new form screen similar to PurchaseInvoiceScreen structure
     - Add conditional rendering based on settings
     - Integrate EInvoiceStatusCard component
     - Add navigation from DebitNoteScreen list to form
     - _Requirements: 1.1, 2.1_
   
-  - [ ] 18.2 Write integration tests for Debit Note flow
+  - [x] 18.2 Write integration tests for Debit Note flow
     - Test e-invoice generation
     - _Requirements: 1.1, 2.1_
 
-- [ ] 19. Integrate features into Payment screen (EXISTING LIST SCREEN - app/src/screens/client/vouchers/PaymentScreen.jsx)
-  - [ ] 19.1 Create PaymentFormScreen component (NEW SCREEN)
+- [x] 19. Integrate features into Payment screen (EXISTING LIST SCREEN - app/src/screens/client/vouchers/PaymentScreen.jsx)
+  - [x] 19.1 Create PaymentFormScreen component (NEW SCREEN)
     - Create new form screen for payment voucher entry
     - Add conditional rendering for TDS (primary feature for payments)
     - Integrate TDSCalculationCard component
     - Add navigation from PaymentScreen list to form
     - _Requirements: 1.1, 4.1_
   
-  - [ ] 19.2 Write integration tests for Payment flow
+  - [x] 19.2 Write integration tests for Payment flow
     - Test TDS calculation
     - _Requirements: 1.1, 4.1_
 

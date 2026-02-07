@@ -7,10 +7,12 @@ import { useNotification } from '../../../contexts/NotificationContext';
 import { voucherAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
 import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
+import { useNavigation } from '@react-navigation/native';
 
 export default function DebitNoteScreen() {
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
+  const navigation = useNavigation();
   const [debitNotes, setDebitNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -136,10 +138,21 @@ export default function DebitNoteScreen() {
       >
         {/* Header Section */}
         <View style={styles.headerSection}>
-          <Text style={styles.sectionTitle}>Debit Notes</Text>
-          <Text style={styles.sectionSubtitle}>
-            Manage and track all debit note transactions
-          </Text>
+          <View style={styles.headerContent}>
+            <View>
+              <Text style={styles.sectionTitle}>Debit Notes</Text>
+              <Text style={styles.sectionSubtitle}>
+                Manage and track all debit note transactions
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.createButton}
+              onPress={() => navigation.navigate('DebitNoteForm')}
+            >
+              <Ionicons name="add" size={20} color="white" />
+              <Text style={styles.createButtonText}>Create</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Search Bar */}
@@ -381,10 +394,10 @@ export default function DebitNoteScreen() {
                 </Text>
               </View>
             </View>
-            <TouchableOpacity> 
+            <TouchableOpacity
               onPress={() => setShowDetailModal(false)}
               style={styles.closeButton}
-            
+            >
               <Ionicons name="close" size={24} color="#64748b" />
             </TouchableOpacity>
           </View>
@@ -466,6 +479,30 @@ const styles = StyleSheet.create({
   headerSection: {
     padding: 20,
     marginBottom: 8,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  createButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ef4444',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 6,
+    shadowColor: '#ef4444',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  createButtonText: {
+    ...FONT_STYLES.label,
+    color: 'white',
+    fontWeight: '600',
   },
   sectionTitle: {
     ...FONT_STYLES.h1,
