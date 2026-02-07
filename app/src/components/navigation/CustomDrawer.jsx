@@ -133,6 +133,7 @@ export default function CustomDrawer({ visible, onClose }) {
         { name: 'Payment Vouchers', icon: 'card-outline', color: '#3b82f6', screen: 'PaymentVouchers' },
         { name: 'Receipt Vouchers', icon: 'wallet-outline', color: '#10b981', screen: 'ReceiptVouchers' },
         { name: 'Journal Entries', icon: 'book-outline', color: '#8b5cf6', screen: 'JournalEntries' },
+        { name: 'Stock Transfers', icon: 'swap-horizontal-outline', color: '#3b82f6', screen: 'InventoryTransfer' },
       ]
     },
     {
@@ -140,8 +141,7 @@ export default function CustomDrawer({ visible, onClose }) {
       expandable: true,
       items: [
         { name: 'Inventory Items', icon: 'cube-outline', color: '#10b981', screen: 'InventoryItems' },
-        { name: 'Stock Adjustments', icon: 'swap-horizontal-outline', color: '#f59e0b', screen: 'StockAdjustments' },
-        { name: 'Stock Transfers', icon: 'arrow-forward-outline', color: '#3b82f6', screen: 'StockTransfers' },
+        { name: 'Stock Adjustments', icon: 'swap-horizontal-outline', color: '#f59e0b', screen: 'InventoryAdjustment' },
         { name: 'Warehouses', icon: 'storefront-outline', color: '#8b5cf6', screen: 'Warehouses' },
       ]
     },

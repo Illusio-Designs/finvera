@@ -4,9 +4,10 @@ import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
-import { accountingAPI } from '../../../lib/api';
+import { inventoryAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
-import FormSkeleton from '../../../components/ui/skeletons/FormSkeleton';
+import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
+import CreateStockAdjustmentModal from '../../../components/modals/CreateStockAdjustmentModal';
 
 export default function InventoryAdjustmentScreen() {
   const { openDrawer } = useDrawer();
@@ -15,7 +16,9 @@ export default function InventoryAdjustmentScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedAdjustment, setSelectedAdjustment] = useState(null);
+  const [filter, setFilter] = useState('all'); // all, increase, decrease, damage
 
   const handleMenuPress = () => {
     openDrawer();
@@ -26,8 +29,15 @@ export default function InventoryAdjustmentScreen() {
     const startTime = Date.now();
     
     try {
-      const response = await accountingAPI.stockAdjustments.list({ limit: 50 });
-      const data = response.data?.data || response.data || [];
+      const params = { limit: 100 };
+      
+      // Apply filter
+      if (filter !== 'all') {
+        params.adjustment_type = filter;
+      }
+      
+      const response = await inventoryAPI.adjustments.list(params);
+      const data = response?.data?.data || response?.data || [];
       setAdjustments(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Stock adjustments fetch error:', error);
@@ -46,11 +56,11 @@ export default function InventoryAdjustmentScreen() {
         setLoading(false);
       }, remainingTime);
     }
-  }, [showNotification]);
+  }, [filter, showNotification]);
 
   useEffect(() => {
     fetchAdjustments();
-  }, [fetchAdjustments]);
+  }, [filter]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -61,6 +71,35 @@ export default function InventoryAdjustmentScreen() {
   const handleAdjustmentPress = (adjustment) => {
     setSelectedAdjustment(adjustment);
     setShowDetailModal(true);
+  };
+
+  const handleCreateAdjustment = () => {
+    setShowCreateModal(true);
+  };
+
+  const handleCreateSuccess = () => {
+    showNotification({
+      type: 'success',
+      title: 'Success',
+      message: 'Stock adjustment created successfully'
+    });
+    fetchAdjustments();
+  };
+
+  const handleEditAdjustment = (adjustment) => {
+    showNotification({
+      type: 'info',
+      title: 'Coming Soon',
+      message: 'Edit stock adjustment feature coming soon'
+    });
+  };
+
+  const handleDeleteAdjustment = (adjustment) => {
+    showNotification({
+      type: 'info',
+      title: 'Coming Soon',
+      message: 'Delete stock adjustment feature coming soon'
+    });
   };
 
   const formatDate = (dateString) => {
@@ -109,67 +148,71 @@ export default function InventoryAdjustmentScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* Header Section */}
-        <View style={styles.headerSection}>
-          <Text style={styles.sectionTitle}>Stock Adjustments</Text>
-          <Text style={styles.sectionSubtitle}>
-            Track and manage inventory adjustments and corrections
-          </Text>
+        {/* Header Actions */}
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.createButton} onPress={handleCreateAdjustment}>
+            <Ionicons name="add" size={16} color="white" />
+            <Text style={styles.createButtonText}>New Adjustment</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Stats Cards */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <View style={[styles.statIcon, { backgroundColor: '#dbeafe' }]}>
-              <Ionicons name="swap-horizontal" size={24} color="#3e60ab" />
-            </View>
-            <View style={styles.statInfo}>
-              <Text style={styles.statValue}>{adjustments.length}</Text>
-              <Text style={styles.statLabel}>Total Adjustments</Text>
-            </View>
-          </View>
-          
-          <View style={styles.statCard}>
-            <View style={[styles.statIcon, { backgroundColor: '#d1fae5' }]}>
-              <Ionicons name="trending-up" size={24} color="#10b981" />
-            </View>
-            <View style={styles.statInfo}>
-              <Text style={styles.statValue}>
-                {adjustments.filter(adj => adj.adjustment_type === 'increase').length}
-              </Text>
-              <Text style={styles.statLabel}>Increases</Text>
-            </View>
-          </View>
-          
-          <View style={styles.statCard}>
-            <View style={[styles.statIcon, { backgroundColor: '#fee2e2' }]}>
-              <Ionicons name="trending-down" size={24} color="#ef4444" />
-            </View>
-            <View style={styles.statInfo}>
-              <Text style={styles.statValue}>
-                {adjustments.filter(adj => adj.adjustment_type === 'decrease').length}
-              </Text>
-              <Text style={styles.statLabel}>Decreases</Text>
-            </View>
-          </View>
-        </View>
+        {/* Filter Tabs */}
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterTabsContainer}
+          contentContainerStyle={styles.filterTabs}
+        >
+          <TouchableOpacity 
+            style={[styles.filterTab, filter === 'all' && styles.filterTabActive]}
+            onPress={() => setFilter('all')}
+          >
+            <Text style={[styles.filterTabText, filter === 'all' && styles.filterTabTextActive]} numberOfLines={1}>
+              All
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.filterTab, filter === 'increase' && styles.filterTabActive]}
+            onPress={() => setFilter('increase')}
+          >
+            <Text style={[styles.filterTabText, filter === 'increase' && styles.filterTabTextActive]} numberOfLines={1}>
+              Increase
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.filterTab, filter === 'decrease' && styles.filterTabActive]}
+            onPress={() => setFilter('decrease')}
+          >
+            <Text style={[styles.filterTabText, filter === 'decrease' && styles.filterTabTextActive]} numberOfLines={1}>
+              Decrease
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.filterTab, filter === 'damage' && styles.filterTabActive]}
+            onPress={() => setFilter('damage')}
+          >
+            <Text style={[styles.filterTabText, filter === 'damage' && styles.filterTabTextActive]} numberOfLines={1}>
+              Damage
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
 
         {/* Adjustments List */}
         {loading ? (
-          <View style={styles.adjustmentsList}>
-            <FormSkeleton fieldCount={5} />
+          <View style={styles.loadingContainer}>
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
           </View>
         ) : adjustments.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <View style={styles.emptyCard}>
-              <View style={styles.emptyIcon}>
-                <Ionicons name="swap-horizontal-outline" size={64} color="#94a3b8" />
-              </View>
-              <Text style={styles.emptyTitle}>No Adjustments Found</Text>
-              <Text style={styles.emptySubtitle}>
-                No stock adjustments have been recorded yet
-              </Text>
-            </View>
+            <Ionicons name="swap-horizontal-outline" size={64} color="#d1d5db" />
+            <Text style={styles.emptyTitle}>No Adjustments Found</Text>
+            <Text style={styles.emptySubtitle}>
+              Click "New Adjustment" button above to create your first stock adjustment
+            </Text>
           </View>
         ) : (
           <View style={styles.adjustmentsList}>
@@ -178,91 +221,68 @@ export default function InventoryAdjustmentScreen() {
                 key={adjustment.id || index}
                 style={styles.adjustmentCard}
                 onPress={() => handleAdjustmentPress(adjustment)}
-                activeOpacity={0.95}
               >
-                <View style={styles.adjustmentCardGradient}>
-                  <View style={styles.adjustmentCardContent}>
-                    <View style={styles.adjustmentCardHeader}>
-                      <View style={[
-                        styles.adjustmentIcon,
-                        { backgroundColor: getAdjustmentTypeColor(adjustment.adjustment_type) + '20' }
+                <View style={styles.adjustmentCardHeader}>
+                  <View style={styles.adjustmentMainInfo}>
+                    <Text style={styles.adjustmentTitle}>
+                      {adjustment.item_name || 'Stock Adjustment'}
+                    </Text>
+                    <Text style={styles.adjustmentDate}>
+                      Date: {formatDate(adjustment.adjustment_date || adjustment.created_at)}
+                    </Text>
+                    <Text style={styles.adjustmentQuantity}>
+                      Quantity: {adjustment.quantity_adjusted || 0} units
+                    </Text>
+                  </View>
+                  <View style={styles.adjustmentAmount}>
+                    <View style={[
+                      styles.typeBadge,
+                      { backgroundColor: getAdjustmentTypeColor(adjustment.adjustment_type) === '#10b981' ? '#ecfdf5' : 
+                                        getAdjustmentTypeColor(adjustment.adjustment_type) === '#ef4444' ? '#fef2f2' : '#fef3c7' }
+                    ]}>
+                      <Text style={[
+                        styles.typeText,
+                        { color: getAdjustmentTypeColor(adjustment.adjustment_type) }
                       ]}>
-                        <Ionicons 
-                          name={getAdjustmentTypeIcon(adjustment.adjustment_type)} 
-                          size={24} 
-                          color={getAdjustmentTypeColor(adjustment.adjustment_type)} 
-                        />
-                      </View>
-                      <View style={styles.adjustmentInfo}>
-                        <Text style={styles.adjustmentTitle}>
-                          {adjustment.item_name || 'Stock Adjustment'}
-                        </Text>
-                        <Text style={styles.adjustmentDate}>
-                          {formatDate(adjustment.adjustment_date || adjustment.created_at)}
-                        </Text>
-                      </View>
-                      <View style={styles.adjustmentStatus}>
-                        <View style={[
-                          styles.typeBadge,
-                          { backgroundColor: getAdjustmentTypeColor(adjustment.adjustment_type) }
-                        ]}>
-                          <Text style={styles.typeText}>
-                            {adjustment.adjustment_type?.toUpperCase() || 'ADJUSTMENT'}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                    
-                    <View style={styles.adjustmentCardBody}>
-                      <View style={styles.adjustmentDetail}>
-                        <Ionicons name="cube-outline" size={16} color="#64748b" />
-                        <Text style={styles.adjustmentDetailText}>
-                          Item: {adjustment.item_code || 'N/A'}
-                        </Text>
-                      </View>
-                      <View style={styles.adjustmentDetail}>
-                        <Ionicons name="layers-outline" size={16} color="#64748b" />
-                        <Text style={styles.adjustmentDetailText}>
-                          Quantity: {adjustment.quantity_adjusted || 0} units
-                        </Text>
-                      </View>
-                      <View style={styles.adjustmentDetail}>
-                        <Ionicons name="storefront-outline" size={16} color="#64748b" />
-                        <Text style={styles.adjustmentDetailText}>
-                          Warehouse: {adjustment.warehouse_name || 'N/A'}
-                        </Text>
-                      </View>
-                      {adjustment.reason && (
-                        <View style={styles.adjustmentDetail}>
-                          <Ionicons name="document-text-outline" size={16} color="#64748b" />
-                          <Text style={styles.adjustmentDetailText} numberOfLines={1}>
-                            Reason: {adjustment.reason}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-
-                    <View style={styles.adjustmentCardFooter}>
-                      <View style={styles.adjustmentMeta}>
-                        <Text style={styles.adjustmentReference}>
-                          Ref: {adjustment.reference_number || `ADJ-${adjustment.id}`}
-                        </Text>
-                      </View>
-                      <TouchableOpacity style={styles.adjustmentAction}>
-                        <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
-                      </TouchableOpacity>
+                        {adjustment.adjustment_type?.toUpperCase() || 'ADJUSTMENT'}
+                      </Text>
                     </View>
                   </View>
+                </View>
+                
+                <View style={styles.adjustmentCardActions}>
+                  <TouchableOpacity 
+                    style={styles.actionButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleAdjustmentPress(adjustment);
+                    }}
+                  >
+                    <Ionicons name="eye-outline" size={16} color="#3e60ab" />
+                    <Text style={styles.actionButtonText}>View</Text>
+                  </TouchableOpacity>
                   
-                  {/* Decorative elements */}
-                  <View style={[
-                    styles.decorativeCircle, 
-                    { backgroundColor: getAdjustmentTypeColor(adjustment.adjustment_type) + '20' }
-                  ]} />
-                  <View style={[
-                    styles.decorativeLine, 
-                    { backgroundColor: getAdjustmentTypeColor(adjustment.adjustment_type) }
-                  ]} />
+                  <TouchableOpacity 
+                    style={styles.actionButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleEditAdjustment(adjustment);
+                    }}
+                  >
+                    <Ionicons name="create-outline" size={16} color="#059669" />
+                    <Text style={styles.actionButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.actionButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleDeleteAdjustment(adjustment);
+                    }}
+                  >
+                    <Ionicons name="trash-outline" size={16} color="#dc2626" />
+                    <Text style={styles.actionButtonText}>Delete</Text>
+                  </TouchableOpacity>
                 </View>
               </TouchableOpacity>
             ))}
@@ -279,94 +299,100 @@ export default function InventoryAdjustmentScreen() {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <View style={styles.modalHeaderContent}>
-              <View style={[
-                styles.modalIcon,
-                { backgroundColor: selectedAdjustment ? getAdjustmentTypeColor(selectedAdjustment.adjustment_type) + '20' : '#dbeafe' }
-              ]}>
-                <Ionicons 
-                  name={selectedAdjustment ? getAdjustmentTypeIcon(selectedAdjustment.adjustment_type) : 'swap-horizontal'} 
-                  size={20} 
-                  color={selectedAdjustment ? getAdjustmentTypeColor(selectedAdjustment.adjustment_type) : '#3e60ab'} 
-                />
-              </View>
-              <View>
-                <Text style={styles.modalTitle}>Adjustment Details</Text>
-                <Text style={styles.modalSubtitle}>
-                  {selectedAdjustment?.item_name || 'Stock Adjustment'}
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity 
-              onPress={() => setShowDetailModal(false)}
-              style={styles.closeButton}
-            >
-              <Ionicons name="close" size={24} color="#64748b" />
+            <Text style={styles.modalTitle}>
+              {selectedAdjustment?.item_name || 'Adjustment Details'}
+            </Text>
+            <TouchableOpacity onPress={() => setShowDetailModal(false)}>
+              <Ionicons name="close" size={24} color="#6b7280" />
             </TouchableOpacity>
           </View>
           
-          {selectedAdjustment && (
-            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
-              <View style={styles.detailCard}>
-                <Text style={styles.detailCardTitle}>Adjustment Information</Text>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Reference:</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedAdjustment.reference_number || `ADJ-${selectedAdjustment.id}`}
-                  </Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Type:</Text>
-                  <View style={[
-                    styles.typeBadge,
-                    { backgroundColor: getAdjustmentTypeColor(selectedAdjustment.adjustment_type) }
-                  ]}>
-                    <Text style={styles.typeText}>
-                      {selectedAdjustment.adjustment_type?.toUpperCase() || 'ADJUSTMENT'}
-                    </Text>
+          <ScrollView style={styles.modalContent}>
+            {selectedAdjustment && (
+              <View style={styles.detailContainer}>
+                {/* Adjustment Information */}
+                <View style={styles.infoSection}>
+                  <Text style={styles.infoSectionTitle}>Adjustment Information</Text>
+                  <View style={styles.infoGrid}>
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>Reference</Text>
+                      <Text style={styles.infoValue}>
+                        {selectedAdjustment.reference_number || `ADJ-${selectedAdjustment.id}`}
+                      </Text>
+                    </View>
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>Date</Text>
+                      <Text style={styles.infoValue}>
+                        {formatDate(selectedAdjustment.adjustment_date || selectedAdjustment.created_at)}
+                      </Text>
+                    </View>
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>Type</Text>
+                      <View style={[
+                        styles.typeBadge,
+                        { backgroundColor: getAdjustmentTypeColor(selectedAdjustment.adjustment_type) === '#10b981' ? '#ecfdf5' : 
+                                          getAdjustmentTypeColor(selectedAdjustment.adjustment_type) === '#ef4444' ? '#fef2f2' : '#fef3c7' }
+                      ]}>
+                        <Text style={[
+                          styles.typeText,
+                          { color: getAdjustmentTypeColor(selectedAdjustment.adjustment_type) }
+                        ]}>
+                          {selectedAdjustment.adjustment_type?.toUpperCase() || 'ADJUSTMENT'}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>Item Name</Text>
+                      <Text style={styles.infoValue}>{selectedAdjustment.item_name || 'N/A'}</Text>
+                    </View>
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>Item Code</Text>
+                      <Text style={styles.infoValue}>{selectedAdjustment.item_code || 'N/A'}</Text>
+                    </View>
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>Warehouse</Text>
+                      <Text style={styles.infoValue}>{selectedAdjustment.warehouse_name || 'N/A'}</Text>
+                    </View>
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>Quantity Adjusted</Text>
+                      <Text style={styles.infoValue}>{selectedAdjustment.quantity_adjusted || 0} units</Text>
+                    </View>
+                    {selectedAdjustment.reason && (
+                      <View style={styles.infoItem}>
+                        <Text style={styles.infoLabel}>Reason</Text>
+                        <Text style={styles.infoValue}>{selectedAdjustment.reason}</Text>
+                      </View>
+                    )}
+                    {selectedAdjustment.notes && (
+                      <View style={styles.infoItem}>
+                        <Text style={styles.infoLabel}>Notes</Text>
+                        <Text style={styles.infoValue}>{selectedAdjustment.notes}</Text>
+                      </View>
+                    )}
                   </View>
                 </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Date:</Text>
-                  <Text style={styles.detailValue}>
-                    {formatDate(selectedAdjustment.adjustment_date || selectedAdjustment.created_at)}
-                  </Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Item Name:</Text>
-                  <Text style={styles.detailValue}>{selectedAdjustment.item_name || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Item Code:</Text>
-                  <Text style={styles.detailValue}>{selectedAdjustment.item_code || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Warehouse:</Text>
-                  <Text style={styles.detailValue}>{selectedAdjustment.warehouse_name || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Quantity Adjusted:</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedAdjustment.quantity_adjusted || 0} units
-                  </Text>
-                </View>
-                {selectedAdjustment.reason && (
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Reason:</Text>
-                    <Text style={styles.detailValue}>{selectedAdjustment.reason}</Text>
-                  </View>
-                )}
-                {selectedAdjustment.notes && (
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Notes:</Text>
-                    <Text style={styles.detailValue}>{selectedAdjustment.notes}</Text>
-                  </View>
-                )}
               </View>
-            </ScrollView>
-          )}
+            )}
+          </ScrollView>
+          
+          <View style={styles.modalActions}>
+            <TouchableOpacity 
+              style={[styles.modalActionButton, styles.modalActionButtonSecondary]}
+              onPress={() => setShowDetailModal(false)}
+            >
+              <Ionicons name="close" size={16} color="#3e60ab" />
+              <Text style={[styles.modalActionText, { color: '#3e60ab' }]}>Close</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
+
+      {/* Create Stock Adjustment Modal */}
+      <CreateStockAdjustmentModal
+        visible={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={handleCreateSuccess}
+      />
     </View>
   );
 }
@@ -374,7 +400,7 @@ export default function InventoryAdjustmentScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#f9fafb',
   },
   content: {
     flex: 1,
@@ -382,351 +408,233 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 100,
   },
-  headerSection: {
-    padding: 20,
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    ...FONT_STYLES.h1,
-    color: '#0f172a',
-    marginBottom: 8,
-  },
-  sectionSubtitle: {
-    ...FONT_STYLES.h5,
-    color: '#64748b',
-  },
-  statsContainer: {
+  headerActions: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginBottom: 24,
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-    gap: 12,
-  },
-  statIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
-  statInfo: {
-    flex: 1,
+  createButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#3e60ab',
+    minWidth: 200,
   },
-  statValue: {
-    ...FONT_STYLES.h3,
-    color: '#0f172a',
+  createButtonText: {
+    ...FONT_STYLES.label,
+    color: 'white',
+    marginLeft: 8,
   },
-  statLabel: {
-    ...FONT_STYLES.caption,
-    color: '#64748b',
-    marginTop: 2,
+  filterTabsContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  filterTabs: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingRight: 16,
+  },
+  filterTab: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 90,
+  },
+  filterTabActive: {
+    backgroundColor: '#3e60ab',
+    borderColor: '#3e60ab',
+  },
+  filterTabText: {
+    ...FONT_STYLES.label,
+    color: '#6b7280',
+    whiteSpace: 'nowrap',
+  },
+  filterTabTextActive: {
+    color: 'white',
   },
   loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  loadingCard: {
-    backgroundColor: 'white',
-    paddingHorizontal: 32,
-    paddingVertical: 24,
-    borderRadius: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  spinner: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 3,
-    borderColor: '#e2e8f0',
-    borderTopColor: '#3e60ab',
-    marginBottom: 12,
-  },
-  loadingText: {
-    ...FONT_STYLES.h5,
-    color: '#64748b',
+    paddingHorizontal: 16,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 40,
-  },
-  emptyCard: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 32,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-    width: '100%',
-  },
-  emptyIcon: {
-    marginBottom: 20,
+    paddingVertical: 60,
+    paddingHorizontal: 32,
   },
   emptyTitle: {
     ...FONT_STYLES.h3,
-    color: '#0f172a',
+    color: '#111827',
+    marginTop: 16,
     marginBottom: 8,
-    textAlign: 'center',
   },
   emptySubtitle: {
-    ...FONT_STYLES.h5,
-    color: '#64748b',
+    ...FONT_STYLES.body,
+    color: '#6b7280',
     textAlign: 'center',
+    marginBottom: 24,
   },
   adjustmentsList: {
-    paddingHorizontal: 20,
-    gap: 16,
-    marginBottom: 24,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
   adjustmentCard: {
     backgroundColor: 'white',
-    borderRadius: 20,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-    overflow: 'hidden',
-  },
-  adjustmentCardGradient: {
-    position: 'relative',
-    padding: 20,
-  },
-  adjustmentCardContent: {
-    position: 'relative',
-    zIndex: 2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   adjustmentCardHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  adjustmentIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  adjustmentInfo: {
+  adjustmentMainInfo: {
     flex: 1,
-    paddingRight: 12,
   },
   adjustmentTitle: {
-    ...FONT_STYLES.h4,
-    color: '#0f172a',
+    ...FONT_STYLES.h5,
+    color: '#111827',
     marginBottom: 4,
-    letterSpacing: -0.3,
-    lineHeight: 22,
   },
   adjustmentDate: {
-    ...FONT_STYLES.label,
-    color: '#64748b',
-    lineHeight: 18,
+    ...FONT_STYLES.caption,
+    color: '#6b7280',
+    marginBottom: 2,
   },
-  adjustmentStatus: {
+  adjustmentQuantity: {
+    ...FONT_STYLES.caption,
+    color: '#9ca3af',
+  },
+  adjustmentAmount: {
     alignItems: 'flex-end',
-    minWidth: 90,
   },
   typeBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    minWidth: 80,
-    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   typeText: {
     ...FONT_STYLES.captionSmall,
-    fontWeight: '600',
-    color: 'white',
   },
-  adjustmentCardBody: {
-    marginBottom: 16,
-    gap: 8,
-  },
-  adjustmentDetail: {
+  adjustmentCardActions: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 2,
-  },
-  adjustmentDetailText: {
-    ...FONT_STYLES.label,
-    color: '#64748b',
-    flex: 1,
-    lineHeight: 18,
-  },
-  adjustmentCardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 16,
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: '#f3f4f6',
   },
-  adjustmentMeta: {
-    flex: 1,
-  },
-  adjustmentReference: {
-    ...FONT_STYLES.caption,
-    fontWeight: '600',
-    color: '#3e60ab',
-  },
-  adjustmentAction: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#f8fafc',
-    justifyContent: 'center',
+  actionButton: {
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#f9fafb',
   },
-  decorativeCircle: {
-    position: 'absolute',
-    top: -20,
-    right: -20,
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    opacity: 0.1,
-    zIndex: 1,
-  },
-  decorativeLine: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 4,
-    opacity: 0.3,
-    zIndex: 1,
+  actionButtonText: {
+    ...FONT_STYLES.captionSmall,
+    marginLeft: 4,
   },
   // Modal Styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#f9fafb',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  modalHeaderContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  modalIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderBottomColor: '#e5e7eb',
   },
   modalTitle: {
     ...FONT_STYLES.h4,
-    color: '#0f172a',
-  },
-  modalSubtitle: {
-    ...FONT_STYLES.label,
-    color: '#64748b',
-    marginTop: 2,
-  },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#f8fafc',
-    justifyContent: 'center',
-    alignItems: 'center',
+    color: '#111827',
+    flex: 1,
   },
   modalContent: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
-  detailCard: {
+  detailContainer: {
+    gap: 20,
+  },
+  infoSection: {
     backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+    borderRadius: 12,
+    padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  detailCardTitle: {
+  infoSectionTitle: {
     ...FONT_STYLES.h5,
-    fontWeight: '600',
-    color: '#0f172a',
+    color: '#111827',
     marginBottom: 16,
   },
-  detailRow: {
+  infoGrid: {
+    gap: 12,
+  },
+  infoItem: {
+    marginBottom: 8,
+  },
+  infoLabel: {
+    ...FONT_STYLES.caption,
+    color: '#6b7280',
+    marginBottom: 4,
+  },
+  infoValue: {
+    ...FONT_STYLES.label,
+    color: '#111827',
+  },
+  modalActions: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: 'white',
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    gap: 12,
   },
-  detailLabel: {
-    ...FONT_STYLES.label,
-    color: '#64748b',
-    fontWeight: '500',
-    width: 120,
-  },
-  detailValue: {
-    ...FONT_STYLES.label,
-    color: '#0f172a',
-    fontWeight: '600',
+  modalActionButton: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#3e60ab',
+  },
+  modalActionButtonSecondary: {
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#3e60ab',
+  },
+  modalActionText: {
+    ...FONT_STYLES.label,
+    color: 'white',
+    marginLeft: 8,
   },
 });

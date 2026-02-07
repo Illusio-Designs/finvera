@@ -15,7 +15,7 @@ export default function DrawerContent() {
     { label: 'Companies', icon: 'business-outline', screen: 'Companies' },
     { label: 'Branches', icon: 'git-branch-outline', screen: 'Branches' },
     { label: 'Ledgers', icon: 'folder-outline', screen: 'Ledgers' },
-    { label: 'Inventory', icon: 'cube-outline', screen: 'Inventory' },
+    { label: 'Inventory Items', icon: 'cube-outline', screen: 'InventoryItems' },
     { label: 'Vouchers', icon: 'document-text-outline', screen: 'Vouchers' },
     { label: 'Reports', icon: 'bar-chart-outline', screen: 'Reports' },
     { label: 'GST Management', icon: 'receipt-outline', screen: 'GST' },
