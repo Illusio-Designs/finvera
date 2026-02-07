@@ -6,6 +6,7 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { accountingAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
+import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
 export default function WarehousesScreen() {
   const { openDrawer } = useDrawer();
@@ -21,6 +22,9 @@ export default function WarehousesScreen() {
   };
 
   const fetchWarehouses = useCallback(async () => {
+    setLoading(true);
+    const startTime = Date.now();
+    
     try {
       const response = await accountingAPI.warehouses.list({ limit: 50 });
       const data = response.data?.data || response.data || [];
@@ -34,7 +38,13 @@ export default function WarehousesScreen() {
       });
       setWarehouses([]);
     } finally {
-      setLoading(false);
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
     }
   }, [showNotification]);
 
@@ -136,11 +146,12 @@ export default function WarehousesScreen() {
 
         {/* Warehouses List */}
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <View style={styles.loadingCard}>
-              <View style={styles.spinner} />
-              <Text style={styles.loadingText}>Loading warehouses...</Text>
-            </View>
+          <View style={styles.warehousesList}>
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
           </View>
         ) : warehouses.length === 0 ? (
           <View style={styles.emptyContainer}>

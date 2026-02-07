@@ -230,7 +230,8 @@ export default function LoginScreen() {
   const handleGoogleLogin = async () => {
     try {
       const apiUrl = API_CONFIG.BASE_URL;
-      const googleAuthUrl = `${apiUrl}/auth/google`;
+      // Add state=mobile parameter to indicate this is a mobile request
+      const googleAuthUrl = `${apiUrl}/api/auth/google?state=mobile`;
       
       // Open Google OAuth in browser
       const supported = await Linking.canOpenURL(googleAuthUrl);
@@ -280,19 +281,6 @@ export default function LoginScreen() {
     await completeLogin(authenticatedUser.id, company.id, email, password);
   };
 
-  const clearBiometricCredentials = async () => {
-    try {
-      const credentialsKey = buildStorageKey('biometric_credentials');
-      await AsyncStorage.removeItem(credentialsKey);
-      setSavedCredentials(null);
-      setEmail('');
-      showSuccess('Cleared', 'Biometric credentials cleared successfully');
-    } catch (error) {
-      console.error('Error clearing biometric credentials:', error);
-      showError('Error', 'Failed to clear biometric credentials');
-    }
-  };
-
   const handleBackToLogin = () => {
     setShowCompanySelection(false);
     setUserCompanies([]);
@@ -323,26 +311,6 @@ export default function LoginScreen() {
         </View>
         <Text style={styles.appName}>Finvera</Text>
         <Text style={styles.tagline}>Simplify Your Business</Text>
-        
-        {/* Biometric Settings */}
-        {savedCredentials && (
-          <TouchableOpacity 
-            style={styles.clearBiometricButton}
-            onPress={() => {
-              Alert.alert(
-                'Clear Biometric Login',
-                'Are you sure you want to clear saved biometric credentials?',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Clear', style: 'destructive', onPress: clearBiometricCredentials }
-                ]
-              );
-            }}
-          >
-            <Ionicons name="settings-outline" size={16} color="#6b7280" />
-            <Text style={styles.clearBiometricText}>Clear Biometric</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
       {/* Conditional Content */}
@@ -537,20 +505,6 @@ const styles = StyleSheet.create({
   tagline: {
     ...FONT_STYLES.body,
     color: '#6b7280',
-  },
-  clearBiometricButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: 'rgba(107, 114, 128, 0.1)',
-  },
-  clearBiometricText: {
-    ...FONT_STYLES.caption,
-    color: '#6b7280',
-    marginLeft: 4,
   },
   formContainer: {
     flex: 1,

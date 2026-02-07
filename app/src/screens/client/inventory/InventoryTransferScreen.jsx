@@ -6,6 +6,7 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { accountingAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
+import FormSkeleton from '../../../components/ui/skeletons/FormSkeleton';
 
 export default function InventoryTransferScreen() {
   const { openDrawer } = useDrawer();
@@ -21,6 +22,9 @@ export default function InventoryTransferScreen() {
   };
 
   const fetchTransfers = useCallback(async () => {
+    setLoading(true);
+    const startTime = Date.now();
+    
     try {
       const response = await accountingAPI.inventory.transfers.list({ limit: 50 }).catch(error => {
         console.error('Stock transfers API error:', error);
@@ -39,7 +43,13 @@ export default function InventoryTransferScreen() {
       });
       setTransfers([]);
     } finally {
-      setLoading(false);
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
     }
   }, []); // Removed showNotification from dependencies
 
@@ -151,11 +161,8 @@ export default function InventoryTransferScreen() {
 
         {/* Transfers List */}
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <View style={styles.loadingCard}>
-              <View style={styles.spinner} />
-              <Text style={styles.loadingText}>Loading transfers...</Text>
-            </View>
+          <View style={styles.transfersList}>
+            <FormSkeleton fieldCount={5} />
           </View>
         ) : transfers.length === 0 ? (
           <View style={styles.emptyContainer}>

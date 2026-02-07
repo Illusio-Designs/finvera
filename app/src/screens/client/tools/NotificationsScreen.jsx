@@ -7,6 +7,7 @@ import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { notificationAPI } from '../../../lib/api';
+import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
 export default function NotificationsScreen() {
   const navigation = useNavigation();
@@ -218,8 +219,12 @@ export default function NotificationsScreen() {
 
         {/* Notifications List */}
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Loading notifications...</Text>
+          <View style={styles.notificationsList}>
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
           </View>
         ) : notifications.length === 0 ? (
           <View style={styles.emptyContainer}>

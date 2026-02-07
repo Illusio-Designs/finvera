@@ -6,6 +6,7 @@ import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { gstAPI } from '../../../lib/api';
+import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
 export default function EWayBillScreen() {
   const { openDrawer } = useDrawer();
@@ -21,6 +22,9 @@ export default function EWayBillScreen() {
   };
 
   const fetchEwaybills = useCallback(async () => {
+    setLoading(true);
+    const startTime = Date.now();
+    
     try {
       const response = await gstAPI.ewaybill.list({ limit: 50 });
       const data = response.data?.data || response.data || [];
@@ -34,7 +38,13 @@ export default function EWayBillScreen() {
       });
       setEwaybills([]);
     } finally {
-      setLoading(false);
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
     }
   }, [showNotification]);
 
@@ -163,11 +173,12 @@ export default function EWayBillScreen() {
 
         {/* E-Way Bills List */}
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <View style={styles.loadingCard}>
-              <View style={styles.spinner} />
-              <Text style={styles.loadingText}>Loading e-way bills...</Text>
-            </View>
+          <View style={styles.ewaybillsList}>
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
           </View>
         ) : ewaybills.length === 0 ? (
           <View style={styles.emptyContainer}>

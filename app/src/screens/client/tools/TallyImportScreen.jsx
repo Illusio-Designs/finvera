@@ -7,6 +7,7 @@ import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { accountingAPI } from '../../../lib/api';
+import FormSkeleton from '../../../components/ui/skeletons/FormSkeleton';
 
 export default function TallyImportScreen() {
   const { openDrawer } = useDrawer();
@@ -218,9 +219,9 @@ export default function TallyImportScreen() {
           title="Tally Import" 
           onMenuPress={handleMenuPress}
         />
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
+        <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+          <FormSkeleton fieldCount={5} />
+        </ScrollView>
       </View>
     );
   }

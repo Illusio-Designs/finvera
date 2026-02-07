@@ -6,6 +6,7 @@ import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { voucherAPI } from '../../../lib/api';
+import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
 export default function JournalScreen() {
   const { openDrawer } = useDrawer();
@@ -23,6 +24,9 @@ export default function JournalScreen() {
   };
 
   const fetchJournals = useCallback(async () => {
+    setLoading(true);
+    const startTime = Date.now();
+    
     try {
       const response = await voucherAPI.list({ 
         voucher_type: 'journal',
@@ -41,7 +45,13 @@ export default function JournalScreen() {
       });
       setJournals([]);
     } finally {
-      setLoading(false);
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
     }
   }, [searchQuery, filter, showNotification]);
 
@@ -218,10 +228,11 @@ export default function JournalScreen() {
         {/* Journals List */}
         {loading ? (
           <View style={styles.loadingContainer}>
-            <View style={styles.loadingCard}>
-              <View style={styles.spinner} />
-              <Text style={styles.loadingText}>Loading journal entries...</Text>
-            </View>
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
           </View>
         ) : journals.length === 0 ? (
           <View style={styles.emptyContainer}>

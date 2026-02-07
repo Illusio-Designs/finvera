@@ -8,6 +8,7 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 
 import { pricingAPI } from '../../../lib/api';
+import { SkeletonStatCard } from '../../../components/ui/SkeletonLoader';
 
 export default function PlansScreen() {
   const navigation = useNavigation();
@@ -151,9 +152,15 @@ export default function PlansScreen() {
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading plans...</Text>
-        </View>
+        <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+          <View style={styles.header}>
+            <View style={{ width: 200, height: 24, backgroundColor: '#e5e7eb', borderRadius: 4, marginBottom: 8 }} />
+            <View style={{ width: 300, height: 16, backgroundColor: '#e5e7eb', borderRadius: 4 }} />
+          </View>
+          <SkeletonStatCard />
+          <SkeletonStatCard />
+          <SkeletonStatCard />
+        </ScrollView>
       </View>
     );
   }

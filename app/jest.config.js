@@ -15,4 +15,7 @@ module.exports = {
     '!src/**/__tests__/**',
   ],
   testEnvironment: 'node',
+  transform: {
+    '^.+\\.(js|jsx)$': 'babel-jest',
+  },
 };

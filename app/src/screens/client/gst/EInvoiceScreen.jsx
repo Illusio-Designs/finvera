@@ -6,6 +6,7 @@ import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { gstAPI } from '../../../lib/api';
+import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
 export default function EInvoiceScreen() {
   const { openDrawer } = useDrawer();
@@ -21,6 +22,9 @@ export default function EInvoiceScreen() {
   };
 
   const fetchEinvoices = useCallback(async () => {
+    setLoading(true);
+    const startTime = Date.now();
+    
     try {
       const response = await gstAPI.einvoice.list({ limit: 50 });
       const data = response.data?.data || response.data || [];
@@ -34,7 +38,13 @@ export default function EInvoiceScreen() {
       });
       setEinvoices([]);
     } finally {
-      setLoading(false);
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
     }
   }, [showNotification]);
 
@@ -153,11 +163,12 @@ export default function EInvoiceScreen() {
 
         {/* E-Invoices List */}
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <View style={styles.loadingCard}>
-              <View style={styles.spinner} />
-              <Text style={styles.loadingText}>Loading e-invoices...</Text>
-            </View>
+          <View style={styles.einvoicesList}>
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
           </View>
         ) : einvoices.length === 0 ? (
           <View style={styles.emptyContainer}>

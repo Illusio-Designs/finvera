@@ -12,6 +12,7 @@ import { companyAPI, branchAPI } from '../../../lib/api';
 import CreateCompanyModal from '../../../components/modals/CreateCompanyModal';
 import CreateBranchModal from '../../../components/modals/CreateBranchModal';
 import { FONT_STYLES } from '../../../utils/fonts';
+import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
 const { width } = Dimensions.get('window');
 
@@ -477,9 +478,16 @@ export default function CompaniesScreen({ isPostLogin = false, onSelectionComple
           showBackButton={!isPostLogin}
           onBackPress={isPostLogin ? undefined : () => navigation.goBack()}
         />
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading companies...</Text>
-        </View>
+        <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+          <View style={styles.header}>
+            <View style={{ width: 200, height: 28, backgroundColor: '#e5e7eb', borderRadius: 4, marginBottom: 8 }} />
+            <View style={{ width: 300, height: 16, backgroundColor: '#e5e7eb', borderRadius: 4 }} />
+          </View>
+          <SkeletonListItem />
+          <SkeletonListItem />
+          <SkeletonListItem />
+          <SkeletonListItem />
+        </ScrollView>
       </View>
     );
   }

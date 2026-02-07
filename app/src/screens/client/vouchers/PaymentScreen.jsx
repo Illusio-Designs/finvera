@@ -6,6 +6,7 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { voucherAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
+import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
 export default function PaymentScreen() {
   const { openDrawer } = useDrawer();
@@ -23,6 +24,9 @@ export default function PaymentScreen() {
   };
 
   const fetchPayments = useCallback(async () => {
+    setLoading(true);
+    const startTime = Date.now();
+    
     try {
       const response = await voucherAPI.list({ 
         voucher_type: 'payment',
@@ -41,7 +45,13 @@ export default function PaymentScreen() {
       });
       setPayments([]);
     } finally {
-      setLoading(false);
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
     }
   }, [searchQuery, filter, showNotification]);
 
@@ -221,10 +231,11 @@ export default function PaymentScreen() {
         {/* Payments List */}
         {loading ? (
           <View style={styles.loadingContainer}>
-            <View style={styles.loadingCard}>
-              <View style={styles.spinner} />
-              <Text style={styles.loadingText}>Loading payments...</Text>
-            </View>
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
           </View>
         ) : payments.length === 0 ? (
           <View style={styles.emptyContainer}>

@@ -9,6 +9,7 @@ import { useNotification } from '../../../contexts/NotificationContext';
 import { accountingAPI } from '../../../lib/api';
 import { formatCurrency } from '../../../utils/businessLogic';
 import { FONT_STYLES } from '../../../utils/fonts';
+import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
 export default function LedgersScreen() {
   const { openDrawer } = useDrawer();
@@ -34,6 +35,9 @@ export default function LedgersScreen() {
   };
 
   const fetchLedgers = useCallback(async () => {
+    setLoading(true);
+    const startTime = Date.now();
+    
     try {
       const response = await accountingAPI.ledgers.list({ 
         limit: 100
@@ -53,7 +57,13 @@ export default function LedgersScreen() {
       });
       setLedgers([]);
     } finally {
-      setLoading(false);
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
     }
   }, [showNotification]);
 
@@ -209,7 +219,11 @@ export default function LedgersScreen() {
         {/* Ledgers List */}
         {loading ? (
           <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Loading ledgers...</Text>
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
           </View>
         ) : ledgers.length === 0 ? (
           <View style={styles.emptyContainer}>

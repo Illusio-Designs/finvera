@@ -6,6 +6,7 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { voucherAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
+import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
 export default function DebitNoteScreen() {
   const { openDrawer } = useDrawer();
@@ -23,6 +24,9 @@ export default function DebitNoteScreen() {
   };
 
   const fetchDebitNotes = useCallback(async () => {
+    setLoading(true);
+    const startTime = Date.now();
+    
     try {
       const response = await voucherAPI.list({
         voucher_type: 'debit_note',
@@ -41,7 +45,13 @@ export default function DebitNoteScreen() {
       });
       setDebitNotes([]);
     } finally {
-      setLoading(false);
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
     }
   }, [searchQuery, filter, showNotification]);
 
@@ -221,10 +231,11 @@ export default function DebitNoteScreen() {
         {/* Debit Notes List */}
         {loading ? (
           <View style={styles.loadingContainer}>
-            <View style={styles.loadingCard}>
-              <View style={styles.spinner} />
-              <Text style={styles.loadingText}>Loading debit notes...</Text>
-            </View>
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
           </View>
         ) : debitNotes.length === 0 ? (
           <View style={styles.emptyContainer}>

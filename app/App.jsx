@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer, useNavigationState } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { LogBox, Platform, Text, TextInput, StyleSheet } from 'react-native';
+import { LogBox, Platform, Text, TextInput, StyleSheet, AppState } from 'react-native';
 import * as Font from 'expo-font';
+import * as Linking from 'expo-linking';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext.jsx';
 import { NotificationProvider } from './src/contexts/NotificationContext.jsx';
 import { DrawerProvider, useDrawer } from './src/contexts/DrawerContext.jsx';
 import { SubscriptionProvider } from './src/contexts/SubscriptionContext.jsx';
 import CustomDrawer from './src/components/navigation/CustomDrawer.jsx';
 import BottomTabBar from './src/components/navigation/BottomTabBar.jsx';
+import { navigationRef } from './src/services/navigationService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { buildStorageKey, STORAGE_CONFIG } from './src/config/env';
 
 // Completely disable LogBox overlay (the black box)
 LogBox.ignoreAllLogs(true);
@@ -30,8 +34,10 @@ TextInput.defaultProps.style = { fontFamily: 'Agency' };
 // Auth Screens
 import LoginScreen from './src/screens/auth/LoginScreen.jsx';
 import SplashScreen from './src/screens/auth/SplashScreen.jsx';
+import OnboardingScreen from './src/screens/auth/OnboardingScreen.jsx';
 import ForgotPasswordScreen from './src/screens/auth/ForgotPasswordScreen.jsx';
 import ResetPasswordScreen from './src/screens/auth/ResetPasswordScreen.jsx';
+import OAuthCallbackScreen from './src/screens/auth/OAuthCallbackScreen.jsx';
 
 // Client Screens
 import DashboardScreen from './src/screens/client/dashboard/DashboardScreen.jsx';
@@ -90,15 +96,13 @@ import ReviewScreen from './src/screens/client/business/ReviewScreen.jsx';
 import LoanScreen from './src/screens/client/business/LoanScreen.jsx';
 import ReferralScreen from './src/screens/client/business/ReferralScreen.jsx';
 
-// Loading Screen
-import LoadingScreen from './src/screens/LoadingScreen.jsx';
-
 const Stack = createNativeStackNavigator();
 
 function AppNavigator() {
   const [showSplash, setShowSplash] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [fontsLoaded, setFontsLoaded] = useState(false);
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, logout } = useAuth();
   const { isDrawerOpen, closeDrawer } = useDrawer();
 
   // Track current route for bottom navigation
@@ -106,7 +110,109 @@ function AppNavigator() {
 
   useEffect(() => {
     loadFonts();
+    checkOnboardingStatus();
+    setupDeepLinking();
   }, []);
+
+  // Setup deep linking for OAuth callback
+  const setupDeepLinking = () => {
+    // Handle initial URL if app was opened via deep link
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink(url);
+      }
+    });
+
+    // Listen for deep link events while app is running
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      handleDeepLink(url);
+    });
+
+    return () => {
+      subscription?.remove();
+    };
+  };
+
+  const handleDeepLink = (url) => {
+    if (!url) return;
+
+    console.log('🔗 Deep link received:', url);
+
+    try {
+      // Parse the URL
+      const { hostname, path, queryParams } = Linking.parse(url);
+      
+      console.log('🔍 Parsed URL:', { hostname, path, queryParams });
+
+      // Handle OAuth callback
+      if (hostname === 'oauth' && path === 'google') {
+        console.log('✅ OAuth callback detected, navigating to OAuthCallback screen');
+        // Navigate to OAuth callback screen with params
+        setTimeout(() => {
+          navigationRef.current?.navigate('OAuthCallback', queryParams);
+        }, 100);
+      }
+    } catch (error) {
+      console.error('❌ Error handling deep link:', error);
+    }
+  };
+
+  const checkOnboardingStatus = async () => {
+    try {
+      const onboardingKey = buildStorageKey('onboarding_completed');
+      const completed = await AsyncStorage.getItem(onboardingKey);
+      if (!completed) {
+        setShowOnboarding(true);
+      }
+    } catch (error) {
+      console.error('Error checking onboarding status:', error);
+    }
+  };
+
+  const handleOnboardingComplete = async () => {
+    try {
+      const onboardingKey = buildStorageKey('onboarding_completed');
+      await AsyncStorage.setItem(onboardingKey, 'true');
+      setShowOnboarding(false);
+    } catch (error) {
+      console.error('Error saving onboarding status:', error);
+      setShowOnboarding(false);
+    }
+  };
+
+  const handleOnboardingSkip = async () => {
+    try {
+      const onboardingKey = buildStorageKey('onboarding_completed');
+      await AsyncStorage.setItem(onboardingKey, 'true');
+      setShowOnboarding(false);
+    } catch (error) {
+      console.error('Error saving onboarding status:', error);
+      setShowOnboarding(false);
+    }
+  };
+
+  // Monitor app state changes to detect when app comes to foreground
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    
+    return () => {
+      subscription?.remove();
+    };
+  }, [isAuthenticated]);
+
+  const handleAppStateChange = async (nextAppState) => {
+    if (nextAppState === 'active' && isAuthenticated) {
+      // Check if token still exists when app comes to foreground
+      const tokenKey = buildStorageKey(STORAGE_CONFIG.AUTH_TOKEN_KEY);
+      const token = await AsyncStorage.getItem(tokenKey);
+      
+      if (!token) {
+        // Token was cleared (likely due to 401), trigger logout
+        console.log('🔓 Token not found on app resume, logging out...');
+        await logout(false);
+      }
+    }
+  };
 
   const loadFonts = async () => {
     try {
@@ -161,19 +267,48 @@ function AppNavigator() {
   };
 
   if (!fontsLoaded || loading || showSplash) {
-    return showSplash ? <SplashScreen /> : <LoadingScreen />;
+    return <SplashScreen />;
   }
 
+  // Show onboarding for first-time users (only when not authenticated)
+  if (showOnboarding && !isAuthenticated) {
+    return (
+      <OnboardingScreen 
+        onComplete={handleOnboardingComplete}
+        onSkip={handleOnboardingSkip}
+      />
+    );
+  }
+
+  // Linking configuration for deep links
+  const linking = {
+    prefixes: ['finvera://', 'com.finvera.mobile://'],
+    config: {
+      screens: {
+        OAuthCallback: 'oauth/google',
+        Login: 'login',
+        Dashboard: 'dashboard',
+      },
+    },
+  };
+
   return (
-    <NavigationContainer onStateChange={onNavigationStateChange}>
+    <NavigationContainer 
+      ref={navigationRef} 
+      linking={linking}
+      onStateChange={onNavigationStateChange}
+    >
       <Stack.Navigator 
         screenOptions={{ headerShown: false }}
-        initialRouteName={isAuthenticated ? "CompanyBranchSelection" : "Login"}
+        initialRouteName={isAuthenticated ? "Dashboard" : "Login"}
       >
         {isAuthenticated ? (
           <>
             {/* Post-login Company/Branch Selection */}
             <Stack.Screen name="CompanyBranchSelection" component={CompanyBranchSelectionScreen} />
+            
+            {/* OAuth Callback Screen */}
+            <Stack.Screen name="OAuthCallback" component={OAuthCallbackScreen} />
             
             {/* Main App Screens */}
             <Stack.Screen name="Dashboard" component={DashboardScreen} />
@@ -243,6 +378,7 @@ function AppNavigator() {
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+            <Stack.Screen name="OAuthCallback" component={OAuthCallbackScreen} />
           </>
         )}
       </Stack.Navigator>

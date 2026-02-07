@@ -8,6 +8,7 @@ import { useNotification } from '../../../contexts/NotificationContext';
 import { reportsAPI } from '../../../lib/api';
 import { useNavigation } from '@react-navigation/native';
 import { FONT_STYLES } from '../../../utils/fonts';
+import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
 export default function ReportsScreen() {
   const { openDrawer } = useDrawer();
@@ -16,13 +17,39 @@ export default function ReportsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showDateModal, setShowDateModal] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [dateRange, setDateRange] = useState({
     from_date: '',
     to_date: '',
     ledger_id: '',
   });
+
+  useEffect(() => {
+    // Simulate initial data load with 3-second minimum display
+    const startTime = Date.now();
+    
+    const loadData = async () => {
+      // Simulate data loading
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
+    };
+    
+    loadData();
+    
+    setDateRange({
+      from_date: getFirstDayOfMonth(),
+      to_date: getCurrentDate(),
+      ledger_id: '',
+    });
+  }, []);
 
   const reports = [
     {
@@ -90,14 +117,6 @@ export default function ReportsScreen() {
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
     return firstDay.toISOString().split('T')[0];
   };
-
-  useEffect(() => {
-    setDateRange({
-      from_date: getFirstDayOfMonth(),
-      to_date: getCurrentDate(),
-      ledger_id: '',
-    });
-  }, []);
 
   const handleReportPress = (report) => {
     if (report.screen) {
@@ -240,8 +259,16 @@ export default function ReportsScreen() {
             {filteredReports.length} report{filteredReports.length !== 1 ? 's' : ''} available
           </Text>
           
-          <View style={styles.reportsList}>
-            {filteredReports.map((report) => (
+          {loading ? (
+            <View style={styles.reportsList}>
+              <SkeletonListItem />
+              <SkeletonListItem />
+              <SkeletonListItem />
+              <SkeletonListItem />
+            </View>
+          ) : (
+            <View style={styles.reportsList}>
+              {filteredReports.map((report) => (
               <TouchableOpacity
                 key={report.id}
                 style={styles.reportCard}
@@ -286,6 +313,7 @@ export default function ReportsScreen() {
               </TouchableOpacity>
             ))}
           </View>
+          )}
         </View>
 
         {/* Date Range Modal */}

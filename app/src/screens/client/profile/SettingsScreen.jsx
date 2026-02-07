@@ -10,6 +10,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { tenantAPI } from '../../../lib/api';
 import { buildUploadUrl } from '../../../config/env';
+import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
 export default function SettingsScreen() {
   const navigation = useNavigation();
@@ -17,7 +18,7 @@ export default function SettingsScreen() {
   const { user, logout } = useAuth();
   const { showNotification } = useNotification();
   
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showBarcodeModal, setShowBarcodeModal] = useState(false);
   const [preferences, setPreferences] = useState({
@@ -45,6 +46,7 @@ export default function SettingsScreen() {
 
   const fetchBarcodeSettings = async () => {
     try {
+      setLoading(true);
       const response = await tenantAPI.getProfile();
       const tenant = response?.data?.data || response?.data;
       const settings = tenant?.settings || {};
@@ -61,6 +63,8 @@ export default function SettingsScreen() {
       });
     } catch (error) {
       console.error('Error fetching barcode settings:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -245,6 +249,33 @@ export default function SettingsScreen() {
       ]
     }
   ];
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <TopBar 
+          title="Settings" 
+          onMenuPress={handleMenuPress}
+        />
+        <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+          <View style={styles.userSection}>
+            <View style={styles.userAvatar}>
+              <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: '#e5e7eb' }} />
+            </View>
+            <View style={styles.userInfo}>
+              <View style={{ width: 120, height: 16, backgroundColor: '#e5e7eb', borderRadius: 4, marginBottom: 8 }} />
+              <View style={{ width: 180, height: 14, backgroundColor: '#e5e7eb', borderRadius: 4 }} />
+            </View>
+          </View>
+          <SkeletonListItem />
+          <SkeletonListItem />
+          <SkeletonListItem />
+          <SkeletonListItem />
+          <SkeletonListItem />
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

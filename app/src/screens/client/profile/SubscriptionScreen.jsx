@@ -7,6 +7,7 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { subscriptionAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
+import { SkeletonStatCard } from '../../../components/ui/SkeletonLoader';
 
 export default function SubscriptionScreen() {
   const navigation = useNavigation();
@@ -123,9 +124,11 @@ export default function SubscriptionScreen() {
           showBackButton={true}
           onBackPress={() => navigation.goBack()}
         />
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading subscription...</Text>
-        </View>
+        <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+          <SkeletonStatCard />
+          <SkeletonStatCard />
+          <SkeletonStatCard />
+        </ScrollView>
       </View>
     );
   }

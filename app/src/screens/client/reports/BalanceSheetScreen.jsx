@@ -9,6 +9,7 @@ import { useNotification } from '../../../contexts/NotificationContext';
 import { reportsAPI } from '../../../lib/api';
 import { formatCurrency } from '../../../utils/businessLogic';
 import { FONT_STYLES } from '../../../utils/fonts';
+import TableSkeleton from '../../../components/ui/skeletons/TableSkeleton';
 
 export default function BalanceSheetScreen() {
   const { openDrawer } = useDrawer();
@@ -22,6 +23,9 @@ export default function BalanceSheetScreen() {
   };
 
   const fetchBalanceSheet = useCallback(async () => {
+    setLoading(true);
+    const startTime = Date.now();
+    
     try {
       const response = await reportsAPI.balanceSheet({ 
         as_on_date: getCurrentDate()
@@ -36,7 +40,13 @@ export default function BalanceSheetScreen() {
       });
       setBalanceSheetData(null);
     } finally {
-      setLoading(false);
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
     }
   }, [showNotification]);
 
@@ -268,8 +278,8 @@ export default function BalanceSheetScreen() {
         </View>
 
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Loading balance sheet...</Text>
+          <View style={styles.balanceSheetContainer}>
+            <TableSkeleton rows={10} columns={4} />
           </View>
         ) : !balanceSheetData ? (
           <View style={styles.emptyContainer}>

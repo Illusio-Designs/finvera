@@ -11,6 +11,7 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { authAPI, companyAPI, subscriptionAPI } from '../../../lib/api';
 import { buildUploadUrl } from '../../../config/env';
+import FormSkeleton from '../../../components/ui/skeletons/FormSkeleton';
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
@@ -333,9 +334,9 @@ export default function ProfileScreen() {
           title="Profile" 
           onMenuPress={handleMenuPress}
         />
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading profile...</Text>
-        </View>
+        <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+          <FormSkeleton fieldCount={8} />
+        </ScrollView>
       </View>
     );
   }

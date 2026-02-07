@@ -7,6 +7,7 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { clientSupportAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
+import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
 export default function SupportScreen() {
   const navigation = useNavigation();
@@ -318,10 +319,12 @@ export default function SupportScreen() {
 
         {/* Support Tickets List */}
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <View style={styles.loadingCard}>
-              <Text style={styles.loadingText}>Loading support tickets...</Text>
-            </View>
+          <View style={styles.ticketsList}>
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
           </View>
         ) : tickets.length === 0 ? (
           <View style={styles.emptyContainer}>

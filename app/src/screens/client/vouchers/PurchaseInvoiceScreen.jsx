@@ -23,6 +23,7 @@ import { useNotification } from '../../../contexts/NotificationContext';
 import { voucherAPI, accountingAPI, inventoryAPI } from '../../../lib/api';
 import { formatCurrency } from '../../../utils/businessLogic';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import FormSkeleton from '../../../components/ui/skeletons/FormSkeleton';
 
 // Voucher number generation
 const generateVoucherNumber = (type) => {
@@ -61,6 +62,7 @@ export default function PurchaseInvoiceScreen() {
   const [suppliers, setSuppliers] = useState([]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   
   // Debug loading state changes
   useEffect(() => {
@@ -149,17 +151,34 @@ export default function PurchaseInvoiceScreen() {
   }, []);
 
   useEffect(() => {
-    console.log('🔄 PurchaseInvoiceScreen mounted');
-    console.log('📊 Initial loading state:', loading);
+    const initializeForm = async () => {
+      setPageLoading(true);
+      const startTime = Date.now();
+      
+      console.log('🔄 PurchaseInvoiceScreen mounted');
+      console.log('📊 Initial loading state:', loading);
+      
+      await Promise.all([
+        fetchSuppliers(),
+        fetchItems()
+      ]);
+      
+      // Generate voucher number
+      const voucherNumber = generateVoucherNumber('purchase_invoice');
+      setFormData(prev => ({ ...prev, voucher_number: voucherNumber }));
+      
+      console.log('✅ PurchaseInvoiceScreen initialization completed');
+      
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setPageLoading(false);
+      }, remainingTime);
+    };
     
-    fetchSuppliers();
-    fetchItems();
-    
-    // Generate voucher number
-    const voucherNumber = generateVoucherNumber('purchase_invoice');
-    setFormData(prev => ({ ...prev, voucher_number: voucherNumber }));
-    
-    console.log('✅ PurchaseInvoiceScreen initialization completed');
+    initializeForm();
   }, [fetchSuppliers, fetchItems]);
 
   const handleSupplierSelect = (supplier) => {
@@ -621,6 +640,10 @@ export default function PurchaseInvoiceScreen() {
       />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {pageLoading ? (
+          <FormSkeleton fieldCount={8} />
+        ) : (
+          <>
         {/* Header Section */}
         <View style={styles.headerCard}>
           <View style={styles.headerRow}>
@@ -808,6 +831,8 @@ export default function PurchaseInvoiceScreen() {
             </Text>
           </TouchableOpacity>
         </View>
+        </>
+        )}
       </ScrollView>
 
       {/* Supplier Selection Modal */}

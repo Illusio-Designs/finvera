@@ -7,6 +7,7 @@ import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { notificationAPI } from '../../../lib/api';
+import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
 export default function NotificationPreferencesScreen() {
   const navigation = useNavigation();
@@ -258,9 +259,14 @@ export default function NotificationPreferencesScreen() {
           onMenuPress={handleMenuPress}
           onSearchPress={handleSearchPress}
         />
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading preferences...</Text>
-        </View>
+        <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+          <SkeletonListItem />
+          <SkeletonListItem />
+          <SkeletonListItem />
+          <SkeletonListItem />
+          <SkeletonListItem />
+          <SkeletonListItem />
+        </ScrollView>
       </View>
     );
   }

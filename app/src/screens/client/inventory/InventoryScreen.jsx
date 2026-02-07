@@ -8,6 +8,7 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { inventoryAPI } from '../../../lib/api';
 import { formatCurrency } from '../../../utils/businessLogic';
+import { SkeletonStatCard } from '../../../components/ui/SkeletonLoader';
 
 export default function InventoryScreen() {
   const navigation = useNavigation();
@@ -31,6 +32,9 @@ export default function InventoryScreen() {
   };
 
   const fetchInventoryItems = useCallback(async () => {
+    setLoading(true);
+    const startTime = Date.now();
+    
     try {
       const response = await inventoryAPI.items.list({ 
         limit: 100,
@@ -71,7 +75,13 @@ export default function InventoryScreen() {
       });
       setInventoryItems([]);
     } finally {
-      setLoading(false);
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
     }
   }, [searchQuery]); // Removed showNotification from dependencies
 
@@ -220,28 +230,37 @@ export default function InventoryScreen() {
       >
         {/* Stats Cards */}
         <View style={styles.statsContainer}>
-          <View style={styles.statsGrid}>
-            <View style={[styles.statCard, { backgroundColor: '#f0f4fc' }]}>
-              <Ionicons name="cube" size={24} color="#3e60ab" />
-              <Text style={styles.statValue}>{stats.totalItems}</Text>
-              <Text style={styles.statLabel}>Total Items</Text>
+          {loading ? (
+            <View style={styles.statsGrid}>
+              <SkeletonStatCard />
+              <SkeletonStatCard />
+              <SkeletonStatCard />
+              <SkeletonStatCard />
             </View>
-            <View style={[styles.statCard, { backgroundColor: '#ecfdf5' }]}>
-              <Ionicons name="cash" size={24} color="#10b981" />
-              <Text style={styles.statValue}>{formatCurrency(stats.totalValue)}</Text>
-              <Text style={styles.statLabel}>Total Value</Text>
+          ) : (
+            <View style={styles.statsGrid}>
+              <View style={[styles.statCard, { backgroundColor: '#f0f4fc' }]}>
+                <Ionicons name="cube" size={24} color="#3e60ab" />
+                <Text style={styles.statValue}>{stats.totalItems}</Text>
+                <Text style={styles.statLabel}>Total Items</Text>
+              </View>
+              <View style={[styles.statCard, { backgroundColor: '#ecfdf5' }]}>
+                <Ionicons name="cash" size={24} color="#10b981" />
+                <Text style={styles.statValue}>{formatCurrency(stats.totalValue)}</Text>
+                <Text style={styles.statLabel}>Total Value</Text>
+              </View>
+              <View style={[styles.statCard, { backgroundColor: '#fffbeb' }]}>
+                <Ionicons name="warning" size={24} color="#f59e0b" />
+                <Text style={styles.statValue}>{stats.lowStock}</Text>
+                <Text style={styles.statLabel}>Low Stock</Text>
+              </View>
+              <View style={[styles.statCard, { backgroundColor: '#fef2f2' }]}>
+                <Ionicons name="alert-circle" size={24} color="#ef4444" />
+                <Text style={styles.statValue}>{stats.outOfStock}</Text>
+                <Text style={styles.statLabel}>Out of Stock</Text>
+              </View>
             </View>
-            <View style={[styles.statCard, { backgroundColor: '#fffbeb' }]}>
-              <Ionicons name="warning" size={24} color="#f59e0b" />
-              <Text style={styles.statValue}>{stats.lowStock}</Text>
-              <Text style={styles.statLabel}>Low Stock</Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: '#fef2f2' }]}>
-              <Ionicons name="alert-circle" size={24} color="#ef4444" />
-              <Text style={styles.statValue}>{stats.outOfStock}</Text>
-              <Text style={styles.statLabel}>Out of Stock</Text>
-            </View>
-          </View>
+          )}
         </View>
 
         {/* Quick Actions */}

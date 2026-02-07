@@ -6,6 +6,7 @@ import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { inventoryAPI } from '../../../lib/api';
+import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
 export default function AttributesScreen() {
   const { openDrawer } = useDrawer();
@@ -22,6 +23,9 @@ export default function AttributesScreen() {
   };
 
   const fetchAttributes = useCallback(async () => {
+    setLoading(true);
+    const startTime = Date.now();
+    
     try {
       const response = await inventoryAPI.attributes.list({ 
         search: searchQuery,
@@ -38,7 +42,13 @@ export default function AttributesScreen() {
       });
       setAttributes([]);
     } finally {
-      setLoading(false);
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
     }
   }, [searchQuery, showNotification]);
 
@@ -165,11 +175,12 @@ export default function AttributesScreen() {
 
         {/* Attributes List */}
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <View style={styles.loadingCard}>
-              <View style={styles.spinner} />
-              <Text style={styles.loadingText}>Loading attributes...</Text>
-            </View>
+          <View style={styles.attributesList}>
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
           </View>
         ) : attributes.length === 0 ? (
           <View style={styles.emptyContainer}>

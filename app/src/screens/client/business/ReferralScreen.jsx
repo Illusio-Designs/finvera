@@ -8,6 +8,7 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { referralAPI } from '../../../lib/api';
+import { SkeletonStatCard } from '../../../components/ui/SkeletonLoader';
 
 export default function ReferralScreen() {
   const { openDrawer } = useDrawer();
@@ -186,9 +187,16 @@ export default function ReferralScreen() {
           title="Referral Program" 
           onMenuPress={handleMenuPress}
         />
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading referral data...</Text>
-        </View>
+        <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+          <View style={styles.headerSection}>
+            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#e5e7eb', marginBottom: 16 }} />
+            <View style={{ width: 200, height: 24, backgroundColor: '#e5e7eb', borderRadius: 4, marginBottom: 8 }} />
+            <View style={{ width: 300, height: 16, backgroundColor: '#e5e7eb', borderRadius: 4 }} />
+          </View>
+          <SkeletonStatCard />
+          <SkeletonStatCard />
+          <SkeletonStatCard />
+        </ScrollView>
       </View>
     );
   }

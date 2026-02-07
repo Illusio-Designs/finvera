@@ -8,6 +8,7 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "description": "Complete GST & Accounting Mobile App for Businesses",
+    "scheme": "finvera",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -29,7 +30,20 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.finvera.mobile",
+      "associatedDomains": [
+        "applinks:finvera.solutions",
+        "applinks:api.finvera.solutions"
+      ],
       "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "finvera",
+              "com.finvera.mobile",
+              "com.googleusercontent.apps.1065810673450-6mntdfquhqtdjj6hvamkkc6ahekiknng"
+            ]
+          }
+        ],
         "NSCameraUsageDescription": "This app needs access to camera to capture profile pictures and document photos for GST and accounting purposes.",
         "NSPhotoLibraryUsageDescription": "This app needs access to photo library to select profile pictures and document images for GST and accounting records.",
         "NSMicrophoneUsageDescription": "This app needs access to microphone for voice notes and audio recordings related to business transactions.",
@@ -53,6 +67,48 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.finvera.mobile",
+      "usesCleartextTraffic": true,
+      "networkSecurityConfig": "./android/app/src/main/res/xml/network_security_config.xml",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "finvera.solutions",
+              "pathPrefix": "/auth/callback"
+            },
+            {
+              "scheme": "https",
+              "host": "api.finvera.solutions",
+              "pathPrefix": "/auth/callback"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        },
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "finvera"
+            },
+            {
+              "scheme": "com.finvera.mobile"
+            },
+            {
+              "scheme": "com.googleusercontent.apps.1065810673450-6mntdfquhqtdjj6hvamkkc6ahekiknng"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
@@ -134,16 +190,20 @@
       "EXPO_PUBLIC_DEFAULT_GST_RATE": "18",
       "EXPO_PUBLIC_GST_FILING_REMINDER_DAYS": "7",
       "EXPO_PUBLIC_FINANCIAL_YEAR_START_MONTH": "4",
-      "EXPO_PUBLIC_API_URL": "http://192.168.1.39:3000/api",
-      "EXPO_PUBLIC_API_BASE_URL": "http://192.168.1.39:3000",
-      "EXPO_PUBLIC_UPLOADS_BASE_URL": "http://192.168.1.39:3000",
+      "EXPO_PUBLIC_API_URL": "http://192.168.0.102:3000/api",
+      "EXPO_PUBLIC_API_BASE_URL": "http://192.168.0.102:3000",
+      "EXPO_PUBLIC_UPLOADS_BASE_URL": "http://192.168.0.102:3000",
       "EXPO_PUBLIC_DEV_FALLBACK_IPS": "10.230.131.128,192.168.1.100,192.168.0.100,192.168.0.103",
       "EXPO_PUBLIC_PAYLOAD_ENCRYPTION_KEY": "finvera-default-encryption-key-change-this-in-production",
       "EXPO_PUBLIC_DEBUG_NAVIGATION": "false",
       "EXPO_PUBLIC_ENABLE_ANALYTICS": "false",
       "EXPO_PUBLIC_ENABLE_CRASH_REPORTING": "false",
       "EXPO_PUBLIC_USE_MOCK_DATA": "false",
-      "EXPO_PUBLIC_REQUIRE_HTTPS": "false"
+      "EXPO_PUBLIC_REQUIRE_HTTPS": "false",
+      "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "1065810673450-6mntdfquhqtdjj6hvamkkc6ahekiknng.apps.googleusercontent.com",
+      "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "1065810673450-6mntdfquhqtdjj6hvamkkc6ahekiknng.apps.googleusercontent.com",
+      "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "",
+      "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": ""
     },
     "owner": "rishisoni",
     "plugins": [

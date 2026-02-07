@@ -5,6 +5,7 @@ import CompaniesScreen from './CompaniesScreen.jsx';
 import { useAuth } from '../../../contexts/AuthContext';
 import { companyAPI, branchAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
+import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
 export default function CompanyBranchSelectionScreen() {
   const navigation = useNavigation();
@@ -62,7 +63,12 @@ export default function CompanyBranchSelectionScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Checking your account...</Text>
+        <View style={{ marginBottom: 16 }}>
+          <View style={{ width: 200, height: 20, backgroundColor: '#e5e7eb', borderRadius: 4 }} />
+        </View>
+        <SkeletonListItem />
+        <SkeletonListItem />
+        <SkeletonListItem />
       </View>
     );
   }

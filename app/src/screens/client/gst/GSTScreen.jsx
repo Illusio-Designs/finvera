@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, TextInput, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons'
@@ -8,6 +8,7 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { gstAPI } from '../../../lib/api';
 import { formatCurrency } from '../../../utils/businessLogic';
+import { SkeletonStatCard } from '../../../components/ui/SkeletonLoader';
 
 const GST_TABS = [
   { id: 'gstr2a', label: 'GSTR-2A Reconciliation', icon: 'document-text' },
@@ -20,7 +21,7 @@ export default function GSTScreen() {
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
   const [activeTab, setActiveTab] = useState('gstr2a');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
   // GSTR-2A Form State
@@ -53,6 +54,26 @@ export default function GSTScreen() {
   const handleMenuPress = () => {
     openDrawer();
   };
+
+  useEffect(() => {
+    // Simulate initial data load with 3-second minimum display
+    const startTime = Date.now();
+    
+    const loadData = async () => {
+      // Simulate data loading
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
+    };
+    
+    loadData();
+  }, []);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -505,59 +526,68 @@ export default function GSTScreen() {
             <Text style={styles.sectionTitle}>GST Management</Text>
           </View>
           
-          <View style={styles.managementGrid}>
-            <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('GSTINs', { mode: 'create' })}>
-              <View style={[styles.managementIcon, { backgroundColor: '#10b981' }]}>
-                <Ionicons name="card" size={24} color="white" />
-              </View>
-              <View style={styles.managementInfo}>
-                <Text style={styles.managementTitle}>GSTIN Records</Text>
-                <Text style={styles.managementSubtitle}>Create & manage GSTIN</Text>
-              </View>
-              <View style={styles.managementArrow}>
-                <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
-              </View>
-            </TouchableOpacity>
+          {loading ? (
+            <View style={styles.managementGrid}>
+              <SkeletonStatCard />
+              <SkeletonStatCard />
+              <SkeletonStatCard />
+              <SkeletonStatCard />
+            </View>
+          ) : (
+            <View style={styles.managementGrid}>
+              <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('GSTINs', { mode: 'create' })}>
+                <View style={[styles.managementIcon, { backgroundColor: '#10b981' }]}>
+                  <Ionicons name="card" size={24} color="white" />
+                </View>
+                <View style={styles.managementInfo}>
+                  <Text style={styles.managementTitle}>GSTIN Records</Text>
+                  <Text style={styles.managementSubtitle}>Create & manage GSTIN</Text>
+                </View>
+                <View style={styles.managementArrow}>
+                  <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+                </View>
+              </TouchableOpacity>
 
-            <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('GSTRates', { mode: 'create' })}>
-              <View style={[styles.managementIcon, { backgroundColor: '#f59e0b' }]}>
-                <Ionicons name="calculator" size={24} color="white" />
-              </View>
-              <View style={styles.managementInfo}>
-                <Text style={styles.managementTitle}>GST Rates</Text>
-                <Text style={styles.managementSubtitle}>Create & manage tax rates</Text>
-              </View>
-              <View style={styles.managementArrow}>
-                <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
-              </View>
-            </TouchableOpacity>
+              <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('GSTRates', { mode: 'create' })}>
+                <View style={[styles.managementIcon, { backgroundColor: '#f59e0b' }]}>
+                  <Ionicons name="calculator" size={24} color="white" />
+                </View>
+                <View style={styles.managementInfo}>
+                  <Text style={styles.managementTitle}>GST Rates</Text>
+                  <Text style={styles.managementSubtitle}>Create & manage tax rates</Text>
+                </View>
+                <View style={styles.managementArrow}>
+                  <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+                </View>
+              </TouchableOpacity>
 
-            <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('EInvoice', { mode: 'create' })}>
-              <View style={[styles.managementIcon, { backgroundColor: '#3b82f6' }]}>
-                <Ionicons name="document-text" size={24} color="white" />
-              </View>
-              <View style={styles.managementInfo}>
-                <Text style={styles.managementTitle}>E-Invoice</Text>
-                <Text style={styles.managementSubtitle}>Create electronic invoices</Text>
-              </View>
-              <View style={styles.managementArrow}>
-                <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
-              </View>
-            </TouchableOpacity>
+              <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('EInvoice', { mode: 'create' })}>
+                <View style={[styles.managementIcon, { backgroundColor: '#3b82f6' }]}>
+                  <Ionicons name="document-text" size={24} color="white" />
+                </View>
+                <View style={styles.managementInfo}>
+                  <Text style={styles.managementTitle}>E-Invoice</Text>
+                  <Text style={styles.managementSubtitle}>Create electronic invoices</Text>
+                </View>
+                <View style={styles.managementArrow}>
+                  <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+                </View>
+              </TouchableOpacity>
 
-            <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('EWayBill', { mode: 'create' })}>
-              <View style={[styles.managementIcon, { backgroundColor: '#ef4444' }]}>
-                <Ionicons name="car" size={24} color="white" />
-              </View>
-              <View style={styles.managementInfo}>
-                <Text style={styles.managementTitle}>E-Way Bill</Text>
-                <Text style={styles.managementSubtitle}>Create transport documents</Text>
-              </View>
-              <View style={styles.managementArrow}>
-                <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
-              </View>
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('EWayBill', { mode: 'create' })}>
+                <View style={[styles.managementIcon, { backgroundColor: '#ef4444' }]}>
+                  <Ionicons name="car" size={24} color="white" />
+                </View>
+                <View style={styles.managementInfo}>
+                  <Text style={styles.managementTitle}>E-Way Bill</Text>
+                  <Text style={styles.managementSubtitle}>Create transport documents</Text>
+                </View>
+                <View style={styles.managementArrow}>
+                  <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+                </View>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* Tabs */}

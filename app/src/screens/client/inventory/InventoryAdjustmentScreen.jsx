@@ -6,6 +6,7 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { accountingAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
+import FormSkeleton from '../../../components/ui/skeletons/FormSkeleton';
 
 export default function InventoryAdjustmentScreen() {
   const { openDrawer } = useDrawer();
@@ -21,6 +22,9 @@ export default function InventoryAdjustmentScreen() {
   };
 
   const fetchAdjustments = useCallback(async () => {
+    setLoading(true);
+    const startTime = Date.now();
+    
     try {
       const response = await accountingAPI.stockAdjustments.list({ limit: 50 });
       const data = response.data?.data || response.data || [];
@@ -34,7 +38,13 @@ export default function InventoryAdjustmentScreen() {
       });
       setAdjustments([]);
     } finally {
-      setLoading(false);
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
     }
   }, [showNotification]);
 
@@ -146,11 +156,8 @@ export default function InventoryAdjustmentScreen() {
 
         {/* Adjustments List */}
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <View style={styles.loadingCard}>
-              <View style={styles.spinner} />
-              <Text style={styles.loadingText}>Loading adjustments...</Text>
-            </View>
+          <View style={styles.adjustmentsList}>
+            <FormSkeleton fieldCount={5} />
           </View>
         ) : adjustments.length === 0 ? (
           <View style={styles.emptyContainer}>

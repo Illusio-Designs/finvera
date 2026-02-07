@@ -8,6 +8,7 @@ import { voucherAPI } from '../../../lib/api';
 import { formatCurrency } from '../../../utils/businessLogic';
 import { useNavigation } from '@react-navigation/native';
 import { FONT_STYLES } from '../../../utils/fonts';
+import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
 const VOUCHER_TYPES = [
   { 
@@ -97,6 +98,9 @@ export default function VouchersScreen() {
   };
 
   const fetchVouchers = useCallback(async () => {
+    setLoading(true);
+    const startTime = Date.now();
+    
     try {
       const response = await voucherAPI.list({ 
         limit: 50,
@@ -126,7 +130,13 @@ export default function VouchersScreen() {
       });
       setVouchers([]);
     } finally {
-      setLoading(false);
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
     }
   }, [showNotification]);
 
@@ -322,7 +332,11 @@ export default function VouchersScreen() {
           
           {loading ? (
             <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Loading vouchers...</Text>
+              <SkeletonListItem />
+              <SkeletonListItem />
+              <SkeletonListItem />
+              <SkeletonListItem />
+              <SkeletonListItem />
             </View>
           ) : vouchers.length === 0 ? (
             <View style={styles.emptyState}>

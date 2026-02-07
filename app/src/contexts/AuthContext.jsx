@@ -138,7 +138,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = async () => {
+  const logout = async (showMessage = true) => {
     try {
       const tokenKey = buildStorageKey(STORAGE_CONFIG.AUTH_TOKEN_KEY);
       const userKey = buildStorageKey(STORAGE_CONFIG.USER_DATA_KEY);
@@ -147,6 +147,10 @@ export const AuthProvider = ({ children }) => {
       await AsyncStorage.removeItem(userKey);
       setToken(null);
       setUser(null);
+      
+      if (showMessage && __DEV__) {
+        console.log('🔓 User logged out successfully');
+      }
     } catch (error) {
       console.error('Error during logout:', error);
     }

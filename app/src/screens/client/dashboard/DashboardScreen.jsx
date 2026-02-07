@@ -49,8 +49,7 @@ export default function DashboardScreen() {
   };
 
   const handleNavigateToScreen = (screenName) => {
-    // Navigate to screens within the Client navigator
-    navigation.navigate('Client', { screen: screenName });
+    navigation.navigate(screenName);
   };
 
   const fetchDashboardData = useCallback(async () => {
@@ -220,7 +219,7 @@ export default function DashboardScreen() {
     { label: 'View Reports', icon: 'bar-chart', color: '#10b981', screen: 'Reports' },
     { label: 'GST Filing', icon: 'receipt', color: '#f59e0b', screen: 'GST' },
     { label: 'Support Tickets', icon: 'help-circle', color: '#ef4444', screen: 'Support' },
-    { label: 'Notifications', icon: 'notifications', color: '#8b5cf6', screen: 'NotificationDemo' },
+    { label: 'Inventory', icon: 'cube', color: '#8b5cf6', screen: 'Inventory' },
   ];
 
   const handleGetLoanClick = () => {

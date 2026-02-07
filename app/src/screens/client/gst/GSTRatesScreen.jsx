@@ -6,18 +6,39 @@ import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { gstAPI } from '../../../lib/api';
+import TableSkeleton from '../../../components/ui/skeletons/TableSkeleton';
 
 export default function GSTRatesScreen() {
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [rateResult, setRateResult] = useState(null);
 
   const handleMenuPress = () => {
     openDrawer();
   };
+
+  useEffect(() => {
+    // Simulate initial data load with 3-second minimum display
+    const startTime = Date.now();
+    
+    const loadData = async () => {
+      // Simulate data loading
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
+    };
+    
+    loadData();
+  }, []);
 
   const handleSearch = async (hsn) => {
     if (!hsn || hsn.length < 4) {
@@ -213,29 +234,33 @@ export default function GSTRatesScreen() {
         {/* Common HSN Codes */}
         <View style={styles.commonSection}>
           <Text style={styles.commonTitle}>Common HSN Codes</Text>
-          <View style={styles.commonList}>
-            {commonHsnCodes.map((item, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.commonCard}
-                onPress={() => handleSearchInput(item.hsn)}
-                activeOpacity={0.95}
-              >
-                <View style={styles.commonCardContent}>
-                  <View style={styles.commonInfo}>
-                    <Text style={styles.commonHsn}>HSN: {item.hsn}</Text>
-                    <Text style={styles.commonDescription}>{item.description}</Text>
+          {loading ? (
+            <TableSkeleton rows={10} columns={3} />
+          ) : (
+            <View style={styles.commonList}>
+              {commonHsnCodes.map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.commonCard}
+                  onPress={() => handleSearchInput(item.hsn)}
+                  activeOpacity={0.95}
+                >
+                  <View style={styles.commonCardContent}>
+                    <View style={styles.commonInfo}>
+                      <Text style={styles.commonHsn}>HSN: {item.hsn}</Text>
+                      <Text style={styles.commonDescription}>{item.description}</Text>
+                    </View>
+                    <View style={[
+                      styles.commonRate,
+                      { backgroundColor: getRateColor(item.rate) }
+                    ]}>
+                      <Text style={styles.commonRateText}>{item.rate}%</Text>
+                    </View>
                   </View>
-                  <View style={[
-                    styles.commonRate,
-                    { backgroundColor: getRateColor(item.rate) }
-                  ]}>
-                    <Text style={styles.commonRateText}>{item.rate}%</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* Information Section */}

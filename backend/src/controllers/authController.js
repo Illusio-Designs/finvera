@@ -667,38 +667,63 @@ module.exports = {
         role: user.role,
       });
 
-      // Determine frontend URL based on user type
-      const mainDomain = process.env.MAIN_DOMAIN || process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
-      const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-      let frontendUrl;
-      
-      // Always use role-based subdomain redirect for better user experience
-      // This ensures users land on the correct portal (client or admin)
-      if (['super_admin', 'admin'].includes(user.role)) {
-        frontendUrl = process.env.NODE_ENV === 'production' 
-          ? `${protocol}://admin.${mainDomain}`
-          : 'http://admin.localhost:3001';
-      } else if (user.tenant_id || ['tenant_admin', 'user', 'accountant'].includes(user.role)) {
-        frontendUrl = process.env.NODE_ENV === 'production'
-          ? `${protocol}://client.${mainDomain}`
-          : 'http://client.localhost:3001';
-      } else {
-        // Fallback to main domain or FRONTEND_URL if explicitly set
-        frontendUrl = process.env.FRONTEND_URL || (
-          process.env.NODE_ENV === 'production'
-            ? `${protocol}://${mainDomain}`
-            : 'http://localhost:3001'
-        );
-      }
+      // Check if request is from mobile app (via state parameter or user agent)
+      const isMobileRequest = req.query.state === 'mobile' || 
+                             req.query.platform === 'mobile' ||
+                             req.headers['user-agent']?.includes('Expo');
 
-      // Build redirect URL based on whether user needs company creation
+      // Determine redirect URL based on platform
       let redirectUrl;
-      if (needsCompanyCreation) {
-        // User needs to create a company - redirect to company creation with tokens
-        redirectUrl = `${frontendUrl}/auth/callback?token=${tokens.accessToken}&refreshToken=${tokens.refreshToken}&jti=${tokens.jti}&needsCompany=true`;
+      
+      if (isMobileRequest) {
+        // Mobile app redirect using custom scheme
+        const mobileScheme = process.env.MOBILE_OAUTH_REDIRECT || 'finvera://oauth/google';
+        const params = new URLSearchParams({
+          token: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          jti: tokens.jti,
+          userId: user.id,
+          email: user.email,
+          name: user.name || user.full_name || '',
+          needsCompany: needsCompanyCreation ? 'true' : 'false',
+        });
+        
+        redirectUrl = `${mobileScheme}?${params.toString()}`;
+        
+        console.log('📱 Mobile OAuth redirect URL:', redirectUrl);
       } else {
-        // User has company - redirect to normal callback
-        redirectUrl = `${frontendUrl}/auth/callback?token=${tokens.accessToken}&refreshToken=${tokens.refreshToken}&jti=${tokens.jti}`;
+        // Web frontend redirect
+        const mainDomain = process.env.MAIN_DOMAIN || process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
+        const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+        let frontendUrl;
+        
+        // Always use role-based subdomain redirect for better user experience
+        // This ensures users land on the correct portal (client or admin)
+        if (['super_admin', 'admin'].includes(user.role)) {
+          frontendUrl = process.env.NODE_ENV === 'production' 
+            ? `${protocol}://admin.${mainDomain}`
+            : 'http://admin.localhost:3001';
+        } else if (user.tenant_id || ['tenant_admin', 'user', 'accountant'].includes(user.role)) {
+          frontendUrl = process.env.NODE_ENV === 'production'
+            ? `${protocol}://client.${mainDomain}`
+            : 'http://client.localhost:3001';
+        } else {
+          // Fallback to main domain or FRONTEND_URL if explicitly set
+          frontendUrl = process.env.FRONTEND_URL || (
+            process.env.NODE_ENV === 'production'
+              ? `${protocol}://${mainDomain}`
+              : 'http://localhost:3001'
+          );
+        }
+
+        // Build redirect URL based on whether user needs company creation
+        if (needsCompanyCreation) {
+          // User needs to create a company - redirect to company creation with tokens
+          redirectUrl = `${frontendUrl}/auth/callback?token=${tokens.accessToken}&refreshToken=${tokens.refreshToken}&jti=${tokens.jti}&needsCompany=true`;
+        } else {
+          // User has company - redirect to normal callback
+          redirectUrl = `${frontendUrl}/auth/callback?token=${tokens.accessToken}&refreshToken=${tokens.refreshToken}&jti=${tokens.jti}`;
+        }
       }
 
       // If request expects JSON (API call), return JSON
@@ -719,7 +744,7 @@ module.exports = {
         });
       }
 
-      // Otherwise redirect to frontend
+      // Otherwise redirect to appropriate platform
       return res.redirect(redirectUrl);
     } catch (err) {
       console.error('Google OAuth callback error:', err);

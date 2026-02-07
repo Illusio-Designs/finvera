@@ -6,6 +6,7 @@ import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { reviewAPI } from '../../../lib/api';
+import FormSkeleton from '../../../components/ui/skeletons/FormSkeleton';
 
 export default function ReviewScreen() {
   const { openDrawer } = useDrawer();
@@ -268,9 +269,9 @@ export default function ReviewScreen() {
           title="Reviews & Feedback" 
           onMenuPress={handleMenuPress}
         />
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading reviews...</Text>
-        </View>
+        <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+          <FormSkeleton fieldCount={6} />
+        </ScrollView>
       </View>
     );
   }

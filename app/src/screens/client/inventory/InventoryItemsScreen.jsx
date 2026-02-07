@@ -6,6 +6,7 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { accountingAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
+import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
 export default function InventoryItemsScreen() {
   const { openDrawer } = useDrawer();
@@ -24,6 +25,9 @@ export default function InventoryItemsScreen() {
   };
 
   const fetchData = useCallback(async () => {
+    setLoading(true);
+    const startTime = Date.now();
+    
     try {
       const [itemsRes, warehousesRes] = await Promise.all([
         accountingAPI.inventory.items.list({ 
@@ -56,7 +60,13 @@ export default function InventoryItemsScreen() {
       setItems([]);
       setWarehouses([]);
     } finally {
-      setLoading(false);
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
     }
   }, [searchQuery, filter]); // Removed showNotification from dependencies
 
@@ -212,10 +222,11 @@ export default function InventoryItemsScreen() {
         {/* Items List */}
         {loading ? (
           <View style={styles.loadingContainer}>
-            <View style={styles.loadingCard}>
-              <View style={styles.spinner} />
-              <Text style={styles.loadingText}>Loading inventory items...</Text>
-            </View>
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
           </View>
         ) : filteredItems.length === 0 ? (
           <View style={styles.emptyContainer}>

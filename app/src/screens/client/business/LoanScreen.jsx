@@ -7,6 +7,7 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { finboxAPI } from '../../../lib/api';
+import FormSkeleton from '../../../components/ui/skeletons/FormSkeleton';
 
 export default function LoanScreen() {
   const { openDrawer } = useDrawer();
@@ -284,9 +285,9 @@ export default function LoanScreen() {
           title="Business Loan" 
           onMenuPress={handleMenuPress}
         />
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading loan information...</Text>
-        </View>
+        <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+          <FormSkeleton fieldCount={6} />
+        </ScrollView>
       </View>
     );
   }

@@ -9,6 +9,7 @@ import { useNotification } from '../../../contexts/NotificationContext';
 import { reportsAPI } from '../../../lib/api';
 import { formatCurrency } from '../../../utils/businessLogic';
 import { FONT_STYLES } from '../../../utils/fonts';
+import TableSkeleton from '../../../components/ui/skeletons/TableSkeleton';
 
 export default function ProfitLossScreen() {
   const { openDrawer } = useDrawer();
@@ -22,6 +23,9 @@ export default function ProfitLossScreen() {
   };
 
   const fetchProfitLoss = useCallback(async () => {
+    setLoading(true);
+    const startTime = Date.now();
+    
     try {
       const response = await reportsAPI.profitLoss({ 
         from_date: getFirstDayOfMonth(),
@@ -37,7 +41,13 @@ export default function ProfitLossScreen() {
       });
       setProfitLossData(null);
     } finally {
-      setLoading(false);
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
     }
   }, [showNotification]);
 
@@ -663,8 +673,8 @@ export default function ProfitLossScreen() {
         </View>
 
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Loading profit & loss...</Text>
+          <View style={styles.profitLossContainer}>
+            <TableSkeleton rows={10} columns={4} />
           </View>
         ) : !profitLossData ? (
           <View style={styles.emptyContainer}>

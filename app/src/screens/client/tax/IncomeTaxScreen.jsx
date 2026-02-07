@@ -6,6 +6,7 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { taxAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
+import FormSkeleton from '../../../components/ui/skeletons/FormSkeleton';
 
 export default function IncomeTaxScreen() {
   const { openDrawer } = useDrawer();
@@ -21,6 +22,9 @@ export default function IncomeTaxScreen() {
   };
 
   const fetchTaxData = useCallback(async () => {
+    setLoading(true);
+    const startTime = Date.now();
+    
     try {
       const response = await taxAPI.incomeTax.returns({ limit: 50 });
       const data = response.data?.data || response.data || [];
@@ -34,7 +38,13 @@ export default function IncomeTaxScreen() {
       });
       setTaxData([]);
     } finally {
-      setLoading(false);
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
     }
   }, [showNotification]);
 
@@ -182,11 +192,8 @@ export default function IncomeTaxScreen() {
 
         {/* Tax Returns List */}
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <View style={styles.loadingCard}>
-              <View style={styles.spinner} />
-              <Text style={styles.loadingText}>Loading tax returns...</Text>
-            </View>
+          <View style={styles.returnsList}>
+            <FormSkeleton fieldCount={4} />
           </View>
         ) : taxData.length === 0 ? (
           <View style={styles.emptyContainer}>

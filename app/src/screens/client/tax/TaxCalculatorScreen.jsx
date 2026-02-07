@@ -6,6 +6,7 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { taxAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
+import FormSkeleton from '../../../components/ui/skeletons/FormSkeleton';
 
 export default function TaxCalculatorScreen() {
   const { openDrawer } = useDrawer();
@@ -17,11 +18,31 @@ export default function TaxCalculatorScreen() {
     previousTaxPaid: '',
   });
   const [calculationResult, setCalculationResult] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const handleMenuPress = () => {
     openDrawer();
   };
+
+  useEffect(() => {
+    // Simulate initial data load with 3-second minimum display
+    const startTime = Date.now();
+    
+    const loadData = async () => {
+      // Simulate data loading
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Ensure skeleton shows for at least 3 seconds
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 3000 - elapsedTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
+    };
+    
+    loadData();
+  }, []);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -107,8 +128,13 @@ export default function TaxCalculatorScreen() {
         </View>
 
         {/* Input Form */}
-        <View style={styles.formCard}>
-          <Text style={styles.formTitle}>Income Details</Text>
+        {loading ? (
+          <View style={styles.formCard}>
+            <FormSkeleton fieldCount={5} />
+          </View>
+        ) : (
+          <View style={styles.formCard}>
+            <Text style={styles.formTitle}>Income Details</Text>
           
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Total Annual Income *</Text>
@@ -197,6 +223,7 @@ export default function TaxCalculatorScreen() {
             </TouchableOpacity>
           </View>
         </View>
+        )}
 
         {/* Calculation Result */}
         {calculationResult && (

@@ -8,6 +8,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext.jsx';
 import { companyAPI, notificationAPI } from '../../../lib/api';
+import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
 export default function MoreScreen() {
   const navigation = useNavigation();
@@ -18,6 +19,7 @@ export default function MoreScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [company, setCompany] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   const handleMenuPress = () => {
     openDrawer();
@@ -28,10 +30,21 @@ export default function MoreScreen() {
   }, []);
 
   const fetchData = async () => {
+    setLoading(true);
+    const startTime = Date.now();
+    
     await Promise.all([
       fetchCompanyInfo(),
       fetchUnreadNotifications()
     ]);
+    
+    // Ensure skeleton shows for at least 3 seconds
+    const elapsedTime = Date.now() - startTime;
+    const remainingTime = Math.max(0, 3000 - elapsedTime);
+    
+    setTimeout(() => {
+      setLoading(false);
+    }, remainingTime);
   };
 
   const fetchCompanyInfo = async () => {
@@ -208,35 +221,45 @@ export default function MoreScreen() {
         </View>
 
         {/* Menu Sections */}
-        {menuSections.map((section, sectionIndex) => (
-          <View key={sectionIndex} style={styles.section}>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
-            <View style={styles.menuGrid}>
-              {section.items.map((item, index) => (
-                <TouchableOpacity 
-                  key={index} 
-                  style={styles.menuCard}
-                  onPress={() => handleItemPress(item)}
-                >
-                  <View style={styles.menuCardHeader}>
-                    <View style={[styles.menuIcon, { backgroundColor: item.color }]}>
-                      <Ionicons name={item.icon} size={24} color="white" />
-                    </View>
-                    {item.badge && (
-                      <View style={styles.badge}>
-                        <Text style={styles.badgeText}>{item.badge}</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={styles.menuName}>{item.name}</Text>
-                  {item.description && (
-                    <Text style={styles.menuDescription}>{item.description}</Text>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
+        {loading ? (
+          <View style={styles.section}>
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
           </View>
-        ))}
+        ) : (
+          menuSections.map((section, sectionIndex) => (
+            <View key={sectionIndex} style={styles.section}>
+              <Text style={styles.sectionTitle}>{section.title}</Text>
+              <View style={styles.menuGrid}>
+                {section.items.map((item, index) => (
+                  <TouchableOpacity 
+                    key={index} 
+                    style={styles.menuCard}
+                    onPress={() => handleItemPress(item)}
+                  >
+                    <View style={styles.menuCardHeader}>
+                      <View style={[styles.menuIcon, { backgroundColor: item.color }]}>
+                        <Ionicons name={item.icon} size={24} color="white" />
+                      </View>
+                      {item.badge && (
+                        <View style={styles.badge}>
+                          <Text style={styles.badgeText}>{item.badge}</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.menuName}>{item.name}</Text>
+                    {item.description && (
+                      <Text style={styles.menuDescription}>{item.description}</Text>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          ))
+        )}
 
         {/* Quick Actions */}
         <View style={styles.section}>
