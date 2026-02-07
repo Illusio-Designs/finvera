@@ -298,12 +298,16 @@ class EInvoiceService {
    */
   getIRPClient(company) {
     if (!this.irpClient) {
-      const compliance = company?.compliance || {};
+      const settings = company?.settings || {};
       const config = {
-        baseUrl: compliance.e_invoice?.base_url || process.env.IRP_BASE_URL,
-        apiKey: compliance.e_invoice?.api_key || process.env.SANDBOX_API_KEY,
-        apiSecret: compliance.e_invoice?.api_secret || process.env.SANDBOX_API_SECRET,
-        environment: compliance.e_invoice?.environment || process.env.SANDBOX_ENVIRONMENT,
+        baseUrl: process.env.IRP_BASE_URL || 'https://api.sandbox.co.in',
+        apiKey: process.env.SANDBOX_API_KEY,
+        apiSecret: process.env.SANDBOX_API_SECRET,
+        environment: process.env.SANDBOX_ENVIRONMENT || 'test',
+        // Company-specific E-Invoice credentials
+        einvoiceUsername: settings.einvoice_username,
+        einvoicePassword: settings.einvoice_password,
+        gstin: company.gstin,
       };
       
       this.irpClient = new IRPClient(config);

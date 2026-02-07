@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, RefreshControl, Image, Modal, TextInput } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons'
-import { FONT_STYLES } from '../../../utils/fonts';;
+import { Ionicons } from '@expo/vector-icons';
+import { FONT_STYLES } from '../../../utils/fonts';
 import * as LocalAuthentication from 'expo-local-authentication';
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
@@ -13,9 +12,8 @@ import { buildUploadUrl } from '../../../config/env';
 import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
 export default function SettingsScreen() {
-  const navigation = useNavigation();
   const { openDrawer } = useDrawer();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { showNotification } = useNotification();
   
   const [loading, setLoading] = useState(true);
@@ -34,6 +32,35 @@ export default function SettingsScreen() {
     default_barcode_type: 'CODE128',
     default_barcode_prefix: 'FV',
   });
+  
+  // GST & Compliance Settings
+  const [gstSettings, setGstSettings] = useState({
+    einvoice_enabled: false,
+    einvoice_threshold: 0,
+    auto_generate_einvoice: false,
+    einvoice_username: '',
+    einvoice_password: '',
+    ewaybill_enabled: false,
+    ewaybill_threshold: 50000,
+    auto_generate_ewaybill: false,
+    ewaybill_username: '',
+    ewaybill_password: '',
+    tds_enabled: false,
+    default_tds_section: '',
+  });
+  
+  // Voucher Numbering Settings
+  const [numberingSettings, setNumberingSettings] = useState({
+    auto_numbering_enabled: true,
+    numbering_prefix: 'FV',
+    numbering_start: 1,
+    numbering_padding: 4,
+  });
+  
+  const [showGSTModal, setShowGSTModal] = useState(false);
+  const [showNumberingModal, setShowNumberingModal] = useState(false);
+  const [tempGSTSettings, setTempGSTSettings] = useState({});
+  const [tempNumberingSettings, setTempNumberingSettings] = useState({});
 
   const handleMenuPress = () => {
     openDrawer();
@@ -51,6 +78,7 @@ export default function SettingsScreen() {
       const tenant = response?.data?.data || response?.data;
       const settings = tenant?.settings || {};
       
+      // Barcode Settings
       setBarcodeSettings({
         barcode_enabled: settings.barcode_enabled === true,
         default_barcode_type: settings.default_barcode_type || 'CODE128',
@@ -61,8 +89,50 @@ export default function SettingsScreen() {
         default_barcode_type: settings.default_barcode_type || 'CODE128',
         default_barcode_prefix: settings.default_barcode_prefix || 'FV',
       });
+      
+      // GST & Compliance Settings
+      setGstSettings({
+        einvoice_enabled: settings.einvoice_enabled === true,
+        einvoice_threshold: settings.einvoice_threshold || 0,
+        auto_generate_einvoice: settings.auto_generate_einvoice === true,
+        einvoice_username: settings.einvoice_username || '',
+        einvoice_password: settings.einvoice_password || '',
+        ewaybill_enabled: settings.ewaybill_enabled === true,
+        ewaybill_threshold: settings.ewaybill_threshold || 50000,
+        auto_generate_ewaybill: settings.auto_generate_ewaybill === true,
+        ewaybill_username: settings.ewaybill_username || '',
+        ewaybill_password: settings.ewaybill_password || '',
+        tds_enabled: settings.tds_enabled === true,
+        default_tds_section: settings.default_tds_section || '',
+      });
+      
+      setTempGSTSettings({
+        einvoice_threshold: settings.einvoice_threshold || 0,
+        auto_generate_einvoice: settings.auto_generate_einvoice === true,
+        einvoice_username: settings.einvoice_username || '',
+        einvoice_password: settings.einvoice_password || '',
+        ewaybill_threshold: settings.ewaybill_threshold || 50000,
+        auto_generate_ewaybill: settings.auto_generate_ewaybill === true,
+        ewaybill_username: settings.ewaybill_username || '',
+        ewaybill_password: settings.ewaybill_password || '',
+        default_tds_section: settings.default_tds_section || '',
+      });
+      
+      // Voucher Numbering Settings
+      setNumberingSettings({
+        auto_numbering_enabled: settings.auto_numbering_enabled !== false,
+        numbering_prefix: settings.numbering_prefix || 'FV',
+        numbering_start: settings.numbering_start || 1,
+        numbering_padding: settings.numbering_padding || 4,
+      });
+      
+      setTempNumberingSettings({
+        numbering_prefix: settings.numbering_prefix || 'FV',
+        numbering_start: settings.numbering_start || 1,
+        numbering_padding: settings.numbering_padding || 4,
+      });
     } catch (error) {
-      console.error('Error fetching barcode settings:', error);
+      console.error('Error fetching settings:', error);
     } finally {
       setLoading(false);
     }
@@ -96,6 +166,64 @@ export default function SettingsScreen() {
       setLoading(false);
     }
   };
+  
+  const updateGSTSettings = async (newSettings) => {
+    try {
+      setLoading(true);
+      await tenantAPI.updateProfile({
+        settings: {
+          ...gstSettings,
+          ...newSettings,
+        }
+      });
+      
+      setGstSettings(prev => ({ ...prev, ...newSettings }));
+      
+      showNotification({
+        type: 'success',
+        title: 'Settings Updated',
+        message: 'GST & Compliance settings have been saved successfully'
+      });
+    } catch (error) {
+      console.error('Error updating GST settings:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to update GST settings'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const updateNumberingSettings = async (newSettings) => {
+    try {
+      setLoading(true);
+      await tenantAPI.updateProfile({
+        settings: {
+          ...numberingSettings,
+          ...newSettings,
+        }
+      });
+      
+      setNumberingSettings(prev => ({ ...prev, ...newSettings }));
+      
+      showNotification({
+        type: 'success',
+        title: 'Settings Updated',
+        message: 'Voucher numbering settings have been saved successfully'
+      });
+    } catch (error) {
+      console.error('Error updating numbering settings:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to update numbering settings'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const checkBiometricAvailability = async () => {
     try {
@@ -121,6 +249,18 @@ export default function SettingsScreen() {
     if (key === 'barcode_enabled') {
       const newValue = !barcodeSettings.barcode_enabled;
       await updateBarcodeSettings({ barcode_enabled: newValue });
+    } else if (key === 'einvoice_enabled') {
+      const newValue = !gstSettings.einvoice_enabled;
+      await updateGSTSettings({ einvoice_enabled: newValue });
+    } else if (key === 'ewaybill_enabled') {
+      const newValue = !gstSettings.ewaybill_enabled;
+      await updateGSTSettings({ ewaybill_enabled: newValue });
+    } else if (key === 'tds_enabled') {
+      const newValue = !gstSettings.tds_enabled;
+      await updateGSTSettings({ tds_enabled: newValue });
+    } else if (key === 'auto_numbering_enabled') {
+      const newValue = !numberingSettings.auto_numbering_enabled;
+      await updateNumberingSettings({ auto_numbering_enabled: newValue });
     } else if (key === 'biometric') {
       const newValue = !preferences.biometric;
       
@@ -211,8 +351,120 @@ export default function SettingsScreen() {
     await updateBarcodeSettings(tempBarcodeSettings);
     setShowBarcodeModal(false);
   };
+  
+  const handleGSTConfig = () => {
+    setTempGSTSettings({
+      einvoice_threshold: gstSettings.einvoice_threshold,
+      auto_generate_einvoice: gstSettings.auto_generate_einvoice,
+      einvoice_username: gstSettings.einvoice_username,
+      einvoice_password: gstSettings.einvoice_password,
+      ewaybill_threshold: gstSettings.ewaybill_threshold,
+      auto_generate_ewaybill: gstSettings.auto_generate_ewaybill,
+      ewaybill_username: gstSettings.ewaybill_username,
+      ewaybill_password: gstSettings.ewaybill_password,
+      default_tds_section: gstSettings.default_tds_section,
+    });
+    setShowGSTModal(true);
+  };
+
+  const saveGSTConfig = async () => {
+    await updateGSTSettings(tempGSTSettings);
+    setShowGSTModal(false);
+  };
+  
+  const handleNumberingConfig = () => {
+    setTempNumberingSettings({
+      numbering_prefix: numberingSettings.numbering_prefix,
+      numbering_start: numberingSettings.numbering_start,
+      numbering_padding: numberingSettings.numbering_padding,
+    });
+    setShowNumberingModal(true);
+  };
+
+  const saveNumberingConfig = async () => {
+    await updateNumberingSettings(tempNumberingSettings);
+    setShowNumberingModal(false);
+  };
 
   const settingSections = [
+    {
+      title: 'GST & Compliance',
+      items: [
+        {
+          key: 'einvoice_enabled',
+          label: 'E-Invoice',
+          description: 'Enable electronic invoicing',
+          type: 'switch',
+          value: gstSettings.einvoice_enabled,
+          icon: 'document-text-outline'
+        },
+        {
+          key: 'einvoice_config',
+          label: 'E-Invoice Configuration',
+          description: `Threshold: ₹${gstSettings.einvoice_threshold}, User: ${gstSettings.einvoice_username || 'Not Set'}`,
+          type: 'navigation',
+          icon: 'settings-outline',
+          onPress: handleGSTConfig,
+          disabled: !gstSettings.einvoice_enabled
+        },
+        {
+          key: 'ewaybill_enabled',
+          label: 'E-Way Bill',
+          description: 'Enable electronic way bill',
+          type: 'switch',
+          value: gstSettings.ewaybill_enabled,
+          icon: 'car-outline'
+        },
+        {
+          key: 'ewaybill_config',
+          label: 'E-Way Bill Configuration',
+          description: `Threshold: ₹${gstSettings.ewaybill_threshold}, User: ${gstSettings.ewaybill_username || 'Not Set'}`,
+          type: 'navigation',
+          icon: 'settings-outline',
+          onPress: handleGSTConfig,
+          disabled: !gstSettings.ewaybill_enabled
+        },
+        {
+          key: 'tds_enabled',
+          label: 'TDS',
+          description: 'Enable Tax Deducted at Source',
+          type: 'switch',
+          value: gstSettings.tds_enabled,
+          icon: 'calculator-outline'
+        },
+        {
+          key: 'tds_config',
+          label: 'TDS Configuration',
+          description: `Default Section: ${gstSettings.default_tds_section || 'Not Set'}`,
+          type: 'navigation',
+          icon: 'settings-outline',
+          onPress: handleGSTConfig,
+          disabled: !gstSettings.tds_enabled
+        },
+      ]
+    },
+    {
+      title: 'Voucher Numbering',
+      items: [
+        {
+          key: 'auto_numbering_enabled',
+          label: 'Auto Numbering',
+          description: 'Automatically generate voucher numbers',
+          type: 'switch',
+          value: numberingSettings.auto_numbering_enabled,
+          icon: 'list-outline'
+        },
+        {
+          key: 'numbering_config',
+          label: 'Numbering Configuration',
+          description: `Format: ${numberingSettings.numbering_prefix}${String(numberingSettings.numbering_start).padStart(numberingSettings.numbering_padding, '0')}`,
+          type: 'navigation',
+          icon: 'settings-outline',
+          onPress: handleNumberingConfig,
+          disabled: !numberingSettings.auto_numbering_enabled
+        },
+      ]
+    },
     {
       title: 'Barcode Settings',
       items: [
@@ -437,6 +689,326 @@ export default function SettingsScreen() {
               <TouchableOpacity 
                 style={[styles.actionButton, styles.saveButton, loading && styles.saveButtonDisabled]}
                 onPress={saveBarcodeConfig}
+                disabled={loading}
+              >
+                <Ionicons name="save" size={20} color="white" />
+                <Text style={styles.saveButtonText}>
+                  {loading ? 'Saving...' : 'Save Changes'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* GST & Compliance Configuration Modal */}
+      <Modal
+        visible={showGSTModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowGSTModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>GST & Compliance Configuration</Text>
+            <TouchableOpacity 
+              onPress={() => setShowGSTModal(false)}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color="#6b7280" />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.modalContent}>
+            {/* E-Invoice Settings */}
+            {gstSettings.einvoice_enabled && (
+              <>
+                <Text style={styles.sectionHeader}>E-Invoice Settings</Text>
+                <Text style={styles.infoText}>
+                  Create API credentials on IRP Portal (einvoice1.gst.gov.in) using your GSTIN
+                </Text>
+                
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>E-Invoice Username</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={tempGSTSettings.einvoice_username}
+                    onChangeText={(text) => setTempGSTSettings(prev => ({ ...prev, einvoice_username: text }))}
+                    placeholder="Enter E-Invoice API Username"
+                    placeholderTextColor="#9ca3af"
+                    autoCapitalize="none"
+                  />
+                  <Text style={styles.helpText}>
+                    API Username created on IRP Portal
+                  </Text>
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>E-Invoice Password</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={tempGSTSettings.einvoice_password}
+                    onChangeText={(text) => setTempGSTSettings(prev => ({ ...prev, einvoice_password: text }))}
+                    placeholder="Enter E-Invoice API Password"
+                    placeholderTextColor="#9ca3af"
+                    secureTextEntry
+                    autoCapitalize="none"
+                  />
+                  <Text style={styles.helpText}>
+                    API Password created on IRP Portal
+                  </Text>
+                </View>
+                
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Invoice Threshold (₹)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={String(tempGSTSettings.einvoice_threshold || 0)}
+                    onChangeText={(text) => setTempGSTSettings(prev => ({ ...prev, einvoice_threshold: parseInt(text) || 0 }))}
+                    placeholder="Enter threshold amount"
+                    placeholderTextColor="#9ca3af"
+                    keyboardType="numeric"
+                  />
+                  <Text style={styles.helpText}>
+                    E-Invoice will be generated for invoices above this amount
+                  </Text>
+                </View>
+
+                <View style={styles.formGroup}>
+                  <View style={styles.switchRow}>
+                    <View style={styles.switchInfo}>
+                      <Text style={styles.label}>Auto Generate E-Invoice</Text>
+                      <Text style={styles.helpText}>
+                        Automatically generate e-invoice when posting voucher
+                      </Text>
+                    </View>
+                    <Switch
+                      value={tempGSTSettings.auto_generate_einvoice}
+                      onValueChange={(value) => setTempGSTSettings(prev => ({ ...prev, auto_generate_einvoice: value }))}
+                      trackColor={{ false: '#e5e7eb', true: '#3e60ab' }}
+                      thumbColor={tempGSTSettings.auto_generate_einvoice ? '#ffffff' : '#f3f4f6'}
+                    />
+                  </View>
+                </View>
+              </>
+            )}
+
+            {/* E-Way Bill Settings */}
+            {gstSettings.ewaybill_enabled && (
+              <>
+                <Text style={styles.sectionHeader}>E-Way Bill Settings</Text>
+                <Text style={styles.infoText}>
+                  Create API credentials on E-Way Bill Portal (ewaybillgst.gov.in) using your GSTIN
+                </Text>
+                
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>E-Way Bill Username</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={tempGSTSettings.ewaybill_username}
+                    onChangeText={(text) => setTempGSTSettings(prev => ({ ...prev, ewaybill_username: text }))}
+                    placeholder="Enter E-Way Bill API Username"
+                    placeholderTextColor="#9ca3af"
+                    autoCapitalize="none"
+                  />
+                  <Text style={styles.helpText}>
+                    API Username created on E-Way Bill Portal
+                  </Text>
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>E-Way Bill Password</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={tempGSTSettings.ewaybill_password}
+                    onChangeText={(text) => setTempGSTSettings(prev => ({ ...prev, ewaybill_password: text }))}
+                    placeholder="Enter E-Way Bill API Password"
+                    placeholderTextColor="#9ca3af"
+                    secureTextEntry
+                    autoCapitalize="none"
+                  />
+                  <Text style={styles.helpText}>
+                    API Password created on E-Way Bill Portal
+                  </Text>
+                </View>
+                
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>E-Way Bill Threshold (₹)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={String(tempGSTSettings.ewaybill_threshold || 50000)}
+                    onChangeText={(text) => setTempGSTSettings(prev => ({ ...prev, ewaybill_threshold: parseInt(text) || 50000 }))}
+                    placeholder="Enter threshold amount"
+                    placeholderTextColor="#9ca3af"
+                    keyboardType="numeric"
+                  />
+                  <Text style={styles.helpText}>
+                    E-Way Bill will be generated for invoices above this amount
+                  </Text>
+                </View>
+
+                <View style={styles.formGroup}>
+                  <View style={styles.switchRow}>
+                    <View style={styles.switchInfo}>
+                      <Text style={styles.label}>Auto Generate E-Way Bill</Text>
+                      <Text style={styles.helpText}>
+                        Automatically generate e-way bill when posting voucher
+                      </Text>
+                    </View>
+                    <Switch
+                      value={tempGSTSettings.auto_generate_ewaybill}
+                      onValueChange={(value) => setTempGSTSettings(prev => ({ ...prev, auto_generate_ewaybill: value }))}
+                      trackColor={{ false: '#e5e7eb', true: '#3e60ab' }}
+                      thumbColor={tempGSTSettings.auto_generate_ewaybill ? '#ffffff' : '#f3f4f6'}
+                    />
+                  </View>
+                </View>
+              </>
+            )}
+
+            {/* TDS Settings */}
+            {gstSettings.tds_enabled && (
+              <>
+                <Text style={styles.sectionHeader}>TDS Settings</Text>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Default TDS Section</Text>
+                  <View style={styles.radioGroup}>
+                    {['194C', '194J', '194I', '194H', '194A'].map((section) => (
+                      <TouchableOpacity
+                        key={section}
+                        style={styles.radioOption}
+                        onPress={() => setTempGSTSettings(prev => ({ ...prev, default_tds_section: section }))}
+                      >
+                        <View style={[
+                          styles.radioCircle,
+                          tempGSTSettings.default_tds_section === section && styles.radioCircleSelected
+                        ]}>
+                          {tempGSTSettings.default_tds_section === section && (
+                            <View style={styles.radioInner} />
+                          )}
+                        </View>
+                        <Text style={styles.radioLabel}>Section {section}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <Text style={styles.helpText}>
+                    This section will be pre-selected in TDS calculations
+                  </Text>
+                </View>
+              </>
+            )}
+
+            <View style={styles.actionButtons}>
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.cancelButton]}
+                onPress={() => setShowGSTModal(false)}
+                disabled={loading}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.saveButton, loading && styles.saveButtonDisabled]}
+                onPress={saveGSTConfig}
+                disabled={loading}
+              >
+                <Ionicons name="save" size={20} color="white" />
+                <Text style={styles.saveButtonText}>
+                  {loading ? 'Saving...' : 'Save Changes'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Voucher Numbering Configuration Modal */}
+      <Modal
+        visible={showNumberingModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowNumberingModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Voucher Numbering Configuration</Text>
+            <TouchableOpacity 
+              onPress={() => setShowNumberingModal(false)}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color="#6b7280" />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.modalContent}>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Numbering Prefix</Text>
+              <TextInput
+                style={styles.input}
+                value={tempNumberingSettings.numbering_prefix}
+                onChangeText={(text) => setTempNumberingSettings(prev => ({ ...prev, numbering_prefix: text }))}
+                placeholder="Enter prefix (e.g., FV)"
+                placeholderTextColor="#9ca3af"
+                maxLength={10}
+              />
+              <Text style={styles.helpText}>
+                This prefix will be added to all voucher numbers
+              </Text>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Starting Number</Text>
+              <TextInput
+                style={styles.input}
+                value={String(tempNumberingSettings.numbering_start)}
+                onChangeText={(text) => setTempNumberingSettings(prev => ({ ...prev, numbering_start: parseInt(text) || 1 }))}
+                placeholder="Enter starting number"
+                placeholderTextColor="#9ca3af"
+                keyboardType="numeric"
+              />
+              <Text style={styles.helpText}>
+                Voucher numbering will start from this number
+              </Text>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Number Padding</Text>
+              <View style={styles.radioGroup}>
+                {[3, 4, 5, 6].map((padding) => (
+                  <TouchableOpacity
+                    key={padding}
+                    style={styles.radioOption}
+                    onPress={() => setTempNumberingSettings(prev => ({ ...prev, numbering_padding: padding }))}
+                  >
+                    <View style={[
+                      styles.radioCircle,
+                      tempNumberingSettings.numbering_padding === padding && styles.radioCircleSelected
+                    ]}>
+                      {tempNumberingSettings.numbering_padding === padding && (
+                        <View style={styles.radioInner} />
+                      )}
+                    </View>
+                    <Text style={styles.radioLabel}>{padding} digits (e.g., {String(1).padStart(padding, '0')})</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={styles.helpText}>
+                Preview: {tempNumberingSettings.numbering_prefix}{String(tempNumberingSettings.numbering_start).padStart(tempNumberingSettings.numbering_padding, '0')}
+              </Text>
+            </View>
+
+            <View style={styles.actionButtons}>
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.cancelButton]}
+                onPress={() => setShowNumberingModal(false)}
+                disabled={loading}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.saveButton, loading && styles.saveButtonDisabled]}
+                onPress={saveNumberingConfig}
                 disabled={loading}
               >
                 <Ionicons name="save" size={20} color="white" />
@@ -712,5 +1284,32 @@ const styles = StyleSheet.create({
   copyright: {
     ...FONT_STYLES.captionSmall,
     color: '#9ca3af'
+  },
+  sectionHeader: {
+    ...FONT_STYLES.h5,
+    color: '#3e60ab',
+    marginTop: 16,
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  infoText: {
+    ...FONT_STYLES.caption,
+    color: '#6b7280',
+    backgroundColor: '#f0f4fc',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    lineHeight: 18,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  switchInfo: {
+    flex: 1,
+    marginRight: 12,
   },
 });

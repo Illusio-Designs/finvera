@@ -18,18 +18,24 @@ class IRPClient {
       initialDelay: config.initialDelay || 1000,
       maxDelay: config.maxDelay || 30000,
       backoffMultiplier: config.backoffMultiplier || 2,
+      // Company-specific E-Invoice credentials
+      einvoiceUsername: config.einvoiceUsername,
+      einvoicePassword: config.einvoicePassword,
+      gstin: config.gstin,
     };
     
-    this.accessToken = null;
-    this.tokenExpiry = null;
+    this.sandboxToken = null;
+    this.sandboxTokenExpiry = null;
+    this.einvoiceToken = null;
+    this.einvoiceTokenExpiry = null;
     this.retryCount = 0;
   }
 
   /**
-   * Authenticate with IRP portal using OAuth2 client credentials
-   * @returns {Promise<string>} Access token
+   * Authenticate with Sandbox API to get access token
+   * @returns {Promise<string>} Sandbox access token
    */
-  async authenticate() {
+  async authenticateSandbox() {
     try {
       const response = await axios.post(`${this.config.baseUrl}/authenticate`, {}, {
         headers: {
@@ -42,35 +48,124 @@ class IRPClient {
       });
 
       if (response.data && response.data.data && response.data.data.access_token) {
-        this.accessToken = response.data.data.access_token;
+        this.sandboxToken = response.data.data.access_token;
         // Set token expiry (typically 1 hour, but we'll refresh after 50 minutes)
-        this.tokenExpiry = new Date(Date.now() + 50 * 60 * 1000);
+        this.sandboxTokenExpiry = new Date(Date.now() + 50 * 60 * 1000);
         
-        logger.info('IRP Portal authentication successful');
-        return this.accessToken;
+        logger.info('Sandbox authentication successful');
+        return this.sandboxToken;
       }
       
-      throw new Error('Invalid authentication response from IRP portal');
+      throw new Error('Invalid authentication response from Sandbox');
     } catch (error) {
-      logger.error('IRP Portal authentication failed:', error.message);
+      logger.error('Sandbox authentication failed:', error.message);
       
       if (error.response?.status === 401) {
-        throw new Error(`IRP authentication failed: Invalid API credentials for ${this.config.environment} environment`);
+        throw new Error(`Sandbox authentication failed: Invalid API credentials for ${this.config.environment} environment`);
       }
       
-      throw new Error(`IRP authentication failed: ${error.message}`);
+      throw new Error(`Sandbox authentication failed: ${error.message}`);
     }
   }
 
   /**
-   * Get valid access token, refreshing if necessary
-   * @returns {Promise<string>} Valid access token
+   * Authenticate with E-Invoice portal using company credentials
+   * @returns {Promise<string>} E-Invoice access token
+   */
+  async authenticateEInvoice() {
+    try {
+      if (!this.config.einvoiceUsername || !this.config.einvoicePassword) {
+        throw new Error('E-Invoice credentials not configured. Please set username and password in Settings.');
+      }
+
+      if (!this.config.gstin) {
+        throw new Error('GSTIN not configured for this company');
+      }
+
+      // First get Sandbox token
+      const sandboxToken = await this.getSandboxToken();
+
+      // Then authenticate with E-Invoice portal
+      const response = await axios.post(
+        `${this.config.baseUrl}/gst/compliance/e-invoice/tax-payer/authenticate`,
+        {
+          username: this.config.einvoiceUsername,
+          password: this.config.einvoicePassword,
+          gstin: this.config.gstin
+        },
+        {
+          headers: {
+            'Authorization': sandboxToken,
+            'x-api-key': this.config.apiKey,
+            'x-api-version': '1.0',
+            'Content-Type': 'application/json'
+          },
+          timeout: this.config.timeout
+        }
+      );
+
+      if (response.data && response.data.data && response.data.data.Data) {
+        const authToken = response.data.data.Data.AuthToken || response.data.data.Data.authToken;
+        if (authToken) {
+          this.einvoiceToken = authToken;
+          // E-Invoice token expires in 6 hours
+          this.einvoiceTokenExpiry = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+          
+          logger.info('E-Invoice portal authentication successful');
+          return this.einvoiceToken;
+        }
+      }
+      
+      // Check for error response
+      if (response.data && response.data.data && response.data.data.ErrorDetails) {
+        const errors = response.data.data.ErrorDetails;
+        const errorMsg = errors.map(e => `${e.ErrorCode}: ${e.ErrorMessage}`).join(', ');
+        throw new Error(`E-Invoice authentication failed: ${errorMsg}`);
+      }
+      
+      throw new Error('Invalid authentication response from E-Invoice portal');
+    } catch (error) {
+      logger.error('E-Invoice portal authentication failed:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get valid Sandbox access token, refreshing if necessary
+   * @returns {Promise<string>} Valid Sandbox access token
+   */
+  async getSandboxToken() {
+    if (!this.sandboxToken || !this.sandboxTokenExpiry || new Date() >= this.sandboxTokenExpiry) {
+      await this.authenticateSandbox();
+    }
+    return this.sandboxToken;
+  }
+
+  /**
+   * Get valid E-Invoice access token, refreshing if necessary
+   * @returns {Promise<string>} Valid E-Invoice access token
+   */
+  async getEInvoiceToken() {
+    if (!this.einvoiceToken || !this.einvoiceTokenExpiry || new Date() >= this.einvoiceTokenExpiry) {
+      await this.authenticateEInvoice();
+    }
+    return this.einvoiceToken;
+  }
+
+  /**
+   * Legacy method for backward compatibility
+   * @deprecated Use getSandboxToken() or getEInvoiceToken() instead
+   */
+  async authenticate() {
+    return this.authenticateSandbox();
+  }
+
+  /**
+   * Legacy method for backward compatibility
+   * @deprecated Use getSandboxToken() or getEInvoiceToken() instead
    */
   async getAccessToken() {
-    if (!this.accessToken || !this.tokenExpiry || new Date() >= this.tokenExpiry) {
-      await this.authenticate();
-    }
-    return this.accessToken;
+    return this.getSandboxToken();
   }
 
   /**
@@ -108,15 +203,18 @@ class IRPClient {
     
     for (let attempt = 0; attempt < this.config.maxRetries; attempt++) {
       try {
-        const accessToken = await this.getAccessToken();
+        // Get both tokens
+        const sandboxToken = await this.getSandboxToken();
+        const einvoiceToken = await this.getEInvoiceToken();
         
         const config = {
           method,
           url: `${this.config.baseUrl}${endpoint}`,
           headers: {
-            'authorization': accessToken,
+            'authorization': sandboxToken,
             'x-api-key': this.config.apiKey,
             'x-api-version': '1.0',
+            'x-einvoice-token': einvoiceToken, // E-Invoice specific token
             'Content-Type': 'application/json',
             ...options.headers
           },
@@ -148,10 +246,12 @@ class IRPClient {
         
         // Handle token expiry
         if (error.response?.status === 401) {
-          logger.warn('IRP token expired, clearing cached token');
-          this.accessToken = null;
-          this.tokenExpiry = null;
-          // Continue to retry with new token
+          logger.warn('IRP token expired, clearing cached tokens');
+          this.sandboxToken = null;
+          this.sandboxTokenExpiry = null;
+          this.einvoiceToken = null;
+          this.einvoiceTokenExpiry = null;
+          // Continue to retry with new tokens
         }
         
         // Don't retry on last attempt

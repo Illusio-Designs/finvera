@@ -18,18 +18,24 @@ class EWayBillClient {
       initialDelay: config.initialDelay || 1000,
       maxDelay: config.maxDelay || 30000,
       backoffMultiplier: config.backoffMultiplier || 2,
+      // Company-specific E-Way Bill credentials
+      ewaybillUsername: config.ewaybillUsername,
+      ewaybillPassword: config.ewaybillPassword,
+      gstin: config.gstin,
     };
     
-    this.accessToken = null;
-    this.tokenExpiry = null;
+    this.sandboxToken = null;
+    this.sandboxTokenExpiry = null;
+    this.ewaybillToken = null;
+    this.ewaybillTokenExpiry = null;
     this.retryCount = 0;
   }
 
   /**
-   * Authenticate with E-Way Bill portal using OAuth2 client credentials
-   * @returns {Promise<string>} Access token
+   * Authenticate with Sandbox API to get access token
+   * @returns {Promise<string>} Sandbox access token
    */
-  async authenticate() {
+  async authenticateSandbox() {
     try {
       const response = await axios.post(`${this.config.baseUrl}/authenticate`, {}, {
         headers: {
@@ -42,35 +48,123 @@ class EWayBillClient {
       });
 
       if (response.data && response.data.data && response.data.data.access_token) {
-        this.accessToken = response.data.data.access_token;
+        this.sandboxToken = response.data.data.access_token;
         // Set token expiry (typically 1 hour, but we'll refresh after 50 minutes)
-        this.tokenExpiry = new Date(Date.now() + 50 * 60 * 1000);
+        this.sandboxTokenExpiry = new Date(Date.now() + 50 * 60 * 1000);
         
-        logger.info('E-Way Bill Portal authentication successful');
-        return this.accessToken;
+        logger.info('Sandbox authentication successful');
+        return this.sandboxToken;
       }
       
-      throw new Error('Invalid authentication response from E-Way Bill portal');
+      throw new Error('Invalid authentication response from Sandbox');
     } catch (error) {
-      logger.error('E-Way Bill Portal authentication failed:', error.message);
+      logger.error('Sandbox authentication failed:', error.message);
       
       if (error.response?.status === 401) {
-        throw new Error(`E-Way Bill authentication failed: Invalid API credentials for ${this.config.environment} environment`);
+        throw new Error(`Sandbox authentication failed: Invalid API credentials for ${this.config.environment} environment`);
       }
       
-      throw new Error(`E-Way Bill authentication failed: ${error.message}`);
+      throw new Error(`Sandbox authentication failed: ${error.message}`);
     }
   }
 
   /**
-   * Get valid access token, refreshing if necessary
-   * @returns {Promise<string>} Valid access token
+   * Authenticate with E-Way Bill portal using company credentials
+   * @returns {Promise<string>} E-Way Bill access token
+   */
+  async authenticateEWayBill() {
+    try {
+      if (!this.config.ewaybillUsername || !this.config.ewaybillPassword) {
+        throw new Error('E-Way Bill credentials not configured. Please set username and password in Settings.');
+      }
+
+      if (!this.config.gstin) {
+        throw new Error('GSTIN not configured for this company');
+      }
+
+      // First get Sandbox token
+      const sandboxToken = await this.getSandboxToken();
+
+      // Then authenticate with E-Way Bill portal
+      const response = await axios.post(
+        `${this.config.baseUrl}/gst/compliance/e-way-bill/tax-payer/authenticate`,
+        {
+          username: this.config.ewaybillUsername,
+          password: this.config.ewaybillPassword,
+          gstin: this.config.gstin
+        },
+        {
+          headers: {
+            'Authorization': sandboxToken,
+            'x-api-key': this.config.apiKey,
+            'x-api-version': '1.0',
+            'Content-Type': 'application/json'
+          },
+          timeout: this.config.timeout
+        }
+      );
+
+      if (response.data && response.data.data) {
+        const authToken = response.data.data.authToken || response.data.data.AuthToken;
+        if (authToken) {
+          this.ewaybillToken = authToken;
+          // E-Way Bill token expires in 6 hours
+          this.ewaybillTokenExpiry = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+          
+          logger.info('E-Way Bill portal authentication successful');
+          return this.ewaybillToken;
+        }
+      }
+      
+      // Check for error response
+      if (response.data && response.data.data && response.data.data.error) {
+        const errorMsg = response.data.data.error.errorCodes || 'Authentication failed';
+        throw new Error(`E-Way Bill authentication failed: ${errorMsg}`);
+      }
+      
+      throw new Error('Invalid authentication response from E-Way Bill portal');
+    } catch (error) {
+      logger.error('E-Way Bill portal authentication failed:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get valid Sandbox access token, refreshing if necessary
+   * @returns {Promise<string>} Valid Sandbox access token
+   */
+  async getSandboxToken() {
+    if (!this.sandboxToken || !this.sandboxTokenExpiry || new Date() >= this.sandboxTokenExpiry) {
+      await this.authenticateSandbox();
+    }
+    return this.sandboxToken;
+  }
+
+  /**
+   * Get valid E-Way Bill access token, refreshing if necessary
+   * @returns {Promise<string>} Valid E-Way Bill access token
+   */
+  async getEWayBillToken() {
+    if (!this.ewaybillToken || !this.ewaybillTokenExpiry || new Date() >= this.ewaybillTokenExpiry) {
+      await this.authenticateEWayBill();
+    }
+    return this.ewaybillToken;
+  }
+
+  /**
+   * Legacy method for backward compatibility
+   * @deprecated Use getSandboxToken() or getEWayBillToken() instead
+   */
+  async authenticate() {
+    return this.authenticateSandbox();
+  }
+
+  /**
+   * Legacy method for backward compatibility
+   * @deprecated Use getSandboxToken() or getEWayBillToken() instead
    */
   async getAccessToken() {
-    if (!this.accessToken || !this.tokenExpiry || new Date() >= this.tokenExpiry) {
-      await this.authenticate();
-    }
-    return this.accessToken;
+    return this.getSandboxToken();
   }
 
   /**
@@ -108,15 +202,18 @@ class EWayBillClient {
     
     for (let attempt = 0; attempt < this.config.maxRetries; attempt++) {
       try {
-        const accessToken = await this.getAccessToken();
+        // Get both tokens
+        const sandboxToken = await this.getSandboxToken();
+        const ewaybillToken = await this.getEWayBillToken();
         
         const config = {
           method,
           url: `${this.config.baseUrl}${endpoint}`,
           headers: {
-            'authorization': accessToken,
+            'authorization': sandboxToken,
             'x-api-key': this.config.apiKey,
             'x-api-version': '1.0',
+            'x-ewaybill-token': ewaybillToken, // E-Way Bill specific token
             'Content-Type': 'application/json',
             ...options.headers
           },
@@ -148,10 +245,12 @@ class EWayBillClient {
         
         // Handle token expiry
         if (error.response?.status === 401) {
-          logger.warn('E-Way Bill token expired, clearing cached token');
-          this.accessToken = null;
-          this.tokenExpiry = null;
-          // Continue to retry with new token
+          logger.warn('E-Way Bill token expired, clearing cached tokens');
+          this.sandboxToken = null;
+          this.sandboxTokenExpiry = null;
+          this.ewaybillToken = null;
+          this.ewaybillTokenExpiry = null;
+          // Continue to retry with new tokens
         }
         
         // Don't retry on last attempt
