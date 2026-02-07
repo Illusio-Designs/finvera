@@ -19,14 +19,17 @@ export default function CreateInventoryItemModal({
   visible, 
   onClose, 
   onItemCreated,
-  title = 'Create New Item'
+  editData = null,
+  isEdit = false,
+  title
 }) {
   const { showNotification } = useNotification();
   
   const [formData, setFormData] = useState({
+    item_code: '',
     item_name: '',
     item_description: '',
-    hsn_code: '',
+    hsn_sac_code: '',
     unit: 'PCS',
     rate: 0,
     gst_rate: 18,
@@ -41,6 +44,44 @@ export default function CreateInventoryItemModal({
   const [loading, setLoading] = useState(false);
   const [showUnitModal, setShowUnitModal] = useState(false);
   const [showGSTModal, setShowGSTModal] = useState(false);
+
+  // Load edit data when modal opens in edit mode
+  useEffect(() => {
+    if (visible && isEdit && editData) {
+      setFormData({
+        item_code: editData.item_code || '',
+        item_name: editData.item_name || '',
+        item_description: editData.item_description || '',
+        hsn_sac_code: editData.hsn_sac_code || '',
+        unit: editData.uqc || 'PCS',
+        rate: editData.avg_cost || 0,
+        gst_rate: editData.gst_rate || 18,
+        opening_stock: editData.quantity_on_hand || 0,
+        minimum_stock: 0,
+        category: editData.category || '',
+        brand: editData.brand || '',
+        barcode: editData.barcode || '',
+        is_service: editData.is_service || false
+      });
+    } else if (visible && !isEdit) {
+      // Reset form when opening in create mode
+      setFormData({
+        item_code: '',
+        item_name: '',
+        item_description: '',
+        hsn_sac_code: '',
+        unit: 'PCS',
+        rate: 0,
+        gst_rate: 18,
+        opening_stock: 0,
+        minimum_stock: 0,
+        category: '',
+        brand: '',
+        barcode: '',
+        is_service: false
+      });
+    }
+  }, [visible, isEdit, editData]);
 
   const units = [
     'PCS', 'KG', 'GRAM', 'LITER', 'METER', 'FEET', 'INCH', 
@@ -72,34 +113,47 @@ export default function CreateInventoryItemModal({
     setLoading(true);
     try {
       const payload = {
+        item_code: formData.item_code.trim() || null,
         item_name: formData.item_name.trim(),
         item_description: formData.item_description.trim() || formData.item_name.trim(),
-        hsn_code: formData.hsn_code.trim(),
-        unit: formData.unit,
-        rate: parseFloat(formData.rate) || 0,
+        hsn_sac_code: formData.hsn_sac_code.trim() || null,
+        uqc: formData.unit || null,
+        avg_cost: parseFloat(formData.rate) || 0,
         gst_rate: parseFloat(formData.gst_rate) || 0,
-        opening_stock: parseFloat(formData.opening_stock) || 0,
-        minimum_stock: parseFloat(formData.minimum_stock) || 0,
-        category: formData.category.trim(),
-        brand: formData.brand.trim(),
-        barcode: formData.barcode.trim(),
+        quantity_on_hand: parseFloat(formData.opening_stock) || 0,
+        category: formData.category.trim() || null,
+        brand: formData.brand.trim() || null,
+        barcode: formData.barcode.trim() || null,
         is_service: formData.is_service
       };
 
-      const response = await inventoryAPI.items.create(payload);
-      const newItem = response.data?.data || response.data;
+      let response;
+      if (isEdit && editData) {
+        // Update existing item
+        response = await inventoryAPI.items.update(editData.id, payload);
+        showNotification({
+          type: 'success',
+          title: 'Success',
+          message: 'Inventory item updated successfully'
+        });
+      } else {
+        // Create new item
+        response = await inventoryAPI.items.create(payload);
+        showNotification({
+          type: 'success',
+          title: 'Success',
+          message: 'Inventory item created successfully'
+        });
+      }
 
-      showNotification({
-        type: 'success',
-        title: 'Success',
-        message: 'Inventory item created successfully'
-      });
+      const newItem = response.data?.data || response.data;
 
       // Reset form
       setFormData({
+        item_code: '',
         item_name: '',
         item_description: '',
-        hsn_code: '',
+        hsn_sac_code: '',
         unit: 'PCS',
         rate: 0,
         gst_rate: 18,
@@ -111,18 +165,18 @@ export default function CreateInventoryItemModal({
         is_service: false
       });
 
-      // Callback with new item
+      // Callback with new/updated item
       if (onItemCreated) {
         onItemCreated(newItem);
       }
 
       onClose();
     } catch (error) {
-      console.error('Create item error:', error);
+      console.error('Create/Update item error:', error);
       showNotification({
         type: 'error',
         title: 'Error',
-        message: error.response?.data?.message || 'Failed to create inventory item'
+        message: error.response?.data?.message || error.response?.data?.error || `Failed to ${isEdit ? 'update' : 'create'} inventory item`
       });
     } finally {
       setLoading(false);
@@ -173,7 +227,7 @@ export default function CreateInventoryItemModal({
       >
         <View style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.title}>{title || (isEdit ? 'Edit Item' : 'Create New Item')}</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color="#6b7280" />
             </TouchableOpacity>
@@ -185,6 +239,16 @@ export default function CreateInventoryItemModal({
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Basic Information</Text>
                 
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Item Code</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={formData.item_code}
+                    onChangeText={(value) => setFormData(prev => ({ ...prev, item_code: value }))}
+                    placeholder="Enter item code (optional)"
+                  />
+                </View>
+
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Item Name *</Text>
                   <TextInput
@@ -212,8 +276,8 @@ export default function CreateInventoryItemModal({
                     <Text style={styles.inputLabel}>HSN Code</Text>
                     <TextInput
                       style={styles.input}
-                      value={formData.hsn_code}
-                      onChangeText={(value) => setFormData(prev => ({ ...prev, hsn_code: value }))}
+                      value={formData.hsn_sac_code}
+                      onChangeText={(value) => setFormData(prev => ({ ...prev, hsn_sac_code: value }))}
                       placeholder="Enter HSN code"
                       keyboardType="numeric"
                     />
@@ -364,7 +428,7 @@ export default function CreateInventoryItemModal({
                 disabled={loading}
               >
                 <Text style={styles.actionButtonText}>
-                  {loading ? 'Creating...' : 'Create Item'}
+                  {loading ? (isEdit ? 'Updating...' : 'Creating...') : (isEdit ? 'Update Item' : 'Create Item')}
                 </Text>
               </TouchableOpacity>
             </View>

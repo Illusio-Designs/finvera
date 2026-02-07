@@ -1231,6 +1231,9 @@ module.exports = (sequelize) => {
   // NEW: Product Attribute models
   models.ProductAttribute = require('../models/ProductAttribute')(sequelize);
   models.ProductAttributeValue = require('../models/ProductAttributeValue')(sequelize);
+  
+  // NEW: Inventory Unit model (for serialized inventory tracking)
+  models.InventoryUnit = require('../models/InventoryUnit')(sequelize);
 
   // Define associations
   // Voucher associations
@@ -1311,6 +1314,17 @@ module.exports = (sequelize) => {
   if (models.ProductAttributeValue.associate) {
     models.ProductAttributeValue.associate(models);
   }
+  
+  // NEW: Inventory Unit Associations
+  if (models.InventoryUnit.associate) {
+    models.InventoryUnit.associate(models);
+  }
+  
+  // Additional InventoryItem associations for units
+  models.InventoryItem.hasMany(models.InventoryUnit, {
+    foreignKey: 'inventory_item_id',
+    as: 'units',
+  });
 
   models.FinBoxConsent.belongsTo(models.User, { foreignKey: 'user_id' });
 

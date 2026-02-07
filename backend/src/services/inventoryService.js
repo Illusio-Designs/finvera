@@ -35,12 +35,12 @@ async function findOrCreateInventoryItem(tenantModels, itemData, transaction) {
     if (item) return { item, created: false };
   }
 
-  // 4. Variant lookup
+  // 4. Variant lookup (item_name + attributes)
   if (variant_attributes && item_name) {
     const item = await tenantModels.InventoryItem.findOne({
       where: {
         item_name,
-        variant_attributes: {
+        attributes: {
           [Op.eq]: variant_attributes,
         },
       },
@@ -52,12 +52,23 @@ async function findOrCreateInventoryItem(tenantModels, itemData, transaction) {
   // 5. Legacy item_key lookup (and creation)
   const itemKey = (item_code || item_name || '').trim().toLowerCase();
   if (itemKey) {
+    // For items with variant attributes, append attributes to item_key to make it unique
+    let uniqueItemKey = itemKey;
+    if (variant_attributes && Object.keys(variant_attributes).length > 0) {
+      const attrString = Object.entries(variant_attributes)
+        .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
+        .map(([key, value]) => `${key}:${value}`)
+        .join('_');
+      uniqueItemKey = `${itemKey}_${attrString}`.toLowerCase();
+    }
+    
     const [item, created] = await tenantModels.InventoryItem.findOrCreate({
-      where: { item_key: itemKey },
+      where: { item_key: uniqueItemKey },
       defaults: {
         ...itemData,
-        item_key: itemKey,
+        item_key: uniqueItemKey,
         item_name: item_name || item_code,
+        attributes: variant_attributes || null, // Store attributes in InventoryItem
         quantity_on_hand: 0,
         avg_cost: 0,
         is_active: true,
@@ -65,7 +76,7 @@ async function findOrCreateInventoryItem(tenantModels, itemData, transaction) {
       transaction,
     });
     if (created) {
-      logger.info(`Auto-created inventory item: ${item.item_name} (ID: ${item.id})`);
+      logger.info(`Auto-created inventory item: ${item.item_name} (ID: ${item.id})${variant_attributes ? ' with attributes: ' + JSON.stringify(variant_attributes) : ''}`);
     }
     return { item, created };
   }

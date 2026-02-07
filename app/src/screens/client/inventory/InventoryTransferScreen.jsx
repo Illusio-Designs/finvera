@@ -4,9 +4,10 @@ import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
-import { accountingAPI } from '../../../lib/api';
+import { voucherAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
-import FormSkeleton from '../../../components/ui/skeletons/FormSkeleton';
+import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
+import { formatCurrency } from '../../../utils/businessLogic';
 
 export default function InventoryTransferScreen() {
   const { openDrawer } = useDrawer();
@@ -16,6 +17,7 @@ export default function InventoryTransferScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedTransfer, setSelectedTransfer] = useState(null);
+  const [filter, setFilter] = useState('all'); // all, pending, completed, cancelled
 
   const handleMenuPress = () => {
     openDrawer();
@@ -26,13 +28,23 @@ export default function InventoryTransferScreen() {
     const startTime = Date.now();
     
     try {
-      const response = await accountingAPI.inventory.transfers.list({ limit: 50 }).catch(error => {
-        console.error('Stock transfers API error:', error);
-        return { data: { data: [] } };
-      });
+      // Fetch stock transfer vouchers
+      const params = { 
+        voucher_type: 'stock_transfer',
+        limit: 100 
+      };
       
-      // Enhanced error handling for API responses
-      const data = response?.data?.data || response?.data?.transfers || response?.data || [];
+      // Apply status filter
+      if (filter === 'pending') {
+        params.status = 'draft';
+      } else if (filter === 'completed') {
+        params.status = 'posted';
+      } else if (filter === 'cancelled') {
+        params.status = 'cancelled';
+      }
+      
+      const response = await voucherAPI.list(params);
+      const data = response?.data?.data || response?.data || [];
       setTransfers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Stock transfers fetch error:', error);
@@ -43,7 +55,6 @@ export default function InventoryTransferScreen() {
       });
       setTransfers([]);
     } finally {
-      // Ensure skeleton shows for at least 3 seconds
       const elapsedTime = Date.now() - startTime;
       const remainingTime = Math.max(0, 3000 - elapsedTime);
       
@@ -51,11 +62,11 @@ export default function InventoryTransferScreen() {
         setLoading(false);
       }, remainingTime);
     }
-  }, []); // Removed showNotification from dependencies
+  }, [filter, showNotification]);
 
   useEffect(() => {
     fetchTransfers();
-  }, []); // Changed to empty dependency array since there are no dynamic dependencies
+  }, [filter]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -68,37 +79,306 @@ export default function InventoryTransferScreen() {
     setShowDetailModal(true);
   };
 
+  const handleCreateTransfer = () => {
+    showNotification({
+      type: 'info',
+      title: 'Coming Soon',
+      message: 'Create stock transfer feature coming soon'
+    });
+  };
+
+  const handleEditTransfer = (transfer) => {
+    showNotification({
+      type: 'info',
+      title: 'Coming Soon',
+      message: 'Edit stock transfer feature coming soon'
+    });
+  };
+
+  const handleDeleteTransfer = (transfer) => {
+    showNotification({
+      type: 'info',
+      title: 'Coming Soon',
+      message: 'Delete stock transfer feature coming soon'
+    });
+  };
+
   const formatDate = (dateString) => {
-    if (!dateString) return 'Unknown';
+    if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-IN', {
-      day: 'numeric',
+      day: '2-digit',
       month: 'short',
       year: 'numeric',
     });
   };
 
-  const getTransferStatusColor = (status) => {
+  const getStatusColor = (status) => {
     const colors = {
+      'draft': '#f59e0b',
       'pending': '#f59e0b',
-      'in_transit': '#3b82f6',
-      'completed': '#10b981',
-      'cancelled': '#ef4444',
-      'rejected': '#8b5cf6',
+      'posted': '#059669',
+      'completed': '#059669',
+      'cancelled': '#dc2626',
     };
     return colors[status?.toLowerCase()] || '#6b7280';
   };
 
-  const getTransferStatusIcon = (status) => {
-    const icons = {
-      'pending': 'time',
-      'in_transit': 'car',
-      'completed': 'checkmark-circle',
-      'cancelled': 'close-circle',
-      'rejected': 'ban',
+  const getStatusLabel = (status) => {
+    const labels = {
+      'draft': 'Pending',
+      'pending': 'Pending',
+      'posted': 'Completed',
+      'completed': 'Completed',
+      'cancelled': 'Cancelled',
     };
-    return icons[status?.toLowerCase()] || 'swap-horizontal';
+    return labels[status?.toLowerCase()] || status;
   };
+
+  return (
+    <View style={styles.container}>
+      <TopBar 
+        title="Stock Transfers" 
+        onMenuPress={handleMenuPress}
+      />
+      
+      <ScrollView 
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {/* Header Actions */}
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.createButton} onPress={handleCreateTransfer}>
+            <Ionicons name="add" size={16} color="white" />
+            <Text style={styles.createButtonText}>New Transfer</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Filter Tabs */}
+        <View style={styles.filterTabs}>
+          <TouchableOpacity 
+            style={[styles.filterTab, filter === 'all' && styles.filterTabActive]}
+            onPress={() => setFilter('all')}
+          >
+            <Text style={[styles.filterTabText, filter === 'all' && styles.filterTabTextActive]}>
+              All
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.filterTab, filter === 'pending' && styles.filterTabActive]}
+            onPress={() => setFilter('pending')}
+          >
+            <Text style={[styles.filterTabText, filter === 'pending' && styles.filterTabTextActive]}>
+              Pending
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.filterTab, filter === 'completed' && styles.filterTabActive]}
+            onPress={() => setFilter('completed')}
+          >
+            <Text style={[styles.filterTabText, filter === 'completed' && styles.filterTabTextActive]}>
+              Completed
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.filterTab, filter === 'cancelled' && styles.filterTabActive]}
+            onPress={() => setFilter('cancelled')}
+          >
+            <Text style={[styles.filterTabText, filter === 'cancelled' && styles.filterTabTextActive]}>
+              Cancelled
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Transfers List */}
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+            <SkeletonListItem />
+          </View>
+        ) : transfers.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="swap-horizontal-outline" size={64} color="#d1d5db" />
+            <Text style={styles.emptyTitle}>No Transfers Found</Text>
+            <Text style={styles.emptySubtitle}>
+              Click "New Transfer" button above to create your first stock transfer
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.transfersList}>
+            {transfers.map((transfer, index) => (
+              <TouchableOpacity
+                key={transfer.id || index}
+                style={styles.transferCard}
+                onPress={() => handleTransferPress(transfer)}
+              >
+                <View style={styles.transferCardHeader}>
+                  <View style={styles.transferMainInfo}>
+                    <Text style={styles.transferNumber}>
+                      {transfer.voucher_number || 'N/A'}
+                    </Text>
+                    <Text style={styles.transferDate}>
+                      Date: {formatDate(transfer.voucher_date)}
+                    </Text>
+                    <Text style={styles.transferItems}>
+                      Items: {transfer.items?.length || 0}
+                    </Text>
+                  </View>
+                  <View style={styles.transferAmount}>
+                    <View style={[
+                      styles.statusBadge,
+                      { backgroundColor: getStatusColor(transfer.status) === '#059669' ? '#ecfdf5' : 
+                                        getStatusColor(transfer.status) === '#f59e0b' ? '#fef3c7' : '#fef2f2' }
+                    ]}>
+                      <Text style={[
+                        styles.statusText,
+                        { color: getStatusColor(transfer.status) }
+                      ]}>
+                        {getStatusLabel(transfer.status)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+                
+                <View style={styles.transferCardActions}>
+                  <TouchableOpacity 
+                    style={styles.actionButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleTransferPress(transfer);
+                    }}
+                  >
+                    <Ionicons name="eye-outline" size={16} color="#3e60ab" />
+                    <Text style={styles.actionButtonText}>View</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.actionButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleEditTransfer(transfer);
+                    }}
+                  >
+                    <Ionicons name="create-outline" size={16} color="#059669" />
+                    <Text style={styles.actionButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.actionButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleDeleteTransfer(transfer);
+                    }}
+                  >
+                    <Ionicons name="trash-outline" size={16} color="#dc2626" />
+                    <Text style={styles.actionButtonText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Detail Modal */}
+      <Modal
+        visible={showDetailModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowDetailModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>
+              {selectedTransfer?.voucher_number || 'Transfer Details'}
+            </Text>
+            <TouchableOpacity onPress={() => setShowDetailModal(false)}>
+              <Ionicons name="close" size={24} color="#6b7280" />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.modalContent}>
+            {selectedTransfer && (
+              <View style={styles.detailContainer}>
+                {/* Transfer Information */}
+                <View style={styles.infoSection}>
+                  <Text style={styles.infoSectionTitle}>Transfer Information</Text>
+                  <View style={styles.infoGrid}>
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>Voucher Number</Text>
+                      <Text style={styles.infoValue}>{selectedTransfer.voucher_number || 'N/A'}</Text>
+                    </View>
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>Date</Text>
+                      <Text style={styles.infoValue}>{formatDate(selectedTransfer.voucher_date)}</Text>
+                    </View>
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>Status</Text>
+                      <View style={[
+                        styles.statusBadge,
+                        { backgroundColor: getStatusColor(selectedTransfer.status) === '#059669' ? '#ecfdf5' : 
+                                          getStatusColor(selectedTransfer.status) === '#f59e0b' ? '#fef3c7' : '#fef2f2' }
+                      ]}>
+                        <Text style={[
+                          styles.statusText,
+                          { color: getStatusColor(selectedTransfer.status) }
+                        ]}>
+                          {getStatusLabel(selectedTransfer.status)}
+                        </Text>
+                      </View>
+                    </View>
+                    {selectedTransfer.narration && (
+                      <View style={styles.infoItem}>
+                        <Text style={styles.infoLabel}>Notes</Text>
+                        <Text style={styles.infoValue}>{selectedTransfer.narration}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+
+                {/* Items */}
+                {selectedTransfer.items && selectedTransfer.items.length > 0 && (
+                  <View style={styles.infoSection}>
+                    <Text style={styles.infoSectionTitle}>Items</Text>
+                    {selectedTransfer.items.map((item, index) => (
+                      <View key={index} style={styles.itemCard}>
+                        <Text style={styles.itemName}>{item.item_name || 'Item'}</Text>
+                        <Text style={styles.itemDetails}>
+                          Qty: {item.quantity || 0} {item.unit || ''}
+                        </Text>
+                        {item.rate && (
+                          <Text style={styles.itemDetails}>
+                            Rate: {formatCurrency(item.rate)}
+                          </Text>
+                        )}
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+          </ScrollView>
+          
+          <View style={styles.modalActions}>
+            <TouchableOpacity 
+              style={[styles.modalActionButton, styles.modalActionButtonSecondary]}
+              onPress={() => setShowDetailModal(false)}
+            >
+              <Ionicons name="close" size={16} color="#3e60ab" />
+              <Text style={[styles.modalActionText, { color: '#3e60ab' }]}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
 
   return (
     <View style={styles.container}>

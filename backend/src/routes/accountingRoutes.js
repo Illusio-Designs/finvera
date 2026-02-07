@@ -88,6 +88,15 @@ router.post('/inventory/items/:id/opening-stock', inventoryController.setOpening
 router.get('/inventory/items/:id/warehouse-stock', inventoryController.getStockByWarehouse);
 router.post('/inventory/items/:id/generate-barcode', inventoryController.generateBarcode);
 
+// Inventory Units (Serialized Inventory)
+const inventoryUnitController = require('../controllers/inventoryUnitController');
+router.get('/inventory/items/:inventory_item_id/units', inventoryUnitController.listByItem);
+router.get('/inventory/units/barcode/:barcode', inventoryUnitController.getByBarcode);
+router.put('/inventory/units/:id', inventoryUnitController.update);
+router.post('/inventory/units/:id/mark-damaged', inventoryUnitController.markDamaged);
+router.get('/inventory/items/:inventory_item_id/units/statistics', inventoryUnitController.getStatistics);
+router.get('/inventory/items/:inventory_item_id/units/barcode-labels', inventoryUnitController.getBarcodeLabels);
+
 // Warehouses
 router.get('/warehouses', warehouseController.list);
 router.get('/warehouses/all', warehouseController.getAll);

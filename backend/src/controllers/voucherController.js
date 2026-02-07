@@ -58,6 +58,13 @@ async function updateLedgerBalance(tenantModels, ledgerId, transaction) {
 async function applyPurchaseInventory({ tenantModels }, voucher, voucherItems, t) {
   logger.info(`Applying purchase inventory for voucher ${voucher.id} with ${voucherItems.length} items`);
   
+  // Check if barcode functionality is enabled for this tenant
+  const TenantMaster = require('../models/TenantMaster');
+  const tenant = await TenantMaster.findByPk(voucher.tenant_id);
+  const barcodeEnabled = tenant?.settings?.barcode_enabled === true;
+  const defaultBarcodeType = tenant?.settings?.default_barcode_type || 'EAN13';
+  const defaultBarcodePrefix = tenant?.settings?.default_barcode_prefix || 'PRD';
+  
   for (const it of voucherItems) {
     const qty = toNum(it.quantity, 0);
     if (qty <= 0) continue;
@@ -79,23 +86,146 @@ async function applyPurchaseInventory({ tenantModels }, voucher, voucherItems, t
 
     if (created) {
       logger.info(`Created new inventory item: ${inv.item_name} (ID: ${inv.id})`);
+      
+      // Auto-generate barcode if enabled and item doesn't have one (for non-serialized items)
+      if (barcodeEnabled && !inv.barcode && !inv.is_serialized) {
+        try {
+          const barcodeGenerator = require('../utils/barcodeGenerator');
+          let generatedBarcode = null;
+          
+          switch (defaultBarcodeType) {
+            case 'EAN13':
+              generatedBarcode = barcodeGenerator.generateEAN13('890'); // 890 is India prefix
+              break;
+            case 'EAN8':
+              generatedBarcode = barcodeGenerator.generateEAN8();
+              break;
+            case 'CUSTOM':
+              const nextSeq = await barcodeGenerator.getNextSequence(tenantModels, defaultBarcodePrefix);
+              generatedBarcode = barcodeGenerator.generateCustomBarcode(defaultBarcodePrefix, nextSeq, 13);
+              break;
+          }
+          
+          if (generatedBarcode) {
+            // Check uniqueness
+            const existingBarcode = await tenantModels.InventoryItem.findOne({
+              where: { barcode: generatedBarcode },
+              transaction: t,
+            });
+            
+            if (!existingBarcode) {
+              await inv.update({ barcode: generatedBarcode }, { transaction: t });
+              logger.info(`Auto-generated barcode for ${inv.item_name}: ${generatedBarcode}`);
+            }
+          }
+        } catch (barcodeError) {
+          logger.error(`Failed to auto-generate barcode for ${inv.item_name}:`, barcodeError);
+          // Don't fail the entire transaction, just log the error
+        }
+      }
     }
 
-    // Update inventory quantities using weighted average cost
-    const currentQty = toNum(inv.quantity_on_hand, 0);
-    const currentAvgCost = toNum(inv.avg_cost, 0);
-    const currentValue = currentQty * currentAvgCost;
-    
-    const newQty = currentQty + qty;
-    const newValue = currentValue + taxable;
-    const newAvgCost = newQty > 0 ? newValue / newQty : 0;
+    // Check if this is a serialized item (requires individual unit tracking)
+    if (inv.is_serialized && barcodeEnabled) {
+      logger.info(`Processing serialized inventory for ${inv.item_name}: ${qty} units`);
+      
+      // Generate individual units with unique barcodes
+      const barcodeGenerator = require('../utils/barcodeGenerator');
+      
+      for (let i = 0; i < qty; i++) {
+        let unitBarcode = null;
+        let attempts = 0;
+        const maxAttempts = 10;
+        
+        // Try to generate unique barcode
+        while (!unitBarcode && attempts < maxAttempts) {
+          attempts++;
+          
+          try {
+            switch (defaultBarcodeType) {
+              case 'EAN13':
+                unitBarcode = barcodeGenerator.generateEAN13('890');
+                break;
+              case 'EAN8':
+                unitBarcode = barcodeGenerator.generateEAN8();
+                break;
+              case 'CUSTOM':
+                const nextSeq = await barcodeGenerator.getNextSequence(tenantModels, defaultBarcodePrefix);
+                unitBarcode = barcodeGenerator.generateCustomBarcode(defaultBarcodePrefix, nextSeq, 13);
+                break;
+            }
+            
+            // Check uniqueness in both InventoryItem and InventoryUnit
+            const [existingItem, existingUnit] = await Promise.all([
+              tenantModels.InventoryItem.findOne({ where: { barcode: unitBarcode }, transaction: t }),
+              tenantModels.InventoryUnit.findOne({ where: { unit_barcode: unitBarcode }, transaction: t }),
+            ]);
+            
+            if (existingItem || existingUnit) {
+              unitBarcode = null; // Try again
+            }
+          } catch (error) {
+            logger.error(`Error generating unit barcode (attempt ${attempts}):`, error);
+            unitBarcode = null;
+          }
+        }
+        
+        if (!unitBarcode) {
+          throw new Error(`Failed to generate unique barcode for unit ${i + 1} of ${inv.item_name}`);
+        }
+        
+        // Create individual unit
+        await tenantModels.InventoryUnit.create({
+          inventory_item_id: inv.id,
+          unit_barcode: unitBarcode,
+          status: 'in_stock',
+          warehouse_id: voucher.warehouse_id || null,
+          purchase_voucher_id: voucher.id,
+          purchase_date: voucher.voucher_date,
+          purchase_rate: costRate,
+          tenant_id: voucher.tenant_id,
+        }, { transaction: t });
+        
+        logger.info(`Created unit ${i + 1}/${qty} for ${inv.item_name}: ${unitBarcode}`);
+      }
+      
+      // For serialized items, quantity_on_hand = count of units with status 'in_stock'
+      const inStockCount = await tenantModels.InventoryUnit.count({
+        where: {
+          inventory_item_id: inv.id,
+          status: 'in_stock',
+        },
+        transaction: t,
+      });
+      
+      await inv.update({
+        quantity_on_hand: inStockCount,
+        avg_cost: costRate, // Use current purchase rate
+      }, { transaction: t });
+      
+      logger.info(`Updated serialized item ${inv.item_name}: ${inStockCount} units in stock`);
+      
+    } else {
+      // Non-serialized item: Use traditional quantity tracking
+      // Non-serialized item: Use traditional quantity tracking
+      // Update inventory quantities using weighted average cost
+      const currentQty = toNum(inv.quantity_on_hand, 0);
+      const currentAvgCost = toNum(inv.avg_cost, 0);
+      const currentValue = currentQty * currentAvgCost;
+      
+      const newQty = currentQty + qty;
+      const newValue = currentValue + taxable;
+      const newAvgCost = newQty > 0 ? newValue / newQty : 0;
 
-    await inv.update({
-      quantity_on_hand: newQty,
-      avg_cost: newAvgCost,
-    }, { transaction: t });
+      await inv.update({
+        quantity_on_hand: newQty,
+        avg_cost: newAvgCost,
+      }, { transaction: t });
 
-    // Create stock movement record
+      logger.info(`Updated inventory item ${inv.item_name}: qty ${currentQty} -> ${newQty}, avg_cost ${currentAvgCost} -> ${newAvgCost}`);
+    }
+
+    // Create stock movement record (for both serialized and non-serialized)
     await tenantModels.StockMovement.create({
       inventory_item_id: inv.id,
       voucher_id: voucher.id,
@@ -104,12 +234,10 @@ async function applyPurchaseInventory({ tenantModels }, voucher, voucherItems, t
       rate: costRate,
       amount: taxable,
       reference_number: voucher.voucher_number,
-      narration: `Purchase from ${voucher.party_name || 'Supplier'}`,
+      narration: `Purchase from ${voucher.party_name || 'Supplier'}${inv.is_serialized ? ' (Serialized)' : ''}`,
       movement_date: voucher.voucher_date,
       tenant_id: voucher.tenant_id,
     }, { transaction: t });
-
-    logger.info(`Updated inventory item ${inv.item_name}: qty ${currentQty} -> ${newQty}, avg_cost ${currentAvgCost} -> ${newAvgCost}`);
   }
 }
 

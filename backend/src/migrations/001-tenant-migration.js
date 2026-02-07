@@ -316,6 +316,7 @@ module.exports = {
         gst_rate: { type: Sequelize.DECIMAL(6, 2), allowNull: true },
         quantity_on_hand: { type: Sequelize.DECIMAL(15, 3), defaultValue: 0 },
         avg_cost: { type: Sequelize.DECIMAL(15, 4), defaultValue: 0 },
+        is_serialized: { type: Sequelize.BOOLEAN, defaultValue: false, allowNull: false, comment: 'Whether this item requires individual unit tracking with unique barcodes' },
         is_active: { type: Sequelize.BOOLEAN, defaultValue: true },
         createdAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
         updatedAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
@@ -325,6 +326,7 @@ module.exports = {
       await addColumnIfNotExists('inventory_items', 'barcode', { type: Sequelize.STRING(100), allowNull: true, unique: true, comment: 'Product barcode (EAN-13, UPC, etc.)'});
       await addColumnIfNotExists('inventory_items', 'attributes', { type: Sequelize.JSON, allowNull: true, comment: 'JSON object for variant attributes, e.g. {"Size": "M", "Color": "Blue"}' });
       await addColumnIfNotExists('inventory_items', 'parent_item_id', { type: Sequelize.UUID, allowNull: true, references: { model: 'inventory_items', key: 'id' }, onDelete: 'SET NULL' });
+      await addColumnIfNotExists('inventory_items', 'is_serialized', { type: Sequelize.BOOLEAN, defaultValue: false, allowNull: false, comment: 'Whether this item requires individual unit tracking with unique barcodes' });
       
       // Remove old column names if they exist
       try {
@@ -344,6 +346,40 @@ module.exports = {
       } catch (error) {
         console.log('⚠️  Could not rename columns in inventory_items:', error.message);
       }
+    }
+
+    // INVENTORY_UNITS TABLE (for serialized inventory tracking)
+    const [inventoryUnitsTable] = await queryInterface.sequelize.query("SHOW TABLES LIKE 'inventory_units'");
+    if (inventoryUnitsTable.length === 0) {
+      await queryInterface.createTable('inventory_units', {
+        id: { type: Sequelize.UUID, defaultValue: Sequelize.UUIDV4, primaryKey: true },
+        inventory_item_id: { type: Sequelize.UUID, allowNull: false, references: { model: 'inventory_items', key: 'id' }, onDelete: 'CASCADE' },
+        unit_barcode: { type: Sequelize.STRING(100), allowNull: false, unique: true, comment: 'Unique barcode for this individual unit' },
+        serial_number: { type: Sequelize.STRING(100), allowNull: true, comment: 'Manufacturer serial number (optional)' },
+        imei_number: { type: Sequelize.STRING(50), allowNull: true, comment: 'IMEI for mobile devices (optional)' },
+        status: { type: Sequelize.ENUM('in_stock', 'sold', 'damaged', 'returned', 'transferred'), defaultValue: 'in_stock', allowNull: false },
+        warehouse_id: { type: Sequelize.UUID, allowNull: true, references: { model: 'warehouses', key: 'id' } },
+        purchase_voucher_id: { type: Sequelize.UUID, allowNull: true, comment: 'Voucher ID when this unit was purchased' },
+        purchase_date: { type: Sequelize.DATE, allowNull: true },
+        purchase_rate: { type: Sequelize.DECIMAL(15, 2), allowNull: true, comment: 'Purchase price of this specific unit' },
+        sales_voucher_id: { type: Sequelize.UUID, allowNull: true, comment: 'Voucher ID when this unit was sold' },
+        sales_date: { type: Sequelize.DATE, allowNull: true },
+        sales_rate: { type: Sequelize.DECIMAL(15, 2), allowNull: true, comment: 'Sales price of this specific unit' },
+        warranty_expiry: { type: Sequelize.DATE, allowNull: true, comment: 'Warranty expiry date' },
+        notes: { type: Sequelize.TEXT, allowNull: true, comment: 'Additional notes about this unit' },
+        tenant_id: { type: Sequelize.STRING, allowNull: false },
+        createdAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
+        updatedAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
+      });
+      await addIndexIfNotExists('inventory_units', ['inventory_item_id'], { name: 'idx_inventory_units_item_id' });
+      await addIndexIfNotExists('inventory_units', ['status'], { name: 'idx_inventory_units_status' });
+      await addIndexIfNotExists('inventory_units', ['warehouse_id'], { name: 'idx_inventory_units_warehouse_id' });
+      await addIndexIfNotExists('inventory_units', ['purchase_voucher_id'], { name: 'idx_inventory_units_purchase_voucher_id' });
+      await addIndexIfNotExists('inventory_units', ['sales_voucher_id'], { name: 'idx_inventory_units_sales_voucher_id' });
+      await addIndexIfNotExists('inventory_units', ['tenant_id'], { name: 'idx_inventory_units_tenant_id' });
+      console.log('✓ Created table inventory_units');
+    } else {
+      console.log('ℹ️  Table inventory_units already exists');
     }
 
     // PRODUCT_ATTRIBUTES TABLE
@@ -1131,6 +1167,7 @@ module.exports = {
     await queryInterface.dropTable('gstins');
     await queryInterface.dropTable('product_attribute_values');
     await queryInterface.dropTable('product_attributes');
+    await queryInterface.dropTable('inventory_units'); // Drop inventory_units before inventory_items
     await queryInterface.dropTable('inventory_items');
     await queryInterface.dropTable('voucher_ledger_entries');
     await queryInterface.dropTable('voucher_items');
