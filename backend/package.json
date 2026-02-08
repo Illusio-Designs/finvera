@@ -5,11 +5,14 @@
   "main": "server.js",
   "scripts": {
     "start": "node --max-old-space-size=4096 --expose-gc server.js",
+    "start:railway": "node --max-old-space-size=512 --expose-gc server.js",
     "dev": "nodemon --exec \"node --max-old-space-size=4096 --expose-gc\" server.js",
     "migrate": "sequelize db:migrate",
     "migrate:undo": "sequelize db:migrate:undo",
     "seed": "sequelize db:seed:all",
-    "seed:undo": "sequelize db:seed:undo:all"
+    "seed:undo": "sequelize db:seed:undo:all",
+    "railway:postdeploy": "node scripts/railway-postdeploy.js",
+    "railway:check-storage": "node scripts/check-railway-storage.js"
   },
   "keywords": [],
   "author": "",

@@ -279,12 +279,22 @@ Scan the QR code with Expo Go app (Android) or Camera app (iOS) to run on your d
 ```
 finvera/
 ├── 📂 backend/                    # Express.js Backend API
+│   ├── 📂 docs/                   # Documentation
+│   │   ├── � README.md          # Documentation index
+│   │   └── 📂 deployment/        # Deployment guides
+│   │       ├── � START_HERE.md  # Entry point
+│   │       ├── � QUICK_START_RAILWAY.md  # 10-min deploy
+│   │       ├── 📄 RAILWAY_DEPLOY.md       # Complete guide
+│   │       ├── � RAILWAY_MIGRATION_GUIDE.md  # Oracle migration
+│   │       ├── � DEPLOYMENT_CHECKLISsT.md     # Step-by-step
+│   │       ├── � DEPLOYMENT_README.md        # Overview
+│   │       └── 📄 RAILWAY_DEPLOYMENT_SUMMARY.md  # Summary
 │   ├── 📂 src/
 │   │   ├── 📂 config/             # Configuration files (database, redis, passport, etc.)
 │   │   ├── 📂 models/             # Sequelize models (32+ models)
 │   │   ├── 📂 migrations/         # Database migrations
 │   │   ├── 📂 seeders/           # Database seeders
-│   │   ├── 📂 middleware/        # Express middleware (auth, tenant, encryption, etc.)
+│   │   ├── � middl eware/        # Express middleware (auth, tenant, encryption, etc.)
 │   │   ├── 📂 controllers/       # Route controllers (40+ controllers)
 │   │   ├── 📂 services/          # Business logic services
 │   │   ├── 📂 websocket/         # WebSocket server (Socket.IO)
@@ -292,8 +302,11 @@ finvera/
 │   │   ├── 📂 utils/            # Utility functions (logger, encryption, cache, etc.)
 │   │   ├── 📂 validators/       # Request validators
 │   │   └── 📂 scripts/          # Database initialization scripts
+│   ├── 📂 scripts/              # Utility scripts (deployment, monitoring)
 │   ├── 📂 uploads/              # File uploads directory
 │   ├── 📂 logs/                 # Application logs
+│   ├── 📄 README.md             # Backend documentation
+│   ├── 📄 STRUCTURE.md          # Directory structure guide
 │   └── 📄 server.js             # Application entry point
 │
 ├── 📂 frontend/                  # Next.js Web Frontend
@@ -854,6 +867,55 @@ All permissions are requested with clear usage descriptions explaining why they'
 
 ### Backend Deployment
 
+#### 🚂 Railway.app (Recommended for 0-50 tenants)
+
+**Quick Deploy (10 minutes):**
+
+```bash
+cd backend
+# Read the deployment guide
+cat docs/deployment/START_HERE.md
+```
+
+**Complete Documentation:**
+- 📖 [Start Here](backend/docs/deployment/START_HERE.md) - Choose your deployment path
+- ⚡ [Quick Start](backend/docs/deployment/QUICK_START_RAILWAY.md) - Deploy in 10 minutes
+- 📚 [Complete Guide](backend/docs/deployment/RAILWAY_DEPLOY.md) - Detailed deployment
+- ✅ [Checklist](backend/docs/deployment/DEPLOYMENT_CHECKLIST.md) - Step-by-step guide
+- 🔄 [Migration Guide](backend/docs/deployment/RAILWAY_MIGRATION_GUIDE.md) - Move to Oracle Cloud
+
+**What you get:**
+- ✅ Backend API on Railway
+- ✅ MySQL database (1GB)
+- ✅ Redis cache
+- ✅ HTTPS automatic
+- ✅ Auto-deploy from GitHub
+- ✅ Free for 0-50 tenants
+
+**Cost:**
+- 0-10 tenants: $0/month (free credit)
+- 10-30 tenants: $2-5/month
+- 30-50 tenants: $5-10/month
+- 50+ tenants: Migrate to Oracle Cloud (free forever)
+
+#### ☁️ Oracle Cloud (For 50+ tenants)
+
+**When to migrate:**
+- Storage > 900MB
+- More than 50 tenants
+- Need more control
+- Want free hosting forever
+
+**Follow:** [Migration Guide](backend/docs/deployment/RAILWAY_MIGRATION_GUIDE.md)
+
+**What you get:**
+- ✅ 200GB storage (vs 1GB)
+- ✅ 1-6GB RAM
+- ✅ Forever free
+- ✅ Full control
+
+#### 🔧 Manual Deployment
+
 1. Set `NODE_ENV=production` in `.env`
 2. Update all secrets:
    - `JWT_SECRET` and `JWT_REFRESH_SECRET`
@@ -865,6 +927,15 @@ All permissions are requested with clear usage descriptions explaining why they'
 6. Configure E-Invoice API credentials
 7. Configure backup strategy
 8. Setup monitoring and logging
+
+**Scripts:**
+```bash
+# Check storage usage
+npm run railway:check-storage
+
+# Post-deployment setup
+npm run railway:postdeploy
+```
 
 ### Frontend Deployment
 
