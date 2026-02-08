@@ -122,6 +122,8 @@ module.exports = {
         opening_balance_type: { type: Sequelize.ENUM('Dr', 'Cr'), defaultValue: 'Dr' },
         balance_type: { type: Sequelize.ENUM('debit', 'credit'), defaultValue: 'debit' },
         current_balance: { type: Sequelize.DECIMAL(15, 2), defaultValue: 0 },
+        credit_limit: { type: Sequelize.DECIMAL(15, 2), defaultValue: 0 },
+        credit_days: { type: Sequelize.INTEGER, defaultValue: 0 },
         address: { type: Sequelize.TEXT, allowNull: true },
         city: { type: Sequelize.STRING, allowNull: true },
         state: { type: Sequelize.STRING, allowNull: true },
@@ -131,6 +133,10 @@ module.exports = {
         pan: { type: Sequelize.STRING, allowNull: true },
         email: { type: Sequelize.STRING, allowNull: true },
         contact_number: { type: Sequelize.STRING, allowNull: true },
+        bank_name: { type: Sequelize.STRING, allowNull: true },
+        bank_account_number: { type: Sequelize.STRING(100), allowNull: true },
+        bank_ifsc: { type: Sequelize.STRING(20), allowNull: true },
+        bank_branch: { type: Sequelize.STRING, allowNull: true },
         is_default: { type: Sequelize.BOOLEAN, defaultValue: false },
         is_active: { type: Sequelize.BOOLEAN, defaultValue: true },
         tenant_id: { type: Sequelize.STRING, allowNull: false },
@@ -161,6 +167,54 @@ module.exports = {
             defaultValue: 'debit',
           });
           console.log('✓ Added balance_type column to ledgers');
+        }
+
+        if (!tableDesc.credit_limit) {
+          await queryInterface.addColumn('ledgers', 'credit_limit', {
+            type: Sequelize.DECIMAL(15, 2),
+            defaultValue: 0,
+          });
+          console.log('✓ Added credit_limit column to ledgers');
+        }
+
+        if (!tableDesc.credit_days) {
+          await queryInterface.addColumn('ledgers', 'credit_days', {
+            type: Sequelize.INTEGER,
+            defaultValue: 0,
+          });
+          console.log('✓ Added credit_days column to ledgers');
+        }
+
+        if (!tableDesc.bank_name) {
+          await queryInterface.addColumn('ledgers', 'bank_name', {
+            type: Sequelize.STRING,
+            allowNull: true,
+          });
+          console.log('✓ Added bank_name column to ledgers');
+        }
+
+        if (!tableDesc.bank_account_number) {
+          await queryInterface.addColumn('ledgers', 'bank_account_number', {
+            type: Sequelize.STRING(100),
+            allowNull: true,
+          });
+          console.log('✓ Added bank_account_number column to ledgers');
+        }
+
+        if (!tableDesc.bank_ifsc) {
+          await queryInterface.addColumn('ledgers', 'bank_ifsc', {
+            type: Sequelize.STRING(20),
+            allowNull: true,
+          });
+          console.log('✓ Added bank_ifsc column to ledgers');
+        }
+
+        if (!tableDesc.bank_branch) {
+          await queryInterface.addColumn('ledgers', 'bank_branch', {
+            type: Sequelize.STRING,
+            allowNull: true,
+          });
+          console.log('✓ Added bank_branch column to ledgers');
         }
       } catch (error) {
         console.log('⚠️  Could not check/add columns to ledgers:', error.message);
