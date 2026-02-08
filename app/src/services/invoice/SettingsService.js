@@ -35,6 +35,11 @@ class SettingsService {
       // Fetch from backend if cache is invalid or expired
       return await this.refreshSettings();
     } catch (error) {
+      // Silently handle authentication errors
+      if (error.message === 'Authentication required') {
+        return null;
+      }
+      
       console.error('Failed to get company settings:', error.message || error);
       
       // Return cached settings even if expired, as fallback
@@ -53,6 +58,8 @@ class SettingsService {
    */
   async refreshSettings() {
     try {
+      console.log('🔄 Fetching company settings from backend...');
+      
       // Fetch tenant profile from backend
       const response = await tenantAPI.getProfile();
       
@@ -71,6 +78,12 @@ class SettingsService {
       // Parse settings from tenant profile
       const settings = this._parseSettings(response.data.tenant);
       
+      console.log('✅ Company settings loaded successfully:', {
+        companyName: settings.companyName,
+        eInvoiceEnabled: settings.eInvoiceEnabled,
+        eWayBillEnabled: settings.eWayBillEnabled,
+      });
+      
       // Cache the settings
       await this._cacheSettings(settings);
       
@@ -80,8 +93,15 @@ class SettingsService {
       
       return settings;
     } catch (error) {
+      // Check if it's an authentication error (401)
+      if (error.response?.status === 401) {
+        // Silently fail for auth errors - user is not logged in
+        console.log('⚠️ Authentication required to load settings');
+        throw new Error('Authentication required');
+      }
+      
       const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
-      console.error('Failed to refresh settings:', errorMessage);
+      console.error('❌ Failed to refresh settings:', errorMessage);
       throw new Error(`Settings refresh failed: ${errorMessage}`);
     }
   }

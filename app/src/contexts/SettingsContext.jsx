@@ -21,9 +21,11 @@ export const SettingsProvider = ({ children }) => {
   // Load settings only when user is authenticated
   useEffect(() => {
     if (isAuthenticated) {
+      console.log('✅ User authenticated, loading company settings...');
       loadSettings();
     } else {
       // Clear settings when user logs out
+      console.log('🔓 User logged out, clearing settings...');
       setSettings(null);
       setError(null);
       setLoading(false);
@@ -31,6 +33,11 @@ export const SettingsProvider = ({ children }) => {
   }, [isAuthenticated]);
 
   const loadSettings = async () => {
+    if (!isAuthenticated) {
+      // Skip loading if not authenticated
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
