@@ -305,7 +305,6 @@ finvera/
 │   ├── 📂 scripts/              # Utility scripts (deployment, monitoring)
 │   ├── 📂 uploads/              # File uploads directory
 │   ├── 📂 logs/                 # Application logs
-│   ├── 📄 README.md             # Backend documentation
 │   ├── 📄 STRUCTURE.md          # Directory structure guide
 │   └── 📄 server.js             # Application entry point
 │

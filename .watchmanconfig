@@ -1,0 +1,11 @@
+{
+  "ignore_dirs": [
+    "node_modules",
+    ".git",
+    "backend/node_modules",
+    "app/node_modules",
+    "backend/logs",
+    ".expo",
+    "app/.expo"
+  ]
+}
