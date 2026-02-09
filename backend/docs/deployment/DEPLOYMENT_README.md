@@ -192,7 +192,7 @@ DB_HOST=${{MYSQLHOST}}
 DB_PORT=${{MYSQLPORT}}
 DB_USER=${{MYSQLUSER}}
 DB_PASSWORD=${{MYSQLPASSWORD}}
-DB_NAME=finvera_db
+DB_NAME=finvera_main
 MASTER_DB_NAME=finvera_master
 ```
 
@@ -339,7 +339,7 @@ npm run railway:check-storage
 Database Name                    | Size (MB) | Tables | Status
 --------------------------------|-----------|--------|----------
 finvera_master                  |      2.45 |     12 | ✓ OK
-finvera_db                      |      5.23 |     25 | ✓ OK
+finvera_main                    |      5.23 |     25 | ✓ OK
 finvera_tenant_abc123           |     15.67 |     18 | ✓ OK
 finvera_tenant_xyz789           |     12.34 |     18 | ✓ OK
 --------------------------------|-----------|--------|----------

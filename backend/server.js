@@ -23,7 +23,7 @@ async function startServer() {
     logger.info(`   DATABASE_URL: ${process.env.DATABASE_URL ? 'SET' : 'NOT SET'}`);
     logger.info(`   DB_HOST: ${process.env.DB_HOST || 'NOT SET (will default to localhost)'}`);
     logger.info(`   DB_USER: ${process.env.DB_USER || 'NOT SET (will default to root)'}`);
-    logger.info(`   DB_NAME: ${process.env.DB_NAME || 'NOT SET (will default to finvera_db)'}`);
+    logger.info(`   DB_NAME: ${process.env.DB_NAME || 'NOT SET (will default to finvera_main)'}`);
     logger.info(`   MASTER_DB_NAME: ${process.env.MASTER_DB_NAME || 'NOT SET (will default to finvera_master)'}`);
     logger.info(`   NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
     logger.info(`   PORT: ${process.env.PORT || '3000'}`);
@@ -124,7 +124,7 @@ async function startServer() {
       logger.info(`🔌 WebSocket: ws://localhost:${PORT}`);
       logger.info(`💚 Health: http://localhost:${PORT}/health`);
       logger.info(`📊 Databases:`);
-      logger.info(`   - Main DB: ${process.env.DB_NAME || 'finvera_db'} (Admin, Salesman, Distributor, etc.)`);
+      logger.info(`   - Main DB: ${process.env.DB_NAME || 'finvera_main'} (Admin, Salesman, Distributor, etc.)`);
       logger.info(`   - Master DB: ${process.env.MASTER_DB_NAME || 'finvera_master'} (Tenant metadata only)`);
       logger.info(`   - Tenant DBs: Created dynamically per tenant`);
       logger.info(`✅ Server started successfully!`);

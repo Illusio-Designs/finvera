@@ -88,13 +88,6 @@ export default function CreateSalesInvoiceModal({
     { label: 'Export Invoice', value: 'export_invoice' },
     { label: 'Proforma Invoice', value: 'proforma_invoice' },
     { label: 'Delivery Challan', value: 'delivery_challan' },
-    { label: 'Purchase Invoice', value: 'purchase_invoice' },
-    { label: 'Credit Note', value: 'credit_note' },
-    { label: 'Debit Note', value: 'debit_note' },
-    { label: 'Payment', value: 'payment' },
-    { label: 'Receipt', value: 'receipt' },
-    { label: 'Journal', value: 'journal' },
-    { label: 'Contra', value: 'contra' },
   ];
 
   const purposes = [
@@ -366,6 +359,17 @@ export default function CreateSalesInvoiceModal({
   const isDeliveryChallan = formData.voucher_type === 'delivery_challan';
   const isProformaInvoice = formData.voucher_type === 'proforma_invoice';
   const needsTransportDetails = ['sales_invoice', 'tax_invoice', 'export_invoice', 'delivery_challan'].includes(formData.voucher_type);
+  
+  // Check if voucher type needs inventory items
+  const needsInventoryItems = [
+    'sales_invoice',
+    'tax_invoice', 
+    'bill_of_supply',
+    'retail_invoice',
+    'export_invoice',
+    'proforma_invoice',
+    'delivery_challan'
+  ].includes(formData.voucher_type);
 
   return (
     <Modal
@@ -474,6 +478,87 @@ export default function CreateSalesInvoiceModal({
             </View>
           )}
         </View>
+
+        {/* Items Section - Only for invoice types that need inventory */}
+        {needsInventoryItems && (
+          <View style={styles.formSection}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Items</Text>
+              <TouchableOpacity 
+                style={styles.addItemButton}
+                onPress={() => setShowItemModal(true)}
+              >
+                <Ionicons name="add-circle" size={20} color="#3e60ab" />
+                <Text style={styles.addItemButtonText}>Add Item</Text>
+              </TouchableOpacity>
+            </View>
+
+            {items.length === 0 ? (
+              <View style={styles.emptyItemsContainer}>
+                <Ionicons name="cube-outline" size={48} color="#d1d5db" />
+                <Text style={styles.emptyItemsText}>No items added</Text>
+                <Text style={styles.emptyItemsSubtext}>Tap "Add Item" to add products/services</Text>
+              </View>
+            ) : (
+              <View style={styles.itemsList}>
+                {items.map((item, index) => (
+                  <View key={index} style={styles.itemCard}>
+                    <View style={styles.itemCardHeader}>
+                      <Text style={styles.itemName}>{item.item_description}</Text>
+                      <TouchableOpacity 
+                        onPress={() => {
+                          const newItems = items.filter((_, i) => i !== index);
+                          setItems(newItems);
+                        }}
+                      >
+                        <Ionicons name="close-circle" size={20} color="#ef4444" />
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.itemCardDetails}>
+                      <Text style={styles.itemDetail}>Qty: {item.quantity}</Text>
+                      <Text style={styles.itemDetail}>Rate: ₹{item.rate}</Text>
+                      <Text style={styles.itemDetail}>Amount: ₹{item.amount}</Text>
+                    </View>
+                    {item.gst_rate > 0 && (
+                      <Text style={styles.itemTax}>GST {item.gst_rate}%</Text>
+                    )}
+                  </View>
+                ))}
+                
+                {/* Total Summary */}
+                <View style={styles.totalCard}>
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>Subtotal:</Text>
+                    <Text style={styles.totalValue}>
+                      ₹{items.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0).toFixed(2)}
+                    </Text>
+                  </View>
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>Total Tax:</Text>
+                    <Text style={styles.totalValue}>
+                      ₹{items.reduce((sum, item) => 
+                        sum + parseFloat(item.cgst_amount || 0) + 
+                        parseFloat(item.sgst_amount || 0) + 
+                        parseFloat(item.igst_amount || 0), 0
+                      ).toFixed(2)}
+                    </Text>
+                  </View>
+                  <View style={[styles.totalRow, styles.grandTotalRow]}>
+                    <Text style={styles.grandTotalLabel}>Grand Total:</Text>
+                    <Text style={styles.grandTotalValue}>
+                      ₹{items.reduce((sum, item) => 
+                        sum + parseFloat(item.amount || 0) + 
+                        parseFloat(item.cgst_amount || 0) + 
+                        parseFloat(item.sgst_amount || 0) + 
+                        parseFloat(item.igst_amount || 0), 0
+                      ).toFixed(2)}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Export Invoice Fields */}
         {isExportInvoice && (
@@ -949,6 +1034,119 @@ export default function CreateSalesInvoiceModal({
         </View>
       </Modal>
 
+      {/* Item Selection Modal */}
+      <Modal
+        visible={showItemModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => {
+          setShowItemModal(false);
+          setItemSearchQuery('');
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Item</Text>
+              <TouchableOpacity onPress={() => {
+                setShowItemModal(false);
+                setItemSearchQuery('');
+              }}>
+                <Ionicons name="close" size={24} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+            
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
+              <Ionicons name="search" size={20} color="#9ca3af" style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                value={itemSearchQuery}
+                onChangeText={setItemSearchQuery}
+                placeholder="Search items..."
+                placeholderTextColor="#9ca3af"
+              />
+              {itemSearchQuery ? (
+                <TouchableOpacity onPress={() => setItemSearchQuery('')}>
+                  <Ionicons name="close-circle" size={20} color="#9ca3af" />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            <ScrollView style={styles.modalList}>
+              {loadingInventory ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#3e60ab" />
+                  <Text style={styles.loadingText}>Loading items...</Text>
+                </View>
+              ) : inventoryItems.filter(item =>
+                  item.item_name?.toLowerCase().includes(itemSearchQuery.toLowerCase()) ||
+                  item.item_code?.toLowerCase().includes(itemSearchQuery.toLowerCase())
+                ).length === 0 ? (
+                <View style={styles.emptyModalContainer}>
+                  <Ionicons name="cube-outline" size={48} color="#d1d5db" />
+                  <Text style={styles.emptyModalText}>
+                    {itemSearchQuery ? 'No items found' : 'No inventory items available'}
+                  </Text>
+                  <Text style={styles.emptyModalSubtext}>
+                    {itemSearchQuery ? 'Try a different search term' : 'Add items in inventory first'}
+                  </Text>
+                </View>
+              ) : (
+                inventoryItems
+                  .filter(item =>
+                    item.item_name?.toLowerCase().includes(itemSearchQuery.toLowerCase()) ||
+                    item.item_code?.toLowerCase().includes(itemSearchQuery.toLowerCase())
+                  )
+                  .map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.modalItem}
+                      onPress={() => {
+                        // Add item with default values
+                        const newItem = {
+                          inventory_item_id: item.id,
+                          item_code: item.item_code,
+                          item_name: item.item_name,
+                          item_description: item.item_name,
+                          quantity: 1,
+                          rate: parseFloat(item.selling_price || 0),
+                          amount: parseFloat(item.selling_price || 0),
+                          hsn_sac_code: item.hsn_code || '',
+                          gst_rate: parseFloat(item.gst_rate || 0),
+                          cgst_amount: 0,
+                          sgst_amount: 0,
+                          igst_amount: 0,
+                        };
+                        
+                        // Calculate GST
+                        const gstAmount = (newItem.amount * newItem.gst_rate) / 100;
+                        newItem.cgst_amount = gstAmount / 2;
+                        newItem.sgst_amount = gstAmount / 2;
+                        
+                        setItems([...items, newItem]);
+                        setShowItemModal(false);
+                        setItemSearchQuery('');
+                      }}
+                    >
+                      <View style={styles.modalItemContent}>
+                        <Text style={styles.modalItemText}>{item.item_name}</Text>
+                        {item.item_code && (
+                          <Text style={styles.modalItemSubtext}>Code: {item.item_code}</Text>
+                        )}
+                        <Text style={styles.modalItemSubtext}>
+                          Price: ₹{parseFloat(item.selling_price || 0).toFixed(2)}
+                        </Text>
+                      </View>
+                      <Ionicons name="add-circle-outline" size={24} color="#3e60ab" />
+                    </TouchableOpacity>
+                  ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       {/* Create Ledger Modal */}
       <Modal
         visible={showCreateLedgerModal}
@@ -1402,5 +1600,142 @@ const styles = StyleSheet.create({
   },
   buttonTextSecondary: {
     color: '#3e60ab',
+  },
+  // Items Section Styles
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  addItemButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#eff6ff',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#3e60ab',
+  },
+  addItemButtonText: {
+    ...FONT_STYLES.caption,
+    color: '#3e60ab',
+    marginLeft: 6,
+    fontWeight: '600',
+  },
+  emptyItemsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 32,
+  },
+  emptyItemsText: {
+    ...FONT_STYLES.body,
+    color: '#111827',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  emptyItemsSubtext: {
+    ...FONT_STYLES.caption,
+    color: '#6b7280',
+    textAlign: 'center',
+  },
+  itemsList: {
+    gap: 12,
+  },
+  itemCard: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  itemCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  itemName: {
+    ...FONT_STYLES.body,
+    color: '#111827',
+    fontWeight: '600',
+    flex: 1,
+    marginRight: 8,
+  },
+  itemCardDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  itemDetail: {
+    ...FONT_STYLES.caption,
+    color: '#6b7280',
+  },
+  itemTax: {
+    ...FONT_STYLES.caption,
+    color: '#059669',
+    fontWeight: '600',
+  },
+  totalCard: {
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  totalLabel: {
+    ...FONT_STYLES.body,
+    color: '#6b7280',
+  },
+  totalValue: {
+    ...FONT_STYLES.body,
+    color: '#111827',
+    fontWeight: '600',
+  },
+  grandTotalRow: {
+    marginTop: 6,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#d1d5db',
+    marginBottom: 0,
+  },
+  grandTotalLabel: {
+    ...FONT_STYLES.body,
+    color: '#111827',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  grandTotalValue: {
+    ...FONT_STYLES.body,
+    color: '#3e60ab',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  // Search Container Styles
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    backgroundColor: '#f9fafb',
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    ...FONT_STYLES.body,
+    flex: 1,
+    paddingVertical: 8,
+    color: '#111827',
   },
 });

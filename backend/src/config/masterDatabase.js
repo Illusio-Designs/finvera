@@ -8,7 +8,7 @@ const logger = require('../utils/logger');
 /**
  * Master Database Connection
  * Stores ONLY tenant metadata (tenant_master table)
- * Admin, salesman, distributor data stays in main database (finvera_db)
+ * Admin, salesman, distributor data stays in main database (finvera_main)
  * Auto-created on server startup
  */
 const masterDbName = process.env.MASTER_DB_NAME || 'finvera_master';

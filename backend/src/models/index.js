@@ -4,7 +4,7 @@ const { DataTypes } = require('sequelize');
 const db = {};
 
 /**
- * Main Database Models (finvera_db)
+ * Main Database Models (finvera_main)
  * ONLY admin/system/platform models
  * 
  * Master DB models are in: src/models/masterModels.js

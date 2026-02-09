@@ -2,7 +2,7 @@
 
 /**
  * Initialize Main Database
- * Creates the main database (finvera_db)
+ * Creates the main database (finvera_main)
  */
 
 require('dotenv').config();
@@ -15,7 +15,7 @@ const logger = require('../utils/logger');
  */
 async function initDatabase() {
   const sequelize = require('../config/database');
-  const dbName = process.env.DB_NAME || 'finvera_db';
+  const dbName = process.env.DB_NAME || 'finvera_main';
   
   try {
     logger.info(`[INIT] Starting main database initialization for: ${dbName}`);

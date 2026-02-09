@@ -29,7 +29,7 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     const now = new Date();
     const masterDbName = process.env.MASTER_DB_NAME || 'finvera_master';
-    const mainDbName = process.env.DB_NAME || 'finvera_db';
+    const mainDbName = process.env.DB_NAME || 'finvera_main';
     
     // Detect which database we're running on
     const currentDbName = queryInterface.sequelize.config.database;
@@ -433,7 +433,7 @@ module.exports = {
     const masterDbName = process.env.MASTER_DB_NAME || 'finvera_master';
     const currentDbName = queryInterface.sequelize.config.database;
     const isMasterDb = currentDbName === masterDbName;
-    const isMainDb = currentDbName === (process.env.DB_NAME || 'finvera_db');
+    const isMainDb = currentDbName === (process.env.DB_NAME || 'finvera_main');
     const { Op } = Sequelize;
     
     if (isMainDb) {

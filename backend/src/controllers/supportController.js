@@ -48,11 +48,11 @@ module.exports = {
             role: req.user.role
           });
           
-          // All users are stored in the main database (finvera_db)
+          // All users are stored in the main database (finvera_main)
           // So let's fetch user details from there directly
           const mainConnection = await tenantConnectionManager.getConnection({
             id: 'main_db',
-            db_name: process.env.DB_NAME || 'finvera_db',
+            db_name: process.env.DB_NAME || 'finvera_main',
             db_host: process.env.DB_HOST || 'localhost',
             db_port: parseInt(process.env.DB_PORT) || 3306,
             db_user: process.env.DB_USER || 'root',

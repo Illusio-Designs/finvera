@@ -368,7 +368,7 @@ DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=your_password
-DB_NAME=finvera_db
+DB_NAME=finvera_main
 MASTER_DB_NAME=finvera_master
 
 # Redis

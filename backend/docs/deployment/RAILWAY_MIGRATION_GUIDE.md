@@ -176,7 +176,7 @@ Migrate from Railway to Oracle Cloud when:
    DB_PORT=3306
    DB_USER=finvera
    DB_PASSWORD=your-strong-password
-   DB_NAME=finvera_db
+   DB_NAME=finvera_main
    MASTER_DB_NAME=finvera_master
    
    JWT_SECRET=your-jwt-secret

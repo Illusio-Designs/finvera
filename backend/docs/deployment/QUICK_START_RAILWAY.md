@@ -62,7 +62,7 @@ DB_HOST=${{MYSQLHOST}}
 DB_PORT=${{MYSQLPORT}}
 DB_USER=${{MYSQLUSER}}
 DB_PASSWORD=${{MYSQLPASSWORD}}
-DB_NAME=finvera_db
+DB_NAME=finvera_main
 MASTER_DB_NAME=finvera_master
 
 # IMPORTANT: Generate these!

@@ -46,7 +46,7 @@ async function postDeploy() {
   // 1. Check database connection
   console.log('1️⃣ Checking database connection...');
   const dbHost = process.env.DB_HOST || process.env.MYSQLHOST;
-  const dbName = process.env.DB_NAME || 'finvera_db';
+  const dbName = process.env.DB_NAME || 'finvera_main';
   const masterDbName = process.env.MASTER_DB_NAME || 'finvera_master';
   
   if (!dbHost) {

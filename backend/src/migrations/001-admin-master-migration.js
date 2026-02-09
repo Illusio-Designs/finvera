@@ -3,7 +3,7 @@
  * 
  * This file contains all migrations for:
  * - Master Database (finvera_master): tenant_master, companies, tenant_reviews, subscriptions, payments
- * - Admin/Main Database (finvera_db): users, subscription_plans, distributors, salesmen, commissions, payouts, leads, referral tables, notifications
+ * - Admin/Main Database (finvera_main): users, subscription_plans, distributors, salesmen, commissions, payouts, leads, referral tables, notifications
  * 
  * IMPORTANT: This migration should be run on BOTH master and main databases separately
  * - Master DB: Only the master-specific sections
