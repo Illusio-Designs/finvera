@@ -19,8 +19,16 @@ module.exports = (sequelize) => {
       allowNull: false,
     },
     name: DataTypes.STRING,
+    first_name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    last_name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
     phone: DataTypes.STRING,
-    profile_image: DataTypes.STRING, // Add profile_image field
+    profile_image: DataTypes.STRING,
     role: {
       type: DataTypes.ENUM('tenant_admin', 'user', 'accountant'),
       defaultValue: 'user',
@@ -29,7 +37,14 @@ module.exports = (sequelize) => {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
-    last_login: DataTypes.DATE, // Add last_login field
+    last_login: DataTypes.DATE,
+    email_verified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    email_verified_at: DataTypes.DATE,
+    preferences: DataTypes.JSON,
+    created_by: DataTypes.UUID,
     tenant_id: {
       type: DataTypes.STRING,
       allowNull: false,

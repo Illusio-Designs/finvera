@@ -107,13 +107,8 @@ export default function LoginScreen() {
     }
 
     try {
-      // Get biometric type name for prompt
-      const biometricName = biometricType === 'facial' ? 'Face ID' : 
-                           biometricType === 'fingerprint' ? 'Touch ID/Fingerprint' :
-                           biometricType === 'iris' ? 'Iris' : 'Biometric';
-
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: `Authenticate with ${biometricName} to login to Finvera`,
+        promptMessage: 'Authenticate to login to Finvera',
         cancelLabel: 'Cancel',
         fallbackLabel: 'Use Password',
         disableDeviceFallback: false,
@@ -125,11 +120,11 @@ export default function LoginScreen() {
         // Proceed with login using saved credentials
         await handleLoginWithCredentials(savedCredentials.email, savedCredentials.password);
       } else {
-        showError('Authentication Failed', 'Biometric authentication was cancelled or failed');
+        showError('Authentication Failed', 'Authentication was cancelled or failed');
       }
     } catch (error) {
       console.error('Biometric authentication error:', error);
-      showError('Authentication Error', 'Failed to authenticate with biometrics');
+      showError('Authentication Error', 'Failed to authenticate');
     }
   };
 
@@ -169,12 +164,9 @@ export default function LoginScreen() {
           
           // Save credentials for biometric login if not using biometric already
           if (!emailParam && biometricAvailable && !savedCredentials) {
-            const biometricName = biometricType === 'facial' ? 'Face ID' : 
-                                 biometricType === 'fingerprint' ? 'Touch ID' :
-                                 'Biometric';
             Alert.alert(
-              `Save for ${biometricName} Login?`,
-              `Would you like to save your credentials for quick ${biometricName} login next time?`,
+              'Save for Quick Login?',
+              'Would you like to save your credentials for quick biometric login next time?',
               [
                 { text: 'No', style: 'cancel' },
                 { 
@@ -219,12 +211,9 @@ export default function LoginScreen() {
         
         // Save credentials for biometric login if successful and not already saved
         if (biometricAvailable && !savedCredentials) {
-          const biometricName = biometricType === 'facial' ? 'Face ID' : 
-                               biometricType === 'fingerprint' ? 'Touch ID' :
-                               'Biometric';
           Alert.alert(
-            `Save for ${biometricName} Login?`,
-            `Would you like to save your credentials for quick ${biometricName} login next time?`,
+            'Save for Quick Login?',
+            'Would you like to save your credentials for quick biometric login next time?',
             [
               { text: 'No', style: 'cancel' },
               { 
@@ -475,10 +464,7 @@ export default function LoginScreen() {
                     color="#3e60ab" 
                   />
                   <Text style={styles.biometricButtonText}>
-                    {biometricType === 'facial' ? 'Login with Face ID' :
-                     biometricType === 'fingerprint' ? 'Login with Touch ID' :
-                     biometricType === 'iris' ? 'Login with Iris' :
-                     'Login with Biometrics'}
+                    Login with Biometrics
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -488,18 +474,12 @@ export default function LoginScreen() {
             {biometricAvailable && !savedCredentials && (
               <View style={styles.biometricInfoContainer}>
                 <Ionicons 
-                  name={
-                    biometricType === 'facial' ? 'scan-outline' : 
-                    biometricType === 'fingerprint' ? 'finger-print-outline' :
-                    'information-circle-outline'
-                  } 
+                  name="information-circle-outline"
                   size={16} 
                   color="#6b7280" 
                 />
                 <Text style={styles.biometricInfoText}>
-                  {biometricType === 'facial' ? 'Face ID' :
-                   biometricType === 'fingerprint' ? 'Touch ID' :
-                   'Biometric'} will be available after your first login
+                  Biometric login will be available after your first login
                 </Text>
               </View>
             )}

@@ -287,7 +287,12 @@ export default function CreateLedgerModal({
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView 
+            style={styles.content} 
+            contentContainerStyle={styles.scrollContentContainer}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
             <View style={styles.form}>
               {/* Basic Information */}
               <View style={styles.section}>
@@ -429,6 +434,7 @@ export default function CreateLedgerModal({
                       onChangeText={(value) => setFormData(prev => ({ ...prev, pincode: value }))}
                       placeholder="Enter pincode"
                       keyboardType="numeric"
+                      maxLength={6}
                     />
                   </View>
                   
@@ -439,6 +445,8 @@ export default function CreateLedgerModal({
                       onChangeText={(value) => setFormData(prev => ({ ...prev, phone: value }))}
                       placeholder="Enter phone number"
                       defaultCountry="IN"
+                      showValidation={true}
+                      style={styles.phoneInputWrapper}
                     />
                   </View>
                 </View>
@@ -505,26 +513,26 @@ export default function CreateLedgerModal({
                 </View>
               </View>
             </View>
-
-            <View style={styles.actions}>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.cancelButton]}
-                onPress={onClose}
-              >
-                <Text style={[styles.actionButtonText, { color: '#6b7280' }]}>Cancel</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.actionButton, styles.createButton]}
-                onPress={handleCreate}
-                disabled={loading}
-              >
-                <Text style={styles.actionButtonText}>
-                  {loading ? 'Creating...' : 'Create Ledger'}
-                </Text>
-              </TouchableOpacity>
-            </View>
           </ScrollView>
+
+          <View style={styles.actions}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.cancelButton]}
+              onPress={onClose}
+            >
+              <Text style={[styles.actionButtonText, { color: '#6b7280' }]}>Cancel</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.actionButton, styles.createButton]}
+              onPress={handleCreate}
+              disabled={loading}
+            >
+              <Text style={styles.actionButtonText}>
+                {loading ? 'Creating...' : 'Create Ledger'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
 
@@ -578,19 +586,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
+    paddingTop: 20,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
   title: {
     ...FONT_STYLES.h5,
-    color: '#111827'
+    color: '#111827',
+    fontSize: 18,
+    fontWeight: '600',
   },
   closeButton: {
     padding: 4,
   },
   content: {
     flex: 1,
+  },
+  scrollContentContainer: {
+    paddingBottom: 20,
   },
   form: {
     padding: 16,
@@ -601,7 +615,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...FONT_STYLES.h5,
     color: '#111827',
-    marginBottom: 16
+    marginBottom: 16,
+    fontSize: 16,
+    fontWeight: '600',
   },
   inputRow: {
     flexDirection: 'row',
@@ -614,25 +630,31 @@ const styles = StyleSheet.create({
   inputLabel: {
     ...FONT_STYLES.label,
     color: '#374151',
-    marginBottom: 8
+    marginBottom: 8,
+    fontSize: 14,
+    fontWeight: '500',
   },
   input: {
-    ...FONT_STYLES.h5,
+    ...FONT_STYLES.body,
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 8,
     padding: 12,
     color: '#111827',
-    backgroundColor: 'white'
+    backgroundColor: 'white',
+    fontSize: 14,
+    minHeight: 48,
   },
   selectInput: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    minHeight: 48,
   },
   inputText: {
-    ...FONT_STYLES.h5,
-    color: '#111827'
+    ...FONT_STYLES.body,
+    color: '#111827',
+    fontSize: 14,
   },
   placeholder: {
     color: '#9ca3af',
@@ -640,18 +662,27 @@ const styles = StyleSheet.create({
   textArea: {
     height: 80,
     textAlignVertical: 'top',
+    paddingTop: 12,
   },
   actions: {
     flexDirection: 'row',
     gap: 12,
     padding: 16,
-    paddingTop: 0,
+    backgroundColor: 'white',
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 5,
   },
   actionButton: {
     flex: 1,
-    padding: 16,
+    padding: 14,
     borderRadius: 8,
     alignItems: 'center',
+    minHeight: 48,
   },
   cancelButton: {
     backgroundColor: 'white',
@@ -662,8 +693,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#3e60ab',
   },
   actionButtonText: {
-    ...FONT_STYLES.h5,
-    color: 'white'
+    ...FONT_STYLES.body,
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 15,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -748,5 +781,8 @@ const styles = StyleSheet.create({
   validationText: {
     ...FONT_STYLES.caption,
     color: '#10b981'
+  },
+  phoneInputWrapper: {
+    marginTop: 0,
   },
 });

@@ -5,6 +5,9 @@
  * These seeders run on each tenant's individual database.
  * 
  * IMPORTANT: This seeder runs on each tenant database separately
+ * 
+ * NOTE: User creation is handled by tenantProvisioningService.seedDefaultData()
+ * This seeder only creates default ledgers and other reference data
  */
 
 module.exports = {
@@ -12,22 +15,261 @@ module.exports = {
     const now = new Date();
 
     // ============================================
-    // TENANT-SPECIFIC DEFAULT DATA
+    // DEFAULT LEDGERS
     // ============================================
+    
+    // Get account groups from master database (they're shared across all tenants)
+    const masterModels = require('../models/masterModels');
+    
+    try {
+      // Fetch account groups
+      const accountGroups = await masterModels.AccountGroup.findAll({
+        where: { is_system: true },
+      });
+      
+      console.log(`[SEEDER] Found ${accountGroups.length} system account groups`);
+      
+      // Create a map of group codes to IDs
+      const groupMap = new Map();
+      accountGroups.forEach((group) => {
+        groupMap.set(group.group_code, group.id);
+      });
 
-    // Note: Most tenant-specific data is created dynamically when:
-    // - Tenant is provisioned
-    // - User creates companies/ledgers/vouchers
-    // 
-    // This seeder can be extended to add default voucher types,
-    // default account groups, or other tenant-specific defaults
-    // that should be present in every tenant database.
+      const defaultLedgers = [];
 
-    console.log('✓ Tenant seeder completed (no default data to seed)');
+      // Helper function to add ledger if group exists
+      const addLedger = (code, name, groupCode, balanceType) => {
+        const groupId = groupMap.get(groupCode);
+        if (groupId) {
+          defaultLedgers.push({
+            id: Sequelize.literal('(UUID())'),
+            ledger_code: code,
+            ledger_name: name,
+            account_group_id: groupId,
+            opening_balance: 0,
+            opening_balance_type: balanceType,
+            balance_type: balanceType === 'Dr' ? 'debit' : 'credit',
+            is_default: true,
+            is_active: true,
+            createdAt: now,
+            updatedAt: now,
+          });
+        } else {
+          console.warn(`[SEEDER] Account group '${groupCode}' not found, skipping ledger '${name}'`);
+        }
+      };
+
+      // Cash Ledgers
+      addLedger('CASH-001', 'Cash on Hand', 'CASH', 'Dr');
+      
+      // Bank Ledgers
+      addLedger('BANK-001', 'Bank Account', 'BANK', 'Dr');
+      
+      // Sales Ledgers
+      addLedger('SAL-001', 'Sales', 'SAL', 'Cr');
+      
+      // Purchase Ledgers
+      addLedger('PUR-001', 'Purchase', 'PUR', 'Dr');
+      
+      // Capital Account
+      addLedger('CAP-001', 'Capital Account', 'CAP', 'Cr');
+      
+      // Stock in Hand
+      addLedger('INV-001', 'Stock in Hand', 'INV', 'Dr');
+
+      // GST Ledgers (Input - Debit, Output - Credit)
+      addLedger('CGST-001', 'CGST', 'DT', 'Cr');
+      addLedger('SGST-001', 'SGST', 'DT', 'Cr');
+      addLedger('IGST-001', 'IGST', 'DT', 'Cr');
+
+      // Insert default ledgers
+      if (defaultLedgers.length > 0) {
+        await queryInterface.bulkInsert('ledgers', defaultLedgers, { ignoreDuplicates: true });
+        console.log(`✓ Seeded ${defaultLedgers.length} default ledgers`);
+      } else {
+        console.warn('⚠️  No default ledgers were created - account groups may be missing');
+      }
+
+    } catch (error) {
+      console.error('❌ Error seeding default ledgers:', error.message);
+      console.error('Stack:', error.stack);
+      // Don't throw - allow provisioning to continue even if seeding fails
+    }
+
+    // ============================================
+    // DEFAULT NUMBERING SERIES
+    // ============================================
+    
+    try {
+      // Check if numbering_series table exists
+      const [numberingSeriesTables] = await queryInterface.sequelize.query("SHOW TABLES LIKE 'numbering_series'");
+      
+      if (numberingSeriesTables.length > 0) {
+        const defaultNumberingSeries = [
+          {
+            id: Sequelize.literal('(UUID())'),
+            voucher_type: 'sales_invoice',
+            series_name: 'Sales Invoice Series',
+            prefix: 'SI',
+            format: 'PREFIXSEPARATORYEARSEPARATORSEQUENCE',
+            separator: '-',
+            sequence_length: 3,
+            current_sequence: 1,
+            start_number: 1,
+            end_number: null,
+            reset_frequency: 'yearly',
+            last_reset_date: null,
+            is_default: true,
+            is_active: true,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: Sequelize.literal('(UUID())'),
+            voucher_type: 'tax_invoice',
+            series_name: 'Tax Invoice Series',
+            prefix: 'TI',
+            format: 'PREFIXSEPARATORYEARSEPARATORSEQUENCE',
+            separator: '-',
+            sequence_length: 3,
+            current_sequence: 1,
+            start_number: 1,
+            end_number: null,
+            reset_frequency: 'yearly',
+            last_reset_date: null,
+            is_default: true,
+            is_active: true,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: Sequelize.literal('(UUID())'),
+            voucher_type: 'bill_of_supply',
+            series_name: 'Bill of Supply Series',
+            prefix: 'BS',
+            format: 'PREFIXSEPARATORYEARSEPARATORSEQUENCE',
+            separator: '-',
+            sequence_length: 3,
+            current_sequence: 1,
+            start_number: 1,
+            end_number: null,
+            reset_frequency: 'yearly',
+            last_reset_date: null,
+            is_default: true,
+            is_active: true,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: Sequelize.literal('(UUID())'),
+            voucher_type: 'retail_invoice',
+            series_name: 'Retail Invoice Series',
+            prefix: 'RI',
+            format: 'PREFIXSEPARATORYEARSEPARATORSEQUENCE',
+            separator: '-',
+            sequence_length: 3,
+            current_sequence: 1,
+            start_number: 1,
+            end_number: null,
+            reset_frequency: 'yearly',
+            last_reset_date: null,
+            is_default: true,
+            is_active: true,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: Sequelize.literal('(UUID())'),
+            voucher_type: 'export_invoice',
+            series_name: 'Export Invoice Series',
+            prefix: 'EI',
+            format: 'PREFIXSEPARATORYEARSEPARATORSEQUENCE',
+            separator: '-',
+            sequence_length: 3,
+            current_sequence: 1,
+            start_number: 1,
+            end_number: null,
+            reset_frequency: 'yearly',
+            last_reset_date: null,
+            is_default: true,
+            is_active: true,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: Sequelize.literal('(UUID())'),
+            voucher_type: 'delivery_challan',
+            series_name: 'Delivery Challan Series',
+            prefix: 'DC',
+            format: 'PREFIXSEPARATORYEARSEPARATORSEQUENCE',
+            separator: '-',
+            sequence_length: 3,
+            current_sequence: 1,
+            start_number: 1,
+            end_number: null,
+            reset_frequency: 'yearly',
+            last_reset_date: null,
+            is_default: true,
+            is_active: true,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: Sequelize.literal('(UUID())'),
+            voucher_type: 'proforma_invoice',
+            series_name: 'Proforma Invoice Series',
+            prefix: 'PI',
+            format: 'PREFIXSEPARATORYEARSEPARATORSEQUENCE',
+            separator: '-',
+            sequence_length: 3,
+            current_sequence: 1,
+            start_number: 1,
+            end_number: null,
+            reset_frequency: 'yearly',
+            last_reset_date: null,
+            is_default: true,
+            is_active: true,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: Sequelize.literal('(UUID())'),
+            voucher_type: 'purchase_invoice',
+            series_name: 'Purchase Invoice Series',
+            prefix: 'PI',
+            format: 'PREFIXSEPARATORYEARSEPARATORSEQUENCE',
+            separator: '-',
+            sequence_length: 3,
+            current_sequence: 1,
+            start_number: 1,
+            end_number: null,
+            reset_frequency: 'yearly',
+            last_reset_date: null,
+            is_default: true,
+            is_active: true,
+            createdAt: now,
+            updatedAt: now,
+          },
+        ];
+
+        await queryInterface.bulkInsert('numbering_series', defaultNumberingSeries, { ignoreDuplicates: true });
+        console.log(`✓ Seeded ${defaultNumberingSeries.length} default numbering series`);
+      } else {
+        console.warn('⚠️  numbering_series table does not exist, skipping numbering series seeding');
+      }
+    } catch (error) {
+      console.error('❌ Error seeding default numbering series:', error.message);
+      // Don't throw - allow provisioning to continue even if seeding fails
+    }
+
+    console.log('✓ Tenant seeder completed');
   },
 
   async down(queryInterface, Sequelize) {
-    // Remove any tenant-specific default data if needed
-    // Currently no data to remove
+    // Remove default ledgers
+    await queryInterface.bulkDelete('ledgers', { is_default: true }, {});
+    
+    // Remove default numbering series
+    await queryInterface.bulkDelete('numbering_series', { is_default: true }, {});
   },
 };

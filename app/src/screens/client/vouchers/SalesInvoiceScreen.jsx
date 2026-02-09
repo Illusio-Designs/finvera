@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../../components/navigation/TopBar';
+import CreateSalesInvoiceModal from '../../../components/modals/CreateSalesInvoiceModal';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { voucherAPI } from '../../../lib/api';
@@ -20,6 +21,7 @@ export default function SalesInvoiceScreen() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const handleMenuPress = () => {
     openDrawer();
@@ -78,19 +80,17 @@ export default function SalesInvoiceScreen() {
   };
 
   const handleCreateInvoice = () => {
-    console.log('🚀 Navigating to CreateSalesInvoice...');
-    console.log('📍 Navigation object:', navigation);
-    try {
-      navigation.navigate('CreateSalesInvoice');
-      console.log('✅ Navigation called successfully');
-    } catch (error) {
-      console.error('❌ Navigation error:', error);
-      showNotification({
-        type: 'error',
-        title: 'Navigation Error',
-        message: error.message || 'Failed to navigate to create screen'
-      });
-    }
+    setShowCreateModal(true);
+  };
+
+  const handleInvoiceCreated = (invoice) => {
+    // Refresh the list after creating new invoice
+    fetchVouchers();
+    showNotification({
+      type: 'success',
+      title: 'Success',
+      message: 'Invoice created successfully'
+    });
   };
 
   const handleEditVoucher = (voucher) => {
@@ -396,6 +396,13 @@ export default function SalesInvoiceScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Create Sales Invoice Modal */}
+      <CreateSalesInvoiceModal
+        visible={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onInvoiceCreated={handleInvoiceCreated}
+      />
     </View>
   );
 }

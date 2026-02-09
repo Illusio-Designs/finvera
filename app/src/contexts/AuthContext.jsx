@@ -23,6 +23,32 @@ export const AuthProvider = ({ children }) => {
     checkStoredAuth();
   }, []);
 
+  // Periodically validate session to ensure token still exists
+  useEffect(() => {
+    if (!user || !token) return;
+
+    const validateSession = async () => {
+      try {
+        const tokenKey = buildStorageKey(STORAGE_CONFIG.AUTH_TOKEN_KEY);
+        const storedToken = await AsyncStorage.getItem(tokenKey);
+        
+        // If token was cleared (e.g., by 401 response), update context state
+        if (!storedToken) {
+          console.log('🔓 Session invalidated - token not found in storage');
+          setToken(null);
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Error validating session:', error);
+      }
+    };
+
+    // Check session every 5 seconds
+    const interval = setInterval(validateSession, 5000);
+    
+    return () => clearInterval(interval);
+  }, [user, token]);
+
   const checkStoredAuth = async () => {
     try {
       const tokenKey = buildStorageKey(STORAGE_CONFIG.AUTH_TOKEN_KEY);

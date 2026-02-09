@@ -237,15 +237,13 @@ apiClient.interceptors.response.use(
         
         if (!isAuthEndpoint) {
           showGlobalError('Session Expired', 'Your session has expired. Please log in again.');
-          
-          // Navigate to login screen after a short delay to show the error message
-          setTimeout(() => {
-            reset('Login');
-            isLoggingOut = false;
-          }, 1500);
-        } else {
-          isLoggingOut = false;
         }
+        
+        // Always navigate to login screen on 401, regardless of endpoint
+        setTimeout(() => {
+          reset('Login');
+          isLoggingOut = false;
+        }, isAuthEndpoint ? 100 : 1500);
       }
     } else if (error.response?.status === 403) {
       if (!isAuthEndpoint) {

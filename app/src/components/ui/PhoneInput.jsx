@@ -32,6 +32,7 @@ const PhoneInput = ({
   disabled = false,
   error = false,
   style,
+  showValidation = false,
 }) => {
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState(
@@ -78,6 +79,21 @@ const PhoneInput = ({
     return value.replace(selectedCountry.code, '').trim();
   };
 
+  const isValidPhone = () => {
+    if (!value) return false;
+    const cleanNumber = value.replace(/\D/g, '');
+    // Remove country code digits
+    const countryCodeDigits = selectedCountry.code.replace(/\D/g, '');
+    const phoneDigits = cleanNumber.replace(countryCodeDigits, '');
+    
+    if (selectedCountry.iso === 'IN') {
+      return phoneDigits.length === 10;
+    } else if (selectedCountry.iso === 'US') {
+      return phoneDigits.length === 10;
+    }
+    return phoneDigits.length >= 8 && phoneDigits.length <= 15;
+  };
+
   const renderCountryItem = ({ item }) => (
     <TouchableOpacity
       style={styles.countryItem}
@@ -99,7 +115,8 @@ const PhoneInput = ({
       <View style={[
         styles.inputContainer,
         disabled && styles.inputContainerDisabled,
-        error && styles.inputContainerError
+        error && styles.inputContainerError,
+        showValidation && value && isValidPhone() && styles.inputContainerValid
       ]}>
         {/* Country Code Selector */}
         <TouchableOpacity
@@ -123,7 +140,30 @@ const PhoneInput = ({
           editable={!disabled}
           maxLength={selectedCountry.iso === 'IN' ? 11 : 15} // Adjust based on country
         />
+
+        {/* Validation Icon */}
+        {showValidation && value && (
+          <View style={styles.validationIcon}>
+            {isValidPhone() ? (
+              <Ionicons name="checkmark-circle" size={20} color="#10b981" />
+            ) : (
+              <Ionicons name="alert-circle" size={20} color="#f59e0b" />
+            )}
+          </View>
+        )}
       </View>
+
+      {/* Validation Message */}
+      {showValidation && value && !isValidPhone() && (
+        <View style={styles.validationMessage}>
+          <Ionicons name="information-circle" size={14} color="#f59e0b" />
+          <Text style={styles.validationText}>
+            {selectedCountry.iso === 'IN' 
+              ? 'Please enter a valid 10-digit phone number' 
+              : 'Please enter a valid phone number'}
+          </Text>
+        </View>
+      )}
 
       {/* Country Picker Modal */}
       <Modal
@@ -167,9 +207,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 12,
+    borderRadius: 8,
     backgroundColor: 'white',
     overflow: 'hidden',
+    minHeight: 48,
   },
   inputContainerDisabled: {
     backgroundColor: '#f3f4f6',
@@ -177,31 +218,53 @@ const styles = StyleSheet.create({
   },
   inputContainerError: {
     borderColor: '#ef4444',
+    backgroundColor: '#fef2f2',
+  },
+  inputContainerValid: {
+    borderColor: '#10b981',
+    backgroundColor: '#f0fdf4',
   },
   countrySelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 12,
     borderRightWidth: 1,
     borderRightColor: '#e5e7eb',
-    gap: 6,
+    gap: 4,
+    backgroundColor: '#f9fafb',
   },
   countryFlag: {
-    fontSize: 18,
-    fontFamily: 'Agency',
+    fontSize: 20,
   },
   selectedCountryCode: {
-    ...FONT_STYLES.h5,
+    ...FONT_STYLES.body,
     fontWeight: '600',
     color: '#111827',
+    fontSize: 14,
   },
   phoneInput: {
     flex: 1,
     paddingHorizontal: 12,
-    paddingVertical: 14,
-    ...FONT_STYLES.h5,
+    paddingVertical: 12,
+    ...FONT_STYLES.body,
     color: '#111827',
+    fontSize: 14,
+  },
+  validationIcon: {
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+  },
+  validationMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    gap: 4,
+  },
+  validationText: {
+    ...FONT_STYLES.caption,
+    color: '#f59e0b',
+    flex: 1,
   },
 
   // Modal Styles

@@ -524,36 +524,56 @@ class TenantProvisioningService {
 
     // Create default GSTIN if provided
     if (gstin) {
-      const existingGSTIN = await models.GSTIN.findOne({ where: { gstin } });
-      if (!existingGSTIN) {
-        // Get tenant_id from tenantOrCompany (could be tenant.id or company.tenant_id)
-        const tenantId = tenantOrCompany.id || tenantOrCompany.tenant_id;
-        
-        // Extract state code from GSTIN (first 2 digits)
-        // GSTIN format: [2-digit state code][10-digit PAN][1-digit entity number][1-digit Z][1-digit check digit]
-        const stateCode = gstin && gstin.length >= 2 ? gstin.substring(0, 2) : null;
-        
-        await models.GSTIN.create({
-          tenant_id: tenantId,
-          gstin: gstin,
-          legal_name: companyName,
-          trade_name: companyName,
-          state: state,
-          state_code: stateCode || '00', // Default to '00' if can't extract from GSTIN
-          address: address,
-          gstin_status: 'active',
-          is_primary: true,
-        });
-        logger.info('Default GSTIN created');
+      try {
+        // Check if GSTIN table exists
+        const [tables] = await connection.query("SHOW TABLES LIKE 'gstins'");
+        if (tables.length === 0) {
+          logger.warn('[PROVISION] GSTIN table does not exist yet, skipping GSTIN creation');
+        } else {
+          const existingGSTIN = await models.GSTIN.findOne({ where: { gstin } });
+          if (!existingGSTIN) {
+            // Get tenant_id from tenantOrCompany (could be tenant.id or company.tenant_id)
+            const tenantId = tenantOrCompany.id || tenantOrCompany.tenant_id;
+            
+            // Extract state code from GSTIN (first 2 digits)
+            // GSTIN format: [2-digit state code][10-digit PAN][1-digit entity number][1-digit Z][1-digit check digit]
+            const stateCode = gstin && gstin.length >= 2 ? gstin.substring(0, 2) : null;
+            
+            await models.GSTIN.create({
+              tenant_id: tenantId,
+              gstin: gstin,
+              legal_name: companyName,
+              trade_name: companyName,
+              state: state,
+              state_code: stateCode || '00', // Default to '00' if can't extract from GSTIN
+              address: address,
+              gstin_status: 'active',
+              is_primary: true,
+            });
+            logger.info('Default GSTIN created');
+          }
+        }
+      } catch (gstinError) {
+        logger.warn('[PROVISION] Could not create GSTIN:', gstinError.message);
+        // Continue - GSTIN creation is optional
       }
     }
 
-    // Create default ledgers
-    const tenantId = tenantOrCompany.id || tenantOrCompany.tenant_id;
-    await this.createDefaultLedgers(models, masterModels, tenantId);
+    // Create default ledgers (if not already created by seeder)
+    const existingLedgers = await models.Ledger.count();
+    if (existingLedgers === 0) {
+      await this.createDefaultLedgers(models, masterModels, tenantId);
+    } else {
+      logger.info(`[PROVISION] Ledgers already exist (${existingLedgers} found), skipping default ledger creation`);
+    }
 
-    // Create default numbering series for invoice types
-    await this.createDefaultNumberingSeries(models, tenantId);
+    // Create default numbering series for invoice types (if not already created by seeder)
+    const existingSeries = await models.NumberingSeries ? await models.NumberingSeries.count() : 0;
+    if (existingSeries === 0) {
+      await this.createDefaultNumberingSeries(models, tenantId);
+    } else {
+      logger.info(`[PROVISION] Numbering series already exist (${existingSeries} found), skipping default series creation`);
+    }
 
     logger.info('Default data seeded (admin user, GSTIN, default ledgers, and numbering series)');
   }
