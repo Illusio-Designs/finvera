@@ -1,7 +1,40 @@
 const { Op } = require('sequelize');
 const logger = require('../utils/logger');
+const masterModels = require('../models/masterModels');
 
-// Helper function to check if barcode functionality is enabled for a tenant
+// Helper function to get business type from company/branch
+async function getBusinessType(companyId, branchId) {
+  try {
+    // If branchId is provided, check branch business_type first
+    if (branchId) {
+      const branch = await masterModels.Branch.findByPk(branchId);
+      if (branch && branch.business_type) {
+        return branch.business_type;
+      }
+      // If branch exists but business_type is null, fall through to company
+      if (branch) {
+        companyId = branch.company_id;
+      }
+    }
+    
+    // Check company business_type
+    if (companyId) {
+      const company = await masterModels.Company.findByPk(companyId);
+      if (company && company.business_type) {
+        return company.business_type;
+      }
+    }
+    
+    // Default to trader if nothing is set
+    return 'trader';
+  } catch (error) {
+    logger.error('Error getting business type:', error);
+    return 'trader'; // Default to trader on error
+  }
+}
+
+// Helper function to check if barcode functionality is enabled for a tenant (DEPRECATED)
+// Kept for backward compatibility
 async function checkBarcodeEnabled(tenantId) {
   try {
     const TenantMaster = require('../models/TenantMaster');
@@ -119,10 +152,22 @@ module.exports = {
         generate_barcode = false,
         barcode_type = 'EAN13', // EAN13, EAN8, CUSTOM
         barcode_prefix = 'PRD',
+        company_id,
+        branch_id,
       } = req.body;
 
       if (!item_name) {
         return res.status(400).json({ error: 'Item name is required' });
+      }
+
+      // Get business type from company/branch
+      const businessType = await getBusinessType(company_id, branch_id);
+      
+      // For retail business type, barcode is mandatory
+      if (businessType === 'retail' && !barcode && !generate_barcode) {
+        return res.status(400).json({ 
+          error: 'Barcode is required for retail business type. Please provide a barcode or enable generate_barcode.' 
+        });
       }
 
       // Generate item_key from item_code or item_name
@@ -139,20 +184,8 @@ module.exports = {
         });
       }
 
-      // Check if barcode functionality is enabled for this tenant
-      const isBarcodeEnabled = await checkBarcodeEnabled(req.tenant_id);
-      
-      // If barcode functionality is disabled, ignore barcode-related fields
-      if (!isBarcodeEnabled) {
-        if (barcode || generate_barcode) {
-          return res.status(400).json({ 
-            error: 'Barcode functionality is disabled. Please enable it in company settings.' 
-          });
-        }
-      }
-
       // Check if barcode already exists
-      if (barcode && isBarcodeEnabled) {
+      if (barcode) {
         const existingBarcode = await req.tenantModels.InventoryItem.findOne({
           where: { barcode },
         });
@@ -163,9 +196,9 @@ module.exports = {
         }
       }
 
-      // Generate barcode if requested and barcode functionality is enabled
+      // Generate barcode if requested
       let generatedBarcode = barcode;
-      if (generate_barcode && !barcode && isBarcodeEnabled) {
+      if (generate_barcode && !barcode) {
         const barcodeGenerator = require('../utils/barcodeGenerator');
         
         switch (barcode_type) {
@@ -196,6 +229,13 @@ module.exports = {
         }
       }
 
+      // For retail business type, ensure we have a barcode at this point
+      if (businessType === 'retail' && !generatedBarcode) {
+        return res.status(400).json({ 
+          error: 'Failed to generate barcode for retail business type. Please try again or provide a barcode manually.' 
+        });
+      }
+
       const item = await req.tenantModels.InventoryItem.create({
         item_key: itemKey,
         item_code: item_code || null,
@@ -209,7 +249,11 @@ module.exports = {
         is_active: is_active !== false,
       });
 
-      res.status(201).json({ data: item });
+      res.status(201).json({ 
+        data: item,
+        business_type: businessType,
+        message: businessType === 'retail' ? 'Item created with barcode (retail mode)' : 'Item created successfully'
+      });
     } catch (error) {
       logger.error('Error creating inventory item:', error);
       if (error.name === 'SequelizeUniqueConstraintError') {
@@ -320,15 +364,10 @@ module.exports = {
   async generateBarcode(req, res, next) {
     try {
       const { id } = req.params;
-      const { barcode_type = 'EAN13', barcode_prefix = 'PRD' } = req.body;
+      const { barcode_type = 'EAN13', barcode_prefix = 'PRD', company_id, branch_id } = req.body;
 
-      // Check if barcode functionality is enabled for this tenant
-      const isBarcodeEnabled = await checkBarcodeEnabled(req.tenant_id);
-      if (!isBarcodeEnabled) {
-        return res.status(400).json({ 
-          error: 'Barcode functionality is disabled. Please enable it in company settings.' 
-        });
-      }
+      // Get business type from company/branch
+      const businessType = await getBusinessType(company_id, branch_id);
 
       const item = await req.tenantModels.InventoryItem.findByPk(id);
       if (!item) {
@@ -376,7 +415,8 @@ module.exports = {
       res.json({ 
         data: item,
         message: 'Barcode generated successfully',
-        barcode: generatedBarcode 
+        barcode: generatedBarcode,
+        business_type: businessType
       });
     } catch (error) {
       logger.error('Error generating barcode:', error);
@@ -456,6 +496,44 @@ module.exports = {
       });
     } catch (error) {
       logger.error('Error bulk generating barcodes:', error);
+      next(error);
+    }
+  },
+
+  async getBusinessType(req, res, next) {
+    try {
+      const { company_id, branch_id } = req.query;
+
+      if (!company_id) {
+        return res.status(400).json({ 
+          error: 'company_id is required' 
+        });
+      }
+
+      const businessType = await getBusinessType(company_id, branch_id);
+      
+      // Determine source
+      let source = 'default';
+      if (branch_id) {
+        const branch = await masterModels.Branch.findByPk(branch_id);
+        if (branch && branch.business_type) {
+          source = 'branch';
+        } else if (branch) {
+          source = 'company';
+        }
+      } else {
+        source = 'company';
+      }
+
+      res.json({ 
+        business_type: businessType,
+        source,
+        message: businessType === 'retail' 
+          ? 'Retail mode: Barcode is mandatory for inventory items' 
+          : 'Trader mode: Barcode is optional for inventory items'
+      });
+    } catch (error) {
+      logger.error('Error getting business type:', error);
       next(error);
     }
   },

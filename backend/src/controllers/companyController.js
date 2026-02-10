@@ -121,6 +121,7 @@ module.exports = {
         branches, // Expect an array of branch objects
         company_name,
         company_type,
+        business_type,
         registration_number,
         incorporation_date,
         pan,
@@ -145,6 +146,14 @@ module.exports = {
         return res.status(400).json({
           success: false,
           message: 'company_name and company_type are required',
+        });
+      }
+
+      // Validate business_type if provided
+      if (business_type && !['trader', 'retail'].includes(business_type)) {
+        return res.status(400).json({
+          success: false,
+          message: 'business_type must be either "trader" or "retail"',
         });
       }
 
@@ -187,6 +196,7 @@ module.exports = {
         await existingCompany.update({
           company_name,
           company_type,
+          business_type: business_type || existingCompany.business_type || 'trader',
           registration_number: registration_number || existingCompany.registration_number,
           incorporation_date: incorporation_date || existingCompany.incorporation_date,
           pan: pan || existingCompany.pan,
@@ -242,6 +252,7 @@ module.exports = {
         created_by_user_id: req.user_id,
         company_name,
         company_type,
+        business_type: business_type || 'trader',
         registration_number: registration_number || null,
         incorporation_date: incorporation_date || null,
         pan: pan || null,
@@ -330,6 +341,7 @@ module.exports = {
       const {
         company_name,
         company_type,
+        business_type,
         registration_number,
         incorporation_date,
         pan,
@@ -350,9 +362,18 @@ module.exports = {
         compliance,
       } = req.body || {};
 
+      // Validate business_type if provided
+      if (business_type && !['trader', 'retail'].includes(business_type)) {
+        return res.status(400).json({
+          success: false,
+          message: 'business_type must be either "trader" or "retail"',
+        });
+      }
+
       await company.update({
         company_name: company_name || company.company_name,
         company_type: company_type || company.company_type,
+        business_type: business_type !== undefined ? business_type : company.business_type,
         registration_number,
         incorporation_date,
         pan,

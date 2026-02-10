@@ -60,6 +60,11 @@ const Branch = masterSequelize.define('Branch', {
         type: DataTypes.BOOLEAN,
         defaultValue: true,
     },
+    business_type: {
+        type: DataTypes.ENUM('trader', 'retail'),
+        allowNull: true,
+        comment: 'Branch-specific business type, inherits from company if null',
+    },
 }, {
     tableName: 'branches',
     timestamps: true,

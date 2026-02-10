@@ -144,6 +144,11 @@ export const voucherAPI = {
 
 // Inventory APIs
 export const inventoryAPI = {
+  getBusinessType: (companyId, branchId) => {
+    const params = { company_id: companyId };
+    if (branchId) params.branch_id = branchId;
+    return apiClient.get('/accounting/inventory/business-type', { params });
+  },
   items: {
     list: (params) => apiClient.get('/accounting/inventory/items', { params }),
     create: (data) => apiClient.post('/accounting/inventory/items', data),

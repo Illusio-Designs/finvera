@@ -151,6 +151,14 @@ models.Company = masterSequelize.define('Company', {
     allowNull: true,
   },
 
+  // Business Type (for inventory management)
+  business_type: {
+    type: DataTypes.ENUM('trader', 'retail'),
+    defaultValue: 'trader',
+    allowNull: false,
+    comment: 'Business type: trader (normal inventory) or retail (barcode-based inventory)',
+  },
+
   // Track provisioning status at company level (mirrors tenant provisioning for now)
   // Database connection info (per company)
   db_name: {

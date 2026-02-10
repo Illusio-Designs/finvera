@@ -10,6 +10,7 @@ module.exports = {
         company_id, 
         branch_name, 
         branch_code,
+        business_type,
         gstin, 
         address,
         city,
@@ -47,10 +48,19 @@ module.exports = {
         }
       }
 
+      // Validate business_type if provided
+      if (business_type && !['trader', 'retail'].includes(business_type)) {
+        return res.status(400).json({
+          success: false,
+          message: 'business_type must be either "trader" or "retail"',
+        });
+      }
+
       const branch = await masterModels.Branch.create({ 
         company_id, 
         branch_name, 
         branch_code,
+        business_type: business_type || null, // null means inherit from company
         gstin, 
         address,
         city,
@@ -95,6 +105,7 @@ module.exports = {
       const { 
         branch_name, 
         branch_code,
+        business_type,
         gstin, 
         address,
         city,
@@ -126,9 +137,18 @@ module.exports = {
         }
       }
 
+      // Validate business_type if provided
+      if (business_type !== undefined && business_type !== null && !['trader', 'retail'].includes(business_type)) {
+        return res.status(400).json({
+          success: false,
+          message: 'business_type must be either "trader", "retail", or null to inherit from company',
+        });
+      }
+
       await branch.update({ 
         branch_name, 
         branch_code,
+        business_type: business_type !== undefined ? business_type : branch.business_type,
         gstin, 
         address,
         city,

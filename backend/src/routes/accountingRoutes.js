@@ -78,6 +78,7 @@ router.post('/bills/allocate', billWiseController.allocatePayment);
 router.get('/bills/aging', billWiseController.getAgingReport);
 
 // Inventory Items
+router.get('/inventory/business-type', inventoryController.getBusinessType);
 router.get('/inventory/items', inventoryController.list);
 router.post('/inventory/items', inventoryController.create);
 router.post('/inventory/items/bulk-generate-barcodes', inventoryController.bulkGenerateBarcodes);
