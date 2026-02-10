@@ -412,7 +412,7 @@ module.exports = {
         serial_number: { type: Sequelize.STRING(100), allowNull: true, comment: 'Manufacturer serial number (optional)' },
         imei_number: { type: Sequelize.STRING(50), allowNull: true, comment: 'IMEI for mobile devices (optional)' },
         status: { type: Sequelize.ENUM('in_stock', 'sold', 'damaged', 'returned', 'transferred'), defaultValue: 'in_stock', allowNull: false },
-        warehouse_id: { type: Sequelize.UUID, allowNull: true, references: { model: 'warehouses', key: 'id' } },
+        warehouse_id: { type: Sequelize.UUID, allowNull: true }, // Foreign key will be added after warehouses table is created
         purchase_voucher_id: { type: Sequelize.UUID, allowNull: true, comment: 'Voucher ID when this unit was purchased' },
         purchase_date: { type: Sequelize.DATE, allowNull: true },
         purchase_rate: { type: Sequelize.DECIMAL(15, 2), allowNull: true, comment: 'Purchase price of this specific unit' },
@@ -492,6 +492,29 @@ module.exports = {
       });
       await addIndexIfNotExists('warehouses', ['tenant_id'], { name: 'idx_warehouses_tenant_id' });
       console.log('✓ Created table warehouses');
+      
+      // Now add foreign key constraint to inventory_units table
+      try {
+        const [inventoryUnitsExists] = await queryInterface.sequelize.query("SHOW TABLES LIKE 'inventory_units'");
+        if (inventoryUnitsExists.length > 0) {
+          await queryInterface.addConstraint('inventory_units', {
+            fields: ['warehouse_id'],
+            type: 'foreign key',
+            name: 'fk_inventory_units_warehouse',
+            references: {
+              table: 'warehouses',
+              field: 'id'
+            },
+            onDelete: 'SET NULL',
+            onUpdate: 'CASCADE'
+          });
+          console.log('✓ Added foreign key constraint from inventory_units to warehouses');
+        }
+      } catch (error) {
+        if (!error.message.includes('already exists')) {
+          console.error('⚠️  Warning: Could not add foreign key constraint:', error.message);
+        }
+      }
     } else {
       console.log('ℹ️  Table warehouses already exists');
     }
