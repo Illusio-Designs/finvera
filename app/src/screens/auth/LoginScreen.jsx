@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Linking, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Linking, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useNotification } from '../../contexts/NotificationContext.jsx';
+import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { authAPI } from '../../lib/api.js';
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -35,6 +36,7 @@ export default function LoginScreen() {
   const [savedCredentials, setSavedCredentials] = useState(null);
   const { login } = useAuth();
   const { showSuccess, showError } = useNotification();
+  const { showInfoConfirmation } = useConfirmation();
 
   // Check biometric availability on component mount
   useEffect(() => {
@@ -164,17 +166,18 @@ export default function LoginScreen() {
           
           // Save credentials for biometric login if not using biometric already
           if (!emailParam && biometricAvailable && !savedCredentials) {
-            Alert.alert(
+            const confirmed = await showInfoConfirmation(
               'Save for Quick Login?',
               'Would you like to save your credentials for quick biometric login next time?',
-              [
-                { text: 'No', style: 'cancel' },
-                { 
-                  text: 'Yes', 
-                  onPress: () => saveBiometricCredentials(loginEmail, loginPassword)
-                }
-              ]
+              {
+                confirmText: 'Yes',
+                cancelText: 'No',
+              }
             );
+            
+            if (confirmed) {
+              saveBiometricCredentials(loginEmail, loginPassword);
+            }
           }
           return;
         } else if (companies.length === 1) {
@@ -211,17 +214,18 @@ export default function LoginScreen() {
         
         // Save credentials for biometric login if successful and not already saved
         if (biometricAvailable && !savedCredentials) {
-          Alert.alert(
+          const confirmed = await showInfoConfirmation(
             'Save for Quick Login?',
             'Would you like to save your credentials for quick biometric login next time?',
-            [
-              { text: 'No', style: 'cancel' },
-              { 
-                text: 'Yes', 
-                onPress: () => saveBiometricCredentials(loginEmail, loginPassword)
-              }
-            ]
+            {
+              confirmText: 'Yes',
+              cancelText: 'No',
+            }
           );
+          
+          if (confirmed) {
+            saveBiometricCredentials(loginEmail, loginPassword);
+          }
         }
         
         // Navigation will happen automatically through AppNavigator's isAuthenticated check
@@ -453,16 +457,6 @@ export default function LoginScreen() {
                 disabled={loading}
               >
                 <View style={styles.biometricButtonContent}>
-                  <Ionicons 
-                    name={
-                      biometricType === 'facial' ? 'scan' : 
-                      biometricType === 'fingerprint' ? 'finger-print' :
-                      biometricType === 'iris' ? 'eye' : 
-                      'shield-checkmark'
-                    } 
-                    size={24} 
-                    color="#3e60ab" 
-                  />
                   <Text style={styles.biometricButtonText}>
                     Login with Biometrics
                   </Text>

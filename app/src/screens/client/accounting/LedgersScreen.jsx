@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../../components/navigation/TopBar';
 import CreateLedgerModal from '../../../components/modals/CreateLedgerModal';
 import DatePicker from '../../../components/ui/ModernDatePicker';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useConfirmation } from '../../../contexts/ConfirmationContext';
 import { accountingAPI } from '../../../lib/api';
 import { formatCurrency } from '../../../utils/businessLogic';
 import { FONT_STYLES } from '../../../utils/fonts';
@@ -14,6 +15,7 @@ import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 export default function LedgersScreen() {
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
+  const { showDangerConfirmation } = useConfirmation();
   const [ledgers, setLedgers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -147,39 +149,34 @@ export default function LedgersScreen() {
     setShowEditModal(true);
   };
 
-  const handleDeleteLedger = (ledger) => {
-    Alert.alert(
+  const handleDeleteLedger = async (ledger) => {
+    const confirmed = await showDangerConfirmation(
       'Delete Ledger',
       `Are you sure you want to delete "${ledger.ledger_name}"? This action cannot be undone.`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await accountingAPI.ledgers.delete(ledger.id);
-              showNotification({
-                type: 'success',
-                title: 'Success',
-                message: 'Ledger deleted successfully'
-              });
-              fetchLedgers();
-            } catch (error) {
-              console.error('Delete ledger error:', error);
-              showNotification({
-                type: 'error',
-                title: 'Error',
-                message: error.response?.data?.message || 'Failed to delete ledger'
-              });
-            }
-          },
-        },
-      ]
+      {
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+      }
     );
+
+    if (confirmed) {
+      try {
+        await accountingAPI.ledgers.delete(ledger.id);
+        showNotification({
+          type: 'success',
+          title: 'Success',
+          message: 'Ledger deleted successfully'
+        });
+        fetchLedgers();
+      } catch (error) {
+        console.error('Delete ledger error:', error);
+        showNotification({
+          type: 'error',
+          title: 'Error',
+          message: error.response?.data?.message || 'Failed to delete ledger'
+        });
+      }
+    }
   };
 
   const handleCreateLedger = () => {

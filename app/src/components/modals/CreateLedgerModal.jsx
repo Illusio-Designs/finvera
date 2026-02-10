@@ -7,13 +7,13 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Alert,
   FlatList
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'
 import { FONT_STYLES } from '../../utils/fonts';;
 import { accountingAPI } from '../../lib/api';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useConfirmation } from '../../contexts/ConfirmationContext';
 import PhoneInput from '../ui/PhoneInput';
 import { 
   formatGSTIN, 
@@ -28,10 +28,16 @@ export default function CreateLedgerModal({
   visible, 
   onClose, 
   onLedgerCreated,
+  onSuccess,
+  editData = null,
+  isEdit = false,
   defaultAccountGroupFilter = null, // Filter for specific account group types
-  title = 'Create New Ledger'
+  title = null
 }) {
   const { showNotification } = useNotification();
+  const { showInfoConfirmation } = useConfirmation();
+  
+  const modalTitle = title || (isEdit ? 'Edit Ledger' : 'Create New Ledger');
   
   const [formData, setFormData] = useState({
     ledger_name: '',
@@ -52,13 +58,50 @@ export default function CreateLedgerModal({
   const [accountGroups, setAccountGroups] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAccountGroupModal, setShowAccountGroupModal] = useState(false);
+  const [showBalanceTypeModal, setShowBalanceTypeModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (visible) {
       fetchAccountGroups();
+      
+      // Populate form with edit data
+      if (isEdit && editData) {
+        setFormData({
+          ledger_name: editData.ledger_name || '',
+          account_group_id: editData.account_group_id || '',
+          gstin: editData.gstin || '',
+          pan: editData.pan || '',
+          address: editData.address || '',
+          city: editData.city || '',
+          state: editData.state || '',
+          pincode: editData.pincode || '',
+          phone: editData.phone || '',
+          email: editData.email || '',
+          opening_balance: editData.opening_balance || 0,
+          balance_type: editData.balance_type || 'debit',
+          description: editData.description || ''
+        });
+      } else {
+        // Reset form for create mode
+        setFormData({
+          ledger_name: '',
+          account_group_id: '',
+          gstin: '',
+          pan: '',
+          address: '',
+          city: '',
+          state: '',
+          pincode: '',
+          phone: '',
+          email: '',
+          opening_balance: 0,
+          balance_type: 'debit',
+          description: ''
+        });
+      }
     }
-  }, [visible]);
+  }, [visible, isEdit, editData]);
 
   const fetchAccountGroups = async () => {
     try {
@@ -182,14 +225,26 @@ export default function CreateLedgerModal({
         opening_balance: parseFloat(formData.opening_balance) || 0
       };
 
-      const response = await accountingAPI.ledgers.create(payload);
-      const newLedger = response.data?.data || response.data;
+      let response;
+      if (isEdit && editData) {
+        // Update existing ledger
+        response = await accountingAPI.ledgers.update(editData.id, payload);
+        showNotification({
+          type: 'success',
+          title: 'Success',
+          message: 'Ledger updated successfully'
+        });
+      } else {
+        // Create new ledger
+        response = await accountingAPI.ledgers.create(payload);
+        showNotification({
+          type: 'success',
+          title: 'Success',
+          message: 'Ledger created successfully'
+        });
+      }
 
-      showNotification({
-        type: 'success',
-        title: 'Success',
-        message: 'Ledger created successfully'
-      });
+      const ledgerData = response.data?.data || response.data;
 
       // Reset form
       setFormData({
@@ -208,18 +263,20 @@ export default function CreateLedgerModal({
         description: ''
       });
 
-      // Callback with new ledger
-      if (onLedgerCreated) {
-        onLedgerCreated(newLedger);
+      // Callback with ledger data
+      if (onSuccess) {
+        onSuccess(ledgerData);
+      } else if (onLedgerCreated) {
+        onLedgerCreated(ledgerData);
       }
 
       onClose();
     } catch (error) {
-      console.error('Create ledger error:', error);
+      console.error('Ledger operation error:', error);
       showNotification({
         type: 'error',
         title: 'Error',
-        message: error.response?.data?.message || 'Failed to create ledger'
+        message: error.response?.data?.message || `Failed to ${isEdit ? 'update' : 'create'} ledger`
       });
     } finally {
       setLoading(false);
@@ -281,7 +338,7 @@ export default function CreateLedgerModal({
       >
         <View style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.title}>{modalTitle}</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color="#6b7280" />
             </TouchableOpacity>
@@ -486,23 +543,7 @@ export default function CreateLedgerModal({
                     <Text style={styles.inputLabel}>Balance Type</Text>
                     <TouchableOpacity
                       style={[styles.input, styles.selectInput]}
-                      onPress={() => {
-                        Alert.alert(
-                          'Select Balance Type',
-                          'Choose the balance type',
-                          [
-                            { 
-                              text: 'Debit', 
-                              onPress: () => setFormData(prev => ({ ...prev, balance_type: 'debit' })) 
-                            },
-                            { 
-                              text: 'Credit', 
-                              onPress: () => setFormData(prev => ({ ...prev, balance_type: 'credit' })) 
-                            },
-                            { text: 'Cancel', style: 'cancel' }
-                          ]
-                        );
-                      }}
+                      onPress={() => setShowBalanceTypeModal(true)}
                     >
                       <Text style={styles.inputText}>
                         {formData.balance_type === 'credit' ? 'Credit' : 'Debit'}
@@ -529,7 +570,7 @@ export default function CreateLedgerModal({
               disabled={loading}
             >
               <Text style={styles.actionButtonText}>
-                {loading ? 'Creating...' : 'Create Ledger'}
+                {loading ? (isEdit ? 'Updating...' : 'Creating...') : (isEdit ? 'Update Ledger' : 'Create Ledger')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -570,6 +611,60 @@ export default function CreateLedgerModal({
             keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
             style={styles.accountGroupList}
           />
+        </View>
+      </Modal>
+
+      {/* Balance Type Selection Modal */}
+      <Modal
+        visible={showBalanceTypeModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowBalanceTypeModal(false)}
+      >
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Select Balance Type</Text>
+            <TouchableOpacity 
+              onPress={() => setShowBalanceTypeModal(false)} 
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color="#6b7280" />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.accountGroupList}>
+            <TouchableOpacity
+              style={styles.accountGroupItem}
+              onPress={() => {
+                setFormData(prev => ({ ...prev, balance_type: 'debit' }));
+                setShowBalanceTypeModal(false);
+              }}
+            >
+              <View style={styles.accountGroupContent}>
+                <Text style={styles.accountGroupName}>Debit</Text>
+                <Text style={styles.accountGroupDetail}>Assets and Expenses</Text>
+              </View>
+              {formData.balance_type === 'debit' && (
+                <Ionicons name="checkmark-circle" size={24} color="#10b981" />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.accountGroupItem}
+              onPress={() => {
+                setFormData(prev => ({ ...prev, balance_type: 'credit' }));
+                setShowBalanceTypeModal(false);
+              }}
+            >
+              <View style={styles.accountGroupContent}>
+                <Text style={styles.accountGroupName}>Credit</Text>
+                <Text style={styles.accountGroupDetail}>Liabilities, Income and Equity</Text>
+              </View>
+              {formData.balance_type === 'credit' && (
+                <Ionicons name="checkmark-circle" size={24} color="#10b981" />
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
     </>

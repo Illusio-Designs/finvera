@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'
 import { FONT_STYLES } from '../../../utils/fonts';;
 import * as DocumentPicker from 'expo-document-picker';
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useConfirmation } from '../../../contexts/ConfirmationContext';
 import { accountingAPI } from '../../../lib/api';
 import FormSkeleton from '../../../components/ui/skeletons/FormSkeleton';
 
 export default function TallyImportScreen() {
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
+  const { showInfoConfirmation } = useConfirmation();
   const [selectedFile, setSelectedFile] = useState(null);
   const [importOptions, setImportOptions] = useState({
     importGroups: true,
@@ -107,14 +109,18 @@ export default function TallyImportScreen() {
       return;
     }
 
-    Alert.alert(
+    const confirmed = await showInfoConfirmation(
       'Confirm Import',
       `Import data from ${selectedFile.name}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Import', onPress: performImport }
-      ]
+      {
+        confirmText: 'Import',
+        cancelText: 'Cancel',
+      }
     );
+
+    if (confirmed) {
+      performImport();
+    }
   };
 
   const performImport = async () => {

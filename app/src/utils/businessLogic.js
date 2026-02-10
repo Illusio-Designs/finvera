@@ -12,14 +12,14 @@ export const formatCurrency = (amount) => {
 };
 
 // Date formatting (from frontend/lib/dateUtils.js)
+// Format date as DD/MM/YY
 export const formatDate = (dateString) => {
   if (!dateString) return '';
   const date = new Date(dateString);
-  return new Intl.DateTimeFormat('en-IN', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  }).format(date);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = String(date.getFullYear()).slice(-2);
+  return `${day}/${month}/${year}`;
 };
 
 // Number utilities (from frontend/lib/numberUtils.js)

@@ -8,11 +8,11 @@ import { voucherAPI, accountingAPI, inventoryAPI } from '../../lib/api';
 import { FONT_STYLES } from '../../utils/fonts';
 import CreateInventoryItemModal from './CreateInventoryItemModal';
 
-export default function CreateSalesInvoiceModal({ 
+export default function CreatePurchaseInvoiceModal({ 
   visible, 
   onClose, 
   onInvoiceCreated,
-  defaultVoucherType = 'sales_invoice'
+  defaultVoucherType = 'purchase_invoice'
 }) {
   const { showNotification } = useNotification();
   const { showDangerConfirmation } = useConfirmation();
@@ -25,30 +25,12 @@ export default function CreateSalesInvoiceModal({
     narration: '',
     total_amount: 0,
     status: 'draft',
-    due_date: '',
-    // Export Invoice fields
-    currency_code: 'INR',
-    exchange_rate: '',
-    shipping_bill_number: '',
-    shipping_bill_date: '',
-    port_of_loading: '',
-    destination_country: '',
-    has_lut: false,
-    // Delivery Challan fields
-    purpose: '',
-    // Proforma Invoice fields
-    validity_period: '',
-    valid_until: '',
-    // Transport/E-Way Bill fields
-    vehicle_no: '',
-    transporter_id: '',
-    transporter_name: '',
-    transport_mode: 'road',
-    distance: '',
+    place_of_supply: 'Maharashtra',
+    is_reverse_charge: false,
   });
   
-  const [ledgers, setLedgers] = useState([]);
-  const [loadingLedgers, setLoadingLedgers] = useState(true);
+  const [suppliers, setSuppliers] = useState([]);
+  const [loadingSuppliers, setLoadingSuppliers] = useState(true);
   const [loading, setLoading] = useState(false);
   
   // Items state
@@ -59,14 +41,10 @@ export default function CreateSalesInvoiceModal({
   const [itemSearchQuery, setItemSearchQuery] = useState('');
   
   // Modal states
-  const [showInvoiceTypeModal, setShowInvoiceTypeModal] = useState(false);
-  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showDueDatePicker, setShowDueDatePicker] = useState(false);
-  const [showShippingDatePicker, setShowShippingDatePicker] = useState(false);
-  const [showValidUntilPicker, setShowValidUntilPicker] = useState(false);
-  const [showPurposeModal, setShowPurposeModal] = useState(false);
-  const [showTransportModeModal, setShowTransportModeModal] = useState(false);
+  const [showInvoiceTypeModal, setShowInvoiceTypeModal] = useState(false);
   const [showCreateLedgerModal, setShowCreateLedgerModal] = useState(false);
   const [showCreateInventoryModal, setShowCreateInventoryModal] = useState(false);
   
@@ -85,58 +63,39 @@ export default function CreateSalesInvoiceModal({
   const [creatingLedger, setCreatingLedger] = useState(false);
   
   const invoiceTypes = [
-    { label: 'Sales Invoice', value: 'sales_invoice' },
-    { label: 'Tax Invoice', value: 'tax_invoice' },
-    { label: 'Bill of Supply', value: 'bill_of_supply' },
-    { label: 'Retail Invoice', value: 'retail_invoice' },
-    { label: 'Export Invoice', value: 'export_invoice' },
-    { label: 'Proforma Invoice', value: 'proforma_invoice' },
-    { label: 'Delivery Challan', value: 'delivery_challan' },
+    { label: 'Purchase Invoice', value: 'purchase_invoice' },
   ];
 
-  const purposes = [
-    { label: 'Job Work', value: 'job_work' },
-    { label: 'Stock Transfer', value: 'stock_transfer' },
-    { label: 'Sample', value: 'sample' },
-  ];
-
-  const transportModes = [
-    { label: 'Road', value: 'road' },
-    { label: 'Rail', value: 'rail' },
-    { label: 'Air', value: 'air' },
-    { label: 'Ship', value: 'ship' },
-  ];
-
-  // Fetch customer/party ledgers and inventory on mount
+  // Fetch suppliers and inventory on mount
   useEffect(() => {
     if (visible) {
-      fetchLedgers();
+      fetchSuppliers();
       fetchInventory();
     }
   }, [visible]);
 
-  const fetchLedgers = async () => {
+  const fetchSuppliers = async () => {
     try {
-      setLoadingLedgers(true);
+      setLoadingSuppliers(true);
       const response = await accountingAPI.ledgers.list({ 
         limit: 1000,
       });
       const data = response?.data?.data || response?.data || [];
-      // Filter for Sundry Debtors (customers)
-      const sundryDebtors = data.filter(ledger => {
+      // Filter for Sundry Creditors (suppliers)
+      const sundryCreditors = data.filter(ledger => {
         const groupName = ledger.account_group?.group_name?.toLowerCase() || '';
-        return groupName === 'sundry debtors';
+        return groupName === 'sundry creditors';
       });
-      setLedgers(Array.isArray(sundryDebtors) ? sundryDebtors : []);
+      setSuppliers(Array.isArray(sundryCreditors) ? sundryCreditors : []);
     } catch (error) {
-      console.error('Fetch ledgers error:', error);
+      console.error('Fetch suppliers error:', error);
       showNotification({
         type: 'error',
         title: 'Error',
-        message: 'Failed to load customer list'
+        message: 'Failed to load supplier list'
       });
     } finally {
-      setLoadingLedgers(false);
+      setLoadingSuppliers(false);
     }
   };
 
@@ -198,12 +157,12 @@ export default function CreateSalesInvoiceModal({
         showNotification({
           type: 'error',
           title: 'Validation Error',
-          message: 'Please enter customer name'
+          message: 'Please enter supplier name'
         });
         return;
       }
 
-      // Create ledger - need to get account_group_id for Sundry Debtors
+      // Create ledger - need to get account_group_id for Sundry Creditors
       // For now, we'll let the backend handle the default group
       const ledgerData = {
         ledger_name: ledgerForm.ledger_name,
@@ -218,7 +177,7 @@ export default function CreateSalesInvoiceModal({
         // These will be set by backend or need to be fetched
         account_group_id: null, // Backend should handle default
         opening_balance: 0,
-        opening_balance_type: 'Dr',
+        opening_balance_type: 'Cr', // Creditor balance
       };
 
       const response = await accountingAPI.ledgers.create(ledgerData);
@@ -227,15 +186,15 @@ export default function CreateSalesInvoiceModal({
       showNotification({
         type: 'success',
         title: 'Success',
-        message: 'Customer created successfully'
+        message: 'Supplier created successfully'
       });
       
-      // Refresh ledgers list
-      await fetchLedgers();
+      // Refresh suppliers list
+      await fetchSuppliers();
       
       // Select the newly created ledger
       if (newLedger?.id) {
-        setFormData({ ...formData, party_ledger_id: newLedger.id });
+        setFormData({ ...formData, party_ledger_id: newLedger.id, place_of_supply: newLedger.state || 'Maharashtra' });
       }
       
       // Reset form and close modals
@@ -251,14 +210,14 @@ export default function CreateSalesInvoiceModal({
         pincode: '',
       });
       setShowCreateLedgerModal(false);
-      setShowCustomerModal(false);
+      setShowSupplierModal(false);
       
     } catch (error) {
       console.error('Create ledger error:', error);
       showNotification({
         type: 'error',
         title: 'Error',
-        message: error.response?.data?.message || 'Failed to create customer'
+        message: error.response?.data?.message || 'Failed to create supplier'
       });
     } finally {
       setCreatingLedger(false);
@@ -274,15 +233,6 @@ export default function CreateSalesInvoiceModal({
       setLoading(true);
       
       // Validate required fields
-      if (!formData.voucher_type) {
-        showNotification({
-          type: 'error',
-          title: 'Validation Error',
-          message: 'Please select invoice type'
-        });
-        return;
-      }
-
       if (!formData.voucher_date) {
         showNotification({
           type: 'error',
@@ -296,30 +246,48 @@ export default function CreateSalesInvoiceModal({
         showNotification({
           type: 'error',
           title: 'Validation Error',
-          message: 'Please select a customer'
+          message: 'Please select a supplier'
         });
         return;
       }
 
-      // Create voucher - backend will auto-generate voucher_number
+      if (items.length === 0) {
+        showNotification({
+          type: 'error',
+          title: 'Validation Error',
+          message: 'Please add at least one item'
+        });
+        return;
+      }
+
+      // Create purchase invoice
       const voucherData = {
-        voucher_type: formData.voucher_type,
+        voucher_type: 'purchase_invoice',
         voucher_date: formData.voucher_date,
         party_ledger_id: formData.party_ledger_id,
-        reference_number: formData.reference_number || null,
+        reference: formData.reference_number || null,
         narration: formData.narration || null,
+        place_of_supply: formData.place_of_supply,
+        is_reverse_charge: formData.is_reverse_charge || false,
         status: formData.status,
-        total_amount: formData.total_amount || 0,
-        items: [], // Empty items for now
-        ledger_entries: [], // Empty ledger entries for now
+        items: items.map(item => ({
+          inventory_item_id: item.inventory_item_id,
+          item_code: item.item_code,
+          item_description: item.item_description,
+          item_name: item.item_name,
+          hsn_sac_code: item.hsn_sac_code,
+          quantity: item.quantity,
+          rate: item.rate,
+          gst_rate: item.gst_rate,
+        })),
       };
 
-      const response = await voucherAPI.create(voucherData);
+      const response = await voucherAPI.purchaseInvoice.create(voucherData);
       
       showNotification({
         type: 'success',
         title: 'Success',
-        message: `${getInvoiceTypeLabel()} created successfully`
+        message: 'Purchase Invoice created successfully'
       });
       
       if (onInvoiceCreated) {
@@ -332,7 +300,7 @@ export default function CreateSalesInvoiceModal({
       showNotification({
         type: 'error',
         title: 'Error',
-        message: error.response?.data?.message || 'Failed to create invoice'
+        message: error.response?.data?.message || 'Failed to create purchase invoice'
       });
     } finally {
       setLoading(false);
@@ -365,31 +333,15 @@ export default function CreateSalesInvoiceModal({
     }
   };
 
-  const handleShippingDateChange = (event, selectedDate) => {
-    setShowShippingDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      const dateString = selectedDate.toISOString().split('T')[0];
-      setFormData({ ...formData, shipping_bill_date: dateString });
-    }
-  };
-
-  const handleValidUntilChange = (event, selectedDate) => {
-    setShowValidUntilPicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      const dateString = selectedDate.toISOString().split('T')[0];
-      setFormData({ ...formData, valid_until: dateString });
-    }
-  };
-
   const getInvoiceTypeLabel = () => {
     const type = invoiceTypes.find(t => t.value === formData.voucher_type);
     return type ? type.label : 'Select Invoice Type';
   };
 
-  const getCustomerLabel = () => {
-    if (!formData.party_ledger_id) return 'Select Customer';
-    const ledger = ledgers.find(l => l.id === formData.party_ledger_id);
-    return ledger ? ledger.ledger_name : 'Select Customer';
+  const getSupplierLabel = () => {
+    if (!formData.party_ledger_id) return 'Select Supplier';
+    const supplier = suppliers.find(s => s.id === formData.party_ledger_id);
+    return supplier ? supplier.ledger_name : 'Select Supplier';
   };
 
   const getPurposeLabel = () => {
@@ -404,21 +356,8 @@ export default function CreateSalesInvoiceModal({
   };
 
   // Check if current voucher type needs specific fields
-  const isExportInvoice = formData.voucher_type === 'export_invoice';
-  const isDeliveryChallan = formData.voucher_type === 'delivery_challan';
-  const isProformaInvoice = formData.voucher_type === 'proforma_invoice';
-  const needsTransportDetails = ['sales_invoice', 'tax_invoice', 'export_invoice', 'delivery_challan'].includes(formData.voucher_type);
-  
-  // Check if voucher type needs inventory items
-  const needsInventoryItems = [
-    'sales_invoice',
-    'tax_invoice', 
-    'bill_of_supply',
-    'retail_invoice',
-    'export_invoice',
-    'proforma_invoice',
-    'delivery_challan'
-  ].includes(formData.voucher_type);
+  // For purchase invoices, we always need inventory items
+  const needsInventoryItems = formData.voucher_type === 'purchase_invoice';
 
   return (
     <Modal
@@ -429,7 +368,7 @@ export default function CreateSalesInvoiceModal({
     >
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Create Sales Invoice</Text>
+          <Text style={styles.title}>Create Purchase Invoice</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color="#6b7280" />
           </TouchableOpacity>
@@ -463,24 +402,24 @@ export default function CreateSalesInvoiceModal({
             </TouchableOpacity>
           </View>
 
-          {/* Customer Selection */}
+          {/* Supplier Selection */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Customer *</Text>
-            {loadingLedgers ? (
+            <Text style={styles.label}>Supplier *</Text>
+            {loadingSuppliers ? (
               <View style={[styles.selectButton, styles.loadingContainer]}>
                 <ActivityIndicator size="small" color="#3e60ab" />
-                <Text style={styles.loadingText}>Loading customers...</Text>
+                <Text style={styles.loadingText}>Loading suppliers...</Text>
               </View>
             ) : (
               <TouchableOpacity 
                 style={styles.selectButton}
-                onPress={() => setShowCustomerModal(true)}
+                onPress={() => setShowSupplierModal(true)}
               >
                 <Text style={[
                   styles.selectButtonText,
                   !formData.party_ledger_id && styles.placeholderText
                 ]}>
-                  {getCustomerLabel()}
+                  {getSupplierLabel()}
                 </Text>
                 <Ionicons name="chevron-down" size={20} color="#6b7280" />
               </TouchableOpacity>
@@ -620,208 +559,31 @@ export default function CreateSalesInvoiceModal({
           </View>
         )}
 
-        {/* Export Invoice Fields */}
-        {isExportInvoice && (
-          <View style={styles.formSection}>
-            <Text style={styles.sectionTitle}>Export Details</Text>
-            
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Currency Code</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.currency_code}
-                onChangeText={(text) => setFormData({ ...formData, currency_code: text.toUpperCase()})}
-                placeholder="USD, EUR, GBP, etc."
-                maxLength={3}
-              />
-            </View>
+        {/* GST Details */}
+        <View style={styles.formSection}>
+          <Text style={styles.sectionTitle}>GST Details</Text>
+          
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Place of Supply</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.place_of_supply}
+              onChangeText={(text) => setFormData({ ...formData, place_of_supply: text })}
+              placeholder="Enter place of supply"
+            />
+          </View>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Exchange Rate</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.exchange_rate}
-                onChangeText={(text) => setFormData({ ...formData, exchange_rate: text })}
-                placeholder="Enter exchange rate"
-                keyboardType="decimal-pad"
-              />
-            </View>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Shipping Bill Number</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.shipping_bill_number}
-                onChangeText={(text) => setFormData({ ...formData, shipping_bill_number: text })}
-                placeholder="Enter shipping bill number"
-              />
-            </View>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Shipping Bill Date</Text>
+          <View style={styles.formGroup}>
+            <View style={styles.checkboxRow}>
               <TouchableOpacity 
-                style={styles.selectButton}
-                onPress={() => setShowShippingDatePicker(true)}
+                style={styles.checkbox}
+                onPress={() => setFormData({ ...formData, is_reverse_charge: !formData.is_reverse_charge })}
               >
-                <Text style={[styles.selectButtonText, !formData.shipping_bill_date && styles.placeholderText]}>
-                  {formData.shipping_bill_date ? formatDateDisplay(formData.shipping_bill_date) : 'Select shipping bill date'}
-                </Text>
-                <Ionicons name="calendar-outline" size={20} color="#6b7280" />
+                {formData.is_reverse_charge && <Ionicons name="checkmark" size={18} color="#3e60ab" />}
               </TouchableOpacity>
-            </View>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Port of Loading</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.port_of_loading}
-                onChangeText={(text) => setFormData({ ...formData, port_of_loading: text })}
-                placeholder="Enter port of loading"
-              />
-            </View>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Destination Country</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.destination_country}
-                onChangeText={(text) => setFormData({ ...formData, destination_country: text })}
-                placeholder="Enter destination country"
-              />
-            </View>
-
-            <View style={styles.formGroup}>
-              <View style={styles.checkboxRow}>
-                <TouchableOpacity 
-                  style={styles.checkbox}
-                  onPress={() => setFormData({ ...formData, has_lut: !formData.has_lut })}
-                >
-                  {formData.has_lut && <Ionicons name="checkmark" size={18} color="#3e60ab" />}
-                </TouchableOpacity>
-                <Text style={styles.checkboxLabel}>Export under LUT (Letter of Undertaking)</Text>
-              </View>
+              <Text style={styles.checkboxLabel}>Reverse Charge Mechanism (RCM)</Text>
             </View>
           </View>
-        )}
-
-        {/* Delivery Challan Fields */}
-        {isDeliveryChallan && (
-          <View style={styles.formSection}>
-            <Text style={styles.sectionTitle}>Delivery Challan Details</Text>
-            
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Purpose *</Text>
-              <TouchableOpacity 
-                style={styles.selectButton}
-                onPress={() => setShowPurposeModal(true)}
-              >
-                <Text style={[styles.selectButtonText, !formData.purpose && styles.placeholderText]}>
-                  {getPurposeLabel()}
-                </Text>
-                <Ionicons name="chevron-down" size={20} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {/* Proforma Invoice Fields */}
-        {isProformaInvoice && (
-          <View style={styles.formSection}>
-            <Text style={styles.sectionTitle}>Proforma Invoice Details</Text>
-            
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Validity Period (days)</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.validity_period}
-                onChangeText={(text) => setFormData({ ...formData, validity_period: text })}
-                placeholder="Enter validity period in days"
-                keyboardType="number-pad"
-              />
-            </View>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Valid Until</Text>
-              <TouchableOpacity 
-                style={styles.selectButton}
-                onPress={() => setShowValidUntilPicker(true)}
-              >
-                <Text style={[styles.selectButtonText, !formData.valid_until && styles.placeholderText]}>
-                  {formData.valid_until ? formatDateDisplay(formData.valid_until) : 'Select valid until date'}
-                </Text>
-                <Ionicons name="calendar-outline" size={20} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {/* Transport Details (for sales invoices, export, delivery challan) */}
-        {needsTransportDetails && (
-          <View style={styles.formSection}>
-            <Text style={styles.sectionTitle}>Transport Details (Optional)</Text>
-            
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Vehicle Number</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.vehicle_no}
-                onChangeText={(text) => setFormData({ ...formData, vehicle_no: text.toUpperCase() })}
-                placeholder="Enter vehicle number"
-                autoCapitalize="characters"
-              />
-            </View>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Transporter GSTIN</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.transporter_id}
-                onChangeText={(text) => setFormData({ ...formData, transporter_id: text.toUpperCase() })}
-                placeholder="Enter transporter GSTIN"
-                maxLength={15}
-                autoCapitalize="characters"
-              />
-            </View>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Transporter Name</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.transporter_name}
-                onChangeText={(text) => setFormData({ ...formData, transporter_name: text })}
-                placeholder="Enter transporter name"
-              />
-            </View>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Transport Mode</Text>
-              <TouchableOpacity 
-                style={styles.selectButton}
-                onPress={() => setShowTransportModeModal(true)}
-              >
-                <Text style={styles.selectButtonText}>{getTransportModeLabel()}</Text>
-                <Ionicons name="chevron-down" size={20} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Distance (km)</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.distance}
-                onChangeText={(text) => setFormData({ ...formData, distance: text })}
-                placeholder="Enter distance in kilometers"
-                keyboardType="number-pad"
-              />
-            </View>
-          </View>
-        )}
-
-        <View style={styles.infoBox}>
-          <Ionicons name="information-circle-outline" size={20} color="#3e60ab" />
-          <Text style={styles.infoText}>
-            Basic voucher created. Full form with items, taxes, and calculations coming soon.
-          </Text>
         </View>
 
         {/* Required Fields Info */}
@@ -870,26 +632,6 @@ export default function CreateSalesInvoiceModal({
         />
       )}
 
-      {/* Shipping Date Picker */}
-      {showShippingDatePicker && (
-        <DateTimePicker
-          value={formData.shipping_bill_date ? new Date(formData.shipping_bill_date) : new Date()}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={handleShippingDateChange}
-        />
-      )}
-
-      {/* Valid Until Date Picker */}
-      {showValidUntilPicker && (
-        <DateTimePicker
-          value={formData.valid_until ? new Date(formData.valid_until) : new Date()}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={handleValidUntilChange}
-        />
-      )}
-
       {/* Invoice Type Modal */}
       <Modal
         visible={showInvoiceTypeModal}
@@ -934,161 +676,73 @@ export default function CreateSalesInvoiceModal({
         </View>
       </Modal>
 
-      {/* Customer Modal */}
+      {/* Supplier Modal */}
       <Modal
-        visible={showCustomerModal}
+        visible={showSupplierModal}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setShowCustomerModal(false)}
+        onRequestClose={() => setShowSupplierModal(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Customer</Text>
-              <TouchableOpacity onPress={() => setShowCustomerModal(false)}>
+              <Text style={styles.modalTitle}>Select Supplier</Text>
+              <TouchableOpacity onPress={() => setShowSupplierModal(false)}>
                 <Ionicons name="close" size={24} color="#6b7280" />
               </TouchableOpacity>
             </View>
             
-            {/* Create Customer Button */}
+            {/* Create Supplier Button */}
             <View style={styles.modalActionBar}>
               <TouchableOpacity 
                 style={styles.createCustomerButton}
                 onPress={() => {
-                  setShowCustomerModal(false);
+                  setShowSupplierModal(false);
                   setShowCreateLedgerModal(true);
                 }}
               >
                 <Ionicons name="add-circle" size={20} color="#3e60ab" />
-                <Text style={styles.createCustomerText}>Create New Customer</Text>
+                <Text style={styles.createCustomerText}>Create New Supplier</Text>
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalList}>
-              {ledgers.length === 0 ? (
+              {suppliers.length === 0 ? (
                 <View style={styles.emptyModalContainer}>
                   <Ionicons name="people-outline" size={48} color="#d1d5db" />
-                  <Text style={styles.emptyModalText}>No customers found</Text>
-                  <Text style={styles.emptyModalSubtext}>Create a customer to get started</Text>
+                  <Text style={styles.emptyModalText}>No suppliers found</Text>
+                  <Text style={styles.emptyModalSubtext}>Create a supplier to get started</Text>
                 </View>
               ) : (
-                ledgers.map((ledger) => (
+                suppliers.map((supplier) => (
                   <TouchableOpacity
-                    key={ledger.id}
+                    key={supplier.id}
                     style={[
                       styles.modalItem,
-                      formData.party_ledger_id === ledger.id && styles.modalItemSelected
+                      formData.party_ledger_id === supplier.id && styles.modalItemSelected
                     ]}
                     onPress={() => {
-                      setFormData({ ...formData, party_ledger_id: ledger.id });
-                      setShowCustomerModal(false);
+                      setFormData({ ...formData, party_ledger_id: supplier.id });
+                      setShowSupplierModal(false);
                     }}
                   >
                     <View style={styles.modalItemContent}>
                       <Text style={[
                         styles.modalItemText,
-                        formData.party_ledger_id === ledger.id && styles.modalItemTextSelected
+                        formData.party_ledger_id === supplier.id && styles.modalItemTextSelected
                       ]}>
-                        {ledger.ledger_name}
+                        {supplier.ledger_name}
                       </Text>
-                      {ledger.gstin && (
-                        <Text style={styles.modalItemSubtext}>GSTIN: {ledger.gstin}</Text>
+                      {supplier.gstin && (
+                        <Text style={styles.modalItemSubtext}>GSTIN: {supplier.gstin}</Text>
                       )}
                     </View>
-                    {formData.party_ledger_id === ledger.id && (
+                    {formData.party_ledger_id === supplier.id && (
                       <Ionicons name="checkmark" size={20} color="#3e60ab" />
                     )}
                   </TouchableOpacity>
                 ))
               )}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Purpose Modal */}
-      <Modal
-        visible={showPurposeModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowPurposeModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Purpose</Text>
-              <TouchableOpacity onPress={() => setShowPurposeModal(false)}>
-                <Ionicons name="close" size={24} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalList}>
-              {purposes.map((purpose) => (
-                <TouchableOpacity
-                  key={purpose.value}
-                  style={[
-                    styles.modalItem,
-                    formData.purpose === purpose.value && styles.modalItemSelected
-                  ]}
-                  onPress={() => {
-                    setFormData({ ...formData, purpose: purpose.value });
-                    setShowPurposeModal(false);
-                  }}
-                >
-                  <Text style={[
-                    styles.modalItemText,
-                    formData.purpose === purpose.value && styles.modalItemTextSelected
-                  ]}>
-                    {purpose.label}
-                  </Text>
-                  {formData.purpose === purpose.value && (
-                    <Ionicons name="checkmark" size={20} color="#3e60ab" />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Transport Mode Modal */}
-      <Modal
-        visible={showTransportModeModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowTransportModeModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Transport Mode</Text>
-              <TouchableOpacity onPress={() => setShowTransportModeModal(false)}>
-                <Ionicons name="close" size={24} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalList}>
-              {transportModes.map((mode) => (
-                <TouchableOpacity
-                  key={mode.value}
-                  style={[
-                    styles.modalItem,
-                    formData.transport_mode === mode.value && styles.modalItemSelected
-                  ]}
-                  onPress={() => {
-                    setFormData({ ...formData, transport_mode: mode.value });
-                    setShowTransportModeModal(false);
-                  }}
-                >
-                  <Text style={[
-                    styles.modalItemText,
-                    formData.transport_mode === mode.value && styles.modalItemTextSelected
-                  ]}>
-                    {mode.label}
-                  </Text>
-                  {formData.transport_mode === mode.value && (
-                    <Ionicons name="checkmark" size={20} color="#3e60ab" />
-                  )}
-                </TouchableOpacity>
-              ))}
             </ScrollView>
           </View>
         </View>
@@ -1231,7 +885,7 @@ export default function CreateSalesInvoiceModal({
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, styles.largeModalContent]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Create New Customer</Text>
+              <Text style={styles.modalTitle}>Create New Supplier</Text>
               <TouchableOpacity onPress={() => setShowCreateLedgerModal(false)}>
                 <Ionicons name="close" size={24} color="#6b7280" />
               </TouchableOpacity>
@@ -1240,12 +894,12 @@ export default function CreateSalesInvoiceModal({
             <ScrollView style={styles.modalScrollContent}>
               <View style={styles.modalFormSection}>
                 <View style={styles.formGroup}>
-                  <Text style={styles.label}>Customer Name *</Text>
+                  <Text style={styles.label}>Supplier Name *</Text>
                   <TextInput
                     style={styles.input}
                     value={ledgerForm.ledger_name}
                     onChangeText={(text) => setLedgerForm({ ...ledgerForm, ledger_name: text })}
-                    placeholder="Enter customer name"
+                    placeholder="Enter supplier name"
                   />
                 </View>
 
@@ -1357,7 +1011,7 @@ export default function CreateSalesInvoiceModal({
                 disabled={creatingLedger}
               >
                 <Text style={styles.modalButtonText}>
-                  {creatingLedger ? 'Creating...' : 'Create Customer'}
+                  {creatingLedger ? 'Creating...' : 'Create Supplier'}
                 </Text>
               </TouchableOpacity>
             </View>
