@@ -8,6 +8,7 @@ import { voucherAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
 import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 import { formatCurrency } from '../../../utils/businessLogic';
+import CreatePaymentModal from '../../../components/modals/CreatePaymentModal';
 
 export default function PaymentScreen() {
   const { openDrawer } = useDrawer();
@@ -18,6 +19,7 @@ export default function PaymentScreen() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const handleMenuPress = () => {
     openDrawer();
@@ -75,11 +77,11 @@ export default function PaymentScreen() {
   };
 
   const handleCreatePayment = () => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Create payment feature coming soon'
-    });
+    setShowCreateModal(true);
+  };
+
+  const handlePaymentCreated = () => {
+    fetchVouchers();
   };
 
   const handleEditVoucher = () => {
@@ -358,6 +360,12 @@ export default function PaymentScreen() {
           </View>
         </View>
       </Modal>
+
+      <CreatePaymentModal
+        visible={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onPaymentCreated={handlePaymentCreated}
+      />
     </View>
   );
 }

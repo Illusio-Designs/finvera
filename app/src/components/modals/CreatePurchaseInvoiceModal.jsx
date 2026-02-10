@@ -51,6 +51,13 @@ export default function CreatePurchaseInvoiceModal({
     rate: '0',
     gst_rate: '0',
   });
+
+  // Debug: Log when Add Item modal visibility changes
+  useEffect(() => {
+    if (showAddItemModal) {
+      console.log('Add Item Modal opened with form:', itemForm);
+    }
+  }, [showAddItemModal]);
   
   // Modal states
   const [showSupplierModal, setShowSupplierModal] = useState(false);
@@ -142,17 +149,23 @@ export default function CreatePurchaseInvoiceModal({
   };
 
   const handleSelectInventoryItem = (item) => {
-    setItemForm({
+    console.log('Selected inventory item:', item);
+    const formData = {
       inventory_item_id: item.id,
-      item_name: item.item_name,
+      item_name: item.item_name || '',
       item_code: item.item_code || '',
       hsn_sac_code: item.hsn_sac_code || '',
       quantity: '1',
       rate: String(parseFloat(item.purchase_price || item.avg_cost || 0)),
       gst_rate: String(parseFloat(item.gst_rate || 0)),
-    });
+    };
+    console.log('Setting item form:', formData);
+    setItemForm(formData);
     setShowItemSelectionModal(false);
-    setShowAddItemModal(true);
+    // Use setTimeout to ensure state is updated before opening modal
+    setTimeout(() => {
+      setShowAddItemModal(true);
+    }, 100);
   };
 
   const handleAddItem = () => {
@@ -166,7 +179,7 @@ export default function CreatePurchaseInvoiceModal({
   };
 
   const handleManualAddItem = () => {
-    setItemForm({
+    const newForm = {
       inventory_item_id: null,
       item_name: '',
       item_code: '',
@@ -174,9 +187,14 @@ export default function CreatePurchaseInvoiceModal({
       quantity: '1',
       rate: '0',
       gst_rate: '0',
-    });
+    };
+    console.log('Manual add - setting form:', newForm);
+    setItemForm(newForm);
     setShowItemSelectionModal(false);
-    setShowAddItemModal(true);
+    // Use setTimeout to ensure state is updated before opening modal
+    setTimeout(() => {
+      setShowAddItemModal(true);
+    }, 100);
   };
 
   const handleSaveItem = () => {
@@ -1104,7 +1122,10 @@ export default function CreatePurchaseInvoiceModal({
         visible={showAddItemModal}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setShowAddItemModal(false)}
+        onRequestClose={() => {
+          setShowAddItemModal(false);
+          setEditingItemIndex(null);
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, styles.largeModalContent]}>
@@ -1118,7 +1139,12 @@ export default function CreatePurchaseInvoiceModal({
               </TouchableOpacity>
             </View>
             
-            <ScrollView style={styles.modalScrollContent} contentContainerStyle={styles.modalScrollContentContainer}>
+            <ScrollView 
+              style={styles.modalScrollContent} 
+              contentContainerStyle={styles.modalScrollContentContainer}
+              showsVerticalScrollIndicator={true}
+              bounces={false}
+            >
               <View style={styles.modalFormSection}>
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Item Name *</Text>
@@ -1311,6 +1337,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     backgroundColor: 'white',
+    minHeight: 44,
   },
   textArea: {
     minHeight: 80,
@@ -1356,18 +1383,23 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '70%',
+    display: 'flex',
+    flexDirection: 'column',
   },
   largeModalContent: {
-    maxHeight: '85%',
+    maxHeight: '90%',
+    minHeight: '60%',
   },
   modalScrollContent: {
-    flex: 1,
+    flexGrow: 1,
   },
   modalScrollContentContainer: {
+    flexGrow: 1,
     paddingBottom: 20,
   },
   modalFormSection: {
     padding: 20,
+    minHeight: 400,
   },
   modalHeader: {
     flexDirection: 'row',
