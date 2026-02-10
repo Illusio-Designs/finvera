@@ -5,6 +5,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNotification } from '../../contexts/NotificationContext';
 import { voucherAPI, accountingAPI, inventoryAPI } from '../../lib/api';
 import { FONT_STYLES } from '../../utils/fonts';
+import CreateInventoryItemModal from './CreateInventoryItemModal';
 
 export default function CreateSalesInvoiceModal({ 
   visible, 
@@ -65,6 +66,7 @@ export default function CreateSalesInvoiceModal({
   const [showPurposeModal, setShowPurposeModal] = useState(false);
   const [showTransportModeModal, setShowTransportModeModal] = useState(false);
   const [showCreateLedgerModal, setShowCreateLedgerModal] = useState(false);
+  const [showCreateInventoryModal, setShowCreateInventoryModal] = useState(false);
   
   // Create Ledger form state
   const [ledgerForm, setLedgerForm] = useState({
@@ -147,6 +149,37 @@ export default function CreateSalesInvoiceModal({
       });
     } finally {
       setLoadingInventory(false);
+    }
+  };
+
+  const handleInventoryItemCreated = async (newItem) => {
+    // Refresh inventory list
+    await fetchInventory();
+    
+    // Optionally auto-add the newly created item to the invoice
+    if (newItem) {
+      const itemToAdd = {
+        inventory_item_id: newItem.id,
+        item_code: newItem.item_code,
+        item_name: newItem.item_name,
+        item_description: newItem.item_name,
+        quantity: 1,
+        rate: parseFloat(newItem.avg_cost || 0),
+        amount: parseFloat(newItem.avg_cost || 0),
+        hsn_sac_code: newItem.hsn_sac_code || '',
+        gst_rate: parseFloat(newItem.gst_rate || 0),
+        cgst_amount: 0,
+        sgst_amount: 0,
+        igst_amount: 0,
+      };
+      
+      // Calculate GST
+      const gstAmount = (itemToAdd.amount * itemToAdd.gst_rate) / 100;
+      itemToAdd.cgst_amount = gstAmount / 2;
+      itemToAdd.sgst_amount = gstAmount / 2;
+      
+      setItems([...items, itemToAdd]);
+      setShowItemModal(false);
     }
   };
 
@@ -1073,6 +1106,20 @@ export default function CreateSalesInvoiceModal({
               ) : null}
             </View>
 
+            {/* Create Item Button */}
+            <View style={styles.modalActionBar}>
+              <TouchableOpacity 
+                style={styles.createItemButton}
+                onPress={() => {
+                  setShowItemModal(false);
+                  setShowCreateInventoryModal(true);
+                }}
+              >
+                <Ionicons name="add-circle" size={20} color="#3e60ab" />
+                <Text style={styles.createItemText}>Create New Item</Text>
+              </TouchableOpacity>
+            </View>
+
             <ScrollView style={styles.modalList}>
               {loadingInventory ? (
                 <View style={styles.loadingContainer}>
@@ -1290,6 +1337,13 @@ export default function CreateSalesInvoiceModal({
           </View>
         </View>
       </Modal>
+
+      {/* Create Inventory Item Modal */}
+      <CreateInventoryItemModal
+        visible={showCreateInventoryModal}
+        onClose={() => setShowCreateInventoryModal(false)}
+        onItemCreated={handleInventoryItemCreated}
+      />
       </View>
     </Modal>
   );
@@ -1468,6 +1522,22 @@ const styles = StyleSheet.create({
     borderColor: '#3e60ab',
   },
   createCustomerText: {
+    ...FONT_STYLES.label,
+    color: '#3e60ab',
+    marginLeft: 8,
+  },
+  createItemButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: '#eff6ff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#3e60ab',
+  },
+  createItemText: {
     ...FONT_STYLES.label,
     color: '#3e60ab',
     marginLeft: 8,

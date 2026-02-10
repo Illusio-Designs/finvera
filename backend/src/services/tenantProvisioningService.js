@@ -500,15 +500,15 @@ class TenantProvisioningService {
     const state = tenantOrCompany.state;
     const address = tenantOrCompany.address || tenantOrCompany.registered_address;
 
+    // Get tenant_id from tenantOrCompany (could be tenant.id or company.tenant_id)
+    const tenantId = tenantOrCompany.id || tenantOrCompany.tenant_id;
+
     // Create default admin user for the tenant/company
     const bcrypt = require('bcryptjs');
     if (email) {
       // Check if user already exists
       const existingUser = await models.User.findOne({ where: { email } });
       if (!existingUser) {
-        // Get tenant_id from tenantOrCompany (could be tenant.id or company.tenant_id)
-        const tenantId = tenantOrCompany.id || tenantOrCompany.tenant_id;
-        
         await models.User.create({
           first_name: 'Admin',
           last_name: 'User',
@@ -519,6 +519,8 @@ class TenantProvisioningService {
           tenant_id: tenantId,
         });
         logger.info('Default admin user created');
+      } else {
+        logger.info('Default admin user already exists, skipping');
       }
     }
 
@@ -532,9 +534,6 @@ class TenantProvisioningService {
         } else {
           const existingGSTIN = await models.GSTIN.findOne({ where: { gstin } });
           if (!existingGSTIN) {
-            // Get tenant_id from tenantOrCompany (could be tenant.id or company.tenant_id)
-            const tenantId = tenantOrCompany.id || tenantOrCompany.tenant_id;
-            
             // Extract state code from GSTIN (first 2 digits)
             // GSTIN format: [2-digit state code][10-digit PAN][1-digit entity number][1-digit Z][1-digit check digit]
             const stateCode = gstin && gstin.length >= 2 ? gstin.substring(0, 2) : null;
@@ -551,6 +550,8 @@ class TenantProvisioningService {
               is_primary: true,
             });
             logger.info('Default GSTIN created');
+          } else {
+            logger.info('Default GSTIN already exists, skipping');
           }
         }
       } catch (gstinError) {
@@ -677,10 +678,13 @@ class TenantProvisioningService {
             continue;
           }
 
-          // Check if ledger already exists
+          // Check if ledger already exists (check by both code and name to catch duplicates)
           const existing = await tenantModels.Ledger.findOne({
             where: {
-              ledger_code: ledgerData.ledger_code,
+              [tenantModels.Sequelize.Op.or]: [
+                { ledger_code: ledgerData.ledger_code },
+                { ledger_name: ledgerData.ledger_name }
+              ]
             },
           });
 
@@ -989,12 +993,14 @@ class TenantProvisioningService {
 
       for (const seriesConfig of defaultSeries) {
         try {
-          // Check if series already exists
+          // Check if series already exists (check by voucher_type and prefix to catch duplicates)
           const existing = await tenantModels.NumberingSeries.findOne({
             where: {
               tenant_id: tenantId,
-              voucher_type: seriesConfig.voucher_type,
-              is_default: true,
+              [tenantModels.Sequelize.Op.or]: [
+                { voucher_type: seriesConfig.voucher_type, is_default: true },
+                { voucher_type: seriesConfig.voucher_type, prefix: seriesConfig.prefix }
+              ]
             },
           });
 

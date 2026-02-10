@@ -82,10 +82,31 @@ module.exports = {
       addLedger('SGST-001', 'SGST', 'DT', 'Cr');
       addLedger('IGST-001', 'IGST', 'DT', 'Cr');
 
-      // Insert default ledgers
+      // Insert default ledgers (check for existing first to avoid duplicates)
       if (defaultLedgers.length > 0) {
-        await queryInterface.bulkInsert('ledgers', defaultLedgers, { ignoreDuplicates: true });
-        console.log(`✓ Seeded ${defaultLedgers.length} default ledgers`);
+        let insertedCount = 0;
+        let skippedCount = 0;
+        
+        for (const ledger of defaultLedgers) {
+          try {
+            // Check if ledger already exists by code or name
+            const [existing] = await queryInterface.sequelize.query(
+              `SELECT id FROM ledgers WHERE ledger_code = ? OR ledger_name = ? LIMIT 1`,
+              { replacements: [ledger.ledger_code, ledger.ledger_name] }
+            );
+            
+            if (existing.length === 0) {
+              await queryInterface.bulkInsert('ledgers', [ledger]);
+              insertedCount++;
+            } else {
+              skippedCount++;
+            }
+          } catch (error) {
+            console.warn(`⚠️  Could not insert ledger ${ledger.ledger_name}:`, error.message);
+          }
+        }
+        
+        console.log(`✓ Seeded ${insertedCount} default ledgers (${skippedCount} already existed)`);
       } else {
         console.warn('⚠️  No default ledgers were created - account groups may be missing');
       }
@@ -252,8 +273,30 @@ module.exports = {
           },
         ];
 
-        await queryInterface.bulkInsert('numbering_series', defaultNumberingSeries, { ignoreDuplicates: true });
-        console.log(`✓ Seeded ${defaultNumberingSeries.length} default numbering series`);
+        // Insert numbering series (check for existing first to avoid duplicates)
+        let insertedCount = 0;
+        let skippedCount = 0;
+        
+        for (const series of defaultNumberingSeries) {
+          try {
+            // Check if series already exists by voucher_type and prefix
+            const [existing] = await queryInterface.sequelize.query(
+              `SELECT id FROM numbering_series WHERE voucher_type = ? AND prefix = ? LIMIT 1`,
+              { replacements: [series.voucher_type, series.prefix] }
+            );
+            
+            if (existing.length === 0) {
+              await queryInterface.bulkInsert('numbering_series', [series]);
+              insertedCount++;
+            } else {
+              skippedCount++;
+            }
+          } catch (error) {
+            console.warn(`⚠️  Could not insert numbering series ${series.series_name}:`, error.message);
+          }
+        }
+        
+        console.log(`✓ Seeded ${insertedCount} default numbering series (${skippedCount} already existed)`);
       } else {
         console.warn('⚠️  numbering_series table does not exist, skipping numbering series seeding');
       }
