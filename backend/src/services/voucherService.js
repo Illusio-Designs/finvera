@@ -914,11 +914,12 @@ class VoucherService {
       narration
     } = voucherData;
 
-    // Use Stock in Hand for perpetual inventory tracking
+    // Perpetual inventory - Stock in Hand tracks inventory value
     const inventoryLedger = await getOrCreateSystemLedger(
       { tenantModels, masterModels, tenant_id },
       { ledgerCode: 'INVENTORY', ledgerName: 'Stock in Hand', groupCode: 'INV' }
     );
+    
     ledgerEntries.push({
       ledger_id: inventoryLedger.id,
       debit_amount: subtotal,
@@ -1982,7 +1983,7 @@ class VoucherService {
     const roundedTotal = GSTCalculationService.roundOff(grandTotal);
     const roundOffAmount = roundedTotal - grandTotal;
 
-    // Use Stock in Hand for perpetual inventory tracking
+    // Perpetual inventory - Stock in Hand tracks inventory value
     const inventoryLedger = await getOrCreateSystemLedger(
       { tenantModels, masterModels, tenant_id },
       { ledgerCode: 'INVENTORY', ledgerName: 'Stock in Hand', groupCode: 'INV' }
