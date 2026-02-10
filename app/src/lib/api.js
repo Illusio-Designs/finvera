@@ -180,6 +180,16 @@ export const inventoryAPI = {
   },
 };
 
+// Warehouse APIs (separate export for convenience)
+export const warehouseAPI = {
+  list: (params) => apiClient.get('/accounting/warehouses', { params }),
+  getAll: () => apiClient.get('/accounting/warehouses/all'),
+  create: (data) => apiClient.post('/accounting/warehouses', data),
+  update: (id, data) => apiClient.put(`/accounting/warehouses/${id}`, data),
+  delete: (id) => apiClient.delete(`/accounting/warehouses/${id}`),
+  get: (id) => apiClient.get(`/accounting/warehouses/${id}`),
+};
+
 // GST APIs (fixed analytics endpoint)
 export const gstAPI = {
   gstins: {

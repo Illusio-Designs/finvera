@@ -6,13 +6,16 @@ import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { voucherAPI, accountingAPI, inventoryAPI } from '../../lib/api';
 import { FONT_STYLES } from '../../utils/fonts';
 import CreateInventoryItemModal from './CreateInventoryItemModal';
+import CreateLedgerModal from './CreateLedgerModal';
 import ModernDatePicker from '../ui/ModernDatePicker';
 
 export default function CreatePurchaseInvoiceModal({ 
   visible, 
   onClose, 
   onInvoiceCreated,
-  defaultVoucherType = 'purchase_invoice'
+  defaultVoucherType = 'purchase_invoice',
+  editData = null,
+  isEdit = false
 }) {
   const { showNotification } = useNotification();
   const { showDangerConfirmation } = useConfirmation();
@@ -22,6 +25,8 @@ export default function CreatePurchaseInvoiceModal({
     voucher_date: new Date().toISOString().split('T')[0],
     party_ledger_id: '',
     reference_number: '',
+    supplier_invoice_number: '',
+    supplier_invoice_date: '',
     narration: '',
     total_amount: 0,
     status: 'draft',
@@ -64,31 +69,70 @@ export default function CreatePurchaseInvoiceModal({
   const [showInvoiceTypeModal, setShowInvoiceTypeModal] = useState(false);
   const [showCreateLedgerModal, setShowCreateLedgerModal] = useState(false);
   
-  // Create Ledger form state
-  const [ledgerForm, setLedgerForm] = useState({
-    ledger_name: '',
-    gstin: '',
-    pan: '',
-    email: '',
-    contact_number: '',
-    address: '',
-    city: '',
-    state: '',
-    pincode: '',
-  });
-  const [creatingLedger, setCreatingLedger] = useState(false);
-  
   const invoiceTypes = [
     { label: 'Purchase Invoice', value: 'purchase_invoice' },
   ];
 
-  // Fetch suppliers and inventory on mount
+  // Fetch suppliers and inventory on mount and reset/populate form when modal opens
   useEffect(() => {
     if (visible) {
+      if (isEdit && editData) {
+        // Populate form with edit data
+        setFormData({
+          voucher_type: editData.voucher_type || defaultVoucherType,
+          voucher_date: editData.voucher_date || new Date().toISOString().split('T')[0],
+          party_ledger_id: editData.party_ledger_id || '',
+          reference_number: editData.reference_number || '',
+          supplier_invoice_number: editData.supplier_invoice_number || '',
+          supplier_invoice_date: editData.supplier_invoice_date || '',
+          narration: editData.narration || '',
+          total_amount: editData.total_amount || 0,
+          status: editData.status || 'draft',
+          place_of_supply: editData.place_of_supply || 'Maharashtra',
+          is_reverse_charge: editData.is_reverse_charge || false,
+        });
+        
+        // Populate items if available
+        if (editData.items && Array.isArray(editData.items)) {
+          setItems(editData.items.map(item => ({
+            inventory_item_id: item.inventory_item_id || null,
+            item_code: item.item_code || '',
+            item_name: item.item_name || item.item_description || '',
+            item_description: item.item_description || item.item_name || '',
+            hsn_sac_code: item.hsn_sac_code || '',
+            quantity: String(item.quantity || 1),
+            rate: String(item.rate || 0),
+            gst_rate: String(item.gst_rate || 0),
+            amount: item.amount || (item.quantity * item.rate) || 0,
+          })));
+        } else {
+          setItems([]);
+        }
+      } else {
+        // Reset form data for new invoice
+        setFormData({
+          voucher_type: defaultVoucherType,
+          voucher_date: new Date().toISOString().split('T')[0],
+          party_ledger_id: '',
+          reference_number: '',
+          supplier_invoice_number: '',
+          supplier_invoice_date: '',
+          narration: '',
+          total_amount: 0,
+          status: 'draft',
+          place_of_supply: 'Maharashtra',
+          is_reverse_charge: false,
+        });
+        
+        // Reset items
+        setItems([]);
+      }
+      
+      // Fetch data
       fetchSuppliers();
       fetchInventory();
     }
-  }, [visible]);
+  }, [visible, isEdit, editData]);
 
   const fetchSuppliers = async () => {
     try {
@@ -286,47 +330,8 @@ export default function CreatePurchaseInvoiceModal({
     setShowAddItemModal(true);
   };
 
-  const handleCreateLedger = async () => {
+  const handleCreateLedger = async (newLedger) => {
     try {
-      setCreatingLedger(true);
-      
-      // Validate required fields
-      if (!ledgerForm.ledger_name.trim()) {
-        showNotification({
-          type: 'error',
-          title: 'Validation Error',
-          message: 'Please enter supplier name'
-        });
-        return;
-      }
-
-      // Create ledger - need to get account_group_id for Sundry Creditors
-      // For now, we'll let the backend handle the default group
-      const ledgerData = {
-        ledger_name: ledgerForm.ledger_name,
-        gstin: ledgerForm.gstin || null,
-        pan: ledgerForm.pan || null,
-        email: ledgerForm.email || null,
-        contact_number: ledgerForm.contact_number || null,
-        address: ledgerForm.address || null,
-        city: ledgerForm.city || null,
-        state: ledgerForm.state || null,
-        pincode: ledgerForm.pincode || null,
-        // These will be set by backend or need to be fetched
-        account_group_id: null, // Backend should handle default
-        opening_balance: 0,
-        opening_balance_type: 'Cr', // Creditor balance
-      };
-
-      const response = await accountingAPI.ledgers.create(ledgerData);
-      const newLedger = response?.data?.data || response?.data;
-      
-      showNotification({
-        type: 'success',
-        title: 'Success',
-        message: 'Supplier created successfully'
-      });
-      
       // Refresh suppliers list
       await fetchSuppliers();
       
@@ -335,30 +340,12 @@ export default function CreatePurchaseInvoiceModal({
         setFormData({ ...formData, party_ledger_id: newLedger.id, place_of_supply: newLedger.state || 'Maharashtra' });
       }
       
-      // Reset form and close modals
-      setLedgerForm({
-        ledger_name: '',
-        gstin: '',
-        pan: '',
-        email: '',
-        contact_number: '',
-        address: '',
-        city: '',
-        state: '',
-        pincode: '',
-      });
+      // Close modals
       setShowCreateLedgerModal(false);
       setShowSupplierModal(false);
       
     } catch (error) {
-      console.error('Create ledger error:', error);
-      showNotification({
-        type: 'error',
-        title: 'Error',
-        message: error.response?.data?.message || 'Failed to create supplier'
-      });
-    } finally {
-      setCreatingLedger(false);
+      console.error('Error after ledger creation:', error);
     }
   };
 
@@ -367,6 +354,14 @@ export default function CreatePurchaseInvoiceModal({
   };
 
   const handleSave = async () => {
+    await saveInvoice('draft');
+  };
+
+  const handlePost = async () => {
+    await saveInvoice('posted');
+  };
+
+  const saveInvoice = async (status) => {
     try {
       setLoading(true);
       
@@ -389,6 +384,24 @@ export default function CreatePurchaseInvoiceModal({
         return;
       }
 
+      if (!formData.supplier_invoice_number) {
+        showNotification({
+          type: 'error',
+          title: 'Validation Error',
+          message: 'Please enter supplier invoice number'
+        });
+        return;
+      }
+
+      if (!formData.supplier_invoice_date) {
+        showNotification({
+          type: 'error',
+          title: 'Validation Error',
+          message: 'Please select supplier invoice date'
+        });
+        return;
+      }
+
       if (items.length === 0) {
         showNotification({
           type: 'error',
@@ -398,16 +411,18 @@ export default function CreatePurchaseInvoiceModal({
         return;
       }
 
-      // Create purchase invoice
+      // Create/Update purchase invoice
       const voucherData = {
         voucher_type: 'purchase_invoice',
         voucher_date: formData.voucher_date,
         party_ledger_id: formData.party_ledger_id,
         reference: formData.reference_number || null,
+        supplier_invoice_number: formData.supplier_invoice_number,
+        supplier_invoice_date: formData.supplier_invoice_date,
         narration: formData.narration || null,
         place_of_supply: formData.place_of_supply,
         is_reverse_charge: formData.is_reverse_charge || false,
-        status: formData.status,
+        status: status,
         items: items.map(item => ({
           inventory_item_id: item.inventory_item_id,
           item_code: item.item_code,
@@ -420,12 +435,17 @@ export default function CreatePurchaseInvoiceModal({
         })),
       };
 
-      const response = await voucherAPI.purchaseInvoice.create(voucherData);
+      let response;
+      if (isEdit && editData) {
+        response = await voucherAPI.purchaseInvoice.update(editData.id, voucherData);
+      } else {
+        response = await voucherAPI.purchaseInvoice.create(voucherData);
+      }
       
       showNotification({
         type: 'success',
         title: 'Success',
-        message: 'Purchase Invoice created successfully'
+        message: `Purchase Invoice ${isEdit ? 'updated' : status === 'posted' ? 'posted' : 'saved as draft'} successfully`
       });
       
       if (onInvoiceCreated) {
@@ -490,7 +510,7 @@ export default function CreatePurchaseInvoiceModal({
     >
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Create Purchase Invoice</Text>
+          <Text style={styles.title}>{isEdit ? 'Edit Purchase Invoice' : 'Create Purchase Invoice'}</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color="#6b7280" />
           </TouchableOpacity>
@@ -554,6 +574,27 @@ export default function CreatePurchaseInvoiceModal({
               value={formData.reference_number}
               onChangeText={(text) => setFormData({ ...formData, reference_number: text })}
               placeholder="Enter reference number (optional)"
+            />
+          </View>
+
+          {/* Supplier Invoice Number */}
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Supplier Invoice Number *</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.supplier_invoice_number}
+              onChangeText={(text) => setFormData({ ...formData, supplier_invoice_number: text })}
+              placeholder="Enter supplier invoice number"
+            />
+          </View>
+
+          {/* Supplier Invoice Date */}
+          <View style={styles.formGroup}>
+            <ModernDatePicker
+              label="Supplier Invoice Date *"
+              value={formData.supplier_invoice_date}
+              onDateChange={(date) => setFormData({ ...formData, supplier_invoice_date: date })}
+              placeholder="Select supplier invoice date"
             />
           </View>
 
@@ -746,12 +787,22 @@ export default function CreatePurchaseInvoiceModal({
         </TouchableOpacity>
         
         <TouchableOpacity 
-          style={[styles.button, styles.buttonPrimary]}
+          style={[styles.button, styles.buttonOutline]}
           onPress={handleSave}
           disabled={loading}
         >
-          <Text style={styles.buttonText}>
+          <Text style={[styles.buttonText, styles.buttonTextOutline]}>
             {loading ? 'Saving...' : 'Save Draft'}
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.button, styles.buttonPrimary]}
+          onPress={handlePost}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>
+            {loading ? 'Posting...' : 'Post'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -873,148 +924,13 @@ export default function CreatePurchaseInvoiceModal({
       </Modal>
 
       {/* Create Ledger Modal */}
-      <Modal
+      <CreateLedgerModal
         visible={showCreateLedgerModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowCreateLedgerModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, styles.largeModalContent]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Create New Supplier</Text>
-              <TouchableOpacity onPress={() => setShowCreateLedgerModal(false)}>
-                <Ionicons name="close" size={24} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-            
-            <ScrollView style={styles.modalScrollContent} contentContainerStyle={styles.modalScrollContentContainer}>
-              <View style={styles.modalFormSection}>
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Supplier Name *</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={ledgerForm.ledger_name}
-                    onChangeText={(text) => setLedgerForm({ ...ledgerForm, ledger_name: text })}
-                    placeholder="Enter supplier name"
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>GSTIN</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={ledgerForm.gstin}
-                    onChangeText={(text) => setLedgerForm({ ...ledgerForm, gstin: text.toUpperCase() })}
-                    placeholder="Enter GSTIN (optional)"
-                    maxLength={15}
-                    autoCapitalize="characters"
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>PAN</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={ledgerForm.pan}
-                    onChangeText={(text) => setLedgerForm({ ...ledgerForm, pan: text.toUpperCase() })}
-                    placeholder="Enter PAN (optional)"
-                    maxLength={10}
-                    autoCapitalize="characters"
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Email</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={ledgerForm.email}
-                    onChangeText={(text) => setLedgerForm({ ...ledgerForm, email: text })}
-                    placeholder="Enter email (optional)"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Contact Number</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={ledgerForm.contact_number}
-                    onChangeText={(text) => setLedgerForm({ ...ledgerForm, contact_number: text })}
-                    placeholder="Enter contact number (optional)"
-                    keyboardType="phone-pad"
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Address</Text>
-                  <TextInput
-                    style={[styles.input, styles.textArea]}
-                    value={ledgerForm.address}
-                    onChangeText={(text) => setLedgerForm({ ...ledgerForm, address: text })}
-                    placeholder="Enter address (optional)"
-                    multiline
-                    numberOfLines={2}
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>City</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={ledgerForm.city}
-                    onChangeText={(text) => setLedgerForm({ ...ledgerForm, city: text })}
-                    placeholder="Enter city (optional)"
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>State</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={ledgerForm.state}
-                    onChangeText={(text) => setLedgerForm({ ...ledgerForm, state: text })}
-                    placeholder="Enter state (optional)"
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Pincode</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={ledgerForm.pincode}
-                    onChangeText={(text) => setLedgerForm({ ...ledgerForm, pincode: text })}
-                    placeholder="Enter pincode (optional)"
-                    keyboardType="number-pad"
-                    maxLength={6}
-                  />
-                </View>
-              </View>
-            </ScrollView>
-
-            <View style={styles.modalFooter}>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.modalButtonSecondary]}
-                onPress={() => setShowCreateLedgerModal(false)}
-                disabled={creatingLedger}
-              >
-                <Text style={[styles.modalButtonText, styles.modalButtonTextSecondary]}>Cancel</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.modalButtonPrimary]}
-                onPress={handleCreateLedger}
-                disabled={creatingLedger}
-              >
-                <Text style={styles.modalButtonText}>
-                  {creatingLedger ? 'Creating...' : 'Create Supplier'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setShowCreateLedgerModal(false)}
+        onSuccess={handleCreateLedger}
+        defaultAccountGroupFilter="supplier"
+        title="Create New Supplier"
+      />
 
       {/* Item Selection Modal */}
       <Modal
@@ -1617,6 +1533,11 @@ const styles = StyleSheet.create({
   buttonSecondary: {
     backgroundColor: 'white',
     borderWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  buttonOutline: {
+    backgroundColor: 'white',
+    borderWidth: 1,
     borderColor: '#3e60ab',
   },
   buttonText: {
@@ -1624,6 +1545,9 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   buttonTextSecondary: {
+    color: '#6b7280',
+  },
+  buttonTextOutline: {
     color: '#3e60ab',
   },
   // Items Section Styles

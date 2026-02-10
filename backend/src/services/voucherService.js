@@ -914,16 +914,16 @@ class VoucherService {
       narration
     } = voucherData;
 
-    // Inventory debit entry
-    const inventoryLedger = await getOrCreateSystemLedger(
+    // Use Purchase Account for expense tracking
+    const purchaseLedger = await getOrCreateSystemLedger(
       { tenantModels, masterModels, tenant_id },
-      { ledgerCode: 'INVENTORY', ledgerName: 'Stock in Hand', groupCode: 'INV' }
+      { ledgerCode: 'PURCHASE', ledgerName: 'Purchase Account', groupCode: 'PUR' }
     );
     ledgerEntries.push({
-      ledger_id: inventoryLedger.id,
+      ledger_id: purchaseLedger.id,
       debit_amount: subtotal,
       credit_amount: 0,
-      narration: 'Inventory purchase',
+      narration: 'Purchase of goods',
     });
 
     // GST input ledger entries (different for reverse charge)
@@ -1945,14 +1945,19 @@ class VoucherService {
     const roundedTotal = GSTCalculationService.roundOff(grandTotal);
     const roundOffAmount = roundedTotal - grandTotal;
 
-    // Perpetual inventory: debit inventory for taxable subtotal.
-    const inventoryLedger = await getOrCreateSystemLedger(
+    // Use Purchase Account for expense tracking
+    const purchaseLedger = await getOrCreateSystemLedger(
       { tenantModels, masterModels, tenant_id },
-      { ledgerCode: 'INVENTORY', ledgerName: 'Stock in Hand', groupCode: 'INV' }
+      { ledgerCode: 'PURCHASE', ledgerName: 'Purchase Account', groupCode: 'PUR' }
     );
 
     const ledgerEntries = [
-      { ledger_id: inventoryLedger.id, debit_amount: subtotal, credit_amount: 0, narration: 'Inventory purchase' },
+      { 
+        ledger_id: purchaseLedger.id, 
+        debit_amount: subtotal, 
+        credit_amount: 0, 
+        narration: 'Purchase of goods' 
+      },
     ];
 
     // Handle GST based on reverse charge mechanism

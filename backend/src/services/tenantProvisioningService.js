@@ -679,9 +679,10 @@ class TenantProvisioningService {
           }
 
           // Check if ledger already exists (check by both code and name to catch duplicates)
+          const { Op } = require('sequelize');
           const existing = await tenantModels.Ledger.findOne({
             where: {
-              [tenantModels.Sequelize.Op.or]: [
+              [Op.or]: [
                 { ledger_code: ledgerData.ledger_code },
                 { ledger_name: ledgerData.ledger_name }
               ]

@@ -59,6 +59,7 @@ router.get('/vouchers', voucherController.list);
 router.post('/vouchers', validator(createVoucherValidator), voucherController.create);
 router.get('/vouchers/:id', voucherController.getById);
 router.put('/vouchers/:id', validator(updateVoucherValidator), voucherController.update);
+router.delete('/vouchers/:id', voucherController.delete);
 router.post('/vouchers/:id/post', voucherController.post);
 router.post('/vouchers/:id/cancel', voucherController.cancel);
 router.post('/vouchers/:id/convert', validator(convertVoucherValidator), voucherController.convert);

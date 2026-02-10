@@ -249,9 +249,30 @@ module.exports = {
         is_active: is_active !== false,
       });
 
+      // Create warehouse stock entry for default warehouse (always, even with 0 quantity)
+      // This ensures items are properly connected to warehouses from the start
+      const defaultWarehouse = await req.tenantModels.Warehouse.findOne({
+        where: { is_default: true, is_active: true }
+      });
+
+      if (defaultWarehouse) {
+        await req.tenantModels.WarehouseStock.create({
+          inventory_item_id: item.id,
+          warehouse_id: defaultWarehouse.id,
+          quantity: parseFloat(quantity_on_hand) || 0,
+          avg_cost: parseFloat(avg_cost) || 0,
+          tenant_id: req.tenant_id,
+        });
+      }
+
       res.status(201).json({ 
         data: item,
         business_type: businessType,
+        warehouse: defaultWarehouse ? { 
+          id: defaultWarehouse.id, 
+          name: defaultWarehouse.warehouse_name,
+          connected: true 
+        } : { connected: false },
         message: businessType === 'retail' ? 'Item created with barcode (retail mode)' : 'Item created successfully'
       });
     } catch (error) {

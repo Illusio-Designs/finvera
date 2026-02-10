@@ -6,6 +6,7 @@ import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { voucherAPI, accountingAPI, inventoryAPI } from '../../lib/api';
 import { FONT_STYLES } from '../../utils/fonts';
 import CreateInventoryItemModal from './CreateInventoryItemModal';
+import CreateLedgerModal from './CreateLedgerModal';
 import ModernDatePicker from '../ui/ModernDatePicker';
 
 export default function CreateSalesInvoiceModal({ 
@@ -66,20 +67,6 @@ export default function CreateSalesInvoiceModal({
   const [showCreateLedgerModal, setShowCreateLedgerModal] = useState(false);
   const [showCreateInventoryModal, setShowCreateInventoryModal] = useState(false);
   
-  // Create Ledger form state
-  const [ledgerForm, setLedgerForm] = useState({
-    ledger_name: '',
-    gstin: '',
-    pan: '',
-    email: '',
-    contact_number: '',
-    address: '',
-    city: '',
-    state: '',
-    pincode: '',
-  });
-  const [creatingLedger, setCreatingLedger] = useState(false);
-  
   const invoiceTypes = [
     { label: 'Sales Invoice', value: 'sales_invoice' },
     { label: 'Tax Invoice', value: 'tax_invoice' },
@@ -103,9 +90,33 @@ export default function CreateSalesInvoiceModal({
     { label: 'Ship', value: 'ship' },
   ];
 
-  // Fetch customer/party ledgers and inventory on mount
+  // Fetch customer/party ledgers and inventory on mount and reset form when modal opens
   useEffect(() => {
     if (visible) {
+      // Reset form data
+      setFormData({
+        voucher_type: defaultVoucherType,
+        voucher_date: new Date().toISOString().split('T')[0],
+        party_ledger_id: '',
+        reference_number: '',
+        narration: '',
+        total_amount: 0,
+        status: 'draft',
+        due_date: '',
+        currency_code: 'INR',
+        export_type: '',
+        shipping_bill_number: '',
+        shipping_bill_date: '',
+        port_code: '',
+        shipping_port_code: '',
+        purpose: '',
+        transport_mode: '',
+      });
+      
+      // Reset items
+      setItems([]);
+      
+      // Fetch data
       fetchLedgers();
       fetchInventory();
     }
@@ -185,47 +196,8 @@ export default function CreateSalesInvoiceModal({
     }
   };
 
-  const handleCreateLedger = async () => {
+  const handleCreateLedger = async (newLedger) => {
     try {
-      setCreatingLedger(true);
-      
-      // Validate required fields
-      if (!ledgerForm.ledger_name.trim()) {
-        showNotification({
-          type: 'error',
-          title: 'Validation Error',
-          message: 'Please enter customer name'
-        });
-        return;
-      }
-
-      // Create ledger - need to get account_group_id for Sundry Debtors
-      // For now, we'll let the backend handle the default group
-      const ledgerData = {
-        ledger_name: ledgerForm.ledger_name,
-        gstin: ledgerForm.gstin || null,
-        pan: ledgerForm.pan || null,
-        email: ledgerForm.email || null,
-        contact_number: ledgerForm.contact_number || null,
-        address: ledgerForm.address || null,
-        city: ledgerForm.city || null,
-        state: ledgerForm.state || null,
-        pincode: ledgerForm.pincode || null,
-        // These will be set by backend or need to be fetched
-        account_group_id: null, // Backend should handle default
-        opening_balance: 0,
-        opening_balance_type: 'Dr',
-      };
-
-      const response = await accountingAPI.ledgers.create(ledgerData);
-      const newLedger = response?.data?.data || response?.data;
-      
-      showNotification({
-        type: 'success',
-        title: 'Success',
-        message: 'Customer created successfully'
-      });
-      
       // Refresh ledgers list
       await fetchLedgers();
       
@@ -234,30 +206,12 @@ export default function CreateSalesInvoiceModal({
         setFormData({ ...formData, party_ledger_id: newLedger.id });
       }
       
-      // Reset form and close modals
-      setLedgerForm({
-        ledger_name: '',
-        gstin: '',
-        pan: '',
-        email: '',
-        contact_number: '',
-        address: '',
-        city: '',
-        state: '',
-        pincode: '',
-      });
+      // Close modals
       setShowCreateLedgerModal(false);
       setShowCustomerModal(false);
       
     } catch (error) {
-      console.error('Create ledger error:', error);
-      showNotification({
-        type: 'error',
-        title: 'Error',
-        message: error.response?.data?.message || 'Failed to create customer'
-      });
-    } finally {
-      setCreatingLedger(false);
+      console.error('Error after ledger creation:', error);
     }
   };
 
@@ -266,6 +220,14 @@ export default function CreateSalesInvoiceModal({
   };
 
   const handleSave = async () => {
+    await saveInvoice('draft');
+  };
+
+  const handlePost = async () => {
+    await saveInvoice('posted');
+  };
+
+  const saveInvoice = async (status) => {
     try {
       setLoading(true);
       
@@ -304,7 +266,7 @@ export default function CreateSalesInvoiceModal({
         party_ledger_id: formData.party_ledger_id,
         reference_number: formData.reference_number || null,
         narration: formData.narration || null,
-        status: formData.status,
+        status: status,
         total_amount: formData.total_amount || 0,
         items: [], // Empty items for now
         ledger_entries: [], // Empty ledger entries for now
@@ -315,7 +277,7 @@ export default function CreateSalesInvoiceModal({
       showNotification({
         type: 'success',
         title: 'Success',
-        message: `${getInvoiceTypeLabel()} created successfully`
+        message: `${getInvoiceTypeLabel()} ${status === 'posted' ? 'posted' : 'saved as draft'} successfully`
       });
       
       if (onInvoiceCreated) {
@@ -790,12 +752,22 @@ export default function CreateSalesInvoiceModal({
         </TouchableOpacity>
         
         <TouchableOpacity 
-          style={[styles.button, styles.buttonPrimary]}
+          style={[styles.button, styles.buttonOutline]}
           onPress={handleSave}
           disabled={loading}
         >
-          <Text style={styles.buttonText}>
+          <Text style={[styles.buttonText, styles.buttonTextOutline]}>
             {loading ? 'Saving...' : 'Save Draft'}
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.button, styles.buttonPrimary]}
+          onPress={handlePost}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>
+            {loading ? 'Posting...' : 'Post'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -1132,148 +1104,13 @@ export default function CreateSalesInvoiceModal({
       </Modal>
 
       {/* Create Ledger Modal */}
-      <Modal
+      <CreateLedgerModal
         visible={showCreateLedgerModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowCreateLedgerModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, styles.largeModalContent]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Create New Customer</Text>
-              <TouchableOpacity onPress={() => setShowCreateLedgerModal(false)}>
-                <Ionicons name="close" size={24} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-            
-            <ScrollView style={styles.modalScrollContent}>
-              <View style={styles.modalFormSection}>
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Customer Name *</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={ledgerForm.ledger_name}
-                    onChangeText={(text) => setLedgerForm({ ...ledgerForm, ledger_name: text })}
-                    placeholder="Enter customer name"
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>GSTIN</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={ledgerForm.gstin}
-                    onChangeText={(text) => setLedgerForm({ ...ledgerForm, gstin: text.toUpperCase() })}
-                    placeholder="Enter GSTIN (optional)"
-                    maxLength={15}
-                    autoCapitalize="characters"
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>PAN</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={ledgerForm.pan}
-                    onChangeText={(text) => setLedgerForm({ ...ledgerForm, pan: text.toUpperCase() })}
-                    placeholder="Enter PAN (optional)"
-                    maxLength={10}
-                    autoCapitalize="characters"
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Email</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={ledgerForm.email}
-                    onChangeText={(text) => setLedgerForm({ ...ledgerForm, email: text })}
-                    placeholder="Enter email (optional)"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Contact Number</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={ledgerForm.contact_number}
-                    onChangeText={(text) => setLedgerForm({ ...ledgerForm, contact_number: text })}
-                    placeholder="Enter contact number (optional)"
-                    keyboardType="phone-pad"
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Address</Text>
-                  <TextInput
-                    style={[styles.input, styles.textArea]}
-                    value={ledgerForm.address}
-                    onChangeText={(text) => setLedgerForm({ ...ledgerForm, address: text })}
-                    placeholder="Enter address (optional)"
-                    multiline
-                    numberOfLines={2}
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>City</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={ledgerForm.city}
-                    onChangeText={(text) => setLedgerForm({ ...ledgerForm, city: text })}
-                    placeholder="Enter city (optional)"
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>State</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={ledgerForm.state}
-                    onChangeText={(text) => setLedgerForm({ ...ledgerForm, state: text })}
-                    placeholder="Enter state (optional)"
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Pincode</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={ledgerForm.pincode}
-                    onChangeText={(text) => setLedgerForm({ ...ledgerForm, pincode: text })}
-                    placeholder="Enter pincode (optional)"
-                    keyboardType="number-pad"
-                    maxLength={6}
-                  />
-                </View>
-              </View>
-            </ScrollView>
-
-            <View style={styles.modalFooter}>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.modalButtonSecondary]}
-                onPress={() => setShowCreateLedgerModal(false)}
-                disabled={creatingLedger}
-              >
-                <Text style={[styles.modalButtonText, styles.modalButtonTextSecondary]}>Cancel</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.modalButtonPrimary]}
-                onPress={handleCreateLedger}
-                disabled={creatingLedger}
-              >
-                <Text style={styles.modalButtonText}>
-                  {creatingLedger ? 'Creating...' : 'Create Customer'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setShowCreateLedgerModal(false)}
+        onSuccess={handleCreateLedger}
+        defaultAccountGroupFilter="customer"
+        title="Create New Customer"
+      />
 
       {/* Create Inventory Item Modal */}
       <CreateInventoryItemModal
@@ -1599,6 +1436,11 @@ const styles = StyleSheet.create({
   buttonSecondary: {
     backgroundColor: 'white',
     borderWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  buttonOutline: {
+    backgroundColor: 'white',
+    borderWidth: 1,
     borderColor: '#3e60ab',
   },
   buttonText: {
@@ -1606,6 +1448,9 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   buttonTextSecondary: {
+    color: '#6b7280',
+  },
+  buttonTextOutline: {
     color: '#3e60ab',
   },
   // Items Section Styles

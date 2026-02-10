@@ -11,6 +11,16 @@ async function runLedgerMigration(sequelize) {
     const queryInterface = sequelize.getQueryInterface();
     const tableDescription = await queryInterface.describeTable('ledgers');
     
+    // Check if migration file exists
+    const fs = require('fs');
+    const path = require('path');
+    const migrationPath = path.join(__dirname, '../migrations/20251218-add-ledger-fields.js');
+    
+    if (!fs.existsSync(migrationPath)) {
+      logger.debug('Ledger migration file not found, skipping');
+      return true;
+    }
+    
     const migration = require('../migrations/20251218-add-ledger-fields');
     await migration.up(queryInterface, Sequelize);
     
@@ -22,7 +32,8 @@ async function runLedgerMigration(sequelize) {
       logger.debug('Ledger columns already exist, skipping migration');
       return true;
     }
-    logger.warn('Ledger migration failed (non-critical):', error.message);
+    // Log error properly (not as object)
+    logger.warn('Ledger migration failed (non-critical):', error.message || String(error));
     return false;
   }
 }

@@ -388,6 +388,21 @@ module.exports = {
       if (!req.body.voucher_number) {
         console.log('🔢 Generating voucher number...');
         const voucherType = req.body.voucher_type || 'GEN';
+        
+        // Map voucher types to short codes
+        const voucherTypeMap = {
+          'sales_invoice': 'SI',
+          'purchase_invoice': 'PI',
+          'payment': 'PAY',
+          'receipt': 'REC',
+          'journal': 'JV',
+          'credit_note': 'CN',
+          'debit_note': 'DN',
+          'contra': 'CON',
+        };
+        
+        const voucherCode = voucherTypeMap[voucherType] || voucherType.substring(0, 3).toUpperCase();
+        
         const date = new Date();
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -410,7 +425,7 @@ module.exports = {
           }
         }
         
-        req.body.voucher_number = `${voucherType}${year}${month}${String(sequence).padStart(4, '0')}`;
+        req.body.voucher_number = `${voucherCode}${year}${month}${String(sequence).padStart(4, '0')}`;
         console.log('✅ Generated voucher number:', req.body.voucher_number);
       }
       
@@ -731,6 +746,63 @@ module.exports = {
     } catch (err) {
       await transaction.rollback();
       logger.error('Error converting voucher:', err);
+      next(err);
+    }
+  },
+
+  async delete(req, res, next) {
+    const transaction = await req.tenantDb.transaction();
+    
+    try {
+      const { id } = req.params;
+      
+      // Find the voucher
+      const voucher = await req.tenantModels.Voucher.findByPk(id, { transaction });
+      
+      if (!voucher) {
+        await transaction.rollback();
+        return res.status(404).json({
+          success: false,
+          message: 'Voucher not found'
+        });
+      }
+      
+      // Check if voucher is posted
+      if (voucher.status === 'posted') {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot delete posted voucher. Please cancel it first.'
+        });
+      }
+      
+      // Delete related records
+      // Delete voucher items
+      await req.tenantModels.VoucherItem.destroy({
+        where: { voucher_id: id },
+        transaction
+      });
+      
+      // Delete ledger entries
+      await req.tenantModels.VoucherLedgerEntry.destroy({
+        where: { voucher_id: id },
+        transaction
+      });
+      
+      // Delete the voucher
+      await voucher.destroy({ transaction });
+      
+      await transaction.commit();
+      
+      logger.info(`Voucher ${voucher.voucher_number} deleted successfully`);
+      
+      res.json({
+        success: true,
+        message: 'Voucher deleted successfully'
+      });
+    } catch (err) {
+      await transaction.rollback();
+      logger.error('Error deleting voucher:', err);
       next(err);
     }
   }
