@@ -157,7 +157,18 @@ module.exports = (sequelize) => {
     legal_name: DataTypes.STRING,
     trade_name: DataTypes.STRING,
     address: DataTypes.TEXT,
+    state: DataTypes.STRING,
     state_code: DataTypes.STRING,
+    gstin_status: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'GSTIN status (active, cancelled, etc.)',
+    },
+    is_primary: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      comment: 'Whether this is the primary GSTIN for the tenant',
+    },
     is_active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
@@ -476,6 +487,12 @@ module.exports = (sequelize) => {
       type: DataTypes.DECIMAL(15, 3),
       defaultValue: 0,
       comment: 'Quantity to reorder when stock falls below reorder level',
+    },
+    is_serialized: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false,
+      comment: 'Whether this item requires individual unit tracking with unique barcodes',
     },
     is_active: {
       type: DataTypes.BOOLEAN,

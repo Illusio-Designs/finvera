@@ -663,7 +663,10 @@ module.exports = {
         legal_name: { type: Sequelize.STRING, allowNull: false },
         trade_name: { type: Sequelize.STRING, allowNull: true },
         address: { type: Sequelize.TEXT, allowNull: true },
+        state: { type: Sequelize.STRING, allowNull: true },
         state_code: { type: Sequelize.STRING(2), allowNull: false },
+        gstin_status: { type: Sequelize.STRING, allowNull: true, comment: 'GSTIN status (active, cancelled, etc.)' },
+        is_primary: { type: Sequelize.BOOLEAN, defaultValue: false, comment: 'Whether this is the primary GSTIN for the tenant' },
         is_active: { type: Sequelize.BOOLEAN, defaultValue: true },
         tenant_id: { type: Sequelize.STRING, allowNull: false },
         createdAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
@@ -678,6 +681,32 @@ module.exports = {
       // Add missing columns if they don't exist
       try {
         const tableDesc = await queryInterface.describeTable('gstins');
+        
+        if (!tableDesc.state) {
+          await queryInterface.addColumn('gstins', 'state', {
+            type: Sequelize.STRING,
+            allowNull: true,
+          });
+          console.log('✓ Added state column to gstins');
+        }
+        
+        if (!tableDesc.gstin_status) {
+          await queryInterface.addColumn('gstins', 'gstin_status', {
+            type: Sequelize.STRING,
+            allowNull: true,
+            comment: 'GSTIN status (active, cancelled, etc.)',
+          });
+          console.log('✓ Added gstin_status column to gstins');
+        }
+        
+        if (!tableDesc.is_primary) {
+          await queryInterface.addColumn('gstins', 'is_primary', {
+            type: Sequelize.BOOLEAN,
+            defaultValue: false,
+            comment: 'Whether this is the primary GSTIN for the tenant',
+          });
+          console.log('✓ Added is_primary column to gstins');
+        }
         
         if (!tableDesc.is_active) {
           await queryInterface.addColumn('gstins', 'is_active', {

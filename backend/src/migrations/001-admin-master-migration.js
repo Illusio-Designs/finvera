@@ -129,54 +129,98 @@ module.exports = {
           primaryKey: true,
         },
         company_name: {
-          type: Sequelize.STRING,
+          type: Sequelize.TEXT,
           allowNull: false,
+          comment: 'Changed to TEXT to reduce row size',
         },
         subdomain: {
           type: Sequelize.STRING(50),
-          unique: true,
           allowNull: false,
+          comment: 'Unique subdomain for tenant (e.g., acme.finvera.com)',
         },
+        
+        // Database connection info
         db_name: {
           type: Sequelize.STRING(100),
-          allowNull: false,
-          unique: true,
+          allowNull: true,
+          comment: 'Legacy: previously used as tenant database name. Now databases are provisioned per company.',
         },
         db_host: {
-          type: Sequelize.STRING(255),
-          defaultValue: 'localhost',
+          type: Sequelize.TEXT,
+          defaultValue: process.env.DB_HOST || 'localhost',
+          comment: 'Changed to TEXT to reduce row size',
         },
         db_port: {
           type: Sequelize.INTEGER,
-          defaultValue: 3306,
+          defaultValue: parseInt(process.env.DB_PORT) || 3306,
         },
         db_user: {
           type: Sequelize.STRING(100),
-          allowNull: false,
+          allowNull: true,
         },
         db_password: {
-          type: Sequelize.STRING(255),
-          allowNull: false,
+          type: Sequelize.TEXT,
+          allowNull: true,
+          comment: 'Legacy: previously used for tenant database. Changed to TEXT to reduce row size.',
         },
+        
+        // Tenant metadata
         gstin: {
           type: Sequelize.STRING(15),
-          unique: true,
+          comment: 'Primary GSTIN for the company',
         },
-        pan: Sequelize.STRING(10),
-        tan: Sequelize.STRING(10),
-        subscription_plan: Sequelize.STRING(50),
-        subscription_start: Sequelize.DATE,
-        subscription_end: Sequelize.DATE,
+        pan: {
+          type: Sequelize.STRING(10),
+        },
+        tan: {
+          type: Sequelize.STRING(10),
+          comment: 'TAN for TDS',
+        },
+        
+        // Subscription info
+        subscription_plan: {
+          type: Sequelize.STRING(50),
+        },
+        subscription_start: {
+          type: Sequelize.DATE,
+        },
+        subscription_end: {
+          type: Sequelize.DATE,
+        },
         is_trial: {
           type: Sequelize.BOOLEAN,
           defaultValue: false,
         },
-        trial_ends_at: Sequelize.DATE,
-        salesman_id: Sequelize.UUID,
-        distributor_id: Sequelize.UUID,
-        referral_code: Sequelize.STRING(20),
-        referred_by: Sequelize.UUID,
-        referral_type: Sequelize.ENUM('salesman', 'distributor', 'tenant'),
+        trial_ends_at: {
+          type: Sequelize.DATE,
+        },
+        
+        // Referral info
+        salesman_id: {
+          type: Sequelize.UUID,
+          comment: 'ID of salesman who acquired this tenant',
+        },
+        distributor_id: {
+          type: Sequelize.UUID,
+          comment: 'ID of distributor who acquired this tenant',
+        },
+        referral_code: {
+          type: Sequelize.STRING(20),
+        },
+        referred_by: {
+          type: Sequelize.UUID,
+          comment: 'Tenant ID who referred this tenant',
+        },
+        referral_type: {
+          type: Sequelize.ENUM('salesman', 'distributor', 'tenant'),
+        },
+        acquisition_category: {
+          type: Sequelize.ENUM('distributor', 'salesman', 'referral', 'organic'),
+          defaultValue: 'organic',
+          comment: 'How the tenant was acquired: distributor (from distributor), salesman (from salesman), referral (from referral code), organic (direct from website)',
+        },
+        
+        // Contact info
         address: Sequelize.TEXT,
         city: Sequelize.STRING(100),
         state: Sequelize.STRING(100),
@@ -185,7 +229,10 @@ module.exports = {
         email: {
           type: Sequelize.STRING(255),
           allowNull: false,
+          comment: 'Email address (VARCHAR for index compatibility)',
         },
+        
+        // Status
         is_active: {
           type: Sequelize.BOOLEAN,
           defaultValue: true,
@@ -195,35 +242,44 @@ module.exports = {
           defaultValue: false,
         },
         suspended_reason: Sequelize.TEXT,
+        
+        // Database provisioning status
         db_provisioned: {
           type: Sequelize.BOOLEAN,
           defaultValue: false,
+          comment: 'Whether database has been created and initialized',
         },
-        db_provisioned_at: Sequelize.DATE,
+        db_provisioned_at: {
+          type: Sequelize.DATE,
+        },
+        
+        // Storage and limits
         storage_limit_mb: {
           type: Sequelize.INTEGER,
-          defaultValue: 1024,
+          defaultValue: 1024, // 1GB default
         },
         storage_used_mb: {
           type: Sequelize.INTEGER,
           defaultValue: 0,
         },
+        
+        // Razorpay integration
+        razorpay_customer_id: {
+          type: Sequelize.TEXT,
+          allowNull: true,
+          comment: 'Razorpay customer ID for payment processing',
+        },
+        razorpay_subscription_id: {
+          type: Sequelize.TEXT,
+          allowNull: true,
+          comment: 'Razorpay subscription ID for recurring payments',
+        },
+        
+        // Metadata
         settings: {
           type: Sequelize.JSON,
           defaultValue: {},
-        },
-        acquisition_category: {
-          type: Sequelize.ENUM('distributor', 'salesman', 'referral', 'organic'),
-          defaultValue: 'organic',
-          allowNull: false,
-        },
-        razorpay_customer_id: {
-          type: Sequelize.STRING(255),
-          allowNull: true,
-        },
-        razorpay_subscription_id: {
-          type: Sequelize.STRING(255),
-          allowNull: true,
+          comment: 'Additional tenant-specific settings',
         },
         created_at: {
           type: Sequelize.DATE,
@@ -235,13 +291,14 @@ module.exports = {
         },
       });
 
-      await addIndexIfNotExists('tenant_master', ['subdomain']);
-      await addIndexIfNotExists('tenant_master', ['db_name']);
-      await addIndexIfNotExists('tenant_master', ['gstin']);
-      await addIndexIfNotExists('tenant_master', ['email']);
-      await addIndexIfNotExists('tenant_master', ['is_active']);
-      await addIndexIfNotExists('tenant_master', ['subscription_end']);
-      await addIndexIfNotExists('tenant_master', ['acquisition_category']);
+      // Only keep essential unique indexes - these are critical for data integrity
+      await addIndexIfNotExists('tenant_master', ['subdomain'], { unique: true, name: 'idx_tenant_master_subdomain_unique' });
+      await addIndexIfNotExists('tenant_master', ['db_name'], { unique: true, name: 'idx_tenant_master_db_name_unique' });
+      // Keep only most frequently queried non-unique indexes
+      await addIndexIfNotExists('tenant_master', ['email'], { name: 'idx_tenant_master_email' });
+      await addIndexIfNotExists('tenant_master', ['is_active'], { name: 'idx_tenant_master_is_active' });
+      // Removed other indexes to stay under MySQL's 64-index limit
+      // acquisition_category, gstin, subscription_end can be queried without dedicated indexes
     } else {
       // Add missing columns if table exists
       await addColumnIfNotExists('tenant_master', 'acquisition_category', {
@@ -271,11 +328,15 @@ module.exports = {
         tenant_id: {
           type: Sequelize.UUID,
           allowNull: false,
+          comment: 'TenantMaster.id',
         },
         created_by_user_id: {
           type: Sequelize.UUID,
           allowNull: false,
+          comment: 'users.id (main database) who created this company',
         },
+        
+        // Basic Company Information
         company_name: {
           type: Sequelize.STRING,
           allowNull: false,
@@ -292,45 +353,137 @@ module.exports = {
           ),
           allowNull: false,
         },
-        registration_number: Sequelize.STRING(50),
-        incorporation_date: Sequelize.DATEONLY,
-        pan: Sequelize.STRING(10),
-        tan: Sequelize.STRING(10),
-        gstin: Sequelize.STRING(15),
+        registration_number: {
+          type: Sequelize.STRING(50),
+          allowNull: true,
+          comment: 'CIN / LLPIN / other registration number',
+        },
+        incorporation_date: {
+          type: Sequelize.DATEONLY,
+          allowNull: true,
+        },
+        pan: {
+          type: Sequelize.STRING(10),
+          allowNull: true,
+        },
+        tan: {
+          type: Sequelize.STRING(10),
+          allowNull: true,
+        },
+        gstin: {
+          type: Sequelize.STRING(15),
+          allowNull: true,
+        },
         is_composition_dealer: {
           type: Sequelize.BOOLEAN,
           defaultValue: false,
           allowNull: false,
           comment: 'Whether the company is registered as a composition dealer under GST',
         },
-        registered_address: Sequelize.TEXT,
-        state: Sequelize.STRING(100),
-        pincode: Sequelize.STRING(10),
-        contact_number: Sequelize.STRING(15),
-        email: Sequelize.STRING(255),
-        principals: Sequelize.JSON,
-        financial_year_start: Sequelize.DATEONLY,
-        financial_year_end: Sequelize.DATEONLY,
-        authorized_capital: Sequelize.DECIMAL(18, 2),
-        accounting_method: Sequelize.ENUM('cash', 'accrual'),
+        
+        // Registered Office Details
+        registered_address: {
+          type: Sequelize.TEXT,
+          allowNull: true,
+        },
+        state: {
+          type: Sequelize.STRING(100),
+          allowNull: true,
+        },
+        pincode: {
+          type: Sequelize.STRING(10),
+          allowNull: true,
+        },
+        contact_number: {
+          type: Sequelize.STRING(15),
+          allowNull: true,
+        },
+        email: {
+          type: Sequelize.STRING(255),
+          allowNull: true,
+        },
+        logo_url: {
+          type: Sequelize.STRING(500),
+          allowNull: true,
+          comment: 'URL path to company logo image',
+        },
+        
+        // Director/Partner/Proprietor Information (store as JSON array)
+        principals: {
+          type: Sequelize.JSON,
+          allowNull: true,
+          comment: 'Array of directors/partners/proprietor objects (name, din, pan, contact, address, etc.)',
+        },
+        
+        // Financial Details
+        financial_year_start: {
+          type: Sequelize.DATEONLY,
+          allowNull: true,
+        },
+        financial_year_end: {
+          type: Sequelize.DATEONLY,
+          allowNull: true,
+        },
+        authorized_capital: {
+          type: Sequelize.DECIMAL(18, 2),
+          allowNull: true,
+        },
+        accounting_method: {
+          type: Sequelize.ENUM('cash', 'accrual'),
+          allowNull: true,
+        },
         currency: {
           type: Sequelize.STRING(3),
           allowNull: false,
           defaultValue: 'INR',
         },
-        books_beginning_date: Sequelize.DATEONLY,
-        bank_details: Sequelize.JSON,
-        compliance: Sequelize.JSON,
-        db_name: Sequelize.STRING(100),
-        db_host: Sequelize.STRING(255),
-        db_port: Sequelize.INTEGER,
-        db_user: Sequelize.STRING(100),
-        db_password: Sequelize.STRING(255),
+        books_beginning_date: {
+          type: Sequelize.DATEONLY,
+          allowNull: true,
+        },
+        
+        // Banking + Compliance (JSON blobs)
+        bank_details: {
+          type: Sequelize.JSON,
+          allowNull: true,
+        },
+        compliance: {
+          type: Sequelize.JSON,
+          allowNull: true,
+        },
+        
+        // Track provisioning status at company level (mirrors tenant provisioning for now)
+        // Database connection info (per company)
+        db_name: {
+          type: Sequelize.STRING(100),
+          allowNull: true,
+        },
+        db_host: {
+          type: Sequelize.STRING(255),
+          allowNull: true,
+        },
+        db_port: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+        db_user: {
+          type: Sequelize.STRING(100),
+          allowNull: true,
+        },
+        db_password: {
+          type: Sequelize.STRING(255),
+          allowNull: true,
+          comment: 'Encrypted password for company database',
+        },
         db_provisioned: {
           type: Sequelize.BOOLEAN,
           defaultValue: false,
         },
-        db_provisioned_at: Sequelize.DATE,
+        db_provisioned_at: {
+          type: Sequelize.DATE,
+          allowNull: true,
+        },
+        
         is_active: {
           type: Sequelize.BOOLEAN,
           defaultValue: true,
@@ -350,6 +503,13 @@ module.exports = {
         defaultValue: false,
         allowNull: false,
         comment: 'Whether the company is registered as a composition dealer under GST',
+      });
+      
+      // Add logo_url column if it doesn't exist
+      await addColumnIfNotExists('companies', 'logo_url', {
+        type: Sequelize.STRING(500),
+        allowNull: true,
+        comment: 'URL path to company logo image',
       });
     }
 
