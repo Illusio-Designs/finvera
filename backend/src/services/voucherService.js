@@ -914,16 +914,16 @@ class VoucherService {
       narration
     } = voucherData;
 
-    // Use Purchase Account for expense tracking
-    const purchaseLedger = await getOrCreateSystemLedger(
+    // Use Stock in Hand for perpetual inventory tracking
+    const inventoryLedger = await getOrCreateSystemLedger(
       { tenantModels, masterModels, tenant_id },
-      { ledgerCode: 'PURCHASE', ledgerName: 'Purchase Account', groupCode: 'PUR' }
+      { ledgerCode: 'INVENTORY', ledgerName: 'Stock in Hand', groupCode: 'INV' }
     );
     ledgerEntries.push({
-      ledger_id: purchaseLedger.id,
+      ledger_id: inventoryLedger.id,
       debit_amount: subtotal,
       credit_amount: 0,
-      narration: 'Purchase of goods',
+      narration: 'Inventory purchase',
     });
 
     // GST input ledger entries (different for reverse charge)
@@ -1752,6 +1752,18 @@ class VoucherService {
     const roundedTotal = GSTCalculationService.roundOff(grandTotal);
     const roundOffAmount = roundedTotal - grandTotal;
 
+    // Calculate COGS for perpetual inventory
+    let totalCOGS = 0;
+    for (const item of processedItems) {
+      if (item.inventory_item_id) {
+        const inventoryItem = await tenantModels.InventoryItem.findByPk(item.inventory_item_id);
+        if (inventoryItem) {
+          const itemCOGS = toNum(inventoryItem.avg_cost, 0) * toNum(item.quantity, 0);
+          totalCOGS += itemCOGS;
+        }
+      }
+    }
+
     const salesLedger = await getOrCreateSystemLedger(
       { tenantModels, masterModels, tenant_id },
       { ledgerCode: 'SALES', ledgerName: 'Sales', groupCode: 'SAL' }
@@ -1771,6 +1783,31 @@ class VoucherService {
         narration: 'Sales revenue',
       },
     ];
+
+    // Add COGS entry for perpetual inventory
+    if (totalCOGS > 0) {
+      const cogsLedger = await getOrCreateSystemLedger(
+        { tenantModels, masterModels, tenant_id },
+        { ledgerCode: 'COGS', ledgerName: 'Cost of Goods Sold', groupCode: 'DIR_EXP' }
+      );
+      const inventoryLedger = await getOrCreateSystemLedger(
+        { tenantModels, masterModels, tenant_id },
+        { ledgerCode: 'INVENTORY', ledgerName: 'Stock in Hand', groupCode: 'INV' }
+      );
+      
+      ledgerEntries.push({
+        ledger_id: cogsLedger.id,
+        debit_amount: totalCOGS,
+        credit_amount: 0,
+        narration: 'Cost of goods sold',
+      });
+      ledgerEntries.push({
+        ledger_id: inventoryLedger.id,
+        debit_amount: 0,
+        credit_amount: totalCOGS,
+        narration: 'Inventory reduction on sale',
+      });
+    }
 
     if (totalCGST > 0) {
       const cgst = await getOrCreateSystemLedger(
@@ -1945,18 +1982,18 @@ class VoucherService {
     const roundedTotal = GSTCalculationService.roundOff(grandTotal);
     const roundOffAmount = roundedTotal - grandTotal;
 
-    // Use Purchase Account for expense tracking
-    const purchaseLedger = await getOrCreateSystemLedger(
+    // Use Stock in Hand for perpetual inventory tracking
+    const inventoryLedger = await getOrCreateSystemLedger(
       { tenantModels, masterModels, tenant_id },
-      { ledgerCode: 'PURCHASE', ledgerName: 'Purchase Account', groupCode: 'PUR' }
+      { ledgerCode: 'INVENTORY', ledgerName: 'Stock in Hand', groupCode: 'INV' }
     );
 
     const ledgerEntries = [
       { 
-        ledger_id: purchaseLedger.id, 
+        ledger_id: inventoryLedger.id, 
         debit_amount: subtotal, 
         credit_amount: 0, 
-        narration: 'Purchase of goods' 
+        narration: 'Inventory purchase' 
       },
     ];
 
