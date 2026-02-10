@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Modal, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { voucherAPI, accountingAPI, inventoryAPI } from '../../lib/api';
 import { FONT_STYLES } from '../../utils/fonts';
 import CreateInventoryItemModal from './CreateInventoryItemModal';
+import ModernDatePicker from '../ui/ModernDatePicker';
 
 export default function CreateSalesInvoiceModal({ 
   visible, 
@@ -61,10 +61,6 @@ export default function CreateSalesInvoiceModal({
   // Modal states
   const [showInvoiceTypeModal, setShowInvoiceTypeModal] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showDueDatePicker, setShowDueDatePicker] = useState(false);
-  const [showShippingDatePicker, setShowShippingDatePicker] = useState(false);
-  const [showValidUntilPicker, setShowValidUntilPicker] = useState(false);
   const [showPurposeModal, setShowPurposeModal] = useState(false);
   const [showTransportModeModal, setShowTransportModeModal] = useState(false);
   const [showCreateLedgerModal, setShowCreateLedgerModal] = useState(false);
@@ -349,38 +345,6 @@ export default function CreateSalesInvoiceModal({
     return `${day}/${month}/${year}`;
   };
 
-  const handleDateChange = (event, selectedDate) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      const dateString = selectedDate.toISOString().split('T')[0];
-      setFormData({ ...formData, voucher_date: dateString });
-    }
-  };
-
-  const handleDueDateChange = (event, selectedDate) => {
-    setShowDueDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      const dateString = selectedDate.toISOString().split('T')[0];
-      setFormData({ ...formData, due_date: dateString });
-    }
-  };
-
-  const handleShippingDateChange = (event, selectedDate) => {
-    setShowShippingDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      const dateString = selectedDate.toISOString().split('T')[0];
-      setFormData({ ...formData, shipping_bill_date: dateString });
-    }
-  };
-
-  const handleValidUntilChange = (event, selectedDate) => {
-    setShowValidUntilPicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      const dateString = selectedDate.toISOString().split('T')[0];
-      setFormData({ ...formData, valid_until: dateString });
-    }
-  };
-
   const getInvoiceTypeLabel = () => {
     const type = invoiceTypes.find(t => t.value === formData.voucher_type);
     return type ? type.label : 'Select Invoice Type';
@@ -453,14 +417,12 @@ export default function CreateSalesInvoiceModal({
 
           {/* Date */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Date *</Text>
-            <TouchableOpacity 
-              style={styles.selectButton}
-              onPress={() => setShowDatePicker(true)}
-            >
-              <Text style={styles.selectButtonText}>{formatDateDisplay(formData.voucher_date)}</Text>
-              <Ionicons name="calendar-outline" size={20} color="#6b7280" />
-            </TouchableOpacity>
+            <ModernDatePicker
+              label="Date *"
+              value={formData.voucher_date}
+              onDateChange={(date) => setFormData({ ...formData, voucher_date: date })}
+              placeholder="Select date"
+            />
           </View>
 
           {/* Customer Selection */}
@@ -514,16 +476,12 @@ export default function CreateSalesInvoiceModal({
           {/* Due Date (for invoices) */}
           {['sales_invoice', 'tax_invoice', 'purchase_invoice'].includes(formData.voucher_type) && (
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Due Date</Text>
-              <TouchableOpacity 
-                style={styles.selectButton}
-                onPress={() => setShowDueDatePicker(true)}
-              >
-                <Text style={[styles.selectButtonText, !formData.due_date && styles.placeholderText]}>
-                  {formData.due_date ? formatDateDisplay(formData.due_date) : 'Select due date (optional)'}
-                </Text>
-                <Ionicons name="calendar-outline" size={20} color="#6b7280" />
-              </TouchableOpacity>
+              <ModernDatePicker
+                label="Due Date"
+                value={formData.due_date}
+                onDateChange={(date) => setFormData({ ...formData, due_date: date })}
+                placeholder="Select due date (optional)"
+              />
             </View>
           )}
         </View>
@@ -658,16 +616,12 @@ export default function CreateSalesInvoiceModal({
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Shipping Bill Date</Text>
-              <TouchableOpacity 
-                style={styles.selectButton}
-                onPress={() => setShowShippingDatePicker(true)}
-              >
-                <Text style={[styles.selectButtonText, !formData.shipping_bill_date && styles.placeholderText]}>
-                  {formData.shipping_bill_date ? formatDateDisplay(formData.shipping_bill_date) : 'Select shipping bill date'}
-                </Text>
-                <Ionicons name="calendar-outline" size={20} color="#6b7280" />
-              </TouchableOpacity>
+              <ModernDatePicker
+                label="Shipping Bill Date"
+                value={formData.shipping_bill_date}
+                onDateChange={(date) => setFormData({ ...formData, shipping_bill_date: date })}
+                placeholder="Select shipping bill date"
+              />
             </View>
 
             <View style={styles.formGroup}>
@@ -741,16 +695,12 @@ export default function CreateSalesInvoiceModal({
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Valid Until</Text>
-              <TouchableOpacity 
-                style={styles.selectButton}
-                onPress={() => setShowValidUntilPicker(true)}
-              >
-                <Text style={[styles.selectButtonText, !formData.valid_until && styles.placeholderText]}>
-                  {formData.valid_until ? formatDateDisplay(formData.valid_until) : 'Select valid until date'}
-                </Text>
-                <Ionicons name="calendar-outline" size={20} color="#6b7280" />
-              </TouchableOpacity>
+              <ModernDatePicker
+                label="Valid Until"
+                value={formData.valid_until}
+                onDateChange={(date) => setFormData({ ...formData, valid_until: date })}
+                placeholder="Select valid until date"
+              />
             </View>
           </View>
         )}
@@ -849,46 +799,6 @@ export default function CreateSalesInvoiceModal({
           </Text>
         </TouchableOpacity>
       </View>
-
-      {/* Date Picker */}
-      {showDatePicker && (
-        <DateTimePicker
-          value={new Date(formData.voucher_date)}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={handleDateChange}
-        />
-      )}
-
-      {/* Due Date Picker */}
-      {showDueDatePicker && (
-        <DateTimePicker
-          value={formData.due_date ? new Date(formData.due_date) : new Date()}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={handleDueDateChange}
-        />
-      )}
-
-      {/* Shipping Date Picker */}
-      {showShippingDatePicker && (
-        <DateTimePicker
-          value={formData.shipping_bill_date ? new Date(formData.shipping_bill_date) : new Date()}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={handleShippingDateChange}
-        />
-      )}
-
-      {/* Valid Until Date Picker */}
-      {showValidUntilPicker && (
-        <DateTimePicker
-          value={formData.valid_until ? new Date(formData.valid_until) : new Date()}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={handleValidUntilChange}
-        />
-      )}
 
       {/* Invoice Type Modal */}
       <Modal

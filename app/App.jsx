@@ -90,7 +90,6 @@ import JournalScreen from './src/screens/client/vouchers/JournalScreen.jsx';
 import ContraScreen from './src/screens/client/vouchers/ContraScreen.jsx';
 import DebitNoteScreen from './src/screens/client/vouchers/DebitNoteScreen.jsx';
 import CreditNoteScreen from './src/screens/client/vouchers/CreditNoteScreen.jsx';
-import CreditNoteFormScreen from './src/screens/client/vouchers/CreditNoteFormScreen.jsx';
 import PurchaseInvoiceScreen from './src/screens/client/vouchers/PurchaseInvoiceScreen.jsx';
 import SalesInvoiceScreen from './src/screens/client/vouchers/SalesInvoiceScreen.jsx';
 
@@ -365,7 +364,6 @@ function AppNavigator() {
             <Stack.Screen name="Contra" component={ContraScreen} />
             <Stack.Screen name="DebitNote" component={DebitNoteScreen} />
             <Stack.Screen name="CreditNote" component={CreditNoteScreen} />
-            <Stack.Screen name="CreditNoteForm" component={CreditNoteFormScreen} />
             <Stack.Screen name="PurchaseInvoice" component={PurchaseInvoiceScreen} />
             <Stack.Screen name="SalesInvoice" component={SalesInvoiceScreen} />
             

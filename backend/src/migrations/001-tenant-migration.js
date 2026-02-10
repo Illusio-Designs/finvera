@@ -370,6 +370,11 @@ module.exports = {
         gst_rate: { type: Sequelize.DECIMAL(6, 2), allowNull: true },
         quantity_on_hand: { type: Sequelize.DECIMAL(15, 3), defaultValue: 0 },
         avg_cost: { type: Sequelize.DECIMAL(15, 4), defaultValue: 0 },
+        mrp: { type: Sequelize.DECIMAL(15, 2), allowNull: true, comment: 'Maximum Retail Price' },
+        selling_price: { type: Sequelize.DECIMAL(15, 2), allowNull: true, comment: 'Default selling price' },
+        purchase_price: { type: Sequelize.DECIMAL(15, 2), allowNull: true, comment: 'Last purchase price' },
+        reorder_level: { type: Sequelize.DECIMAL(15, 3), defaultValue: 0, comment: 'Minimum stock level before reorder' },
+        reorder_quantity: { type: Sequelize.DECIMAL(15, 3), defaultValue: 0, comment: 'Quantity to reorder when stock falls below reorder level' },
         is_serialized: { type: Sequelize.BOOLEAN, defaultValue: false, allowNull: false, comment: 'Whether this item requires individual unit tracking with unique barcodes' },
         is_active: { type: Sequelize.BOOLEAN, defaultValue: true },
         createdAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
@@ -381,6 +386,11 @@ module.exports = {
       await addColumnIfNotExists('inventory_items', 'attributes', { type: Sequelize.JSON, allowNull: true, comment: 'JSON object for variant attributes, e.g. {"Size": "M", "Color": "Blue"}' });
       await addColumnIfNotExists('inventory_items', 'parent_item_id', { type: Sequelize.UUID, allowNull: true, references: { model: 'inventory_items', key: 'id' }, onDelete: 'SET NULL' });
       await addColumnIfNotExists('inventory_items', 'is_serialized', { type: Sequelize.BOOLEAN, defaultValue: false, allowNull: false, comment: 'Whether this item requires individual unit tracking with unique barcodes' });
+      await addColumnIfNotExists('inventory_items', 'mrp', { type: Sequelize.DECIMAL(15, 2), allowNull: true, comment: 'Maximum Retail Price' });
+      await addColumnIfNotExists('inventory_items', 'selling_price', { type: Sequelize.DECIMAL(15, 2), allowNull: true, comment: 'Default selling price' });
+      await addColumnIfNotExists('inventory_items', 'purchase_price', { type: Sequelize.DECIMAL(15, 2), allowNull: true, comment: 'Last purchase price' });
+      await addColumnIfNotExists('inventory_items', 'reorder_level', { type: Sequelize.DECIMAL(15, 3), defaultValue: 0, comment: 'Minimum stock level before reorder' });
+      await addColumnIfNotExists('inventory_items', 'reorder_quantity', { type: Sequelize.DECIMAL(15, 3), defaultValue: 0, comment: 'Quantity to reorder when stock falls below reorder level' });
       
       // Remove old column names if they exist
       try {
