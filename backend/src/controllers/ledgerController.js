@@ -492,6 +492,15 @@ module.exports = {
         currentBalance = openingBalance + totalCredit - totalDebit;
       }
 
+      // Determine the balance type based on the sign and ledger's natural type
+      let balanceType;
+      const isDebitLedger = ledger.balance_type === 'debit' || ledger.opening_balance_type === 'Dr';
+      if (currentBalance >= 0) {
+        balanceType = isDebitLedger ? 'debit' : 'credit';
+      } else {
+        balanceType = isDebitLedger ? 'credit' : 'debit';
+      }
+
       res.json({
         data: {
           ledger_id: id,
@@ -499,7 +508,7 @@ module.exports = {
           total_debit: totalDebit,
           total_credit: totalCredit,
           current_balance: Math.abs(currentBalance),
-          balance_type: currentBalance >= 0 ? 'debit' : 'credit',
+          balance_type: balanceType,
         },
       });
     } catch (error) {

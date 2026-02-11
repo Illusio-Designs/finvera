@@ -582,7 +582,7 @@ async function updateLedgerBalance(tenantModels, ledgerId, transaction) {
     // Update the ledger's current balance and balance type
     await ledger.update({
       current_balance: Math.abs(currentBalance),
-      current_balance_type: balanceType
+      balance_type: balanceType === 'Dr' ? 'debit' : 'credit'
     }, { transaction });
 
     logger.info(`Updated ledger balance for ${ledger.ledger_name}: ${Math.abs(currentBalance)} ${balanceType}`);

@@ -133,6 +133,43 @@ module.exports = {
             });
 
             if (!existingLedger) {
+              // Determine balance type based on account group nature and opening balance sign
+              const openingBalance = parseFloat(ledger.openingBalance || 0);
+              let openingBalanceType;
+              let balanceType;
+              
+              // Determine natural balance type from account group
+              const isNaturallyDebit = ['asset', 'expense'].includes(group.nature);
+              const isNaturallyCredit = ['liability', 'equity', 'income'].includes(group.nature);
+              
+              if (openingBalance >= 0) {
+                // Positive opening balance
+                if (isNaturallyDebit) {
+                  openingBalanceType = 'Dr';
+                  balanceType = 'debit';
+                } else if (isNaturallyCredit) {
+                  openingBalanceType = 'Cr';
+                  balanceType = 'credit';
+                } else {
+                  // Default to debit for unknown nature
+                  openingBalanceType = 'Dr';
+                  balanceType = 'debit';
+                }
+              } else {
+                // Negative opening balance (contra to natural type)
+                if (isNaturallyDebit) {
+                  openingBalanceType = 'Cr';
+                  balanceType = 'credit';
+                } else if (isNaturallyCredit) {
+                  openingBalanceType = 'Dr';
+                  balanceType = 'debit';
+                } else {
+                  // Default to credit for unknown nature
+                  openingBalanceType = 'Cr';
+                  balanceType = 'credit';
+                }
+              }
+              
               await tenantModels.Ledger.create({
                 ledger_name: ledger.name,
                 account_group_id: group.id,
@@ -143,9 +180,9 @@ module.exports = {
                 pan: ledger.pan,
                 email: ledger.email,
                 contact_number: ledger.phone,
-                opening_balance: ledger.openingBalance || 0,
-                opening_balance_type: ledger.openingBalance >= 0 ? 'Dr' : 'Cr',
-                balance_type: ledger.openingBalance >= 0 ? 'debit' : 'credit',
+                opening_balance: Math.abs(openingBalance),
+                opening_balance_type: openingBalanceType,
+                balance_type: balanceType,
                 is_default: ledger.isDefault || false,
                 tenant_id: req.tenant_id || req.tenant?.id || req.company?.tenant_id, // Ensure tenant_id is set
               });

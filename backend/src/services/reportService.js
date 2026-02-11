@@ -41,17 +41,27 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
     // Build voucher where clause for date range
     const voucherWhere = { status: 'posted' };
     if (startDate && endDate) {
-      voucherWhere.voucher_date = { [Op.between]: [startDate, endDate] };
+      // Ensure we include the entire end date by adding time
+      const endDateTime = endDate + ' 23:59:59';
+      voucherWhere.voucher_date = { [Op.between]: [startDate, endDateTime] };
+      logger.debug(`Date range: ${startDate} to ${endDateTime}`);
     }
     
     // STEP 1: Get posted voucher IDs for the period
     const postedVouchers = await tenantModels.Voucher.findAll({
       where: voucherWhere,
-      attributes: ['id'],
+      attributes: ['id', 'voucher_date', 'voucher_number'],
       raw: true
     });
     
     const voucherIds = postedVouchers.map(v => v.id);
+    
+    if (postedVouchers.length > 0) {
+      logger.info(`Found ${postedVouchers.length} posted vouchers in period`);
+      logger.debug(`First voucher: ${postedVouchers[0].voucher_number} on ${postedVouchers[0].voucher_date}`);
+    } else {
+      logger.warn(`No posted vouchers found for period ${startDate} to ${endDate}`);
+    }
     
     // STEP 2: Get ledger movements for these vouchers
     let ledgerEntries = [];
@@ -182,6 +192,13 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
     const netProfitMargin = netSales > 0 ? (netProfit / netSales * 100) : 0;
     const cogsPercentage = netSales > 0 ? (cogs / netSales * 100) : 0;
     
+    // Calculate totals for left and right sides (Tally-style format)
+    // Left side: Opening Stock + Purchases + Direct Expenses + Indirect Expenses + Net Profit (if profit)
+    const totalLeftSide = openingStock + netPurchases + totalDirectExpenses + totalIndirectExpenses + (netProfit > 0 ? netProfit : 0);
+    
+    // Right side: Sales + Closing Stock + Other Incomes + Net Loss (if loss)
+    const totalRightSide = netSales + closingStock + totalOtherIncomes + (netProfit < 0 ? Math.abs(netProfit) : 0);
+    
     return {
       period: {
         from: startDate,
@@ -227,7 +244,9 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
         gross_profit: grossProfit,
         net_profit: netProfit,
         gross_profit_margin: grossProfitMargin,
-        net_profit_margin: netProfitMargin
+        net_profit_margin: netProfitMargin,
+        total_left_side: totalLeftSide,
+        total_right_side: totalRightSide
       },
       // Keep new structure for backward compatibility
       revenue: {
@@ -332,8 +351,17 @@ async function generateBalanceSheetReport(tenantModels, masterModels, options = 
       
       let signedBalance = 0;
       
+      // Special handling for tax groups - they can be either asset or liability
+      if (group.is_tax_group) {
+        // Tax ledgers with debit balance are assets (tax credit receivable)
+        // Tax ledgers with credit balance are liabilities (tax payable)
+        signedBalance = balanceType === 'debit' ? rawBalance : -rawBalance;
+        // We'll skip individual tax ledgers and calculate net GST later
+        // So don't add them to any category here
+        return;
+      }
       // Determine signed balance based on group nature
-      if (group.nature === 'asset') {
+      else if (group.nature === 'asset') {
         signedBalance = balanceType === 'debit' ? rawBalance : -rawBalance;
       } else if (group.nature === 'liability' || group.nature === 'equity') {
         signedBalance = balanceType === 'credit' ? rawBalance : -rawBalance;
@@ -586,7 +614,7 @@ async function generateTrialBalanceReport(tenantModels, masterModels, options = 
     // Get movements up to asOnDate
     const voucherWhere = { 
       status: 'posted',
-      voucher_date: { [Op.lte]: asOn }
+      voucher_date: { [Op.lte]: asOn + ' 23:59:59' }
     };
     
     // STEP 1: Get posted voucher IDs up to the date
