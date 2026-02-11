@@ -347,8 +347,34 @@ async function generateReceiptEntries(tenantModels, voucher, items, transaction)
  * Generate ledger entries for Journal Voucher
  */
 async function generateJournalEntries(tenantModels, voucher, items, transaction) {
-  // Journal entries are typically manually created
-  // Return empty array as they should be provided in the request
+  // Journal entries can be provided manually in ledger_entries
+  // Or we can generate them if debit_ledger_id and credit_ledger_id are provided
+  
+  // Check if voucher has debit_ledger_id and credit_ledger_id (legacy format)
+  if (voucher.debit_ledger_id && voucher.credit_ledger_id) {
+    logger.info('Journal voucher - generating entries from debit/credit ledger IDs');
+    
+    const amount = parseFloat(voucher.total_amount || voucher.amount || 0);
+    
+    return [
+      {
+        ledger_id: voucher.debit_ledger_id,
+        debit_amount: amount,
+        credit_amount: 0,
+        narration: voucher.narration || 'Debit entry',
+        tenant_id: voucher.tenant_id
+      },
+      {
+        ledger_id: voucher.credit_ledger_id,
+        debit_amount: 0,
+        credit_amount: amount,
+        narration: voucher.narration || 'Credit entry',
+        tenant_id: voucher.tenant_id
+      }
+    ];
+  }
+  
+  // Otherwise, ledger entries should be provided manually in the request
   logger.info('Journal voucher - ledger entries should be provided manually');
   return [];
 }

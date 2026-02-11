@@ -476,6 +476,34 @@ module.exports = {
         }
       }
       
+      // Auto-generate ledger entries for journal/payment/receipt vouchers without items
+      if ((!req.body.items || req.body.items.length === 0) && 
+          (!req.body.ledger_entries || req.body.ledger_entries.length === 0)) {
+        const voucherType = voucher.voucher_type?.toLowerCase();
+        if (['journal', 'payment', 'receipt', 'contra'].includes(voucherType)) {
+          console.log('📊 Auto-generating ledger entries for', voucherType, '...');
+          const autoLedgerEntries = await generateLedgerEntriesByType(
+            req.tenantModels, 
+            voucher, 
+            [], 
+            transaction
+          );
+          
+          if (autoLedgerEntries.length > 0) {
+            await req.tenantModels.VoucherLedgerEntry.bulkCreate(autoLedgerEntries, { transaction });
+            console.log('✅ Auto-generated', autoLedgerEntries.length, 'ledger entries');
+            
+            // Update ledger balances
+            console.log('💰 Updating ledger balances...');
+            const uniqueLedgerIds = [...new Set(autoLedgerEntries.map(entry => entry.ledger_id))];
+            for (const ledgerId of uniqueLedgerIds) {
+              await updateLedgerBalance(req.tenantModels, ledgerId, transaction);
+            }
+            console.log('✅ Ledger balances updated successfully');
+          }
+        }
+      }
+      
       // Create ledger entries if provided manually
       if (req.body.ledger_entries && req.body.ledger_entries.length > 0) {
         console.log('📊 Creating ledger entries...', req.body.ledger_entries.length, 'entries');

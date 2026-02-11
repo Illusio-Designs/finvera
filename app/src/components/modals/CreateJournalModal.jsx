@@ -113,11 +113,31 @@ export default function CreateJournalModal({
 
     try {
       setLoading(true);
+      const amount = parseFloat(formData.amount);
+      
+      // Create ledger entries array for journal entry
+      const ledger_entries = [
+        {
+          ledger_id: formData.debit_ledger_id,
+          debit_amount: amount,
+          credit_amount: 0,
+          narration: formData.narration || 'Debit entry'
+        },
+        {
+          ledger_id: formData.credit_ledger_id,
+          debit_amount: 0,
+          credit_amount: amount,
+          narration: formData.narration || 'Credit entry'
+        }
+      ];
+      
       const payload = {
-        ...formData,
-        amount: parseFloat(formData.amount),
-        total_amount: parseFloat(formData.amount),
+        voucher_type: 'journal',
+        voucher_date: formData.voucher_date,
+        narration: formData.narration,
+        total_amount: amount,
         status: status,
+        ledger_entries: ledger_entries
       };
 
       await voucherAPI.create(payload);
