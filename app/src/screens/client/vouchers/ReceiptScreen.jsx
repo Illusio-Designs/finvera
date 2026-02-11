@@ -20,6 +20,8 @@ export default function ReceiptScreen() {
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [filter, setFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editVoucher, setEditVoucher] = useState(null);
 
   const handleMenuPress = () => {
     openDrawer();
@@ -77,6 +79,8 @@ export default function ReceiptScreen() {
   };
 
   const handleCreateReceipt = () => {
+    setEditMode(false);
+    setEditVoucher(null);
     setShowCreateModal(true);
   };
 
@@ -84,12 +88,10 @@ export default function ReceiptScreen() {
     fetchVouchers();
   };
 
-  const handleEditVoucher = () => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Edit receipt feature coming soon'
-    });
+  const handleEditVoucher = (voucher) => {
+    setEditMode(true);
+    setEditVoucher(voucher);
+    setShowCreateModal(true);
   };
 
   const handleDeleteVoucher = () => {
@@ -254,7 +256,7 @@ export default function ReceiptScreen() {
                     style={styles.actionButton}
                     onPress={(e) => {
                       e.stopPropagation();
-                      handleEditVoucher();
+                      handleEditVoucher(voucher);
                     }}
                   >
                     <Ionicons name="create-outline" size={16} color="#059669" />
@@ -365,6 +367,8 @@ export default function ReceiptScreen() {
         visible={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onReceiptCreated={handleReceiptCreated}
+        editMode={editMode}
+        voucherData={editVoucher}
       />
     </View>
   );

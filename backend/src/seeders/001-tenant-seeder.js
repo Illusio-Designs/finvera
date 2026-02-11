@@ -77,10 +77,16 @@ module.exports = {
       // Stock in Hand
       addLedger('INV-001', 'Stock in Hand', 'INV', 'Dr');
 
-      // GST Ledgers (Input - Debit, Output - Credit)
-      addLedger('CGST-001', 'CGST', 'DT', 'Cr');
-      addLedger('SGST-001', 'SGST', 'DT', 'Cr');
-      addLedger('IGST-001', 'IGST', 'DT', 'Cr');
+      // GST Ledgers - Separate Input (Asset) and Output (Liability)
+      // Input GST = Debit balance (Asset - Input Tax Credit)
+      addLedger('CGST-INPUT', 'Input CGST', 'DT', 'Dr');
+      addLedger('SGST-INPUT', 'Input SGST', 'DT', 'Dr');
+      addLedger('IGST-INPUT', 'Input IGST', 'DT', 'Dr');
+      
+      // Output GST = Credit balance (Liability - Output Tax)
+      addLedger('CGST-OUTPUT', 'Output CGST', 'DT', 'Cr');
+      addLedger('SGST-OUTPUT', 'Output SGST', 'DT', 'Cr');
+      addLedger('IGST-OUTPUT', 'Output IGST', 'DT', 'Cr');
 
       // Insert default ledgers (check for existing first to avoid duplicates)
       if (defaultLedgers.length > 0) {

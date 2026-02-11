@@ -10,6 +10,8 @@ export default function CreateReceiptModal({
   visible, 
   onClose, 
   onReceiptCreated,
+  editMode = false,
+  voucherData = null,
 }) {
   const { showNotification } = useNotification();
   
@@ -17,33 +19,53 @@ export default function CreateReceiptModal({
     voucher_type: 'receipt',
     voucher_date: new Date().toISOString().split('T')[0],
     party_ledger_id: '',
+    bank_ledger_id: '',
     amount: '0',
     narration: '',
     status: 'draft',
-    payment_mode: 'cash',
   });
   
   const [ledgers, setLedgers] = useState([]);
+  const [bankCashLedgers, setBankCashLedgers] = useState([]);
   const [loadingLedgers, setLoadingLedgers] = useState(true);
   const [loading, setLoading] = useState(false);
   const [showLedgerModal, setShowLedgerModal] = useState(false);
+  const [showBankCashLedgerModal, setShowBankCashLedgerModal] = useState(false);
 
   useEffect(() => {
     if (visible) {
       fetchLedgers();
-      resetForm();
+      if (editMode && voucherData) {
+        loadVoucherData();
+      } else {
+        resetForm();
+      }
     }
-  }, [visible]);
+  }, [visible, editMode, voucherData]);
 
   const resetForm = () => {
     setFormData({
       voucher_type: 'receipt',
       voucher_date: new Date().toISOString().split('T')[0],
       party_ledger_id: '',
+      bank_ledger_id: '',
       amount: '0',
       narration: '',
       status: 'draft',
-      payment_mode: 'cash',
+    });
+  };
+
+  const loadVoucherData = () => {
+    if (!voucherData) return;
+    
+    setFormData({
+      voucher_type: 'receipt',
+      voucher_date: voucherData.voucher_date || new Date().toISOString().split('T')[0],
+      party_ledger_id: voucherData.party_ledger_id || '',
+      bank_ledger_id: voucherData.bank_ledger_id || '',
+      amount: String(voucherData.amount || voucherData.total_amount || '0'),
+      narration: voucherData.narration || '',
+      status: voucherData.status || 'draft',
     });
   };
 
@@ -52,7 +74,18 @@ export default function CreateReceiptModal({
       setLoadingLedgers(true);
       const response = await accountingAPI.ledgers.list({ limit: 1000 });
       const data = response?.data?.data || response?.data || [];
-      setLedgers(Array.isArray(data) ? data : []);
+      const allLedgers = Array.isArray(data) ? data : [];
+      
+      // Filter bank and cash ledgers combined
+      const bankAndCashLedgers = allLedgers.filter(ledger => 
+        ledger.account_group_name?.toLowerCase().includes('bank') ||
+        ledger.account_group_name?.toLowerCase().includes('cash') ||
+        ledger.ledger_name?.toLowerCase().includes('bank') ||
+        ledger.ledger_name?.toLowerCase().includes('cash')
+      );
+      
+      setLedgers(allLedgers);
+      setBankCashLedgers(bankAndCashLedgers);
     } catch (error) {
       console.error('Fetch ledgers error:', error);
       showNotification({
@@ -83,6 +116,15 @@ export default function CreateReceiptModal({
       return;
     }
 
+    if (!formData.bank_ledger_id) {
+      showNotification({
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Please select a bank/cash ledger'
+      });
+      return;
+    }
+
     if (!formData.amount || parseFloat(formData.amount) <= 0) {
       showNotification({
         type: 'error',
@@ -94,19 +136,33 @@ export default function CreateReceiptModal({
 
     try {
       setLoading(true);
+      
+      // Determine payment mode based on selected ledger name/group
+      const selectedLedger = bankCashLedgers.find(l => l.id === formData.bank_ledger_id);
+      const isBankLedger = selectedLedger?.account_group_name?.toLowerCase().includes('bank') ||
+                          selectedLedger?.ledger_name?.toLowerCase().includes('bank');
+      const payment_mode = isBankLedger ? 'bank' : 'cash';
+      
       const payload = {
-        ...formData,
+        party_ledger_id: formData.party_ledger_id,
+        bank_ledger_id: formData.bank_ledger_id,
         amount: parseFloat(formData.amount),
-        total_amount: parseFloat(formData.amount),
+        payment_mode: payment_mode,
+        narration: formData.narration,
+        voucher_date: formData.voucher_date,
         status: status,
       };
 
-      await voucherAPI.create(payload);
+      if (editMode && voucherData?.id) {
+        await voucherAPI.receipt.update(voucherData.id, payload);
+      } else {
+        await voucherAPI.receipt.create(payload);
+      }
       
       showNotification({
         type: 'success',
         title: 'Success',
-        message: `Receipt voucher ${status === 'posted' ? 'posted' : 'saved as draft'} successfully`
+        message: `Receipt voucher ${editMode ? 'updated' : (status === 'posted' ? 'posted' : 'saved as draft')} successfully`
       });
       
       if (onReceiptCreated) {
@@ -115,11 +171,11 @@ export default function CreateReceiptModal({
       
       onClose();
     } catch (error) {
-      console.error('Create receipt error:', error);
+      console.error('Save receipt error:', error);
       showNotification({
         type: 'error',
         title: 'Error',
-        message: error.response?.data?.message || 'Failed to create receipt voucher'
+        message: error.response?.data?.message || `Failed to ${editMode ? 'update' : 'create'} receipt voucher`
       });
     } finally {
       setLoading(false);
@@ -127,6 +183,7 @@ export default function CreateReceiptModal({
   };
 
   const selectedLedger = ledgers.find(l => l.id === formData.party_ledger_id);
+  const selectedBankCashLedger = bankCashLedgers.find(l => l.id === formData.bank_ledger_id);
 
   return (
     <Modal
@@ -137,7 +194,7 @@ export default function CreateReceiptModal({
     >
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Create Receipt Voucher</Text>
+          <Text style={styles.headerTitle}>{editMode ? 'Edit' : 'Create'} Receipt Voucher</Text>
           <TouchableOpacity onPress={onClose}>
             <Ionicons name="close" size={24} color="#6b7280" />
           </TouchableOpacity>
@@ -169,6 +226,19 @@ export default function CreateReceiptModal({
             </View>
 
             <View style={styles.field}>
+              <Text style={styles.label}>Bank/Cash Ledger *</Text>
+              <TouchableOpacity
+                style={styles.selectButton}
+                onPress={() => setShowBankCashLedgerModal(true)}
+              >
+                <Text style={[styles.selectButtonText, selectedBankCashLedger && styles.selectButtonTextSelected]}>
+                  {selectedBankCashLedger ? selectedBankCashLedger.ledger_name : 'Select Bank/Cash Ledger'}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.field}>
               <Text style={styles.label}>Amount *</Text>
               <TextInput
                 style={styles.input}
@@ -177,34 +247,6 @@ export default function CreateReceiptModal({
                 placeholder="0.00"
                 keyboardType="decimal-pad"
               />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Payment Mode</Text>
-              <View style={styles.radioGroup}>
-                <TouchableOpacity
-                  style={styles.radioOption}
-                  onPress={() => setFormData({ ...formData, payment_mode: 'cash' })}
-                >
-                  <Ionicons
-                    name={formData.payment_mode === 'cash' ? 'radio-button-on' : 'radio-button-off'}
-                    size={20}
-                    color="#3e60ab"
-                  />
-                  <Text style={styles.radioLabel}>Cash</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.radioOption}
-                  onPress={() => setFormData({ ...formData, payment_mode: 'bank' })}
-                >
-                  <Ionicons
-                    name={formData.payment_mode === 'bank' ? 'radio-button-on' : 'radio-button-off'}
-                    size={20}
-                    color="#3e60ab"
-                  />
-                  <Text style={styles.radioLabel}>Bank</Text>
-                </TouchableOpacity>
-              </View>
             </View>
 
             <View style={styles.field}>
@@ -280,6 +322,44 @@ export default function CreateReceiptModal({
                   >
                     <Text style={styles.listItemText}>{ledger.ledger_name}</Text>
                     {formData.party_ledger_id === ledger.id && (
+                      <Ionicons name="checkmark" size={20} color="#3e60ab" />
+                    )}
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </Modal>
+
+        {/* Bank/Cash Ledger Selection Modal */}
+        <Modal
+          visible={showBankCashLedgerModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowBankCashLedgerModal(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Bank/Cash Ledger</Text>
+              <TouchableOpacity onPress={() => setShowBankCashLedgerModal(false)}>
+                <Ionicons name="close" size={24} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalContent}>
+              {loadingLedgers ? (
+                <ActivityIndicator size="large" color="#3e60ab" style={styles.loader} />
+              ) : (
+                bankCashLedgers.map((ledger) => (
+                  <TouchableOpacity
+                    key={ledger.id}
+                    style={styles.listItem}
+                    onPress={() => {
+                      setFormData({ ...formData, bank_ledger_id: ledger.id });
+                      setShowBankCashLedgerModal(false);
+                    }}
+                  >
+                    <Text style={styles.listItemText}>{ledger.ledger_name}</Text>
+                    {formData.bank_ledger_id === ledger.id && (
                       <Ionicons name="checkmark" size={20} color="#3e60ab" />
                     )}
                   </TouchableOpacity>

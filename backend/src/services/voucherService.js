@@ -536,6 +536,13 @@ class VoucherService {
    * Update ledger balance based on ledger entries
    * @private
    */
+  /**
+   * Update ledger balance by recalculating from all voucher entries
+   * Automatically determines balance_type based on net debit/credit
+   * @param {Object} tenantModels - Tenant database models
+   * @param {String} ledgerId - Ledger ID to update
+   * @param {Object} transaction - Database transaction
+   */
   async updateLedgerBalance(tenantModels, ledgerId, transaction) {
     try {
       const ledger = await tenantModels.Ledger.findByPk(ledgerId, { transaction });
@@ -544,36 +551,57 @@ class VoucherService {
         return;
       }
 
-      // Calculate total debits and credits from ledger entries
-      const entries = await tenantModels.VoucherLedgerEntry.findAll({
-        where: { ledger_id: ledgerId },
-        attributes: [
-          [tenantModels.sequelize.fn('SUM', tenantModels.sequelize.col('debit_amount')), 'total_debit'],
-          [tenantModels.sequelize.fn('SUM', tenantModels.sequelize.col('credit_amount')), 'total_credit']
-        ],
-        raw: true,
+      // Calculate total debits and credits from ALL voucher entries
+      const [result] = await tenantModels.sequelize.query(`
+        SELECT 
+          COALESCE(SUM(debit_amount), 0) AS total_debit,
+          COALESCE(SUM(credit_amount), 0) AS total_credit
+        FROM voucher_ledger_entries
+        WHERE ledger_id = ?
+      `, {
+        replacements: [ledgerId],
+        type: tenantModels.sequelize.QueryTypes.SELECT,
         transaction
       });
 
-      const totalDebit = parseFloat(entries[0]?.total_debit || 0);
-      const totalCredit = parseFloat(entries[0]?.total_credit || 0);
+      const totalDebit = parseFloat(result.total_debit || 0);
+      const totalCredit = parseFloat(result.total_credit || 0);
       const openingBalance = parseFloat(ledger.opening_balance || 0);
+      const openingType = ledger.opening_balance_type || 'Dr';
 
-      // Calculate current balance based on ledger type
-      let currentBalance = openingBalance;
-      if (ledger.balance_type === 'debit' || ledger.opening_balance_type === 'Dr') {
-        currentBalance = openingBalance + totalDebit - totalCredit;
+      // Calculate net balance
+      // Net = (Opening + Debits - Credits) for Dr opening
+      // Net = (Opening + Credits - Debits) for Cr opening
+      const netMovement = totalDebit - totalCredit;
+      let netBalance;
+      
+      if (openingType === 'Dr') {
+        // Debit opening: add debits, subtract credits
+        netBalance = openingBalance + netMovement;
       } else {
-        currentBalance = openingBalance + totalCredit - totalDebit;
+        // Credit opening: add credits, subtract debits
+        netBalance = openingBalance - netMovement;
       }
 
-      // Update the ledger's current balance
+      // Determine balance type based on net balance
+      // Positive = Debit balance, Negative = Credit balance
+      const balanceType = netBalance >= 0 ? 'debit' : 'credit';
+      const currentBalance = Math.abs(netBalance);
+
+      // Update the ledger's current balance and balance type
       await ledger.update({
-        current_balance: Math.abs(currentBalance)
+        current_balance: currentBalance,
+        balance_type: balanceType
       }, { transaction });
 
-      logger.info(`Updated ledger balance for ${ledger.ledger_name}: ${Math.abs(currentBalance)}`);
-      return Math.abs(currentBalance);
+      logger.info(`Updated ledger balance for ${ledger.ledger_name}: ₹${currentBalance.toFixed(2)} ${balanceType}`);
+      
+      return {
+        balance: currentBalance,
+        balance_type: balanceType,
+        total_debit: totalDebit,
+        total_credit: totalCredit
+      };
     } catch (error) {
       logger.error(`Error updating ledger balance for ${ledgerId}:`, error);
       throw error;
@@ -1070,24 +1098,82 @@ class VoucherService {
   }
   
   /**
-   * Generate basic ledger entries for other voucher types
+   * Generate basic ledger entries for other voucher types (Receipt, Payment, Journal, Contra)
    * @private
    */
   async generateBasicLedgerEntries(ctx, voucherData, ledgerEntries) {
+    const { tenantModels, masterModels, tenant_id } = ctx;
     const {
+      voucher_type,
       party_ledger_id,
       partyLedger,
       total_amount,
-      narration
+      narration,
+      payment_mode = 'cash' // Default to cash if not specified
     } = voucherData;
 
-    // Basic debit/credit entries
-    ledgerEntries.push({
-      ledger_id: party_ledger_id,
-      debit_amount: total_amount,
-      credit_amount: 0,
-      narration: narration || `Transaction with ${partyLedger.ledger_name}`,
-    });
+    const voucherTypeLower = voucher_type.toLowerCase();
+
+    // Get Cash/Bank ledger based on payment mode
+    let cashBankLedger;
+    if (payment_mode === 'bank' || payment_mode === 'cheque' || payment_mode === 'online') {
+      cashBankLedger = await getOrCreateSystemLedger(
+        { tenantModels, masterModels, tenant_id },
+        { ledgerCode: 'BANK-001', ledgerName: 'Bank Account', groupCode: 'BANK' }
+      );
+    } else {
+      // Default to cash
+      cashBankLedger = await getOrCreateSystemLedger(
+        { tenantModels, masterModels, tenant_id },
+        { ledgerCode: 'CASH-001', ledgerName: 'Cash on Hand', groupCode: 'CASH' }
+      );
+    }
+
+    // Receipt Voucher: Cash/Bank Dr, Party Cr
+    if (voucherTypeLower === 'receipt') {
+      // Debit: Cash/Bank (money received)
+      ledgerEntries.push({
+        ledger_id: cashBankLedger.id,
+        debit_amount: total_amount,
+        credit_amount: 0,
+        narration: narration || `Receipt from ${partyLedger?.ledger_name || 'Party'}`,
+      });
+
+      // Credit: Party (liability reduced or income)
+      ledgerEntries.push({
+        ledger_id: party_ledger_id,
+        debit_amount: 0,
+        credit_amount: total_amount,
+        narration: narration || `Receipt from ${partyLedger?.ledger_name || 'Party'}`,
+      });
+    }
+    // Payment Voucher: Party Dr, Cash/Bank Cr
+    else if (voucherTypeLower === 'payment') {
+      // Debit: Party (asset reduced or expense)
+      ledgerEntries.push({
+        ledger_id: party_ledger_id,
+        debit_amount: total_amount,
+        credit_amount: 0,
+        narration: narration || `Payment to ${partyLedger?.ledger_name || 'Party'}`,
+      });
+
+      // Credit: Cash/Bank (money paid)
+      ledgerEntries.push({
+        ledger_id: cashBankLedger.id,
+        debit_amount: 0,
+        credit_amount: total_amount,
+        narration: narration || `Payment to ${partyLedger?.ledger_name || 'Party'}`,
+      });
+    }
+    // Journal/Contra or other vouchers - basic single entry
+    else {
+      ledgerEntries.push({
+        ledger_id: party_ledger_id,
+        debit_amount: total_amount,
+        credit_amount: 0,
+        narration: narration || `Transaction with ${partyLedger?.ledger_name || 'Party'}`,
+      });
+    }
   }
   
   /**
@@ -1098,55 +1184,58 @@ class VoucherService {
     const { tenantModels, masterModels, tenant_id } = ctx;
     const { cgst_amount, sgst_amount, igst_amount, cess_amount } = gstAmounts;
 
+    // Output GST ledgers belong to Duties & Taxes group (DT)
+    // They have credit balance (liability) representing Output Tax Liability
+    
     if (cgst_amount > 0) {
       const cgstLedger = await getOrCreateSystemLedger(
         { tenantModels, masterModels, tenant_id },
-        { ledgerCode: 'CGST_OUTPUT', ledgerName: 'CGST Output', groupCode: 'DT' }
+        { ledgerCode: 'CGST-OUTPUT', ledgerName: 'Output CGST', groupCode: 'DT' }
       );
       ledgerEntries.push({
         ledger_id: cgstLedger.id,
         debit_amount: 0,
         credit_amount: cgst_amount,
-        narration: 'CGST Output',
+        narration: 'Output CGST',
       });
     }
 
     if (sgst_amount > 0) {
       const sgstLedger = await getOrCreateSystemLedger(
         { tenantModels, masterModels, tenant_id },
-        { ledgerCode: 'SGST_OUTPUT', ledgerName: 'SGST Output', groupCode: 'DT' }
+        { ledgerCode: 'SGST-OUTPUT', ledgerName: 'Output SGST', groupCode: 'DT' }
       );
       ledgerEntries.push({
         ledger_id: sgstLedger.id,
         debit_amount: 0,
         credit_amount: sgst_amount,
-        narration: 'SGST Output',
+        narration: 'Output SGST',
       });
     }
 
     if (igst_amount > 0) {
       const igstLedger = await getOrCreateSystemLedger(
         { tenantModels, masterModels, tenant_id },
-        { ledgerCode: 'IGST_OUTPUT', ledgerName: 'IGST Output', groupCode: 'DT' }
+        { ledgerCode: 'IGST-OUTPUT', ledgerName: 'Output IGST', groupCode: 'DT' }
       );
       ledgerEntries.push({
         ledger_id: igstLedger.id,
         debit_amount: 0,
         credit_amount: igst_amount,
-        narration: 'IGST Output',
+        narration: 'Output IGST',
       });
     }
 
     if (cess_amount > 0) {
       const cessLedger = await getOrCreateSystemLedger(
         { tenantModels, masterModels, tenant_id },
-        { ledgerCode: 'CESS_OUTPUT', ledgerName: 'Cess Output', groupCode: 'DT' }
+        { ledgerCode: 'CESS-OUTPUT', ledgerName: 'Output Cess', groupCode: 'DT' }
       );
       ledgerEntries.push({
         ledger_id: cessLedger.id,
         debit_amount: 0,
         credit_amount: cess_amount,
-        narration: 'Cess Output',
+        narration: 'Output Cess',
       });
     }
   }
@@ -1159,55 +1248,58 @@ class VoucherService {
     const { tenantModels, masterModels, tenant_id } = ctx;
     const { cgst_amount, sgst_amount, igst_amount, cess_amount } = gstAmounts;
 
+    // Input GST ledgers belong to Duties & Taxes group (DT)
+    // They have debit balance (asset) representing Input Tax Credit
+    
     if (cgst_amount > 0) {
       const cgstLedger = await getOrCreateSystemLedger(
         { tenantModels, masterModels, tenant_id },
-        { ledgerCode: 'CGST_INPUT', ledgerName: 'CGST Input', groupCode: 'CA' }
+        { ledgerCode: 'CGST-INPUT', ledgerName: 'Input CGST', groupCode: 'DT' }
       );
       ledgerEntries.push({
         ledger_id: cgstLedger.id,
         debit_amount: cgst_amount,
         credit_amount: 0,
-        narration: 'CGST Input',
+        narration: 'Input CGST (ITC)',
       });
     }
 
     if (sgst_amount > 0) {
       const sgstLedger = await getOrCreateSystemLedger(
         { tenantModels, masterModels, tenant_id },
-        { ledgerCode: 'SGST_INPUT', ledgerName: 'SGST Input', groupCode: 'CA' }
+        { ledgerCode: 'SGST-INPUT', ledgerName: 'Input SGST', groupCode: 'DT' }
       );
       ledgerEntries.push({
         ledger_id: sgstLedger.id,
         debit_amount: sgst_amount,
         credit_amount: 0,
-        narration: 'SGST Input',
+        narration: 'Input SGST (ITC)',
       });
     }
 
     if (igst_amount > 0) {
       const igstLedger = await getOrCreateSystemLedger(
         { tenantModels, masterModels, tenant_id },
-        { ledgerCode: 'IGST_INPUT', ledgerName: 'IGST Input', groupCode: 'CA' }
+        { ledgerCode: 'IGST-INPUT', ledgerName: 'Input IGST', groupCode: 'DT' }
       );
       ledgerEntries.push({
         ledger_id: igstLedger.id,
         debit_amount: igst_amount,
         credit_amount: 0,
-        narration: 'IGST Input',
+        narration: 'Input IGST (ITC)',
       });
     }
 
     if (cess_amount > 0) {
       const cessLedger = await getOrCreateSystemLedger(
         { tenantModels, masterModels, tenant_id },
-        { ledgerCode: 'CESS_INPUT', ledgerName: 'Cess Input', groupCode: 'CA' }
+        { ledgerCode: 'CESS-INPUT', ledgerName: 'Input Cess', groupCode: 'DT' }
       );
       ledgerEntries.push({
         ledger_id: cessLedger.id,
         debit_amount: cess_amount,
         credit_amount: 0,
-        narration: 'Cess Input',
+        narration: 'Input Cess (ITC)',
       });
     }
   }

@@ -391,8 +391,8 @@ export default function PaymentScreen() {
           setEditingVoucher(null);
         }}
         onPaymentCreated={handlePaymentCreated}
-        editData={editingVoucher}
-        isEdit={!!editingVoucher}
+        voucherData={editingVoucher}
+        editMode={!!editingVoucher}
       />
     </View>
   );

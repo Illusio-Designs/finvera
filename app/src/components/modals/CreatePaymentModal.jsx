@@ -10,6 +10,8 @@ export default function CreatePaymentModal({
   visible, 
   onClose, 
   onPaymentCreated,
+  editMode = false,
+  voucherData = null,
 }) {
   const { showNotification } = useNotification();
   
@@ -21,22 +23,25 @@ export default function CreatePaymentModal({
     amount: '0',
     narration: '',
     status: 'draft',
-    payment_mode: 'cash',
   });
   
   const [ledgers, setLedgers] = useState([]);
-  const [bankLedgers, setBankLedgers] = useState([]);
+  const [bankCashLedgers, setBankCashLedgers] = useState([]);
   const [loadingLedgers, setLoadingLedgers] = useState(true);
   const [loading, setLoading] = useState(false);
   const [showLedgerModal, setShowLedgerModal] = useState(false);
-  const [showBankLedgerModal, setShowBankLedgerModal] = useState(false);
+  const [showBankCashLedgerModal, setShowBankCashLedgerModal] = useState(false);
 
   useEffect(() => {
     if (visible) {
       fetchLedgers();
-      resetForm();
+      if (editMode && voucherData) {
+        loadVoucherData();
+      } else {
+        resetForm();
+      }
     }
-  }, [visible]);
+  }, [visible, editMode, voucherData]);
 
   const resetForm = () => {
     setFormData({
@@ -47,7 +52,20 @@ export default function CreatePaymentModal({
       amount: '0',
       narration: '',
       status: 'draft',
-      payment_mode: 'cash',
+    });
+  };
+
+  const loadVoucherData = () => {
+    if (!voucherData) return;
+    
+    setFormData({
+      voucher_type: 'payment',
+      voucher_date: voucherData.voucher_date || new Date().toISOString().split('T')[0],
+      party_ledger_id: voucherData.party_ledger_id || '',
+      bank_ledger_id: voucherData.bank_ledger_id || '',
+      amount: String(voucherData.amount || voucherData.total_amount || '0'),
+      narration: voucherData.narration || '',
+      status: voucherData.status || 'draft',
     });
   };
 
@@ -58,8 +76,8 @@ export default function CreatePaymentModal({
       const data = response?.data?.data || response?.data || [];
       const allLedgers = Array.isArray(data) ? data : [];
       
-      // Filter bank/cash ledgers for payment mode
-      const bankCashLedgers = allLedgers.filter(ledger => 
+      // Filter bank and cash ledgers combined
+      const bankAndCashLedgers = allLedgers.filter(ledger => 
         ledger.account_group_name?.toLowerCase().includes('bank') ||
         ledger.account_group_name?.toLowerCase().includes('cash') ||
         ledger.ledger_name?.toLowerCase().includes('bank') ||
@@ -67,7 +85,7 @@ export default function CreatePaymentModal({
       );
       
       setLedgers(allLedgers);
-      setBankLedgers(bankCashLedgers);
+      setBankCashLedgers(bankAndCashLedgers);
     } catch (error) {
       console.error('Fetch ledgers error:', error);
       showNotification({
@@ -118,22 +136,33 @@ export default function CreatePaymentModal({
 
     try {
       setLoading(true);
+      
+      // Determine payment mode based on selected ledger name/group
+      const selectedLedger = bankCashLedgers.find(l => l.id === formData.bank_ledger_id);
+      const isBankLedger = selectedLedger?.account_group_name?.toLowerCase().includes('bank') ||
+                          selectedLedger?.ledger_name?.toLowerCase().includes('bank');
+      const payment_mode = isBankLedger ? 'bank' : 'cash';
+      
       const payload = {
         party_ledger_id: formData.party_ledger_id,
         bank_ledger_id: formData.bank_ledger_id,
         amount: parseFloat(formData.amount),
-        payment_mode: formData.payment_mode,
+        payment_mode: payment_mode,
         narration: formData.narration,
         voucher_date: formData.voucher_date,
         status: status,
       };
 
-      await voucherAPI.payment.create(payload);
+      if (editMode && voucherData?.id) {
+        await voucherAPI.payment.update(voucherData.id, payload);
+      } else {
+        await voucherAPI.payment.create(payload);
+      }
       
       showNotification({
         type: 'success',
         title: 'Success',
-        message: `Payment voucher ${status === 'posted' ? 'posted' : 'saved as draft'} successfully`
+        message: `Payment voucher ${editMode ? 'updated' : (status === 'posted' ? 'posted' : 'saved as draft')} successfully`
       });
       
       if (onPaymentCreated) {
@@ -142,11 +171,11 @@ export default function CreatePaymentModal({
       
       onClose();
     } catch (error) {
-      console.error('Create payment error:', error);
+      console.error('Save payment error:', error);
       showNotification({
         type: 'error',
         title: 'Error',
-        message: error.response?.data?.message || 'Failed to create payment voucher'
+        message: error.response?.data?.message || `Failed to ${editMode ? 'update' : 'create'} payment voucher`
       });
     } finally {
       setLoading(false);
@@ -154,7 +183,7 @@ export default function CreatePaymentModal({
   };
 
   const selectedLedger = ledgers.find(l => l.id === formData.party_ledger_id);
-  const selectedBankLedger = bankLedgers.find(l => l.id === formData.bank_ledger_id);
+  const selectedBankCashLedger = bankCashLedgers.find(l => l.id === formData.bank_ledger_id);
 
   return (
     <Modal
@@ -165,7 +194,7 @@ export default function CreatePaymentModal({
     >
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Create Payment Voucher</Text>
+          <Text style={styles.headerTitle}>{editMode ? 'Edit' : 'Create'} Payment Voucher</Text>
           <TouchableOpacity onPress={onClose}>
             <Ionicons name="close" size={24} color="#6b7280" />
           </TouchableOpacity>
@@ -200,10 +229,10 @@ export default function CreatePaymentModal({
               <Text style={styles.label}>Bank/Cash Ledger *</Text>
               <TouchableOpacity
                 style={styles.selectButton}
-                onPress={() => setShowBankLedgerModal(true)}
+                onPress={() => setShowBankCashLedgerModal(true)}
               >
-                <Text style={[styles.selectButtonText, selectedBankLedger && styles.selectButtonTextSelected]}>
-                  {selectedBankLedger ? selectedBankLedger.ledger_name : 'Select Bank/Cash Ledger'}
+                <Text style={[styles.selectButtonText, selectedBankCashLedger && styles.selectButtonTextSelected]}>
+                  {selectedBankCashLedger ? selectedBankCashLedger.ledger_name : 'Select Bank/Cash Ledger'}
                 </Text>
                 <Ionicons name="chevron-down" size={20} color="#6b7280" />
               </TouchableOpacity>
@@ -218,34 +247,6 @@ export default function CreatePaymentModal({
                 placeholder="0.00"
                 keyboardType="decimal-pad"
               />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Payment Mode</Text>
-              <View style={styles.radioGroup}>
-                <TouchableOpacity
-                  style={styles.radioOption}
-                  onPress={() => setFormData({ ...formData, payment_mode: 'cash' })}
-                >
-                  <Ionicons
-                    name={formData.payment_mode === 'cash' ? 'radio-button-on' : 'radio-button-off'}
-                    size={20}
-                    color="#3e60ab"
-                  />
-                  <Text style={styles.radioLabel}>Cash</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.radioOption}
-                  onPress={() => setFormData({ ...formData, payment_mode: 'bank' })}
-                >
-                  <Ionicons
-                    name={formData.payment_mode === 'bank' ? 'radio-button-on' : 'radio-button-off'}
-                    size={20}
-                    color="#3e60ab"
-                  />
-                  <Text style={styles.radioLabel}>Bank</Text>
-                </TouchableOpacity>
-              </View>
             </View>
 
             <View style={styles.field}>
@@ -332,15 +333,15 @@ export default function CreatePaymentModal({
 
         {/* Bank/Cash Ledger Selection Modal */}
         <Modal
-          visible={showBankLedgerModal}
+          visible={showBankCashLedgerModal}
           animationType="slide"
           presentationStyle="pageSheet"
-          onRequestClose={() => setShowBankLedgerModal(false)}
+          onRequestClose={() => setShowBankCashLedgerModal(false)}
         >
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Bank/Cash Ledger</Text>
-              <TouchableOpacity onPress={() => setShowBankLedgerModal(false)}>
+              <TouchableOpacity onPress={() => setShowBankCashLedgerModal(false)}>
                 <Ionicons name="close" size={24} color="#6b7280" />
               </TouchableOpacity>
             </View>
@@ -348,13 +349,13 @@ export default function CreatePaymentModal({
               {loadingLedgers ? (
                 <ActivityIndicator size="large" color="#3e60ab" style={styles.loader} />
               ) : (
-                bankLedgers.map((ledger) => (
+                bankCashLedgers.map((ledger) => (
                   <TouchableOpacity
                     key={ledger.id}
                     style={styles.listItem}
                     onPress={() => {
                       setFormData({ ...formData, bank_ledger_id: ledger.id });
-                      setShowBankLedgerModal(false);
+                      setShowBankCashLedgerModal(false);
                     }}
                   >
                     <Text style={styles.listItemText}>{ledger.ledger_name}</Text>
