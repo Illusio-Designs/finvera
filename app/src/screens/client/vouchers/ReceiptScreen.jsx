@@ -8,6 +8,7 @@ import { voucherAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
 import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 import { formatCurrency } from '../../../utils/businessLogic';
+import CreateReceiptModal from '../../../components/modals/CreateReceiptModal';
 
 export default function ReceiptScreen() {
   const { openDrawer } = useDrawer();
@@ -18,6 +19,7 @@ export default function ReceiptScreen() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const handleMenuPress = () => {
     openDrawer();
@@ -75,11 +77,11 @@ export default function ReceiptScreen() {
   };
 
   const handleCreateReceipt = () => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Create receipt feature coming soon'
-    });
+    setShowCreateModal(true);
+  };
+
+  const handleReceiptCreated = () => {
+    fetchVouchers();
   };
 
   const handleEditVoucher = () => {
@@ -358,6 +360,12 @@ export default function ReceiptScreen() {
           </View>
         </View>
       </Modal>
+
+      <CreateReceiptModal
+        visible={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onReceiptCreated={handleReceiptCreated}
+      />
     </View>
   );
 }

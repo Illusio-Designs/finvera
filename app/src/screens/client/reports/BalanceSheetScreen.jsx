@@ -298,9 +298,14 @@ export default function BalanceSheetScreen() {
               <View style={styles.reportSummary}>
                 <Text style={styles.summaryText}>
                   Total Assets: <Text style={[styles.summaryAmount, { color: '#059669' }]}>
-                    {formatCurrency(balanceSheetData.totals?.total_assets || 0)}
+                    {formatCurrency(balanceSheetData.balance_check?.total_assets || balanceSheetData.assets?.total || 0)}
                   </Text>
                 </Text>
+                {balanceSheetData.balance_check?.is_balanced && (
+                  <Text style={[styles.summaryText, { color: '#059669', marginTop: 4 }]}>
+                    ✓ Balanced
+                  </Text>
+                )}
               </View>
             </View>
 
@@ -342,7 +347,7 @@ export default function BalanceSheetScreen() {
                     nestedScrollEnabled={true}
                   >
                     <View style={styles.tableBody}>
-                      {balanceSheetData.assets && balanceSheetData.liabilities_and_capital && 
+                      {balanceSheetData.assets && balanceSheetData.liabilities_and_equity && 
                         renderBalanceSheetRows(balanceSheetData)
                       }
                       
@@ -353,7 +358,7 @@ export default function BalanceSheetScreen() {
                         </View>
                         <View style={styles.tableCellAmount}>
                           <Text style={styles.totalAmount}>
-                            {formatCurrency(balanceSheetData.totals?.total_liabilities || 0)}
+                            {formatCurrency(balanceSheetData.balance_check?.total_liabilities_and_equity || balanceSheetData.liabilities_and_equity?.total || 0)}
                           </Text>
                         </View>
                         <View style={[styles.tableCell, styles.rightColumn]}>
@@ -361,7 +366,7 @@ export default function BalanceSheetScreen() {
                         </View>
                         <View style={styles.tableCellAmount}>
                           <Text style={styles.totalAmount}>
-                            {formatCurrency(balanceSheetData.totals?.total_assets || 0)}
+                            {formatCurrency(balanceSheetData.balance_check?.total_assets || balanceSheetData.assets?.total || 0)}
                           </Text>
                         </View>
                       </View>
@@ -380,108 +385,132 @@ export default function BalanceSheetScreen() {
   function renderBalanceSheetRows(balanceSheetData) {
     if (!balanceSheetData) return [];
     
-    const { assets, liabilities_and_capital, asset_details, liability_details } = balanceSheetData;
+    const { assets, liabilities_and_equity } = balanceSheetData;
     
     const liabilities = [];
     const assetsList = [];
 
-    // LIABILITIES SIDE - Build detailed list with individual accounts
-    // Capital & Reserves
-    if (liabilities_and_capital?.capital_and_reserves?.groups && liabilities_and_capital.capital_and_reserves.groups.length > 0) {
-      liabilities_and_capital.capital_and_reserves.groups.forEach(group => {
+    // LIABILITIES SIDE - Build detailed list with P&L integration
+    
+    // Profit & Loss Account (always show first)
+    if (liabilities_and_equity?.profit_and_loss) {
+      const pl = liabilities_and_equity.profit_and_loss;
+      liabilities.push({
+        name: pl.type === 'profit' ? 'Net Profit for the period' : 'Net Loss for the period',
+        amount: pl.amount,
+        section: 'Profit & Loss Account',
+        isProfit: pl.type === 'profit'
+      });
+    }
+    
+    // Capital
+    if (liabilities_and_equity?.capital?.accounts && liabilities_and_equity.capital.accounts.length > 0) {
+      liabilities_and_equity.capital.accounts.forEach(account => {
         liabilities.push({
-          name: group.group_name,
-          amount: group.amount,
-          section: 'Capital & Reserves',
-          detail: group.note || ''
+          name: account.name,
+          amount: account.balance,
+          section: 'Capital',
+          detail: account.code ? `Code: ${account.code}` : ''
         });
       });
     }
     
-    // Long-term Liabilities
-    if (liabilities_and_capital?.long_term_liabilities?.groups && liabilities_and_capital.long_term_liabilities.groups.length > 0) {
-      liabilities_and_capital.long_term_liabilities.groups.forEach(group => {
+    // Reserves & Surplus
+    if (liabilities_and_equity?.reserves_and_surplus?.accounts && liabilities_and_equity.reserves_and_surplus.accounts.length > 0) {
+      liabilities_and_equity.reserves_and_surplus.accounts.forEach(account => {
         liabilities.push({
-          name: group.group_name,
-          amount: group.amount,
-          section: 'Long-term Liabilities'
+          name: account.name,
+          amount: account.balance,
+          section: 'Reserves & Surplus',
+          detail: account.code ? `Code: ${account.code}` : ''
+        });
+      });
+    }
+    
+    // Loans & Borrowings
+    if (liabilities_and_equity?.loans_and_borrowings?.accounts && liabilities_and_equity.loans_and_borrowings.accounts.length > 0) {
+      liabilities_and_equity.loans_and_borrowings.accounts.forEach(account => {
+        liabilities.push({
+          name: account.name,
+          amount: account.balance,
+          section: 'Loans & Borrowings',
+          detail: account.code ? `Code: ${account.code}` : ''
         });
       });
     }
     
     // Current Liabilities
-    if (liabilities_and_capital?.current_liabilities?.groups && liabilities_and_capital.current_liabilities.groups.length > 0) {
-      liabilities_and_capital.current_liabilities.groups.forEach(group => {
+    if (liabilities_and_equity?.current_liabilities?.accounts && liabilities_and_equity.current_liabilities.accounts.length > 0) {
+      liabilities_and_equity.current_liabilities.accounts.forEach(account => {
         liabilities.push({
-          name: group.group_name,
-          amount: group.amount,
-          section: 'Current Liabilities'
+          name: account.name,
+          amount: account.balance,
+          section: 'Current Liabilities',
+          detail: account.code ? `Code: ${account.code}` : ''
+        });
+      });
+    }
+    
+    // Other Liabilities
+    if (liabilities_and_equity?.other_liabilities?.accounts && liabilities_and_equity.other_liabilities.accounts.length > 0) {
+      liabilities_and_equity.other_liabilities.accounts.forEach(account => {
+        liabilities.push({
+          name: account.name,
+          amount: account.balance,
+          section: 'Other Liabilities',
+          detail: account.code ? `Code: ${account.code}` : '',
+          isNegative: account.balance < 0
         });
       });
     }
 
-    // Add detailed liability accounts from liability_details
-    if (liability_details && liability_details.length > 0) {
-      liability_details.forEach(detail => {
-        // Only add if not already added as a group
-        const existingLiability = liabilities.find(l => l.name === detail.ledger_name);
-        if (!existingLiability) {
-          liabilities.push({
-            name: detail.ledger_name,
-            amount: detail.amount,
-            section: detail.category,
-            detail: detail.ledger_code ? `Code: ${detail.ledger_code}` : ''
-          });
-        }
+    // ASSETS SIDE - Build detailed list
+    
+    // Fixed Assets
+    if (assets?.fixed_assets?.accounts && assets.fixed_assets.accounts.length > 0) {
+      assets.fixed_assets.accounts.forEach(account => {
+        assetsList.push({
+          name: account.name,
+          amount: account.balance,
+          section: 'Fixed Assets',
+          detail: account.code ? `Code: ${account.code}` : ''
+        });
       });
     }
-
-    // ASSETS SIDE - Build detailed list with individual accounts
-    // Fixed Assets
-    if (assets?.fixed_assets?.groups && assets.fixed_assets.groups.length > 0) {
-      assets.fixed_assets.groups.forEach(group => {
+    
+    // Investments
+    if (assets?.investments?.accounts && assets.investments.accounts.length > 0) {
+      assets.investments.accounts.forEach(account => {
         assetsList.push({
-          name: group.group_name,
-          amount: group.amount,
-          section: 'Fixed Assets'
+          name: account.name,
+          amount: account.balance,
+          section: 'Investments',
+          detail: account.code ? `Code: ${account.code}` : ''
         });
       });
     }
     
     // Current Assets
-    if (assets?.current_assets?.groups && assets.current_assets.groups.length > 0) {
-      assets.current_assets.groups.forEach(group => {
+    if (assets?.current_assets?.accounts && assets.current_assets.accounts.length > 0) {
+      assets.current_assets.accounts.forEach(account => {
         assetsList.push({
-          name: group.group_name,
-          amount: group.amount,
-          section: 'Current Assets'
+          name: account.name,
+          amount: account.balance,
+          section: 'Current Assets',
+          detail: account.code ? `Code: ${account.code}` : '',
+          isNegative: account.balance < 0
         });
       });
     }
     
-    // Add detailed asset accounts from asset_details
-    if (asset_details && asset_details.length > 0) {
-      asset_details.forEach(detail => {
-        // Only add if not already added as a group
-        const existingAsset = assetsList.find(a => a.name === detail.ledger_name);
-        if (!existingAsset) {
-          assetsList.push({
-            name: detail.ledger_name,
-            amount: detail.amount,
-            section: detail.category,
-            detail: detail.quantity ? `Qty: ${detail.quantity} @ ₹${detail.avg_cost}` : (detail.ledger_code ? `Code: ${detail.ledger_code}` : '')
-          });
-        }
-      });
-    }
-    
-    // Investments
-    if (assets?.investments?.groups && assets.investments.groups.length > 0) {
-      assets.investments.groups.forEach(group => {
+    // Other Assets
+    if (assets?.other_assets?.accounts && assets.other_assets.accounts.length > 0) {
+      assets.other_assets.accounts.forEach(account => {
         assetsList.push({
-          name: group.group_name,
-          amount: group.amount,
-          section: 'Investments'
+          name: account.name,
+          amount: account.balance,
+          section: 'Other Assets',
+          detail: account.code ? `Code: ${account.code}` : ''
         });
       });
     }
@@ -507,11 +536,9 @@ export default function BalanceSheetScreen() {
       rows.push(
         <View key={i} style={[
           styles.tableRow,
-          // Add section separator styling for better visual separation
           (needLiabilitySectionHeader || needAssetSectionHeader) && i > 0 && styles.sectionSeparator
         ]}>
           <View style={[styles.tableCell, styles.leftColumn]}>
-            {/* Enhanced section header for liabilities */}
             {needLiabilitySectionHeader && (
               <View style={styles.sectionHeaderContainer}>
                 <Text style={[styles.sectionHeader, styles.liabilitySectionHeader]}>
@@ -519,7 +546,11 @@ export default function BalanceSheetScreen() {
                 </Text>
               </View>
             )}
-            <Text style={styles.tableCellText}>
+            <Text style={[
+              styles.tableCellText,
+              liability?.isProfit && { color: '#059669', fontWeight: 'bold' },
+              liability?.isNegative && { color: '#dc2626' }
+            ]}>
               {liability ? liability.name : ''}
             </Text>
             {liability?.detail && (
@@ -527,12 +558,15 @@ export default function BalanceSheetScreen() {
             )}
           </View>
           <View style={styles.tableCellAmount}>
-            <Text style={styles.tableCellAmountText}>
-              {liability ? formatCurrency(liability.amount) : ''}
+            <Text style={[
+              styles.tableCellAmountText,
+              liability?.isProfit && { color: '#059669', fontWeight: 'bold' },
+              liability?.isNegative && { color: '#dc2626' }
+            ]}>
+              {liability ? (liability.isNegative ? '-' : '') + formatCurrency(Math.abs(liability.amount)) : ''}
             </Text>
           </View>
           <View style={[styles.tableCell, styles.rightColumn]}>
-            {/* Enhanced section header for assets */}
             {needAssetSectionHeader && (
               <View style={styles.sectionHeaderContainer}>
                 <Text style={[styles.sectionHeader, styles.assetSectionHeader]}>
@@ -540,7 +574,10 @@ export default function BalanceSheetScreen() {
                 </Text>
               </View>
             )}
-            <Text style={styles.tableCellText}>
+            <Text style={[
+              styles.tableCellText,
+              asset?.isNegative && { color: '#dc2626' }
+            ]}>
               {asset ? asset.name : ''}
             </Text>
             {asset?.detail && (
@@ -548,8 +585,11 @@ export default function BalanceSheetScreen() {
             )}
           </View>
           <View style={styles.tableCellAmount}>
-            <Text style={styles.tableCellAmountText}>
-              {asset ? formatCurrency(asset.amount) : ''}
+            <Text style={[
+              styles.tableCellAmountText,
+              asset?.isNegative && { color: '#dc2626' }
+            ]}>
+              {asset ? (asset.isNegative ? '-' : '') + formatCurrency(Math.abs(asset.amount)) : ''}
             </Text>
           </View>
         </View>

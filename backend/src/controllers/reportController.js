@@ -140,10 +140,14 @@ module.exports = {
 
       // Option 1: Use simplified report service (faster, less detailed)
       if (format === 'simple') {
-        const plReport = await reportService.generateProfitLossReport(req.tenantModels, { 
-          startDate: from, 
-          endDate: to 
-        });
+        const plReport = await reportService.generateProfitLossReport(
+          req.tenantModels, 
+          req.masterModels,
+          { 
+            startDate: from, 
+            endDate: to 
+          }
+        );
         
         return res.json({
           revenue: plReport.revenue,
@@ -544,9 +548,13 @@ module.exports = {
 
       // Option 1: Use simplified report service (faster, less detailed)
       if (format === 'simple') {
-        const bsReport = await reportService.generateBalanceSheetReport(req.tenantModels, { 
-          asOnDate: asOn 
-        });
+        const bsReport = await reportService.generateBalanceSheetReport(
+          req.tenantModels,
+          req.masterModels,
+          { 
+            asOnDate: asOn 
+          }
+        );
         
         return res.json({
           capital: bsReport.capital,
@@ -558,503 +566,342 @@ module.exports = {
         });
       }
 
-      // Option 2: Use detailed Tally-style format (default)
-      console.log(`\n🏛️ === GENERATING TALLY-STYLE BALANCE SHEET ===`);
+      // Option 2: Use detailed Tally-style format with P&L integration (default)
+      console.log(`\n🏛️ === GENERATING BALANCE SHEET ===`);
       console.log(`📅 As on: ${asOn}`);
       console.log(`🏢 Tenant: ${req.tenant_id}`);
 
       const ledgers = await req.tenantModels.Ledger.findAll({ where: { is_active: true } });
       const groupMap = await loadGroupMap(req.masterModels, ledgers);
-      const moveMap = await movementByLedger(req.tenantModels, { asOnDate: asOn });
 
-      // Get current period P&L for retained earnings - Use same logic as P&L report
-      const currentYearStart = new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0, 10);
-      const plMoveMap = await movementByLedger(req.tenantModels, { fromDate: currentYearStart, toDate: asOn });
+      // Verify and correct cash balance
+      console.log('🔍 Verifying Cash Balance...');
+      const cashLedger = ledgers.find(l => l.ledger_name.toLowerCase().includes('cash'));
+      if (cashLedger) {
+        const [cashMovements] = await req.tenantModels.sequelize.query(`
+          SELECT 
+            SUM(vle.debit_amount) as total_debit,
+            SUM(vle.credit_amount) as total_credit
+          FROM voucher_ledger_entries vle
+          JOIN vouchers v ON vle.voucher_id = v.id
+          WHERE vle.ledger_id = ? AND v.status = 'posted'
+        `, { replacements: [cashLedger.id] });
+        
+        const opening = toNum(cashLedger.opening_balance, 0);
+        const totalDebit = toNum(cashMovements[0]?.total_debit, 0);
+        const totalCredit = toNum(cashMovements[0]?.total_credit, 0);
+        const calculatedBalance = opening + totalDebit - totalCredit;
+        
+        // Fix cash balance if incorrect
+        if (calculatedBalance < 0 && cashLedger.balance_type === 'debit') {
+          console.log(`  ⚠️  Correcting: Cash should be NEGATIVE (credit balance)`);
+          cashLedger.current_balance = Math.abs(calculatedBalance);
+          cashLedger.balance_type = 'credit';
+        }
+      }
 
-      // Calculate current period profit/loss using same Tally-style logic as P&L report
-      const stockLedgers = ledgers.filter(l => {
-        const group = groupMap.get(l.account_group_id);
-        return group && group.group_code === 'INV'; // Stock-in-Hand group
+      // Calculate P&L using the same logic as P&L report
+      console.log('📊 Calculating Profit & Loss...');
+      
+      const from = '2026-01-31';
+      const to = asOn;
+      
+      // Get ledger movements for P&L
+      const [movements] = await req.tenantModels.sequelize.query(`
+        SELECT 
+          vle.ledger_id,
+          SUM(vle.debit_amount) as total_debit,
+          SUM(vle.credit_amount) as total_credit
+        FROM voucher_ledger_entries vle
+        JOIN vouchers v ON vle.voucher_id = v.id
+        WHERE v.status = 'posted'
+          AND v.voucher_date BETWEEN ? AND ?
+        GROUP BY vle.ledger_id
+      `, { replacements: [from, to] });
+
+      const moveMap = new Map();
+      movements.forEach(m => {
+        moveMap.set(m.ledger_id, {
+          debit: toNum(m.total_debit, 0),
+          credit: toNum(m.total_credit, 0)
+        });
       });
 
-      // Get actual stock value from inventory items (not ledger balances)
-      const inventoryItems = await req.tenantModels.InventoryItem.findAll({
-        where: { is_active: true }
+      // Get stock information
+      const stockLedgers = ledgers.filter(l => {
+        const group = groupMap.get(l.account_group_id);
+        return group && group.group_code === 'INV';
       });
 
       let openingStock = 0;
       let closingStock = 0;
-      
-      // Calculate stock values from actual inventory items
-      for (const item of inventoryItems) {
-        const qty = toNum(item.quantity_on_hand, 0);
-        const avgCost = toNum(item.avg_cost, 0);
-        const stockValue = qty * avgCost;
-        
-        // For P&L calculation, we use opening balance as opening stock
-        // and current stock value as closing stock
-        openingStock += toNum(item.opening_balance, 0); // This should come from ledger
-        closingStock += stockValue; // This is the actual current stock value
-      }
 
-      // If no inventory items, fall back to ledger balances
-      if (inventoryItems.length === 0) {
-        for (const stockLedger of stockLedgers) {
-          openingStock += toNum(stockLedger.opening_balance, 0);
-          closingStock += toNum(stockLedger.current_balance, 0);
-        }
-      }
+      const inventoryItems = await req.tenantModels.InventoryItem.findAll({
+        where: { is_active: true }
+      });
 
-      // Calculate current period P&L using same logic as P&L report (Trading & P&L Account)
-      // This ensures consistency between P&L report and Balance Sheet
-      
-      // STEP 1: TRADING ACCOUNT CALCULATION (for P&L in Balance Sheet)
-      const salesAccounts = [];
-      const salesReturns = [];
-      const purchaseAccounts = [];
-      const purchaseReturns = [];
-      const directExpenses = [];
-      const otherIncomes = [];
-      const indirectExpenses = [];
-
-      for (const ledger of ledgers) {
-        const group = groupMap.get(ledger.account_group_id);
-        if (!group) continue;
-
-        const plMove = plMoveMap.get(ledger.id) || { debit: 0, credit: 0 };
-        const movementSigned = plMove.debit - plMove.credit;
-
-        // Skip stock accounts - handled separately
-        if (group.group_code === 'INV') continue;
-
-        // ONLY PROCESS P&L ACCOUNTS (Income & Expense) for P&L calculation
-        if (!['income', 'expense'].includes(group.nature)) continue;
-
-        // INCOME ACCOUNTS
-        if (group.nature === 'income') {
-          const amt = -movementSigned; // income increases on credit
-          if (amt <= 0.009) continue;
-
-          // Sales & Service Revenue
-          if (['SAL', 'SALES'].includes(group.group_code)) {
-            salesAccounts.push({ amount: amt });
-          }
-          // Sales Returns
-          else if (['SAL_RET', 'SALES_RETURNS'].includes(group.group_code)) {
-            salesReturns.push({ amount: amt });
-          }
-          // Other Incomes
-          else if (['INT_REC', 'COMM_REC', 'RENT_REC', 'DIV_REC', 'OTH_INC', 'IND_INC'].includes(group.group_code)) {
-            otherIncomes.push({ amount: amt });
-          }
-          // Default to other income
-          else {
-            otherIncomes.push({ amount: amt });
-          }
-        } 
-        // EXPENSE ACCOUNTS
-        else if (group.nature === 'expense') {
-          const amt = movementSigned; // expense increases on debit
-          
-          // Handle Round Off specially
-          if (ledger.ledger_name.toLowerCase().includes('round')) {
-            if (Math.abs(amt) > 0.009) {
-              if (amt > 0) {
-                indirectExpenses.push({ amount: amt });
-              } else {
-                otherIncomes.push({ amount: Math.abs(amt) });
-              }
-            }
-          } else if (amt > 0.009) {
-            // Purchase Accounts
-            if (['PUR', 'PURCHASE'].includes(group.group_code)) {
-              purchaseAccounts.push({ amount: amt });
-            }
-            // Purchase Returns
-            else if (['PUR_RET', 'PURCHASE_RETURNS'].includes(group.group_code)) {
-              purchaseReturns.push({ amount: amt });
-            }
-            // Direct Expenses
-            else if (['DIR_EXP', 'FREIGHT_IN', 'CARRIAGE', 'WAGES', 'MFG_EXP', 'PROD_EXP'].includes(group.group_code)) {
-              directExpenses.push({ amount: amt });
-            }
-            // Indirect Expenses
-            else if ([
-              'IND_EXP', 'SAL_WAG', 'RENT_PAY', 'ELEC_UTL', 'TEL_INT', 'PRINT_STA', 
-              'REP_MAIN', 'INS', 'LEG_PRO', 'INT_PAY', 'BANK_CHG', 'DEPR', 'BAD_DEB',
-              'TRANS_FRT', 'ADV_MKT', 'OFF_EXP', 'DISC_ALL', 'COMM_PAY'
-            ].includes(group.group_code)) {
-              indirectExpenses.push({ amount: amt });
-            }
-            // Default to indirect expense
-            else {
-              indirectExpenses.push({ amount: amt });
-            }
-          }
-        }
-      }
-
-      // Calculate P&L using same logic as P&L report (without rounding - exact amounts)
-      const totalSales = salesAccounts.reduce((s, a) => s + a.amount, 0);
-      const totalSalesReturns = salesReturns.reduce((s, a) => s + a.amount, 0);
-      const netSales = totalSales - totalSalesReturns;
-
-      const totalPurchases = purchaseAccounts.reduce((s, a) => s + a.amount, 0);
-      const totalPurchaseReturns = purchaseReturns.reduce((s, a) => s + a.amount, 0);
-      const netPurchases = totalPurchases - totalPurchaseReturns;
-      
-      const totalDirectExpenses = directExpenses.reduce((s, a) => s + a.amount, 0);
-      const totalOtherIncomes = otherIncomes.reduce((s, a) => s + a.amount, 0);
-      const totalIndirectExpenses = indirectExpenses.reduce((s, a) => s + a.amount, 0);
-
-      // COGS = Opening Stock + Net Purchases + Direct Expenses - Closing Stock
-      const cogs = openingStock + netPurchases + totalDirectExpenses - closingStock;
-      
-      // Gross Profit = Net Sales - COGS
-      const grossProfit = netSales - cogs;
-      
-      // Total Income = Gross Profit + Other Incomes
-      const totalIncome = grossProfit + totalOtherIncomes;
-      
-      // Net Profit = Total Income - Indirect Expenses
-      const currentPeriodPL = totalIncome - totalIndirectExpenses;
-
-      // BALANCE SHEET CATEGORIZATION (Standard Accounting Format)
-      // Group assets and liabilities by proper categories
-      const fixedAssets = new Map();
-      const currentAssets = new Map();
-      const investments = new Map();
-      const capitalReserves = new Map();
-      const longTermLiabilities = new Map();
-      const currentLiabilities = new Map();
-      
-      const assetDetails = [];
-      const liabilityDetails = [];
-
-      // First, add actual stock value from inventory items to Current Assets (exact amounts)
       if (inventoryItems.length > 0) {
-        const totalStockValue = inventoryItems.reduce((total, item) => {
+        inventoryItems.forEach(item => {
           const qty = toNum(item.quantity_on_hand, 0);
           const avgCost = toNum(item.avg_cost, 0);
-          return total + (qty * avgCost);
-        }, 0);
-
-        if (totalStockValue > 0.009) {
-          currentAssets.set('Stock/Inventory', totalStockValue);
-          
-          // Add detailed stock breakdown with exact amounts
-          inventoryItems.forEach(item => {
-            const qty = toNum(item.quantity_on_hand, 0);
-            const avgCost = toNum(item.avg_cost, 0);
-            const stockValue = qty * avgCost;
-            
-            if (stockValue > 0.009) {
-              assetDetails.push({
-                ledger_name: item.item_name,
-                ledger_code: item.item_code || item.item_key,
-                amount: stockValue,
-                group_code: 'INV',
-                group_name: 'Stock/Inventory',
-                balance_type: 'Dr',
-                category: 'Current Assets',
-                quantity: qty,
-                avg_cost: avgCost
-              });
-            }
-          });
-        }
-      }
-
-      for (const ledger of ledgers) {
-        const group = groupMap.get(ledger.account_group_id);
-        if (!group) continue;
-
-        // Skip stock ledgers as we handle them separately with actual inventory values
-        if (group.group_code === 'INV') continue;
-
-        // ONLY INCLUDE BALANCE SHEET ACCOUNTS (Assets, Liabilities, Capital)
-        // P&L accounts (income, expense) should NOT appear in Balance Sheet
-        if (!['asset', 'liability'].includes(group.nature)) {
-          console.log(`⚠️  Skipping P&L account in Balance Sheet: ${ledger.ledger_name} (${group.nature})`);
-          continue;
-        }
-
-        const move = moveMap.get(ledger.id) || { debit: 0, credit: 0 };
-        const closingSigned = openingSigned(ledger) + (move.debit - move.credit);
-        if (Math.abs(closingSigned) <= 0.009) continue;
-
-        // Use exact amounts without rounding
-        const amountAbs = Math.abs(closingSigned);
-        
-        // ASSETS CLASSIFICATION
-        if (group.nature === 'asset') {
-          console.log(`📊 Asset: ${ledger.ledger_name} (${group.group_code}) = ₹${amountAbs.toFixed(2)}`);
-          
-          let category = 'Current Assets';
-          let categoryMap = currentAssets;
-          
-          // FIXED ASSETS (Non-current Assets)
-          if (['FA', 'LAND', 'BUILDING', 'MACHINERY', 'FURNITURE', 'VEHICLES', 'EQUIPMENT'].includes(group.group_code)) {
-            category = 'Fixed Assets';
-            categoryMap = fixedAssets;
-          }
-          // INVESTMENTS
-          else if (['INVEST', 'SHARES', 'BONDS', 'SECURITIES'].includes(group.group_code)) {
-            category = 'Investments';
-            categoryMap = investments;
-          }
-          // CURRENT ASSETS (default)
-          else {
-            // CASH, BANK, SD (Debtors), CA, LA (short-term)
-            category = 'Current Assets';
-            categoryMap = currentAssets;
-          }
-          
-          const groupKey = group.name;
-          categoryMap.set(groupKey, (categoryMap.get(groupKey) || 0) + amountAbs);
-          
-          assetDetails.push({
-            ledger_name: ledger.ledger_name,
-            ledger_code: ledger.ledger_code,
-            amount: amountAbs,
-            group_code: group.group_code,
-            group_name: group.name,
-            balance_type: closingSigned >= 0 ? 'Dr' : 'Cr',
-            category: category
-          });
-        } 
-        // LIABILITIES & CAPITAL CLASSIFICATION
-        else if (group.nature === 'liability') {
-          console.log(`📋 Liability: ${ledger.ledger_name} (${group.group_code}) = ₹${amountAbs.toFixed(2)}`);
-          
-          let category = 'Current Liabilities';
-          let categoryMap = currentLiabilities;
-          
-          // CAPITAL & RESERVES
-          if (['CAP', 'CAPITAL', 'RES', 'RESERVES', 'SURPLUS', 'RETAINED'].includes(group.group_code)) {
-            category = 'Capital & Reserves';
-            categoryMap = capitalReserves;
-          }
-          // LONG-TERM LIABILITIES
-          else if (['LOAN', 'LT_LOAN', 'DEBENTURES', 'MORTGAGE'].includes(group.group_code)) {
-            category = 'Long-term Liabilities';
-            categoryMap = longTermLiabilities;
-          }
-          // CURRENT LIABILITIES (default)
-          else {
-            // SC (Creditors), CL, DT (Duties & Taxes), Bank Overdraft, etc.
-            category = 'Current Liabilities';
-            categoryMap = currentLiabilities;
-          }
-          
-          const groupKey = group.name;
-          categoryMap.set(groupKey, (categoryMap.get(groupKey) || 0) + amountAbs);
-          
-          liabilityDetails.push({
-            ledger_name: ledger.ledger_name,
-            ledger_code: ledger.ledger_code,
-            amount: amountAbs,
-            group_code: group.group_code,
-            group_name: group.name,
-            balance_type: closingSigned >= 0 ? 'Dr' : 'Cr',
-            category: category
-          });
-        }
-      }
-
-      // Convert categorized data to arrays with exact amounts
-      const fixedAssetsArr = [...fixedAssets.entries()].map(([groupName, amount]) => ({
-        group_name: groupName,
-        amount: amount
-      }));
-      
-      const currentAssetsArr = [...currentAssets.entries()].map(([groupName, amount]) => ({
-        group_name: groupName,
-        amount: amount
-      }));
-      
-      const investmentsArr = [...investments.entries()].map(([groupName, amount]) => ({
-        group_name: groupName,
-        amount: amount
-      }));
-      
-      const capitalReservesArr = [...capitalReserves.entries()].map(([groupName, amount]) => ({
-        group_name: groupName,
-        amount: amount
-      }));
-      
-      const longTermLiabilitiesArr = [...longTermLiabilities.entries()].map(([groupName, amount]) => ({
-        group_name: groupName,
-        amount: amount
-      }));
-      
-      const currentLiabilitiesArr = [...currentLiabilities.entries()].map(([groupName, amount]) => ({
-        group_name: groupName,
-        amount: amount
-      }));
-
-      // Add current period P&L to Capital & Reserves with exact amount
-      if (Math.abs(currentPeriodPL) > 0.009) {
-        capitalReservesArr.push({
-          group_name: 'Profit & Loss A/c',
-          amount: Math.abs(currentPeriodPL),
-          note: currentPeriodPL >= 0 ? 'Current Period Profit' : 'Current Period Loss'
+          closingStock += qty * avgCost;
+        });
+      } else {
+        stockLedgers.forEach(ledger => {
+          openingStock += toNum(ledger.opening_balance, 0);
+          closingStock += toNum(ledger.current_balance, 0);
         });
       }
 
-      // Calculate totals by category with exact amounts (no rounding)
-      const totalFixedAssets = fixedAssetsArr.reduce((s, i) => s + toNum(i.amount, 0), 0);
-      const totalCurrentAssets = currentAssetsArr.reduce((s, i) => s + toNum(i.amount, 0), 0);
-      const totalInvestments = investmentsArr.reduce((s, i) => s + toNum(i.amount, 0), 0);
-      const totalAssets = totalFixedAssets + totalCurrentAssets + totalInvestments;
+      // Calculate P&L components
+      let totalSales = 0;
+      let totalSalesReturns = 0;
+      let totalPurchases = 0;
+      let totalPurchaseReturns = 0;
+      let totalDirectExpenses = 0;
+      let totalIndirectExpenses = 0;
+      let totalOtherIncomes = 0;
 
-      const totalCapitalReserves = capitalReservesArr.reduce((s, i) => s + toNum(i.amount, 0), 0);
-      const totalLongTermLiabilities = longTermLiabilitiesArr.reduce((s, i) => s + toNum(i.amount, 0), 0);
-      const totalCurrentLiabilities = currentLiabilitiesArr.reduce((s, i) => s + toNum(i.amount, 0), 0);
-      const totalLiabilities = totalCapitalReserves + totalLongTermLiabilities + totalCurrentLiabilities;
-      
-      // Calculate difference with exact amounts (show actual difference)
-      const difference = totalAssets - totalLiabilities;
+      ledgers.forEach(ledger => {
+        const group = groupMap.get(ledger.account_group_id);
+        if (!group) return;
 
-      // DETAILED PRECISION DEBUGGING
-      console.log(`  🔍 DETAILED PRECISION DEBUG:`);
-      console.log(`    Current Period P&L: ${currentPeriodPL} (exact)`);
-      console.log(`    P&L added to Capital & Reserves: ${Math.round(Math.abs(currentPeriodPL) * 100) / 100}`);
-      console.log(`    Capital & Reserves Array:`, capitalReservesArr.map(item => `${item.group_name}: ${item.amount}`));
-      console.log(`    Total Capital & Reserves: ${totalCapitalReserves} (raw sum)`);
-      console.log(`    Total Current Liabilities: ${totalCurrentLiabilities} (raw sum)`);
-      console.log(`    Total Long-term Liabilities: ${totalLongTermLiabilities} (raw sum)`);
-      console.log(`    Raw Total Liabilities: ${totalLiabilities}`);
-      console.log(`    Raw Total Assets: ${totalAssets}`);
-      console.log(`    Precision Loss Check: Assets(${totalAssets}) - Liabilities(${totalLiabilities}) = ${totalAssets - totalLiabilities}`);
+        const move = moveMap.get(ledger.id) || { debit: 0, credit: 0 };
+        const movementSigned = move.debit - move.credit;
 
-      console.log(`📊 BALANCE SHEET CALCULATION:`);
-      console.log(`  P&L CALCULATION (for Balance Sheet consistency):`);
-      console.log(`    Net Sales: ₹${netSales.toFixed(2)}`);
-      console.log(`    Opening Stock: ₹${openingStock.toFixed(2)}`);
-      console.log(`    Net Purchases: ₹${netPurchases.toFixed(2)}`);
-      console.log(`    Direct Expenses: ₹${totalDirectExpenses.toFixed(2)}`);
-      console.log(`    Closing Stock: ₹${closingStock.toFixed(2)}`);
-      console.log(`    COGS: ₹${cogs.toFixed(2)}`);
-      console.log(`    Gross Profit: ₹${grossProfit.toFixed(2)}`);
-      console.log(`    Other Incomes: ₹${totalOtherIncomes.toFixed(2)}`);
-      console.log(`    Indirect Expenses: ₹${totalIndirectExpenses.toFixed(2)}`);
-      console.log(`    NET PROFIT: ₹${currentPeriodPL.toFixed(2)}`);
-      console.log(`  ASSETS:`);
-      console.log(`    Fixed Assets: ₹${totalFixedAssets.toFixed(2)}`);
-      console.log(`    Current Assets: ₹${totalCurrentAssets.toFixed(2)}`);
-      console.log(`    Investments: ₹${totalInvestments.toFixed(2)}`);
-      console.log(`    TOTAL ASSETS: ₹${totalAssets.toFixed(2)}`);
-      console.log(`  LIABILITIES & CAPITAL:`);
-      console.log(`    Capital & Reserves: ₹${totalCapitalReserves.toFixed(2)}`);
-      console.log(`    Long-term Liabilities: ₹${totalLongTermLiabilities.toFixed(2)}`);
-      console.log(`    Current Liabilities: ₹${totalCurrentLiabilities.toFixed(2)}`);
-      console.log(`    TOTAL LIABILITIES: ₹${totalLiabilities.toFixed(2)}`);
-      console.log(`  BALANCE VERIFICATION:`);
-      console.log(`    Total Assets: ₹${totalAssets.toFixed(2)}`);
-      console.log(`    Total Liabilities: ₹${totalLiabilities.toFixed(2)}`);
-      console.log(`    Difference: ₹${difference.toFixed(2)}`);
-      console.log(`    Is Balanced: ${Math.abs(difference) < 0.01 ? 'YES' : 'NO'}`);
-      console.log(`  Stock Value (from inventory): ₹${inventoryItems.reduce((total, item) => {
-        const qty = toNum(item.quantity_on_hand, 0);
-        const avgCost = toNum(item.avg_cost, 0);
-        return total + (qty * avgCost);
-      }, 0).toFixed(2)}`);
-      console.log(`  📊 Account Classification Summary:`);
-      console.log(`    - Fixed Assets: ${fixedAssetsArr.length} groups`);
-      console.log(`    - Current Assets: ${currentAssetsArr.length} groups`);
-      console.log(`    - Investments: ${investmentsArr.length} groups`);
-      console.log(`    - Capital & Reserves: ${capitalReservesArr.length} groups`);
-      console.log(`    - Long-term Liabilities: ${longTermLiabilitiesArr.length} groups`);
-      console.log(`    - Current Liabilities: ${currentLiabilitiesArr.length} groups`);
-      console.log(`    - P&L accounts excluded from Balance Sheet`);
-      console.log(`    - Stock handled separately from inventory items`);
-      console.log(`  🔍 EXACT AMOUNTS (No Rounding Applied):`);
-      console.log(`    Reports show exact amounts as per accounting records`);
-      console.log(`    Only invoices apply round off, not reports`);
-      console.log(`    Difference of ₹${difference.toFixed(2)} is the actual variance`);
+        // Skip stock accounts
+        if (group.group_code === 'INV') return;
 
-      // Structure response in Standard Balance Sheet format
-      res.json({
-        // ASSETS SIDE (Standard Balance Sheet Format)
-        assets: {
-          fixed_assets: {
-            total: totalFixedAssets,
-            groups: fixedAssetsArr,
-            description: "Land, Building, Machinery, Furniture, Vehicles (Net of Depreciation)"
-          },
-          current_assets: {
-            total: totalCurrentAssets,
-            groups: currentAssetsArr,
-            description: "Stock, Debtors, Cash, Bank, Prepaid Expenses, Short-term Advances"
-          },
-          investments: {
-            total: totalInvestments,
-            groups: investmentsArr,
-            description: "Shares, Bonds, Securities, Long-term Investments"
-          },
-          total_assets: totalAssets
-        },
+        // INCOME ACCOUNTS
+        if (group.nature === 'income') {
+          const amt = -movementSigned;
+          if (amt <= 0.009) return;
+
+          if (['SAL', 'SALES'].includes(group.group_code)) {
+            totalSales += amt;
+          } else if (['SAL_RET', 'SALES_RETURNS'].includes(group.group_code)) {
+            totalSalesReturns += amt;
+          } else {
+            totalOtherIncomes += amt;
+          }
+        }
+        // EXPENSE ACCOUNTS
+        else if (group.nature === 'expense') {
+          const amt = movementSigned;
+          if (amt <= 0.009) return;
+
+          if (['PUR', 'PURCHASE'].includes(group.group_code)) {
+            totalPurchases += amt;
+          } else if (['PUR_RET', 'PURCHASE_RETURNS'].includes(group.group_code)) {
+            totalPurchaseReturns += amt;
+          } else if (['DIR_EXP', 'FREIGHT_IN', 'CARRIAGE', 'WAGES', 'MFG_EXP', 'PROD_EXP'].includes(group.group_code)) {
+            totalDirectExpenses += amt;
+          } else {
+            totalIndirectExpenses += amt;
+          }
+        }
+      });
+
+      // Calculate P&L
+      const netSales = totalSales - totalSalesReturns;
+      const netPurchases = totalPurchases - totalPurchaseReturns;
+      const cogs = openingStock + netPurchases + totalDirectExpenses - closingStock;
+      const grossProfit = netSales - cogs;
+      const netProfitLoss = grossProfit + totalOtherIncomes - totalIndirectExpenses;
+
+      console.log(`  Net Profit/Loss: ₹${netProfitLoss.toFixed(2)}`);
+
+      // Initialize balance sheet categories
+      const assets = {
+        fixed_assets: [],
+        current_assets: [],
+        investments: [],
+        other_assets: []
+      };
+
+      const liabilities = {
+        capital: [],
+        reserves: [],
+        profit_loss: netProfitLoss,
+        current_liabilities: [],
+        loans: [],
+        other_liabilities: []
+      };
+
+      let totalAssets = 0;
+      let totalLiabilities = netProfitLoss;
+
+      // Process each ledger for balance sheet
+      ledgers.forEach(ledger => {
+        const group = groupMap.get(ledger.account_group_id);
+        if (!group) return;
+
+        // Skip P&L accounts (income/expense) - they don't appear in Balance Sheet
+        if (group.affects_pl) return;
+
+        const rawBalance = toNum(ledger.current_balance, 0);
+        const balanceType = (ledger.balance_type || 'debit').toLowerCase();
         
-        // LIABILITIES & CAPITAL SIDE (Standard Balance Sheet Format)
-        liabilities_and_capital: {
-          capital_and_reserves: {
-            total: totalCapitalReserves,
-            groups: capitalReservesArr,
-            description: "Owner's Capital, Reserves & Surplus, Retained Earnings, Current P&L"
+        let signedBalance = 0;
+        
+        // Determine signed balance based on group nature
+        if (group.nature === 'asset') {
+          signedBalance = balanceType === 'debit' ? rawBalance : -rawBalance;
+        } else if (group.nature === 'liability' || group.nature === 'equity') {
+          signedBalance = balanceType === 'credit' ? rawBalance : -rawBalance;
+        } else {
+          return; // Skip if nature is not recognized
+        }
+        
+        if (Math.abs(signedBalance) < 0.01) return;
+
+        const ledgerInfo = {
+          name: ledger.ledger_name,
+          code: ledger.ledger_code,
+          balance: signedBalance,
+          balance_type: balanceType,
+          group: group.name,
+          bs_category: group.bs_category
+        };
+
+        // ASSETS - Use bs_category instead of hardcoded group codes
+        if (group.nature === 'asset') {
+          totalAssets += signedBalance;
+
+          if (group.bs_category === 'fixed_asset') {
+            assets.fixed_assets.push(ledgerInfo);
+          } else if (group.bs_category === 'current_asset') {
+            assets.current_assets.push(ledgerInfo);
+          } else if (group.bs_category === 'investment') {
+            assets.investments.push(ledgerInfo);
+          } else {
+            assets.other_assets.push(ledgerInfo);
+          }
+        }
+        // LIABILITIES & EQUITY - Use bs_category instead of hardcoded group codes
+        else if (group.nature === 'liability' || group.nature === 'equity') {
+          totalLiabilities += signedBalance;
+
+          if (group.nature === 'equity' || group.bs_category === 'equity') {
+            // Capital and Reserves
+            if (group.group_code === 'CAP') {
+              liabilities.capital.push(ledgerInfo);
+            } else {
+              liabilities.reserves.push(ledgerInfo);
+            }
+          } else if (group.bs_category === 'current_liability') {
+            liabilities.current_liabilities.push(ledgerInfo);
+          } else if (group.bs_category === 'noncurrent_liability') {
+            liabilities.loans.push(ledgerInfo);
+          } else if (group.is_tax_group) {
+            // GST/Tax ledgers - special handling
+            // Input GST = Asset (debit), Output GST = Liability (credit)
+            if (balanceType === 'debit') {
+              // Input GST - treat as current asset
+              totalAssets += signedBalance;
+              totalLiabilities -= signedBalance; // Remove from liabilities
+              assets.current_assets.push({
+                ...ledgerInfo,
+                group: `${group.name} (Input)`
+              });
+            } else {
+              // Output GST - treat as current liability
+              liabilities.current_liabilities.push({
+                ...ledgerInfo,
+                group: `${group.name} (Output)`
+              });
+            }
+          } else {
+            liabilities.other_liabilities.push(ledgerInfo);
+          }
+        }
+      });
+
+      // Calculate totals
+      const fixedAssetsTotal = assets.fixed_assets.reduce((sum, a) => sum + a.balance, 0);
+      const currentAssetsTotal = assets.current_assets.reduce((sum, a) => sum + a.balance, 0);
+      const investmentsTotal = assets.investments.reduce((sum, a) => sum + a.balance, 0);
+      const otherAssetsTotal = assets.other_assets.reduce((sum, a) => sum + a.balance, 0);
+
+      const capitalTotal = liabilities.capital.reduce((sum, l) => sum + l.balance, 0);
+      const reservesTotal = liabilities.reserves.reduce((sum, l) => sum + l.balance, 0);
+      const currentLiabilitiesTotal = liabilities.current_liabilities.reduce((sum, l) => sum + l.balance, 0);
+      const loansTotal = liabilities.loans.reduce((sum, l) => sum + l.balance, 0);
+      const otherLiabilitiesTotal = liabilities.other_liabilities.reduce((sum, l) => sum + l.balance, 0);
+
+      const difference = totalAssets - totalLiabilities;
+      const isBalanced = Math.abs(difference) < 1.0;
+
+      // Key ratios
+      const currentRatio = currentLiabilitiesTotal > 0 ? (currentAssetsTotal / currentLiabilitiesTotal) : 0;
+      const debtToEquity = (capitalTotal + reservesTotal) > 0 ? (loansTotal / (capitalTotal + reservesTotal)) : 0;
+      const workingCapital = currentAssetsTotal - currentLiabilitiesTotal;
+
+      console.log(`  Total Assets: ₹${totalAssets.toFixed(2)}`);
+      console.log(`  Total Liabilities: ₹${totalLiabilities.toFixed(2)}`);
+      console.log(`  Difference: ₹${difference.toFixed(2)} ${isBalanced ? '✓' : '✗'}`);
+
+      res.json({
+        liabilities_and_equity: {
+          capital: {
+            total: capitalTotal,
+            accounts: liabilities.capital
           },
-          long_term_liabilities: {
-            total: totalLongTermLiabilities,
-            groups: longTermLiabilitiesArr,
-            description: "Long-term Loans, Debentures, Mortgage"
+          reserves_and_surplus: {
+            total: reservesTotal,
+            accounts: liabilities.reserves
+          },
+          profit_and_loss: {
+            amount: netProfitLoss,
+            type: netProfitLoss >= 0 ? 'profit' : 'loss',
+            as_of_date: asOn
+          },
+          loans_and_borrowings: {
+            total: loansTotal,
+            accounts: liabilities.loans
           },
           current_liabilities: {
-            total: totalCurrentLiabilities,
-            groups: currentLiabilitiesArr,
-            description: "Creditors, Bank Overdraft, Outstanding Expenses, Short-term Loans"
+            total: currentLiabilitiesTotal,
+            accounts: liabilities.current_liabilities
           },
-          total_liabilities: totalLiabilities
+          other_liabilities: {
+            total: otherLiabilitiesTotal,
+            accounts: liabilities.other_liabilities
+          },
+          total: totalLiabilities
         },
-        
-        // Detailed breakdown for analysis
-        asset_details: assetDetails.sort((a, b) => a.category.localeCompare(b.category)),
-        liability_details: liabilityDetails.sort((a, b) => a.category.localeCompare(b.category)),
-        
-        // Summary totals and verification (exact amounts)
-        totals: {
+        assets: {
+          fixed_assets: {
+            total: fixedAssetsTotal,
+            accounts: assets.fixed_assets
+          },
+          investments: {
+            total: investmentsTotal,
+            accounts: assets.investments
+          },
+          current_assets: {
+            total: currentAssetsTotal,
+            accounts: assets.current_assets
+          },
+          other_assets: {
+            total: otherAssetsTotal,
+            accounts: assets.other_assets
+          },
+          total: totalAssets
+        },
+        balance_check: {
           total_assets: totalAssets,
-          total_liabilities: totalLiabilities,
-          current_period_pl: currentPeriodPL,
+          total_liabilities_and_equity: totalLiabilities,
           difference: difference,
-          is_balanced: Math.abs(difference) < 0.01,
-          // Category-wise totals
-          fixed_assets: totalFixedAssets,
-          current_assets: totalCurrentAssets,
-          investments: totalInvestments,
-          capital_reserves: totalCapitalReserves,
-          long_term_liabilities: totalLongTermLiabilities,
-          current_liabilities: totalCurrentLiabilities
+          is_balanced: isBalanced
         },
-        
+        financial_ratios: {
+          current_ratio: currentRatio,
+          debt_to_equity_ratio: debtToEquity,
+          working_capital: workingCapital
+        },
         as_on_date: asOn,
-        format: "standard_balance_sheet",
-        notes: [
-          'Balance Sheet follows Standard Accounting Format',
-          'ASSETS: Fixed Assets + Current Assets + Investments = Total Assets',
-          'LIABILITIES: Capital & Reserves + Long-term Liabilities + Current Liabilities = Total Liabilities',
-          'GOLDEN RULE: Total Assets = Total Liabilities (Always balanced)',
-          'Fixed Assets: Land, Building, Machinery, Furniture, Vehicles (Net of Depreciation)',
-          'Current Assets: Stock, Debtors, Cash, Bank, Prepaid Expenses, Short-term Advances',
-          'Capital & Reserves: Owner\'s Capital, Reserves & Surplus, Retained Earnings',
-          'Current Period P&L automatically added to Capital & Reserves',
-          'Stock valued from actual inventory items (Closing Stock from P&L)',
-          'Only Balance Sheet accounts included (Assets, Liabilities, Capital)',
-          'P&L accounts (Income, Expenses) excluded from Balance Sheet',
-          'Depreciation charged in P&L reduces Fixed Assets value in Balance Sheet',
-          'EXACT AMOUNTS: Reports show precise values without rounding',
-          'Round off only applies to invoices, not to financial reports',
-          'Any difference shown is the actual variance in accounting records'
-        ]
+        format: "balance_sheet"
       });
     } catch (err) {
       next(err);

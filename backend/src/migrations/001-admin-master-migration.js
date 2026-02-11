@@ -886,7 +886,118 @@ module.exports = {
       }
     }
 
-    // 6. PAYMENTS TABLE (in master DB for Razorpay)
+    // 6. ACCOUNT_GROUPS TABLE ENHANCEMENTS (in master DB)
+    const [accountGroupsTable] = await queryInterface.sequelize.query("SHOW TABLES LIKE 'account_groups'");
+    if (accountGroupsTable.length > 0) {
+      console.log('🔧 Enhancing account_groups table...');
+      
+      // Check existing columns
+      const [columns] = await queryInterface.sequelize.query(`SHOW COLUMNS FROM account_groups`);
+      const existingColumns = columns.map(c => c.Field);
+      
+      // Add new columns if they don't exist
+      if (!existingColumns.includes('nature')) {
+        await queryInterface.sequelize.query(`
+          ALTER TABLE account_groups 
+          ADD COLUMN nature VARCHAR(20) COMMENT 'asset/liability/equity/income/expense'
+        `);
+        console.log('   ✓ Added: nature');
+      } else {
+        // Modify existing nature column to support 'equity'
+        await queryInterface.sequelize.query(`
+          ALTER TABLE account_groups 
+          MODIFY COLUMN nature ENUM('asset','liability','equity','income','expense') NOT NULL
+        `);
+        console.log('   ✓ Modified: nature (added equity option)');
+      }
+
+      if (!existingColumns.includes('bs_category')) {
+        await queryInterface.sequelize.query(`
+          ALTER TABLE account_groups 
+          ADD COLUMN bs_category VARCHAR(30) COMMENT 'Balance Sheet category'
+        `);
+        console.log('   ✓ Added: bs_category');
+      }
+
+      if (!existingColumns.includes('affects_pl')) {
+        await queryInterface.sequelize.query(`
+          ALTER TABLE account_groups 
+          ADD COLUMN affects_pl BOOLEAN DEFAULT false COMMENT 'Affects Profit & Loss'
+        `);
+        console.log('   ✓ Added: affects_pl');
+      }
+
+      if (!existingColumns.includes('is_tax_group')) {
+        await queryInterface.sequelize.query(`
+          ALTER TABLE account_groups 
+          ADD COLUMN is_tax_group BOOLEAN DEFAULT false COMMENT 'GST/Tax control group'
+        `);
+        console.log('   ✓ Added: is_tax_group');
+      }
+
+      // Update existing groups with proper metadata
+      console.log('📋 Updating group metadata...');
+
+      // ASSET GROUPS - Current Assets
+      await queryInterface.sequelize.query(`
+        UPDATE account_groups 
+        SET nature='asset', bs_category='current_asset', affects_pl=false 
+        WHERE group_code IN ('BANK','CASH','CA','LA','INV','SD')
+      `);
+
+      // ASSET GROUPS - Fixed Assets
+      await queryInterface.sequelize.query(`
+        UPDATE account_groups 
+        SET nature='asset', bs_category='fixed_asset', affects_pl=false 
+        WHERE group_code='FA'
+      `);
+
+      // LIABILITY GROUPS - Current Liabilities
+      await queryInterface.sequelize.query(`
+        UPDATE account_groups 
+        SET nature='liability', bs_category='current_liability', affects_pl=false 
+        WHERE group_code IN ('CL','SC')
+      `);
+
+      // LIABILITY GROUPS - Non-current Liabilities
+      await queryInterface.sequelize.query(`
+        UPDATE account_groups 
+        SET nature='liability', bs_category='noncurrent_liability', affects_pl=false 
+        WHERE group_code='LOAN'
+      `);
+
+      // EQUITY GROUPS
+      await queryInterface.sequelize.query(`
+        UPDATE account_groups 
+        SET nature='equity', bs_category='equity', affects_pl=false 
+        WHERE group_code IN ('CAP','RES')
+      `);
+
+      // TAX CONTROL GROUP (Special handling for GST)
+      await queryInterface.sequelize.query(`
+        UPDATE account_groups 
+        SET nature='liability', bs_category='tax_control', is_tax_group=true, affects_pl=false 
+        WHERE group_code='DT'
+      `);
+
+      // INCOME GROUPS (affects P&L)
+      await queryInterface.sequelize.query(`
+        UPDATE account_groups 
+        SET nature='income', affects_pl=true 
+        WHERE group_code IN ('DIR_INC','IND_INC','SAL')
+      `);
+
+      // EXPENSE GROUPS (affects P&L)
+      await queryInterface.sequelize.query(`
+        UPDATE account_groups 
+        SET nature='expense', affects_pl=true 
+        WHERE group_code IN ('DIR_EXP','IND_EXP','PUR')
+      `);
+
+      console.log('✅ Account groups enhancement complete');
+    }
+
+    // 7. PAYMENTS TABLE (in master DB for Razorpay)
     const [paymentsTable] = await queryInterface.sequelize.query("SHOW TABLES LIKE 'payments'");
     if (paymentsTable.length === 0) {
       await queryInterface.createTable('payments', {

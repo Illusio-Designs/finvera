@@ -108,7 +108,8 @@ export default function LoginScreen() {
           const mostRecent = sortedCredentials[0];
           setSavedCredentials(mostRecent);
           setAllSavedCredentials(sortedCredentials);
-          setEmail(mostRecent.email || '');
+          // Don't auto-fill email - let user type their own
+          // setEmail(mostRecent.email || '');
           console.log('✅ Biometric credentials found for:', mostRecent.email);
           console.log(`📋 Total saved accounts: ${credentialsList.length}`);
         }
@@ -177,8 +178,8 @@ export default function LoginScreen() {
         setEmail(credToUse.email);
         setPassword(credToUse.password);
         setShowAccountSelection(false);
-        // Proceed with login using saved credentials
-        await handleLoginWithCredentials(credToUse.email, credToUse.password);
+        // Proceed with login using saved credentials - mark as biometric
+        await handleLoginWithCredentials(credToUse.email, credToUse.password, true);
       } else {
         showError('Authentication Failed', 'Authentication was cancelled or failed');
       }
@@ -200,9 +201,11 @@ export default function LoginScreen() {
     handleBiometricLogin(credential);
   };
 
-  const handleLoginWithCredentials = async (emailParam, passwordParam) => {
-    const loginEmail = emailParam || email;
-    const loginPassword = passwordParam || password;
+  const handleLoginWithCredentials = async (emailParam, passwordParam, isBiometric = false) => {
+    // Only use params if explicitly provided (biometric login)
+    // Otherwise always use the form values
+    const loginEmail = isBiometric ? emailParam : (emailParam || email);
+    const loginPassword = isBiometric ? passwordParam : (passwordParam || password);
 
     if (!loginEmail || !loginPassword) {
       showError('Missing Information', 'Please fill in all fields');

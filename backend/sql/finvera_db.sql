@@ -27,6 +27,7 @@ SET time_zone = "+00:00";
 -- Table structure for table `blogs`
 --
 
+DROP TABLE IF EXISTS `blogs`;
 CREATE TABLE `blogs` (
   `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `title` varchar(255) NOT NULL,
@@ -54,6 +55,7 @@ CREATE TABLE `blogs` (
 -- Table structure for table `blog_categories`
 --
 
+DROP TABLE IF EXISTS `blog_categories`;
 CREATE TABLE `blog_categories` (
   `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `name` varchar(100) NOT NULL,
@@ -70,8 +72,9 @@ CREATE TABLE `blog_categories` (
 -- Table structure for table `commissions`
 --
 
+DROP TABLE IF EXISTS `commissions`;
 CREATE TABLE `commissions` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT uuid(),
+  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT (uuid()),
   `tenant_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'Logical reference to master.tenant_master.id (no FK constraint)',
   `distributor_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `salesman_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
@@ -93,8 +96,9 @@ CREATE TABLE `commissions` (
 -- Table structure for table `distributors`
 --
 
+DROP TABLE IF EXISTS `distributors`;
 CREATE TABLE `distributors` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT uuid(),
+  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT (uuid()),
   `user_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `distributor_code` varchar(255) NOT NULL,
   `company_name` varchar(255) DEFAULT NULL,
@@ -113,8 +117,9 @@ CREATE TABLE `distributors` (
 -- Table structure for table `leads`
 --
 
+DROP TABLE IF EXISTS `leads`;
 CREATE TABLE `leads` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT uuid(),
+  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT (uuid()),
   `salesman_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `distributor_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `company_name` varchar(255) NOT NULL,
@@ -134,8 +139,9 @@ CREATE TABLE `leads` (
 -- Table structure for table `lead_activities`
 --
 
+DROP TABLE IF EXISTS `lead_activities`;
 CREATE TABLE `lead_activities` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT uuid(),
+  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT (uuid()),
   `lead_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `activity_type` varchar(255) DEFAULT NULL,
   `description` text DEFAULT NULL,
@@ -150,8 +156,9 @@ CREATE TABLE `lead_activities` (
 -- Table structure for table `notifications`
 --
 
+DROP TABLE IF EXISTS `notifications`;
 CREATE TABLE `notifications` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT uuid(),
+  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT (uuid()),
   `user_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `type` varchar(255) NOT NULL COMMENT 'Notification type (e.g., target_achieved, commission_approved)',
   `title` varchar(255) NOT NULL,
@@ -192,7 +199,7 @@ CREATE TABLE `notification_preferences` (
 --
 
 CREATE TABLE `payouts` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT uuid(),
+  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT (uuid()),
   `distributor_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `salesman_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `payout_type` varchar(255) NOT NULL,
@@ -213,7 +220,7 @@ CREATE TABLE `payouts` (
 --
 
 CREATE TABLE `referral_codes` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT uuid(),
+  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT (uuid()),
   `code` varchar(255) NOT NULL,
   `owner_type` varchar(255) DEFAULT NULL,
   `owner_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
@@ -236,7 +243,7 @@ CREATE TABLE `referral_codes` (
 --
 
 CREATE TABLE `referral_discount_configs` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT uuid(),
+  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT (uuid()),
   `discount_percentage` decimal(5,2) NOT NULL DEFAULT 10.00 COMMENT 'Discount percentage for referral code users',
   `effective_from` datetime NOT NULL COMMENT 'Date from which this discount percentage is effective',
   `effective_until` datetime DEFAULT NULL COMMENT 'Date until which this discount percentage is effective (null = indefinite)',
@@ -253,7 +260,7 @@ CREATE TABLE `referral_discount_configs` (
 --
 
 CREATE TABLE `referral_rewards` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT uuid(),
+  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT (uuid()),
   `referrer_type` varchar(255) DEFAULT NULL,
   `referrer_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `referee_tenant_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
@@ -276,7 +283,7 @@ CREATE TABLE `referral_rewards` (
 --
 
 CREATE TABLE `salesmen` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT uuid(),
+  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT (uuid()),
   `user_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `distributor_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `salesman_code` varchar(255) NOT NULL,
@@ -340,7 +347,7 @@ CREATE TABLE `seo_settings` (
 --
 
 CREATE TABLE `subscription_plans` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT uuid(),
+  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT (uuid()),
   `plan_code` varchar(255) NOT NULL,
   `plan_name` varchar(255) NOT NULL,
   `description` text DEFAULT NULL,
@@ -437,7 +444,7 @@ CREATE TABLE `support_tickets` (
 --
 
 CREATE TABLE `targets` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT uuid(),
+  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT (uuid()),
   `distributor_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `salesman_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `target_type` varchar(255) DEFAULT NULL,
@@ -476,7 +483,7 @@ CREATE TABLE `ticket_messages` (
 --
 
 CREATE TABLE `users` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT uuid(),
+  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT (uuid()),
   `tenant_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Tenant ID for tenant_admin users, null for admin portal users',
   `email` varchar(255) NOT NULL,
   `password` varchar(255) DEFAULT NULL,

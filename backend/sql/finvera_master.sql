@@ -174,7 +174,7 @@ INSERT INTO `companies` (`id`, `tenant_id`, `created_by_user_id`, `company_name`
 --
 
 CREATE TABLE `payments` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT uuid(),
+  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT (uuid()),
   `tenant_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `subscription_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `razorpay_payment_id` varchar(255) NOT NULL,
@@ -218,7 +218,7 @@ INSERT INTO `seeder_meta` (`id`, `name`, `executed_at`) VALUES
 --
 
 CREATE TABLE `subscriptions` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT uuid(),
+  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT (uuid()),
   `tenant_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `subscription_plan_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `razorpay_subscription_id` varchar(255) NOT NULL,

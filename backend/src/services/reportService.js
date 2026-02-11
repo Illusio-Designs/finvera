@@ -2,16 +2,24 @@ const logger = require('../utils/logger');
 
 /**
  * Report Service
- * Handles generation of financial reports (P&L, Balance Sheet, etc.)
+ * Handles generation of financial reports (P&L, Balance Sheet, Trial Balance, etc.)
+ * Uses enhanced account group metadata (nature, bs_category, affects_pl, is_tax_group)
  */
+
+// Helper function to safely parse numbers
+function toNum(v, fallback = 0) {
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : fallback;
+}
 
 /**
  * Generate Profit & Loss Report
  * @param {Object} tenantModels - Tenant database models
+ * @param {Object} masterModels - Master database models
  * @param {Object} options - Report options (startDate, endDate, etc.)
  * @returns {Object} - P&L report data
  */
-async function generateProfitLossReport(tenantModels, options = {}) {
+async function generateProfitLossReport(tenantModels, masterModels, options = {}) {
   const { Sequelize } = tenantModels;
   const { Op } = Sequelize;
   
@@ -21,10 +29,7 @@ async function generateProfitLossReport(tenantModels, options = {}) {
     console.log('📊 Report Service - Generating P&L Report');
     console.log(`📅 Period: ${startDate} to ${endDate}`);
     
-    // Get master models to access AccountGroup
-    const masterModels = require('../models/masterModels');
-    
-    // Get all account groups
+    // Get all account groups with new metadata
     const accountGroups = await masterModels.AccountGroup.findAll();
     console.log(`📊 Total account groups: ${accountGroups.length}`);
     
@@ -68,12 +73,12 @@ async function generateProfitLossReport(tenantModels, options = {}) {
     const moveMap = new Map();
     ledgerEntries.forEach(entry => {
       moveMap.set(entry.ledger_id, {
-        debit: parseFloat(entry.total_debit || 0),
-        credit: parseFloat(entry.total_credit || 0)
+        debit: toNum(entry.total_debit, 0),
+        credit: toNum(entry.total_credit, 0)
       });
     });
     
-    // Get stock information
+    // Get stock information (INV group)
     const stockLedgers = ledgers.filter(l => {
       const group = groupMap.get(l.account_group_id);
       return group && group.group_code === 'INV';
@@ -89,16 +94,16 @@ async function generateProfitLossReport(tenantModels, options = {}) {
     
     if (inventoryItems.length > 0) {
       inventoryItems.forEach(item => {
-        const qty = parseFloat(item.quantity_on_hand || 0);
-        const avgCost = parseFloat(item.avg_cost || 0);
-        openingStock += parseFloat(item.opening_balance || 0);
+        const qty = toNum(item.quantity_on_hand, 0);
+        const avgCost = toNum(item.avg_cost, 0);
+        openingStock += toNum(item.opening_balance, 0);
         closingStock += qty * avgCost;
       });
     } else {
       // Fallback to ledger balances
       stockLedgers.forEach(ledger => {
-        openingStock += parseFloat(ledger.opening_balance || 0);
-        closingStock += parseFloat(ledger.current_balance || 0);
+        openingStock += toNum(ledger.opening_balance, 0);
+        closingStock += toNum(ledger.current_balance, 0);
       });
     }
     
@@ -113,10 +118,13 @@ async function generateProfitLossReport(tenantModels, options = {}) {
     let totalIndirectExpenses = 0;
     let totalOtherIncomes = 0;
     
-    // Process each ledger
+    // Process each ledger - USE affects_pl flag
     ledgers.forEach(ledger => {
       const group = groupMap.get(ledger.account_group_id);
       if (!group) return;
+      
+      // Only process P&L accounts (affects_pl = true)
+      if (!group.affects_pl) return;
       
       const move = moveMap.get(ledger.id) || { debit: 0, credit: 0 };
       const movementSigned = move.debit - move.credit;
@@ -139,7 +147,7 @@ async function generateProfitLossReport(tenantModels, options = {}) {
         else if (['SAL_RET', 'SALES_RETURNS'].includes(group.group_code)) {
           totalSalesReturns += amt;
         }
-        // Other Incomes
+        // Other Incomes (DIR_INC, IND_INC)
         else {
           totalOtherIncomes += amt;
         }
@@ -159,11 +167,11 @@ async function generateProfitLossReport(tenantModels, options = {}) {
         else if (['PUR_RET', 'PURCHASE_RETURNS'].includes(group.group_code)) {
           totalPurchaseReturns += amt;
         }
-        // Direct Expenses
-        else if (['DIR_EXP', 'FREIGHT_IN', 'CARRIAGE', 'WAGES', 'MFG_EXP', 'PROD_EXP'].includes(group.group_code)) {
+        // Direct Expenses (DIR_EXP)
+        else if (['DIR_EXP'].includes(group.group_code)) {
           totalDirectExpenses += amt;
         }
-        // Indirect Expenses
+        // Indirect Expenses (IND_EXP)
         else {
           totalIndirectExpenses += amt;
         }
@@ -230,96 +238,334 @@ async function generateProfitLossReport(tenantModels, options = {}) {
 /**
  * Generate Balance Sheet Report
  * @param {Object} tenantModels - Tenant database models
+ * @param {Object} masterModels - Master database models
  * @param {Object} options - Report options (asOnDate, etc.)
  * @returns {Object} - Balance sheet data
  */
-async function generateBalanceSheetReport(tenantModels, options = {}) {
+async function generateBalanceSheetReport(tenantModels, masterModels, options = {}) {
+  const { Sequelize } = tenantModels;
+  const { Op } = Sequelize;
+  
   try {
     const { asOnDate } = options;
+    const asOn = asOnDate || new Date().toISOString().slice(0, 10);
     
-    // Get all ledgers with their balances
-    const ledgers = await tenantModels.Ledger.findAll({
-      include: [{
-        model: tenantModels.VoucherLedgerEntry,
-        as: 'ledgerEntries',
-        attributes: ['debit_amount', 'credit_amount'],
-        required: false
-      }]
+    console.log('📊 Report Service - Generating Balance Sheet');
+    console.log(`📅 As on: ${asOn}`);
+    
+    // Get all account groups with new metadata
+    const accountGroups = await masterModels.AccountGroup.findAll();
+    const groupMap = new Map();
+    accountGroups.forEach(g => groupMap.set(g.id, g));
+    
+    // Get all active ledgers
+    const ledgers = await tenantModels.Ledger.findAll({ 
+      where: { is_active: true }
     });
     
-    // Categorize ledgers
-    const assets = [];
-    const liabilities = [];
+    // Calculate P&L for the period (to add to liabilities)
+    const plReport = await generateProfitLossReport(tenantModels, masterModels, {
+      startDate: '2026-01-31',
+      endDate: asOn
+    });
+    
+    const netProfitLoss = plReport.netProfit.amount;
+    
+    // Categorize assets and liabilities using bs_category
+    const assets = {
+      fixed_assets: [],
+      current_assets: [],
+      investments: [],
+      other_assets: []
+    };
+    
+    const liabilities = {
+      capital: [],
+      reserves: [],
+      current_liabilities: [],
+      noncurrent_liabilities: [],
+      other_liabilities: []
+    };
     
     let totalAssets = 0;
-    let totalLiabilities = 0;
-    
-    for (const ledger of ledgers) {
-      const balance = parseFloat(ledger.current_balance || 0);
-      const balanceType = ledger.balance_type?.toLowerCase() || '';
-      const ledgerName = ledger.ledger_name.toLowerCase();
+    let totalLiabilities = netProfitLoss; // Start with P&L
+
+    ledgers.forEach(ledger => {
+      const group = groupMap.get(ledger.account_group_id);
+      if (!group) return;
+
+      // Skip P&L accounts (they don't appear in Balance Sheet)
+      if (group.affects_pl) return;
+
+      const rawBalance = toNum(ledger.current_balance, 0);
+      const balanceType = (ledger.balance_type || 'debit').toLowerCase();
       
-      // Skip P&L accounts (Sales, Purchase, Round Off)
-      if (ledgerName.includes('sales') && !ledgerName.includes('test')) continue;
-      if (ledgerName.includes('purchase') && !ledgerName.includes('test')) continue;
-      if (ledgerName.includes('round off')) continue;
+      let signedBalance = 0;
       
-      if (balance <= 0) continue;
+      // Determine signed balance based on group nature
+      if (group.nature === 'asset') {
+        signedBalance = balanceType === 'debit' ? rawBalance : -rawBalance;
+      } else if (group.nature === 'liability' || group.nature === 'equity') {
+        signedBalance = balanceType === 'credit' ? rawBalance : -rawBalance;
+      } else {
+        return; // Skip if nature is not recognized
+      }
       
-      // Determine category
-      let category = 'Other';
-      if (ledgerName.includes('stock')) category = 'Inventory';
-      else if (ledgerName.includes('cash')) category = 'Cash & Bank';
-      else if (ledgerName.includes('bank')) category = 'Cash & Bank';
-      else if (ledgerName.includes('gst') || ledgerName.includes('tax')) category = 'Tax Accounts';
-      else if (ledgerName.includes('test sales')) category = 'Sundry Debtors';
-      else if (ledgerName.includes('test purchase')) category = 'Sundry Creditors';
-      
+      if (Math.abs(signedBalance) < 0.01) return;
+
       const ledgerInfo = {
         name: ledger.ledger_name,
-        category,
-        balance
+        code: ledger.ledger_code,
+        balance: signedBalance,
+        balance_type: balanceType,
+        group: group.name,
+        bs_category: group.bs_category
       };
-      
-      // Categorize based on balance type
-      if (balanceType === 'debit') {
-        assets.push(ledgerInfo);
-        totalAssets += balance;
-      } else if (balanceType === 'credit') {
-        liabilities.push(ledgerInfo);
-        totalLiabilities += balance;
+
+      // ASSETS - Use bs_category
+      if (group.nature === 'asset') {
+        totalAssets += signedBalance;
+
+        if (group.bs_category === 'fixed_asset') {
+          assets.fixed_assets.push(ledgerInfo);
+        } else if (group.bs_category === 'current_asset') {
+          assets.current_assets.push(ledgerInfo);
+        } else if (group.bs_category === 'investment') {
+          assets.investments.push(ledgerInfo);
+        } else {
+          assets.other_assets.push(ledgerInfo);
+        }
       }
-    }
-    
-    // Calculate Net Profit from P&L
-    const plReport = await generateProfitLossReport(tenantModels, options);
-    const netProfit = plReport.netProfit.amount;
-    
-    // Group assets and liabilities by category
-    const groupedAssets = groupByCategory(assets);
-    const groupedLiabilities = groupByCategory(liabilities);
-    
+      // LIABILITIES & EQUITY - Use bs_category and is_tax_group
+      else if (group.nature === 'liability' || group.nature === 'equity') {
+        totalLiabilities += signedBalance;
+
+        if (group.nature === 'equity' || group.bs_category === 'equity') {
+          // Capital and Reserves
+          if (group.group_code === 'CAP') {
+            liabilities.capital.push(ledgerInfo);
+          } else {
+            liabilities.reserves.push(ledgerInfo);
+          }
+        } else if (group.bs_category === 'current_liability') {
+          liabilities.current_liabilities.push(ledgerInfo);
+        } else if (group.bs_category === 'noncurrent_liability') {
+          liabilities.noncurrent_liabilities.push(ledgerInfo);
+        } else if (group.is_tax_group) {
+          // GST/Tax ledgers - special handling
+          // Input GST (debit) = Asset, Output GST (credit) = Liability
+          if (balanceType === 'debit') {
+            // Input GST - treat as current asset
+            totalAssets += signedBalance;
+            totalLiabilities -= signedBalance; // Remove from liabilities
+            assets.current_assets.push({
+              ...ledgerInfo,
+              group: `${group.name} (Input GST)`
+            });
+          } else {
+            // Output GST - treat as current liability
+            liabilities.current_liabilities.push({
+              ...ledgerInfo,
+              group: `${group.name} (Output GST)`
+            });
+          }
+        } else {
+          liabilities.other_liabilities.push(ledgerInfo);
+        }
+      }
+    });
+
+    // Calculate totals
+    const fixedAssetsTotal = assets.fixed_assets.reduce((sum, a) => sum + a.balance, 0);
+    const currentAssetsTotal = assets.current_assets.reduce((sum, a) => sum + a.balance, 0);
+    const investmentsTotal = assets.investments.reduce((sum, a) => sum + a.balance, 0);
+    const otherAssetsTotal = assets.other_assets.reduce((sum, a) => sum + a.balance, 0);
+
+    const capitalTotal = liabilities.capital.reduce((sum, l) => sum + l.balance, 0);
+    const reservesTotal = liabilities.reserves.reduce((sum, l) => sum + l.balance, 0);
+    const currentLiabilitiesTotal = liabilities.current_liabilities.reduce((sum, l) => sum + l.balance, 0);
+    const noncurrentLiabilitiesTotal = liabilities.noncurrent_liabilities.reduce((sum, l) => sum + l.balance, 0);
+    const otherLiabilitiesTotal = liabilities.other_liabilities.reduce((sum, l) => sum + l.balance, 0);
+
+    const difference = totalAssets - totalLiabilities;
+    const isBalanced = Math.abs(difference) < 1.0;
+
+    // Key ratios
+    const currentRatio = currentLiabilitiesTotal > 0 ? (currentAssetsTotal / currentLiabilitiesTotal) : 0;
+    const debtToEquity = (capitalTotal + reservesTotal) > 0 ? (noncurrentLiabilitiesTotal / (capitalTotal + reservesTotal)) : 0;
+    const workingCapital = currentAssetsTotal - currentLiabilitiesTotal;
+
+    console.log(`  Total Assets: ₹${totalAssets.toFixed(2)}`);
+    console.log(`  Total Liabilities: ₹${totalLiabilities.toFixed(2)}`);
+    console.log(`  Difference: ₹${difference.toFixed(2)} ${isBalanced ? '✓' : '✗'}`);
+
     return {
-      capital: {
-        netProfit,
-        total: netProfit
-      },
-      liabilities: {
-        items: groupedLiabilities,
+      liabilities_and_equity: {
+        capital: {
+          total: capitalTotal,
+          accounts: liabilities.capital
+        },
+        reserves_and_surplus: {
+          total: reservesTotal,
+          accounts: liabilities.reserves
+        },
+        profit_and_loss: {
+          amount: netProfitLoss,
+          type: netProfitLoss >= 0 ? 'profit' : 'loss',
+          as_of_date: asOn
+        },
+        noncurrent_liabilities: {
+          total: noncurrentLiabilitiesTotal,
+          accounts: liabilities.noncurrent_liabilities
+        },
+        current_liabilities: {
+          total: currentLiabilitiesTotal,
+          accounts: liabilities.current_liabilities
+        },
+        other_liabilities: {
+          total: otherLiabilitiesTotal,
+          accounts: liabilities.other_liabilities
+        },
         total: totalLiabilities
       },
       assets: {
-        items: groupedAssets,
+        fixed_assets: {
+          total: fixedAssetsTotal,
+          accounts: assets.fixed_assets
+        },
+        investments: {
+          total: investmentsTotal,
+          accounts: assets.investments
+        },
+        current_assets: {
+          total: currentAssetsTotal,
+          accounts: assets.current_assets
+        },
+        other_assets: {
+          total: otherAssetsTotal,
+          accounts: assets.other_assets
+        },
         total: totalAssets
       },
-      totals: {
-        liabilitiesAndCapital: netProfit + totalLiabilities,
-        assets: totalAssets,
-        difference: Math.abs((netProfit + totalLiabilities) - totalAssets)
-      }
+      balance_check: {
+        total_assets: totalAssets,
+        total_liabilities_and_equity: totalLiabilities,
+        difference: difference,
+        is_balanced: isBalanced
+      },
+      financial_ratios: {
+        current_ratio: currentRatio,
+        debt_to_equity_ratio: debtToEquity,
+        working_capital: workingCapital
+      },
+      as_on_date: asOn,
+      format: "balance_sheet"
     };
   } catch (error) {
     logger.error('Error generating balance sheet:', error);
+    throw error;
+  }
+}
+
+/**
+ * Generate Trial Balance Report
+ * @param {Object} tenantModels - Tenant database models
+ * @param {Object} masterModels - Master database models
+ * @param {Object} options - Report options
+ * @returns {Object} - Trial balance data
+ */
+async function generateTrialBalanceReport(tenantModels, masterModels, options = {}) {
+  const { Sequelize } = tenantModels;
+  const { Op } = Sequelize;
+  
+  try {
+    const { asOnDate } = options;
+    const asOn = asOnDate || new Date().toISOString().slice(0, 10);
+    
+    console.log('📊 Report Service - Generating Trial Balance');
+    console.log(`📅 As on: ${asOn}`);
+    
+    // Get all account groups
+    const accountGroups = await masterModels.AccountGroup.findAll();
+    const groupMap = new Map();
+    accountGroups.forEach(g => groupMap.set(g.id, g));
+    
+    // Get all active ledgers
+    const ledgers = await tenantModels.Ledger.findAll({
+      where: { is_active: true }
+    });
+    
+    // Get movements up to asOnDate
+    const voucherWhere = { 
+      status: 'posted',
+      voucher_date: { [Op.lte]: asOn }
+    };
+    
+    const ledgerEntries = await tenantModels.VoucherLedgerEntry.findAll({
+      attributes: [
+        'ledger_id',
+        [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.debit_amount')), 'total_debit'],
+        [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.credit_amount')), 'total_credit'],
+      ],
+      include: [{ 
+        model: tenantModels.Voucher, 
+        as: 'voucher', 
+        attributes: [], 
+        where: voucherWhere, 
+        required: true 
+      }],
+      group: ['ledger_id'],
+      raw: true,
+    });
+    
+    const moveMap = new Map();
+    ledgerEntries.forEach(entry => {
+      moveMap.set(entry.ledger_id, {
+        debit: toNum(entry.total_debit, 0),
+        credit: toNum(entry.total_credit, 0)
+      });
+    });
+    
+    const trialBalance = [];
+    let totalDebits = 0;
+    let totalCredits = 0;
+    
+    ledgers.forEach(ledger => {
+      const group = groupMap.get(ledger.account_group_id);
+      const opening = toNum(ledger.opening_balance, 0);
+      const move = moveMap.get(ledger.id) || { debit: 0, credit: 0 };
+      
+      const debitTotal = opening + move.debit;
+      const creditTotal = move.credit;
+      
+      if (debitTotal > 0.01 || creditTotal > 0.01) {
+        trialBalance.push({
+          ledgerName: ledger.ledger_name,
+          ledgerCode: ledger.ledger_code,
+          groupName: group?.name || 'Unknown',
+          nature: group?.nature || 'unknown',
+          debit: debitTotal,
+          credit: creditTotal,
+          balance: debitTotal - creditTotal
+        });
+        
+        totalDebits += debitTotal;
+        totalCredits += creditTotal;
+      }
+    });
+    
+    return {
+      ledgers: trialBalance,
+      totals: {
+        debit: totalDebits,
+        credit: totalCredits,
+        difference: Math.abs(totalDebits - totalCredits),
+        isBalanced: Math.abs(totalDebits - totalCredits) < 1.0
+      },
+      as_on_date: asOn
+    };
+  } catch (error) {
+    logger.error('Error generating trial balance:', error);
     throw error;
   }
 }
@@ -346,11 +592,11 @@ async function getVoucherAnalysis(tenantModels, voucherType) {
     
     return vouchers.map(v => {
       const items = v.items || [];
-      const subtotal = items.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
+      const subtotal = items.reduce((sum, item) => sum + toNum(item.amount, 0), 0);
       const tax = items.reduce((sum, item) => 
-        sum + parseFloat(item.cgst_amount || 0) + 
-        parseFloat(item.sgst_amount || 0) + 
-        parseFloat(item.igst_amount || 0), 0
+        sum + toNum(item.cgst_amount, 0) + 
+        toNum(item.sgst_amount, 0) + 
+        toNum(item.igst_amount, 0), 0
       );
       
       return {
@@ -358,12 +604,12 @@ async function getVoucherAnalysis(tenantModels, voucherType) {
         voucherDate: v.voucher_date,
         subtotal,
         tax,
-        total: parseFloat(v.total_amount || 0),
+        total: toNum(v.total_amount, 0),
         items: items.map(item => ({
           name: item.item_name,
-          quantity: parseFloat(item.quantity || 0),
-          rate: parseFloat(item.rate || 0),
-          amount: parseFloat(item.amount || 0)
+          quantity: toNum(item.quantity, 0),
+          rate: toNum(item.rate, 0),
+          amount: toNum(item.amount, 0)
         }))
       };
     });
@@ -400,8 +646,8 @@ async function getCOGSAnalysis(tenantModels) {
     salesVouchers.forEach(voucher => {
       voucher.items?.forEach(item => {
         if (item.inventoryItem) {
-          const cost = parseFloat(item.inventoryItem.avg_cost || item.inventoryItem.purchase_price || 0);
-          const quantity = parseFloat(item.quantity || 0);
+          const cost = toNum(item.inventoryItem.avg_cost || item.inventoryItem.purchase_price, 0);
+          const quantity = toNum(item.quantity, 0);
           const cogs = cost * quantity;
           
           cogsDetails.push({
@@ -422,81 +668,10 @@ async function getCOGSAnalysis(tenantModels) {
   }
 }
 
-/**
- * Helper function to group items by category
- */
-function groupByCategory(items) {
-  const grouped = {};
-  
-  items.forEach(item => {
-    if (!grouped[item.category]) {
-      grouped[item.category] = [];
-    }
-    grouped[item.category].push({
-      name: item.name,
-      balance: item.balance
-    });
-  });
-  
-  return grouped;
-}
-
-/**
- * Generate Trial Balance Report
- * @param {Object} tenantModels - Tenant database models
- * @param {Object} options - Report options
- * @returns {Object} - Trial balance data
- */
-async function generateTrialBalanceReport(tenantModels, options = {}) {
-  try {
-    const ledgers = await tenantModels.Ledger.findAll({
-      include: [{
-        model: tenantModels.VoucherLedgerEntry,
-        as: 'ledgerEntries',
-        attributes: ['debit_amount', 'credit_amount'],
-        required: false
-      }]
-    });
-    
-    const trialBalance = [];
-    let totalDebits = 0;
-    let totalCredits = 0;
-    
-    ledgers.forEach(ledger => {
-      const entries = ledger.ledgerEntries || [];
-      const debitTotal = entries.reduce((sum, e) => sum + parseFloat(e.debit_amount || 0), 0);
-      const creditTotal = entries.reduce((sum, e) => sum + parseFloat(e.credit_amount || 0), 0);
-      
-      if (debitTotal > 0 || creditTotal > 0) {
-        trialBalance.push({
-          ledgerName: ledger.ledger_name,
-          debit: debitTotal,
-          credit: creditTotal
-        });
-        
-        totalDebits += debitTotal;
-        totalCredits += creditTotal;
-      }
-    });
-    
-    return {
-      ledgers: trialBalance,
-      totals: {
-        debit: totalDebits,
-        credit: totalCredits,
-        difference: Math.abs(totalDebits - totalCredits)
-      }
-    };
-  } catch (error) {
-    logger.error('Error generating trial balance:', error);
-    throw error;
-  }
-}
-
 module.exports = {
   generateProfitLossReport,
   generateBalanceSheetReport,
+  generateTrialBalanceReport,
   getVoucherAnalysis,
-  getCOGSAnalysis,
-  generateTrialBalanceReport
+  getCOGSAnalysis
 };
