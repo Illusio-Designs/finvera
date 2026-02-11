@@ -126,7 +126,7 @@ module.exports = {
         where: {
           voucher_date: { [Op.between]: [startDate, endDate] },
           status: 'posted',
-          voucher_type: 'Sales',
+          voucher_type: 'sales_invoice',
         },
         include: [
           { model: req.tenantModels.VoucherItem, as: 'items' },
@@ -327,7 +327,7 @@ module.exports = {
         where: {
           voucher_date: { [Op.between]: [startDate, endDate] },
           status: 'posted',
-          voucher_type: 'Purchase',
+          voucher_type: 'purchase_invoice',
         },
         include: [{ model: req.tenantModels.VoucherItem, as: 'items' }],
       });

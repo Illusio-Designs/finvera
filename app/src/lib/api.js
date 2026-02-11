@@ -116,13 +116,13 @@ export const voucherAPI = {
   get: (id) => apiClient.get(`/accounting/vouchers/${id}`),
   types: () => apiClient.get('/accounting/voucher-types'),
   salesInvoice: {
-    list: (params) => apiClient.get('/accounting/vouchers', { params: { ...params, voucher_type: 'Sales' } }),
+    list: (params) => apiClient.get('/accounting/vouchers', { params }),
     create: (data) => apiClient.post('/accounting/invoices/sales', data),
     update: (id, data) => apiClient.put(`/accounting/vouchers/sales-invoice/${id}`, data),
     get: (id) => apiClient.get(`/accounting/vouchers/sales-invoice/${id}`),
   },
   purchaseInvoice: {
-    list: (params) => apiClient.get('/accounting/vouchers', { params: { ...params, voucher_type: 'Purchase' } }),
+    list: (params) => apiClient.get('/accounting/vouchers', { params }),
     create: (data) => apiClient.post('/accounting/invoices/purchase', data),
     update: (id, data) => apiClient.put(`/accounting/vouchers/purchase-invoice/${id}`, data),
     get: (id) => apiClient.get(`/accounting/vouchers/purchase-invoice/${id}`),

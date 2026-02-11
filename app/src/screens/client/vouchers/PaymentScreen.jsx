@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useConfirmation } from '../../../contexts/ConfirmationContext';
 import { voucherAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
 import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
@@ -13,6 +14,7 @@ import CreatePaymentModal from '../../../components/modals/CreatePaymentModal';
 export default function PaymentScreen() {
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
+  const { showDangerConfirmation } = useConfirmation();
   const [vouchers, setVouchers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -20,6 +22,7 @@ export default function PaymentScreen() {
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [filter, setFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingVoucher, setEditingVoucher] = useState(null);
 
   const handleMenuPress = () => {
     openDrawer();
@@ -82,22 +85,42 @@ export default function PaymentScreen() {
 
   const handlePaymentCreated = () => {
     fetchVouchers();
+    setEditingVoucher(null);
   };
 
-  const handleEditVoucher = () => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Edit payment feature coming soon'
-    });
+  const handleEditVoucher = (voucher) => {
+    setEditingVoucher(voucher);
+    setShowCreateModal(true);
   };
 
-  const handleDeleteVoucher = () => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Delete payment feature coming soon'
-    });
+  const handleDeleteVoucher = async (voucher) => {
+    const confirmed = await showDangerConfirmation(
+      'Delete Payment',
+      `Are you sure you want to delete payment ${voucher.voucher_number}? This action cannot be undone.`,
+      {
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+      }
+    );
+
+    if (confirmed) {
+      try {
+        await voucherAPI.delete(voucher.id);
+        showNotification({
+          type: 'success',
+          title: 'Success',
+          message: 'Payment deleted successfully'
+        });
+        fetchVouchers();
+      } catch (error) {
+        console.error('Delete voucher error:', error);
+        showNotification({
+          type: 'error',
+          title: 'Error',
+          message: error.response?.data?.message || 'Failed to delete payment'
+        });
+      }
+    }
   };
 
   const formatDate = (dateString) => {
@@ -254,7 +277,7 @@ export default function PaymentScreen() {
                     style={styles.actionButton}
                     onPress={(e) => {
                       e.stopPropagation();
-                      handleEditVoucher();
+                      handleEditVoucher(voucher);
                     }}
                   >
                     <Ionicons name="create-outline" size={16} color="#059669" />
@@ -265,7 +288,7 @@ export default function PaymentScreen() {
                     style={styles.actionButton}
                     onPress={(e) => {
                       e.stopPropagation();
-                      handleDeleteVoucher();
+                      handleDeleteVoucher(voucher);
                     }}
                   >
                     <Ionicons name="trash-outline" size={16} color="#dc2626" />
@@ -363,8 +386,13 @@ export default function PaymentScreen() {
 
       <CreatePaymentModal
         visible={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+        onClose={() => {
+          setShowCreateModal(false);
+          setEditingVoucher(null);
+        }}
         onPaymentCreated={handlePaymentCreated}
+        editData={editingVoucher}
+        isEdit={!!editingVoucher}
       />
     </View>
   );

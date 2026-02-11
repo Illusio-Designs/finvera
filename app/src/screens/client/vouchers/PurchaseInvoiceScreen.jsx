@@ -36,7 +36,7 @@ export default function PurchaseInvoiceScreen() {
     
     try {
       const params = { 
-        voucher_type: 'Purchase',
+        voucher_type: 'purchase_invoice',
         limit: 100 
       };
       

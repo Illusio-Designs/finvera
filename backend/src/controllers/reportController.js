@@ -155,8 +155,32 @@ module.exports = {
       console.log(`🏢 Tenant: ${req.tenant_id}`);
 
       const ledgers = await req.tenantModels.Ledger.findAll({ where: { is_active: true } });
+      console.log(`📊 Total active ledgers: ${ledgers.length}`);
+      
       const groupMap = await loadGroupMap(req.masterModels, ledgers);
+      console.log(`📊 Group map size: ${groupMap.size}`);
+      
       const moveMap = await movementByLedger(req.tenantModels, { fromDate: from, toDate: to });
+      console.log(`📊 Movement map size: ${moveMap.size}`);
+      console.log(`📊 Movements:`, Array.from(moveMap.entries()).map(([id, move]) => {
+        const ledger = ledgers.find(l => l.id === id);
+        return {
+          ledger_name: ledger?.ledger_name,
+          debit: move.debit,
+          credit: move.credit,
+          net: move.debit - move.credit
+        };
+      }));
+
+      // Check posted vouchers in the period
+      const postedVouchers = await req.tenantModels.Voucher.findAll({
+        where: {
+          status: 'posted',
+          voucher_date: { [Op.between]: [from, to] }
+        }
+      });
+      console.log(`📊 Posted vouchers in period: ${postedVouchers.length}`);
+      console.log(`📊 Voucher types:`, postedVouchers.map(v => ({ type: v.voucher_type, amount: v.total_amount, date: v.voucher_date })));
 
       // Get opening and closing stock values
       const stockLedgers = ledgers.filter(l => {
@@ -201,7 +225,10 @@ module.exports = {
 
       for (const ledger of ledgers) {
         const group = groupMap.get(ledger.account_group_id);
-        if (!group) continue;
+        if (!group) {
+          console.log(`⚠️ No group found for ledger: ${ledger.ledger_name} (group_id: ${ledger.account_group_id})`);
+          continue;
+        }
 
         const move = moveMap.get(ledger.id) || { debit: 0, credit: 0 };
         const movementSigned = move.debit - move.credit;
@@ -214,6 +241,8 @@ module.exports = {
           const amt = -movementSigned; // income increases on credit
           if (amt <= 0.009) continue;
 
+          console.log(`💰 Income ledger: ${ledger.ledger_name}, Group: ${group.group_code}, Amount: ${amt}`);
+
           const accountData = {
             ledger_name: ledger.ledger_name,
             ledger_code: ledger.ledger_code,
@@ -224,18 +253,22 @@ module.exports = {
 
           // Sales & Service Revenue
           if (['SAL', 'SALES'].includes(group.group_code)) {
+            console.log(`  ✅ Added to Sales Accounts`);
             salesAccounts.push(accountData);
           }
           // Sales Returns (contra to sales)
           else if (['SAL_RET', 'SALES_RETURNS'].includes(group.group_code)) {
+            console.log(`  ✅ Added to Sales Returns`);
             salesReturns.push(accountData);
           }
           // Other Incomes (Interest, Commission, Rent Received, etc.)
           else if (['INT_REC', 'COMM_REC', 'RENT_REC', 'DIV_REC', 'OTH_INC', 'IND_INC'].includes(group.group_code)) {
+            console.log(`  ✅ Added to Other Incomes`);
             otherIncomes.push(accountData);
           }
           // Default to other income
           else {
+            console.log(`  ✅ Added to Other Incomes (default)`);
             otherIncomes.push(accountData);
           }
         } 

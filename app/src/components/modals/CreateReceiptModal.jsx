@@ -65,7 +65,15 @@ export default function CreateReceiptModal({
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSave = async () => {
+    await saveReceipt('draft');
+  };
+
+  const handlePost = async () => {
+    await saveReceipt('posted');
+  };
+
+  const saveReceipt = async (status) => {
     if (!formData.party_ledger_id) {
       showNotification({
         type: 'error',
@@ -90,6 +98,7 @@ export default function CreateReceiptModal({
         ...formData,
         amount: parseFloat(formData.amount),
         total_amount: parseFloat(formData.amount),
+        status: status,
       };
 
       await voucherAPI.create(payload);
@@ -97,7 +106,7 @@ export default function CreateReceiptModal({
       showNotification({
         type: 'success',
         title: 'Success',
-        message: 'Receipt voucher created successfully'
+        message: `Receipt voucher ${status === 'posted' ? 'posted' : 'saved as draft'} successfully`
       });
       
       if (onReceiptCreated) {
@@ -216,18 +225,28 @@ export default function CreateReceiptModal({
           <TouchableOpacity
             style={[styles.button, styles.buttonSecondary]}
             onPress={onClose}
+            disabled={loading}
           >
             <Text style={styles.buttonSecondaryText}>Cancel</Text>
           </TouchableOpacity>
           <TouchableOpacity
+            style={[styles.button, styles.buttonOutline, loading && styles.buttonDisabled]}
+            onPress={handleSave}
+            disabled={loading}
+          >
+            <Text style={styles.buttonOutlineText}>
+              {loading ? 'Saving...' : 'Save Draft'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[styles.button, styles.buttonPrimary, loading && styles.buttonDisabled]}
-            onPress={handleSubmit}
+            onPress={handlePost}
             disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text style={styles.buttonPrimaryText}>Create Receipt</Text>
+              <Text style={styles.buttonPrimaryText}>Post</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -295,9 +314,11 @@ const styles = StyleSheet.create({
   button: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   buttonPrimary: { backgroundColor: '#3e60ab' },
   buttonSecondary: { backgroundColor: 'white', borderWidth: 1, borderColor: '#d1d5db' },
+  buttonOutline: { backgroundColor: 'white', borderWidth: 1, borderColor: '#3e60ab' },
   buttonDisabled: { opacity: 0.5 },
   buttonPrimaryText: { ...FONT_STYLES.label, color: 'white' },
   buttonSecondaryText: { ...FONT_STYLES.label, color: '#374151' },
+  buttonOutlineText: { ...FONT_STYLES.label, color: '#3e60ab' },
   modalContainer: { flex: 1, backgroundColor: '#f9fafb' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
   modalTitle: { ...FONT_STYLES.h5, color: '#111827' },

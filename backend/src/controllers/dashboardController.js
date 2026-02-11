@@ -138,10 +138,10 @@ module.exports = {
         safeQuery(() => tenantModels.Ledger.count({ where: { is_active: true } }), 0, 'Error counting ledgers'),
 
         // Sales invoices
-        safeQuery(() => tenantModels.Voucher.count({ where: { voucher_type: 'Sales', status: 'posted' } }), 0, 'Error counting sales invoices'),
+        safeQuery(() => tenantModels.Voucher.count({ where: { voucher_type: 'sales_invoice', status: 'posted' } }), 0, 'Error counting sales invoices'),
 
         // Purchase invoices
-        safeQuery(() => tenantModels.Voucher.count({ where: { voucher_type: 'Purchase', status: 'posted' } }), 0, 'Error counting purchase invoices'),
+        safeQuery(() => tenantModels.Voucher.count({ where: { voucher_type: 'purchase_invoice', status: 'posted' } }), 0, 'Error counting purchase invoices'),
 
         // Payments
         safeQuery(() => tenantModels.Voucher.count({ where: { voucher_type: 'Payment', status: 'posted' } }), 0, 'Error counting payments'),
@@ -168,7 +168,7 @@ module.exports = {
         // Current month sales total
         safeQuery(() => tenantModels.Voucher.sum('total_amount', {
           where: {
-            voucher_type: 'Sales',
+            voucher_type: 'sales_invoice',
             status: 'posted',
             voucher_date: { [Op.gte]: currentMonthStart },
           },
@@ -177,7 +177,7 @@ module.exports = {
         // Current month purchase total
         safeQuery(() => tenantModels.Voucher.sum('total_amount', {
           where: {
-            voucher_type: 'Purchase',
+            voucher_type: 'purchase_invoice',
             status: 'posted',
             voucher_date: { [Op.gte]: currentMonthStart },
           },

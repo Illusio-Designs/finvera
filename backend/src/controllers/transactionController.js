@@ -23,7 +23,7 @@ module.exports = {
       );
 
       // Create voucher using the calculated data
-      req.body.voucher_type = 'Sales';
+      req.body.voucher_type = 'sales_invoice';
       req.body.items = invoiceData.items;
       req.body.ledger_entries = invoiceData.ledger_entries;
       req.body.subtotal = invoiceData.subtotal;
@@ -83,7 +83,7 @@ module.exports = {
         ledger_entries_count: invoiceData.ledger_entries?.length || 0
       });
 
-      req.body.voucher_type = 'Purchase';
+      req.body.voucher_type = 'purchase_invoice';
       req.body.items = invoiceData.items;
       req.body.ledger_entries = invoiceData.ledger_entries;
       req.body.subtotal = invoiceData.subtotal;

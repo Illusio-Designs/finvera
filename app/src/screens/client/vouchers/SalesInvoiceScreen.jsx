@@ -5,6 +5,7 @@ import TopBar from '../../../components/navigation/TopBar';
 import CreateSalesInvoiceModal from '../../../components/modals/CreateSalesInvoiceModal';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useConfirmation } from '../../../contexts/ConfirmationContext';
 import { voucherAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
 import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
@@ -14,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 export default function SalesInvoiceScreen() {
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
+  const { showDangerConfirmation } = useConfirmation();
   const navigation = useNavigation();
   const [vouchers, setVouchers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,6 +24,7 @@ export default function SalesInvoiceScreen() {
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [filter, setFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingVoucher, setEditingVoucher] = useState(null);
 
   const handleMenuPress = () => {
     openDrawer();
@@ -33,7 +36,7 @@ export default function SalesInvoiceScreen() {
     
     try {
       const params = { 
-        voucher_type: 'Sales',
+        voucher_type: 'sales_invoice',
         limit: 100 
       };
       
@@ -84,29 +87,49 @@ export default function SalesInvoiceScreen() {
   };
 
   const handleInvoiceCreated = (invoice) => {
-    // Refresh the list after creating new invoice
+    // Refresh the list after creating/editing invoice
     fetchVouchers();
+    setEditingVoucher(null);
     showNotification({
       type: 'success',
       title: 'Success',
-      message: 'Invoice created successfully'
+      message: editingVoucher ? 'Invoice updated successfully' : 'Invoice created successfully'
     });
   };
 
   const handleEditVoucher = (voucher) => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Edit invoice feature coming soon'
-    });
+    setEditingVoucher(voucher);
+    setShowCreateModal(true);
   };
 
-  const handleDeleteVoucher = (voucher) => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Delete invoice feature coming soon'
-    });
+  const handleDeleteVoucher = async (voucher) => {
+    const confirmed = await showDangerConfirmation(
+      'Delete Invoice',
+      `Are you sure you want to delete invoice ${voucher.voucher_number}? This action cannot be undone.`,
+      {
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+      }
+    );
+
+    if (confirmed) {
+      try {
+        await voucherAPI.delete(voucher.id);
+        showNotification({
+          type: 'success',
+          title: 'Success',
+          message: 'Invoice deleted successfully'
+        });
+        fetchVouchers();
+      } catch (error) {
+        console.error('Delete voucher error:', error);
+        showNotification({
+          type: 'error',
+          title: 'Error',
+          message: error.response?.data?.message || 'Failed to delete invoice'
+        });
+      }
+    }
   };
 
   const formatDate = (dateString) => {
@@ -399,8 +422,13 @@ export default function SalesInvoiceScreen() {
       {/* Create Sales Invoice Modal */}
       <CreateSalesInvoiceModal
         visible={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+        onClose={() => {
+          setShowCreateModal(false);
+          setEditingVoucher(null);
+        }}
         onInvoiceCreated={handleInvoiceCreated}
+        editData={editingVoucher}
+        isEdit={!!editingVoucher}
       />
     </View>
   );

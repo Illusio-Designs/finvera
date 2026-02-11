@@ -122,7 +122,7 @@ export default function ProfitLossScreen() {
   };
 
   const generatePLHTML = () => {
-    const { expenses_and_costs, income_and_revenue, totals, period } = profitLossData;
+    const { trading_account, sales_revenue, closing_stock, profit_loss_account, totals, period } = profitLossData;
     
     return `
       <!DOCTYPE html>
@@ -218,7 +218,7 @@ export default function ProfitLossScreen() {
             </tr>
           </thead>
           <tbody>
-            ${generateProfitLossRows(expenses_and_costs, income_and_revenue)}
+            ${generateProfitLossRows(trading_account, profit_loss_account, sales_revenue, closing_stock)}
             <tr class="total-row">
               <td><strong>Total</strong></td>
               <td class="amount"><strong>${formatCurrency(totals?.total_left_side || 0)}</strong></td>
@@ -236,29 +236,37 @@ export default function ProfitLossScreen() {
     `;
   };
 
-  const generateProfitLossRows = (expensesData, incomeData) => {
-    if (!expensesData || !incomeData) return '';
+  const generateProfitLossRows = (tradingAccount, profitLossAccount, salesRevenue, closingStock) => {
+    if (!tradingAccount || !profitLossAccount || !salesRevenue) return '';
     
     const expenses = [];
     const income = [];
 
-    // Build expenses array
-    if (expensesData.opening_stock?.amount > 0) {
-      expenses.push({ name: 'Opening Stock', amount: expensesData.opening_stock.amount });
+    // TRADING ACCOUNT - Left Side (Expenses & Costs)
+    if (tradingAccount.opening_stock?.amount > 0) {
+      expenses.push({ name: 'Opening Stock', amount: tradingAccount.opening_stock.amount });
     }
-    if (expensesData.purchase_accounts?.total > 0) {
-      expenses.push({ name: 'Purchase Accounts', amount: expensesData.purchase_accounts.total });
+    if (tradingAccount.purchases?.net_purchases > 0) {
+      expenses.push({ name: 'Purchases (Net)', amount: tradingAccount.purchases.net_purchases });
     }
-    if (expensesData.direct_expenses?.total > 0) {
-      expenses.push({ name: 'Direct Expenses', amount: expensesData.direct_expenses.total });
+    if (tradingAccount.direct_expenses?.total > 0) {
+      expenses.push({ name: 'Direct Expenses', amount: tradingAccount.direct_expenses.total });
     }
-    if (expensesData.indirect_expenses?.total > 0) {
-      expenses.push({ name: 'Indirect Expenses', amount: expensesData.indirect_expenses.total });
+    if (tradingAccount.gross_profit > 0) {
+      expenses.push({ name: '<strong>Gross Profit c/d</strong>', amount: tradingAccount.gross_profit });
+    }
+    
+    // P&L ACCOUNT - Left Side (Expenses)
+    if (profitLossAccount.gross_profit_brought_forward > 0) {
+      expenses.push({ name: '<strong>Gross Profit b/d</strong>', amount: profitLossAccount.gross_profit_brought_forward });
+    }
+    if (profitLossAccount.indirect_expenses?.total > 0) {
+      expenses.push({ name: 'Indirect Expenses', amount: profitLossAccount.indirect_expenses.total });
     }
     
     // Add round off expenses specifically for PDF
-    if (expensesData.indirect_expenses?.accounts) {
-      const roundOffExpenses = expensesData.indirect_expenses.accounts.filter(acc => acc.is_round_off && acc.note?.includes('expense'));
+    if (profitLossAccount.indirect_expenses?.accounts) {
+      const roundOffExpenses = profitLossAccount.indirect_expenses.accounts.filter(acc => acc.is_round_off && acc.note?.includes('expense'));
       roundOffExpenses.forEach(roundOff => {
         expenses.push({ 
           name: '<em style="color: #f59e0b;">Round Off (Expense)</em>', 
@@ -268,29 +276,37 @@ export default function ProfitLossScreen() {
       });
     }
     
-    if (expensesData.net_profit > 0) {
+    if (profitLossAccount.net_profit > 0) {
       expenses.push({ 
         name: '<strong class="net-profit">Net Profit</strong>', 
-        amount: expensesData.net_profit,
+        amount: profitLossAccount.net_profit,
         isNetProfit: true,
         isProfit: true
       });
     }
 
-    // Build income array
-    if (incomeData.sales_accounts?.total > 0) {
-      income.push({ name: 'Sales Accounts', amount: incomeData.sales_accounts.total });
+    // TRADING ACCOUNT - Right Side (Sales & Revenue)
+    if (salesRevenue?.net_sales > 0) {
+      income.push({ name: 'Sales (Net)', amount: salesRevenue.net_sales });
     }
-    if (incomeData.closing_stock?.amount > 0) {
-      income.push({ name: 'Closing Stock', amount: incomeData.closing_stock.amount });
+    if (closingStock?.amount > 0) {
+      income.push({ name: 'Closing Stock', amount: closingStock.amount });
     }
-    if (incomeData.indirect_incomes?.total > 0) {
-      income.push({ name: 'Indirect Incomes', amount: incomeData.indirect_incomes.total });
+    if (tradingAccount.gross_profit < 0) {
+      income.push({ name: '<strong>Gross Loss c/d</strong>', amount: Math.abs(tradingAccount.gross_profit) });
+    }
+    
+    // P&L ACCOUNT - Right Side (Other Incomes)
+    if (profitLossAccount.gross_profit_brought_forward < 0) {
+      income.push({ name: '<strong>Gross Loss b/d</strong>', amount: Math.abs(profitLossAccount.gross_profit_brought_forward) });
+    }
+    if (profitLossAccount.other_incomes?.total > 0) {
+      income.push({ name: 'Other Incomes', amount: profitLossAccount.other_incomes.total });
     }
     
     // Add round off incomes specifically for PDF
-    if (incomeData.indirect_incomes?.accounts) {
-      const roundOffIncomes = incomeData.indirect_incomes.accounts.filter(acc => acc.is_round_off && acc.note?.includes('income'));
+    if (profitLossAccount.other_incomes?.accounts) {
+      const roundOffIncomes = profitLossAccount.other_incomes.accounts.filter(acc => acc.is_round_off && acc.note?.includes('income'));
       roundOffIncomes.forEach(roundOff => {
         income.push({ 
           name: '<em style="color: #f59e0b;">Round Off (Income)</em>', 
@@ -300,10 +316,10 @@ export default function ProfitLossScreen() {
       });
     }
     
-    if (expensesData.net_profit < 0) {
+    if (profitLossAccount.net_profit < 0) {
       income.push({ 
         name: '<strong class="net-loss">Net Loss</strong>', 
-        amount: Math.abs(expensesData.net_profit),
+        amount: Math.abs(profitLossAccount.net_profit),
         isNetProfit: true,
         isProfit: false
       });
@@ -332,16 +348,26 @@ export default function ProfitLossScreen() {
   const renderProfitLossRows = (profitLossData) => {
     if (!profitLossData) return [];
     
+    console.log('=== PROFIT & LOSS DATA ===');
+    console.log('Full data:', JSON.stringify(profitLossData, null, 2));
+    
     const { trading_account, sales_revenue, closing_stock, profit_loss_account } = profitLossData;
+    
+    console.log('Trading Account:', trading_account);
+    console.log('Sales Revenue:', sales_revenue);
+    console.log('Closing Stock:', closing_stock);
+    console.log('P&L Account:', profit_loss_account);
     
     const expenses = [];
     const income = [];
 
     // TRADING ACCOUNT - Left Side (Expenses & Costs)
-    if (trading_account?.opening_stock?.amount > 0) {
+    if (trading_account?.opening_stock?.amount) {
+      console.log('Adding Opening Stock:', trading_account.opening_stock.amount);
       expenses.push({ name: 'Opening Stock', amount: trading_account.opening_stock.amount, section: 'Trading Account' });
     }
-    if (trading_account?.purchases?.net_purchases > 0) {
+    if (trading_account?.purchases?.net_purchases) {
+      console.log('Adding Purchases:', trading_account.purchases.net_purchases);
       expenses.push({ 
         name: `Purchases (Net)`, 
         amount: trading_account.purchases.net_purchases,
@@ -349,7 +375,8 @@ export default function ProfitLossScreen() {
         detail: `Gross: ₹${trading_account.purchases.gross_purchases || 0} - Returns: ₹${trading_account.purchases.purchase_returns || 0}`
       });
     }
-    if (trading_account?.direct_expenses?.total > 0) {
+    if (trading_account?.direct_expenses?.total) {
+      console.log('Adding Direct Expenses:', trading_account.direct_expenses.total);
       expenses.push({ 
         name: 'Direct Expenses', 
         amount: trading_account.direct_expenses.total,
@@ -357,25 +384,32 @@ export default function ProfitLossScreen() {
         detail: trading_account.direct_expenses.description
       });
     }
-    if (trading_account?.gross_profit > 0) {
-      expenses.push({ 
-        name: 'Gross Profit c/d', 
-        amount: trading_account.gross_profit,
-        section: 'Trading Account',
-        isGrossProfit: true
-      });
+    if (trading_account?.gross_profit !== undefined && trading_account?.gross_profit !== 0) {
+      console.log('Adding Gross Profit c/d:', trading_account.gross_profit);
+      if (trading_account.gross_profit > 0) {
+        expenses.push({ 
+          name: 'Gross Profit c/d', 
+          amount: trading_account.gross_profit,
+          section: 'Trading Account',
+          isGrossProfit: true
+        });
+      }
     }
     
     // P&L ACCOUNT - Left Side (Expenses)
-    if (profit_loss_account?.gross_profit_brought_forward > 0) {
-      expenses.push({ 
-        name: 'Gross Profit b/d', 
-        amount: profit_loss_account.gross_profit_brought_forward,
-        section: 'P&L Account',
-        isGrossProfit: true
-      });
+    if (profit_loss_account?.gross_profit_brought_forward !== undefined && profit_loss_account?.gross_profit_brought_forward !== 0) {
+      console.log('Adding Gross Profit b/d:', profit_loss_account.gross_profit_brought_forward);
+      if (profit_loss_account.gross_profit_brought_forward > 0) {
+        expenses.push({ 
+          name: 'Gross Profit b/d', 
+          amount: profit_loss_account.gross_profit_brought_forward,
+          section: 'P&L Account',
+          isGrossProfit: true
+        });
+      }
     }
-    if (profit_loss_account?.indirect_expenses?.total > 0) {
+    if (profit_loss_account?.indirect_expenses?.total) {
+      console.log('Adding Indirect Expenses:', profit_loss_account.indirect_expenses.total);
       expenses.push({ 
         name: 'Indirect Expenses', 
         amount: profit_loss_account.indirect_expenses.total,
@@ -397,18 +431,22 @@ export default function ProfitLossScreen() {
       });
     }
     
-    if (profitLossData.totals?.net_profit > 0) {
-      expenses.push({ 
-        name: 'Net Profit', 
-        amount: profitLossData.totals.net_profit,
-        section: 'P&L Account',
-        isNetProfit: true,
-        isProfit: true
-      });
+    if (profitLossData.totals?.net_profit !== undefined && profitLossData.totals?.net_profit !== 0) {
+      console.log('Adding Net Profit:', profitLossData.totals.net_profit);
+      if (profitLossData.totals.net_profit > 0) {
+        expenses.push({ 
+          name: 'Net Profit', 
+          amount: profitLossData.totals.net_profit,
+          section: 'P&L Account',
+          isNetProfit: true,
+          isProfit: true
+        });
+      }
     }
 
     // TRADING ACCOUNT - Right Side (Sales & Revenue)
-    if (sales_revenue?.net_sales > 0) {
+    if (sales_revenue?.net_sales) {
+      console.log('Adding Sales:', sales_revenue.net_sales);
       income.push({ 
         name: `Sales (Net)`, 
         amount: sales_revenue.net_sales,
@@ -416,10 +454,12 @@ export default function ProfitLossScreen() {
         detail: `Gross: ₹${sales_revenue.gross_sales || 0} - Returns: ₹${sales_revenue.sales_returns || 0}`
       });
     }
-    if (closing_stock?.amount > 0) {
+    if (closing_stock?.amount) {
+      console.log('Adding Closing Stock:', closing_stock.amount);
       income.push({ name: 'Closing Stock', amount: closing_stock.amount, section: 'Trading Account' });
     }
-    if (trading_account?.gross_profit < 0) {
+    if (trading_account?.gross_profit !== undefined && trading_account?.gross_profit < 0) {
+      console.log('Adding Gross Loss c/d:', Math.abs(trading_account.gross_profit));
       income.push({ 
         name: 'Gross Loss c/d', 
         amount: Math.abs(trading_account.gross_profit),
@@ -429,7 +469,8 @@ export default function ProfitLossScreen() {
     }
     
     // P&L ACCOUNT - Right Side (Other Incomes)
-    if (profit_loss_account?.gross_profit_brought_forward < 0) {
+    if (profit_loss_account?.gross_profit_brought_forward !== undefined && profit_loss_account?.gross_profit_brought_forward < 0) {
+      console.log('Adding Gross Loss b/d:', Math.abs(profit_loss_account.gross_profit_brought_forward));
       income.push({ 
         name: 'Gross Loss b/d', 
         amount: Math.abs(profit_loss_account.gross_profit_brought_forward),
@@ -437,7 +478,8 @@ export default function ProfitLossScreen() {
         isGrossLoss: true
       });
     }
-    if (profit_loss_account?.other_incomes?.total > 0) {
+    if (profit_loss_account?.other_incomes?.total) {
+      console.log('Adding Other Incomes:', profit_loss_account.other_incomes.total);
       income.push({ 
         name: 'Other Incomes', 
         amount: profit_loss_account.other_incomes.total,
@@ -459,7 +501,8 @@ export default function ProfitLossScreen() {
       });
     }
     
-    if (profitLossData.totals?.net_profit < 0) {
+    if (profitLossData.totals?.net_profit !== undefined && profitLossData.totals?.net_profit < 0) {
+      console.log('Adding Net Loss:', Math.abs(profitLossData.totals.net_profit));
       income.push({ 
         name: 'Net Loss', 
         amount: Math.abs(profitLossData.totals.net_profit),
@@ -468,6 +511,11 @@ export default function ProfitLossScreen() {
         isProfit: false
       });
     }
+
+    console.log('Total expenses items:', expenses.length);
+    console.log('Total income items:', income.length);
+    console.log('Expenses:', expenses);
+    console.log('Income:', income);
 
     const maxRows = Math.max(expenses.length, income.length);
     const rows = [];
