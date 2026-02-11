@@ -269,6 +269,17 @@ module.exports = (sequelize) => {
       allowNull: true,
       comment: 'Valid until date for proforma invoice or quotation',
     },
+    // Supplier Invoice fields (for purchase invoices)
+    supplier_invoice_number: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      comment: 'Supplier invoice number for purchase invoices',
+    },
+    supplier_invoice_date: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'Supplier invoice date for purchase invoices',
+    },
     // Multi-tenant, multi-company, multi-branch isolation
     tenant_id: {
       type: DataTypes.STRING,

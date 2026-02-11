@@ -2,57 +2,14 @@
 const { Op } = require('sequelize');
 const logger = require('../utils/logger');
 const { findOrCreateInventoryItem } = require('../services/inventoryService');
+const { 
+  generateLedgerEntriesByType, 
+  updateLedgerBalance 
+} = require('../services/voucherPostingService');
 
 function toNum(v, fallback = 0) {
   const n = parseFloat(v);
   return Number.isFinite(n) ? n : fallback;
-}
-
-/**
- * Update ledger balance based on ledger entries
- */
-async function updateLedgerBalance(tenantModels, ledgerId, transaction) {
-  try {
-    const ledger = await tenantModels.Ledger.findByPk(ledgerId, { transaction });
-    if (!ledger) {
-      logger.warn(`Ledger not found: ${ledgerId}`);
-      return;
-    }
-
-    // Calculate total debits and credits from ledger entries
-    const entries = await tenantModels.VoucherLedgerEntry.findAll({
-      where: { ledger_id: ledgerId },
-      attributes: [
-        [tenantModels.sequelize.fn('SUM', tenantModels.sequelize.col('debit_amount')), 'total_debit'],
-        [tenantModels.sequelize.fn('SUM', tenantModels.sequelize.col('credit_amount')), 'total_credit']
-      ],
-      raw: true,
-      transaction
-    });
-
-    const totalDebit = parseFloat(entries[0]?.total_debit || 0);
-    const totalCredit = parseFloat(entries[0]?.total_credit || 0);
-    const openingBalance = parseFloat(ledger.opening_balance || 0);
-
-    // Calculate current balance based on ledger type
-    let currentBalance = openingBalance;
-    if (ledger.balance_type === 'debit' || ledger.opening_balance_type === 'Dr') {
-      currentBalance = openingBalance + totalDebit - totalCredit;
-    } else {
-      currentBalance = openingBalance + totalCredit - totalDebit;
-    }
-
-    // Update the ledger's current balance
-    await ledger.update({
-      current_balance: Math.abs(currentBalance)
-    }, { transaction });
-
-    logger.info(`Updated ledger balance for ${ledger.ledger_name}: ${Math.abs(currentBalance)}`);
-    return Math.abs(currentBalance);
-  } catch (error) {
-    logger.error(`Error updating ledger balance for ${ledgerId}:`, error);
-    throw error;
-  }
 }
 
 async function applyPurchaseInventory({ tenantModels }, voucher, voucherItems, t) {
@@ -280,6 +237,32 @@ async function applySalesInventoryAndGetCogs({ tenantModels }, voucher, voucherI
   return 0; // No COGS calculated
 }
 
+// Helper function to apply inventory updates
+async function applyInventoryUpdatesHelper(req, voucher, transaction) {
+  const voucherItems = voucher.items || [];
+  
+  if (voucherItems.length === 0) {
+    logger.info(`No items to process for voucher ${voucher.voucher_number}`);
+    return;
+  }
+  
+  const voucherType = voucher.voucher_type?.toLowerCase();
+  
+  try {
+    if (voucherType === 'purchase' || voucherType === 'purchase_invoice') {
+      logger.info(`Applying purchase inventory updates for voucher ${voucher.voucher_number}`);
+      await applyPurchaseInventory({ tenantModels: req.tenantModels }, voucher, voucherItems, transaction);
+    } else if (voucherType === 'sales' || voucherType === 'sales_invoice') {
+      logger.info(`Applying simplified sales inventory updates for voucher ${voucher.voucher_number}`);
+      await applySalesInventoryAndGetCogs({ tenantModels: req.tenantModels }, voucher, voucherItems, transaction);
+    } else {
+      logger.info(`No inventory updates needed for voucher type: ${voucherType}`);
+    }
+  } catch (error) {
+    logger.error(`Error applying inventory updates for voucher ${voucher.voucher_number}:`, error);
+    throw error;
+  }
+}
 
 
 module.exports = {
@@ -419,9 +402,11 @@ module.exports = {
         
         let sequence = 1;
         if (lastVoucher && lastVoucher.voucher_number) {
-          const match = lastVoucher.voucher_number.match(/(\d+)$/);
+          // Extract only the last 4 digits (sequence number) from the voucher number
+          // Format is: CODE + YYYY + MM + XXXX (where XXXX is the sequence)
+          const match = lastVoucher.voucher_number.match(/(\d{4})$/);
           if (match) {
-            sequence = parseInt(match[1]) + 1;
+            sequence = parseInt(match[1], 10) + 1;
           }
         }
         
@@ -465,9 +450,33 @@ module.exports = {
         console.log('📦 Voucher items data:', JSON.stringify(voucherItems, null, 2));
         await req.tenantModels.VoucherItem.bulkCreate(voucherItems, { transaction });
         console.log('✅ Voucher items created successfully');
+        
+        // Auto-generate ledger entries for sales and purchase invoices if not provided
+        if (!req.body.ledger_entries || req.body.ledger_entries.length === 0) {
+          console.log('📊 Auto-generating ledger entries...');
+          const autoLedgerEntries = await generateLedgerEntriesByType(
+            req.tenantModels, 
+            voucher, 
+            voucherItems, 
+            transaction
+          );
+          
+          if (autoLedgerEntries.length > 0) {
+            await req.tenantModels.VoucherLedgerEntry.bulkCreate(autoLedgerEntries, { transaction });
+            console.log('✅ Auto-generated', autoLedgerEntries.length, 'ledger entries');
+            
+            // Update ledger balances
+            console.log('💰 Updating ledger balances...');
+            const uniqueLedgerIds = [...new Set(autoLedgerEntries.map(entry => entry.ledger_id))];
+            for (const ledgerId of uniqueLedgerIds) {
+              await updateLedgerBalance(req.tenantModels, ledgerId, transaction);
+            }
+            console.log('✅ Ledger balances updated successfully');
+          }
+        }
       }
       
-      // Create ledger entries if provided
+      // Create ledger entries if provided manually
       if (req.body.ledger_entries && req.body.ledger_entries.length > 0) {
         console.log('📊 Creating ledger entries...', req.body.ledger_entries.length, 'entries');
         const ledgerEntries = req.body.ledger_entries.map(entry => ({
@@ -492,7 +501,12 @@ module.exports = {
       // If voucher is being posted immediately, apply inventory updates
       if (req.body.status === 'posted') {
         console.log('🏭 Applying inventory updates for posted voucher...');
-        await this.applyInventoryUpdates(req, voucher, transaction);
+        // Reload voucher with items to ensure they're available for inventory updates
+        const voucherWithItems = await req.tenantModels.Voucher.findByPk(voucher.id, {
+          include: [{ model: req.tenantModels.VoucherItem, as: 'items' }],
+          transaction
+        });
+        await applyInventoryUpdatesHelper(req, voucherWithItems, transaction);
         console.log('✅ Inventory updates applied successfully');
       }
       
@@ -589,7 +603,7 @@ module.exports = {
       }
       
       // Apply inventory updates before posting
-      await this.applyInventoryUpdates(req, voucher, transaction);
+      await applyInventoryUpdatesHelper(req, voucher, transaction);
       
       // Update voucher status to posted
       await voucher.update({ status: 'posted' }, { transaction });
@@ -645,20 +659,52 @@ module.exports = {
   },
 
   async cancel(req, res, next) {
+    const transaction = await req.tenantModels.sequelize.transaction();
+    
     try {
-      const voucher = await req.tenantModels.Voucher.findByPk(req.params.id);
+      const voucher = await req.tenantModels.Voucher.findByPk(req.params.id, { transaction });
       
       if (!voucher) {
+        await transaction.rollback();
         return res.status(404).json({ message: 'Voucher not found' });
       }
       
       if (voucher.status === 'cancelled') {
+        await transaction.rollback();
         return res.status(400).json({ message: 'Voucher is already cancelled' });
       }
       
-      await voucher.update({ status: 'cancelled' });
+      // Get affected ledger IDs before cancelling
+      const ledgerEntries = await req.tenantModels.VoucherLedgerEntry.findAll({
+        where: { voucher_id: voucher.id },
+        attributes: ['ledger_id'],
+        transaction
+      });
+      const affectedLedgerIds = [...new Set(ledgerEntries.map(entry => entry.ledger_id))];
+      
+      // Delete ledger entries for cancelled voucher
+      await req.tenantModels.VoucherLedgerEntry.destroy({
+        where: { voucher_id: voucher.id },
+        transaction
+      });
+      
+      // Update ledger balances for affected ledgers
+      console.log('💰 Updating ledger balances after cancellation...');
+      for (const ledgerId of affectedLedgerIds) {
+        await updateLedgerBalance(req.tenantModels, ledgerId, transaction);
+      }
+      console.log('✅ Ledger balances updated after cancellation');
+      
+      // Update voucher status
+      await voucher.update({ status: 'cancelled' }, { transaction });
+      
+      await transaction.commit();
+      
+      logger.info(`Voucher ${voucher.voucher_number} cancelled successfully`);
       res.json({ message: 'Voucher cancelled successfully', voucher });
     } catch (err) {
+      await transaction.rollback();
+      logger.error('Error cancelling voucher:', err);
       next(err);
     }
   },
@@ -776,6 +822,14 @@ module.exports = {
         });
       }
       
+      // Get affected ledger IDs before deleting entries
+      const ledgerEntries = await req.tenantModels.VoucherLedgerEntry.findAll({
+        where: { voucher_id: id },
+        attributes: ['ledger_id'],
+        transaction
+      });
+      const affectedLedgerIds = [...new Set(ledgerEntries.map(entry => entry.ledger_id))];
+      
       // Delete related records
       // Delete voucher items
       await req.tenantModels.VoucherItem.destroy({
@@ -788,6 +842,13 @@ module.exports = {
         where: { voucher_id: id },
         transaction
       });
+      
+      // Update ledger balances for affected ledgers
+      console.log('💰 Updating ledger balances after deletion...');
+      for (const ledgerId of affectedLedgerIds) {
+        await updateLedgerBalance(req.tenantModels, ledgerId, transaction);
+      }
+      console.log('✅ Ledger balances updated after deletion');
       
       // Delete the voucher
       await voucher.destroy({ transaction });

@@ -56,8 +56,27 @@ export default function CreateSalesInvoiceModal({
   const [items, setItems] = useState([]);
   const [inventoryItems, setInventoryItems] = useState([]);
   const [loadingInventory, setLoadingInventory] = useState(false);
-  const [showItemModal, setShowItemModal] = useState(false);
+  const [showItemSelectionModal, setShowItemSelectionModal] = useState(false);
   const [itemSearchQuery, setItemSearchQuery] = useState('');
+  const [showAddItemModal, setShowAddItemModal] = useState(false);
+  const [showCreateInventoryModal, setShowCreateInventoryModal] = useState(false);
+  const [editingItemIndex, setEditingItemIndex] = useState(null);
+  const [itemForm, setItemForm] = useState({
+    inventory_item_id: null,
+    item_name: '',
+    item_code: '',
+    hsn_sac_code: '',
+    quantity: '1',
+    rate: '0',
+    gst_rate: '0',
+  });
+
+  // Debug: Log when Add Item modal visibility changes
+  useEffect(() => {
+    if (showAddItemModal) {
+      console.log('Add Item Modal opened with form:', itemForm);
+    }
+  }, [showAddItemModal]);
   
   // Modal states
   const [showInvoiceTypeModal, setShowInvoiceTypeModal] = useState(false);
@@ -65,7 +84,6 @@ export default function CreateSalesInvoiceModal({
   const [showPurposeModal, setShowPurposeModal] = useState(false);
   const [showTransportModeModal, setShowTransportModeModal] = useState(false);
   const [showCreateLedgerModal, setShowCreateLedgerModal] = useState(false);
-  const [showCreateInventoryModal, setShowCreateInventoryModal] = useState(false);
   
   const invoiceTypes = [
     { label: 'Sales Invoice', value: 'sales_invoice' },
@@ -169,31 +187,158 @@ export default function CreateSalesInvoiceModal({
     // Refresh inventory list
     await fetchInventory();
     
-    // Optionally auto-add the newly created item to the invoice
+    // Pre-fill the form with the new item
     if (newItem) {
-      const itemToAdd = {
+      setItemForm({
         inventory_item_id: newItem.id,
-        item_code: newItem.item_code,
         item_name: newItem.item_name,
-        item_description: newItem.item_name,
-        quantity: 1,
-        rate: parseFloat(newItem.avg_cost || 0),
-        amount: parseFloat(newItem.avg_cost || 0),
+        item_code: newItem.item_code || '',
         hsn_sac_code: newItem.hsn_sac_code || '',
-        gst_rate: parseFloat(newItem.gst_rate || 0),
-        cgst_amount: 0,
-        sgst_amount: 0,
-        igst_amount: 0,
-      };
-      
-      // Calculate GST
-      const gstAmount = (itemToAdd.amount * itemToAdd.gst_rate) / 100;
-      itemToAdd.cgst_amount = gstAmount / 2;
-      itemToAdd.sgst_amount = gstAmount / 2;
-      
-      setItems([...items, itemToAdd]);
-      setShowItemModal(false);
+        quantity: '1',
+        rate: String(parseFloat(newItem.selling_price || newItem.avg_cost || 0)),
+        gst_rate: String(parseFloat(newItem.gst_rate || 0)),
+      });
+      setShowCreateInventoryModal(false);
+      setShowAddItemModal(true);
     }
+  };
+
+  const handleSelectInventoryItem = (item) => {
+    console.log('Selected inventory item:', item);
+    const formData = {
+      inventory_item_id: item.id,
+      item_name: item.item_name || '',
+      item_code: item.item_code || '',
+      hsn_sac_code: item.hsn_sac_code || '',
+      quantity: '1',
+      rate: String(parseFloat(item.selling_price || item.avg_cost || 0)),
+      gst_rate: String(parseFloat(item.gst_rate || 0)),
+    };
+    console.log('Setting item form:', formData);
+    setItemForm(formData);
+    setShowItemSelectionModal(false);
+    // Use setTimeout to ensure state is updated before opening modal
+    setTimeout(() => {
+      setShowAddItemModal(true);
+    }, 100);
+  };
+
+  const handleAddItem = () => {
+    setItemSearchQuery('');
+    setShowItemSelectionModal(true);
+  };
+
+  const handleCreateNewItem = () => {
+    setShowItemSelectionModal(false);
+    setShowCreateInventoryModal(true);
+  };
+
+  const handleManualAddItem = () => {
+    const newForm = {
+      inventory_item_id: null,
+      item_name: '',
+      item_code: '',
+      hsn_sac_code: '',
+      quantity: '1',
+      rate: '0',
+      gst_rate: '0',
+    };
+    console.log('Manual add - setting form:', newForm);
+    setItemForm(newForm);
+    setShowItemSelectionModal(false);
+    // Use setTimeout to ensure state is updated before opening modal
+    setTimeout(() => {
+      setShowAddItemModal(true);
+    }, 100);
+  };
+
+  const handleSaveItem = () => {
+    // Validate
+    if (!itemForm.item_name.trim()) {
+      showNotification({
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Please enter item name'
+      });
+      return;
+    }
+
+    const quantity = parseFloat(itemForm.quantity);
+    const rate = parseFloat(itemForm.rate);
+    const gstRate = parseFloat(itemForm.gst_rate);
+
+    if (!quantity || quantity <= 0) {
+      showNotification({
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Please enter a valid quantity'
+      });
+      return;
+    }
+
+    if (!rate || rate < 0) {
+      showNotification({
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Please enter a valid rate'
+      });
+      return;
+    }
+
+    const amount = quantity * rate;
+    const gstAmount = (amount * gstRate) / 100;
+
+    const newItem = {
+      inventory_item_id: itemForm.inventory_item_id || null,
+      item_code: itemForm.item_code || null,
+      item_name: itemForm.item_name,
+      item_description: itemForm.item_name,
+      hsn_sac_code: itemForm.hsn_sac_code || null,
+      quantity: quantity,
+      rate: rate,
+      amount: amount,
+      gst_rate: gstRate,
+      cgst_amount: gstAmount / 2,
+      sgst_amount: gstAmount / 2,
+      igst_amount: 0,
+    };
+
+    if (editingItemIndex !== null) {
+      // Update existing item
+      const newItems = [...items];
+      newItems[editingItemIndex] = newItem;
+      setItems(newItems);
+      setEditingItemIndex(null);
+    } else {
+      // Add new item
+      setItems([...items, newItem]);
+    }
+
+    setShowAddItemModal(false);
+    setItemForm({
+      inventory_item_id: null,
+      item_name: '',
+      item_code: '',
+      hsn_sac_code: '',
+      quantity: '1',
+      rate: '0',
+      gst_rate: '0',
+    });
+  };
+
+  const handleEditItem = (index) => {
+    const item = items[index];
+    setItemForm({
+      inventory_item_id: item.inventory_item_id || null,
+      item_name: item.item_name || item.item_description,
+      item_code: item.item_code || '',
+      hsn_sac_code: item.hsn_sac_code || '',
+      quantity: String(item.quantity),
+      rate: String(item.rate),
+      gst_rate: String(item.gst_rate),
+    });
+    setEditingItemIndex(index);
+    setShowAddItemModal(true);
   };
 
   const handleCreateLedger = async (newLedger) => {
@@ -259,6 +404,15 @@ export default function CreateSalesInvoiceModal({
         return;
       }
 
+      // Calculate total amount from items
+      const subtotal = items.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
+      const totalTax = items.reduce((sum, item) => {
+        return sum + parseFloat(item.cgst_amount || 0) + 
+               parseFloat(item.sgst_amount || 0) + 
+               parseFloat(item.igst_amount || 0);
+      }, 0);
+      const totalAmount = subtotal + totalTax;
+
       // Create voucher - backend will auto-generate voucher_number
       const voucherData = {
         voucher_type: formData.voucher_type,
@@ -267,9 +421,22 @@ export default function CreateSalesInvoiceModal({
         reference_number: formData.reference_number || null,
         narration: formData.narration || null,
         status: status,
-        total_amount: formData.total_amount || 0,
-        items: [], // Empty items for now
-        ledger_entries: [], // Empty ledger entries for now
+        total_amount: totalAmount,
+        items: items.map(item => ({
+          inventory_item_id: item.inventory_item_id || null,
+          item_code: item.item_code || null,
+          item_name: item.item_name,
+          item_description: item.item_description || item.item_name,
+          quantity: parseFloat(item.quantity || 0),
+          rate: parseFloat(item.rate || 0),
+          amount: parseFloat(item.amount || 0),
+          hsn_sac_code: item.hsn_sac_code || null,
+          gst_rate: parseFloat(item.gst_rate || 0),
+          cgst_amount: parseFloat(item.cgst_amount || 0),
+          sgst_amount: parseFloat(item.sgst_amount || 0),
+          igst_amount: parseFloat(item.igst_amount || 0),
+        })),
+        ledger_entries: [], // Ledger entries will be auto-generated by backend
       };
 
       const response = await voucherAPI.create(voucherData);
@@ -455,7 +622,7 @@ export default function CreateSalesInvoiceModal({
               <Text style={styles.sectionTitle}>Items</Text>
               <TouchableOpacity 
                 style={styles.addItemButton}
-                onPress={() => setShowItemModal(true)}
+                onPress={() => setShowItemSelectionModal(true)}
               >
                 <Ionicons name="add-circle" size={20} color="#3e60ab" />
                 <Text style={styles.addItemButtonText}>Add Item</Text>
@@ -976,13 +1143,12 @@ export default function CreateSalesInvoiceModal({
         </View>
       </Modal>
 
-      {/* Item Selection Modal */}
+      {/* Old Item Modal - Keep for backward compatibility if needed */}
       <Modal
-        visible={showItemModal}
+        visible={false}
         transparent={true}
         animationType="slide"
         onRequestClose={() => {
-          setShowItemModal(false);
           setItemSearchQuery('');
         }}
       >
@@ -991,7 +1157,6 @@ export default function CreateSalesInvoiceModal({
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Item</Text>
               <TouchableOpacity onPress={() => {
-                setShowItemModal(false);
                 setItemSearchQuery('');
               }}>
                 <Ionicons name="close" size={24} color="#6b7280" />
@@ -1020,7 +1185,6 @@ export default function CreateSalesInvoiceModal({
               <TouchableOpacity 
                 style={styles.createItemButton}
                 onPress={() => {
-                  setShowItemModal(false);
                   setShowCreateInventoryModal(true);
                 }}
               >
@@ -1081,7 +1245,6 @@ export default function CreateSalesInvoiceModal({
                         newItem.sgst_amount = gstAmount / 2;
                         
                         setItems([...items, newItem]);
-                        setShowItemModal(false);
                         setItemSearchQuery('');
                       }}
                     >
@@ -1099,6 +1262,254 @@ export default function CreateSalesInvoiceModal({
                   ))
               )}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Item Selection Modal */}
+      <Modal
+        visible={showItemSelectionModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowItemSelectionModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Item</Text>
+              <TouchableOpacity onPress={() => setShowItemSelectionModal(false)}>
+                <Ionicons name="close" size={24} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+            
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
+              <Ionicons name="search" size={20} color="#9ca3af" style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                value={itemSearchQuery}
+                onChangeText={setItemSearchQuery}
+                placeholder="Search items..."
+                placeholderTextColor="#9ca3af"
+              />
+              {itemSearchQuery ? (
+                <TouchableOpacity onPress={() => setItemSearchQuery('')}>
+                  <Ionicons name="close-circle" size={20} color="#9ca3af" />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            {/* Action Buttons */}
+            <View style={styles.modalActionBar}>
+              <TouchableOpacity 
+                style={styles.createItemButton}
+                onPress={handleCreateNewItem}
+              >
+                <Ionicons name="add-circle" size={20} color="#3e60ab" />
+                <Text style={styles.createItemText}>Create New Item</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.manualAddButton}
+                onPress={handleManualAddItem}
+              >
+                <Ionicons name="create-outline" size={20} color="#059669" />
+                <Text style={styles.manualAddText}>Add Manually</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalList}>
+              {loadingInventory ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#3e60ab" />
+                  <Text style={styles.loadingText}>Loading items...</Text>
+                </View>
+              ) : inventoryItems.filter(item =>
+                  item.item_name?.toLowerCase().includes(itemSearchQuery.toLowerCase()) ||
+                  item.item_code?.toLowerCase().includes(itemSearchQuery.toLowerCase())
+                ).length === 0 ? (
+                <View style={styles.emptyModalContainer}>
+                  <Ionicons name="cube-outline" size={48} color="#d1d5db" />
+                  <Text style={styles.emptyModalText}>
+                    {itemSearchQuery ? 'No items found' : 'No inventory items'}
+                  </Text>
+                  <Text style={styles.emptyModalSubtext}>
+                    {itemSearchQuery ? 'Try a different search' : 'Create a new item to get started'}
+                  </Text>
+                </View>
+              ) : (
+                inventoryItems
+                  .filter(item =>
+                    item.item_name?.toLowerCase().includes(itemSearchQuery.toLowerCase()) ||
+                    item.item_code?.toLowerCase().includes(itemSearchQuery.toLowerCase())
+                  )
+                  .map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.modalItem}
+                      onPress={() => handleSelectInventoryItem(item)}
+                    >
+                      <View style={styles.modalItemContent}>
+                        <Text style={styles.modalItemText}>{item.item_name}</Text>
+                        {item.item_code && (
+                          <Text style={styles.modalItemSubtext}>Code: {item.item_code}</Text>
+                        )}
+                        <Text style={styles.modalItemSubtext}>
+                          Stock: {parseFloat(item.quantity_on_hand || 0).toFixed(2)} • 
+                          Price: ₹{parseFloat(item.selling_price || item.avg_cost || 0).toFixed(2)} •
+                          GST: {parseFloat(item.gst_rate || 0)}%
+                        </Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+                    </TouchableOpacity>
+                  ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Add/Edit Item Modal */}
+      <Modal
+        visible={showAddItemModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => {
+          setShowAddItemModal(false);
+          setEditingItemIndex(null);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, styles.largeModalContent]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{editingItemIndex !== null ? 'Edit Item' : 'Add Item'}</Text>
+              <TouchableOpacity onPress={() => {
+                setShowAddItemModal(false);
+                setEditingItemIndex(null);
+              }}>
+                <Ionicons name="close" size={24} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView 
+              style={styles.modalScrollContent} 
+              contentContainerStyle={styles.modalScrollContentContainer}
+              showsVerticalScrollIndicator={true}
+              bounces={false}
+            >
+              <View style={styles.modalFormSection}>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Item Name *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={itemForm.item_name}
+                    onChangeText={(text) => setItemForm({ ...itemForm, item_name: text })}
+                    placeholder="Enter item name"
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Item Code</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={itemForm.item_code}
+                    onChangeText={(text) => setItemForm({ ...itemForm, item_code: text })}
+                    placeholder="Enter item code (optional)"
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>HSN/SAC Code</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={itemForm.hsn_sac_code}
+                    onChangeText={(text) => setItemForm({ ...itemForm, hsn_sac_code: text })}
+                    placeholder="Enter HSN/SAC code (optional)"
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Quantity *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={itemForm.quantity}
+                    onChangeText={(text) => setItemForm({ ...itemForm, quantity: text })}
+                    placeholder="Enter quantity"
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Rate (₹) *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={itemForm.rate}
+                    onChangeText={(text) => setItemForm({ ...itemForm, rate: text })}
+                    placeholder="Enter rate"
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Amount (₹)</Text>
+                  <Text style={styles.readOnlyText}>
+                    ₹{(parseFloat(itemForm.quantity || 0) * parseFloat(itemForm.rate || 0)).toFixed(2)}
+                  </Text>
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>GST Rate (%)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={itemForm.gst_rate}
+                    onChangeText={(text) => setItemForm({ ...itemForm, gst_rate: text })}
+                    placeholder="Enter GST rate"
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+
+                {parseFloat(itemForm.gst_rate || 0) > 0 && (
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>GST Amount (₹)</Text>
+                    <Text style={styles.readOnlyText}>
+                      ₹{(
+                        (parseFloat(itemForm.quantity || 0) * parseFloat(itemForm.rate || 0) * parseFloat(itemForm.gst_rate || 0)) / 100
+                      ).toFixed(2)}
+                    </Text>
+                  </View>
+                )}
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Total Amount (₹)</Text>
+                  <Text style={[styles.readOnlyText, styles.totalAmountText]}>
+                    ₹{(
+                      (parseFloat(itemForm.quantity || 0) * parseFloat(itemForm.rate || 0)) +
+                      ((parseFloat(itemForm.quantity || 0) * parseFloat(itemForm.rate || 0) * parseFloat(itemForm.gst_rate || 0)) / 100)
+                    ).toFixed(2)}
+                  </Text>
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={() => {
+                  setShowAddItemModal(false);
+                  setEditingItemIndex(null);
+                }}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextSecondary]}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.modalButtonPrimary]}
+                onPress={handleSaveItem}
+              >
+                <Text style={styles.modalButtonText}>
+                  {editingItemIndex !== null ? 'Update Item' : 'Add Item'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -1233,13 +1644,19 @@ const styles = StyleSheet.create({
     maxHeight: '70%',
   },
   largeModalContent: {
-    maxHeight: '85%',
+    maxHeight: '90%',
+    minHeight: '60%',
   },
   modalScrollContent: {
-    flex: 1,
+    flexGrow: 1,
+  },
+  modalScrollContentContainer: {
+    flexGrow: 1,
+    paddingBottom: 20,
   },
   modalFormSection: {
     padding: 20,
+    minHeight: 400,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1283,6 +1700,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
+    flexDirection: 'row',
+    gap: 8,
   },
   createCustomerButton: {
     flexDirection: 'row',
@@ -1301,6 +1720,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   createItemButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1310,10 +1730,28 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#3e60ab',
+    marginRight: 8,
   },
   createItemText: {
     ...FONT_STYLES.label,
     color: '#3e60ab',
+    marginLeft: 8,
+  },
+  manualAddButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: '#ecfdf5',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#059669',
+  },
+  manualAddText: {
+    ...FONT_STYLES.label,
+    color: '#059669',
     marginLeft: 8,
   },
   modalItemContent: {
@@ -1453,6 +1891,19 @@ const styles = StyleSheet.create({
   buttonTextOutline: {
     color: '#3e60ab',
   },
+  readOnlyText: {
+    ...FONT_STYLES.body,
+    color: '#111827',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+  },
+  totalAmountText: {
+    fontWeight: '700',
+    color: '#3e60ab',
+    fontSize: 16,
+  },
   // Items Section Styles
   sectionHeader: {
     flexDirection: 'row',
@@ -1507,14 +1958,64 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 12,
+  },
+  itemHeaderLeft: {
+    flex: 1,
+    marginRight: 8,
+  },
+  itemHeaderActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  itemActionButton: {
+    padding: 4,
   },
   itemName: {
     ...FONT_STYLES.body,
     color: '#111827',
     fontWeight: '600',
-    flex: 1,
-    marginRight: 8,
+    marginBottom: 4,
+  },
+  itemCode: {
+    ...FONT_STYLES.caption,
+    color: '#6b7280',
+  },
+  itemCardBody: {
+    gap: 6,
+    marginBottom: 8,
+  },
+  itemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  itemLabel: {
+    ...FONT_STYLES.caption,
+    color: '#6b7280',
+  },
+  itemValue: {
+    ...FONT_STYLES.caption,
+    color: '#111827',
+    fontWeight: '600',
+  },
+  itemTaxRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  itemTax: {
+    ...FONT_STYLES.caption,
+    color: '#059669',
+    fontWeight: '600',
+  },
+  itemTaxAmount: {
+    ...FONT_STYLES.caption,
+    color: '#059669',
+    fontWeight: '600',
   },
   itemCardDetails: {
     flexDirection: 'row',
@@ -1524,11 +2025,6 @@ const styles = StyleSheet.create({
   itemDetail: {
     ...FONT_STYLES.caption,
     color: '#6b7280',
-  },
-  itemTax: {
-    ...FONT_STYLES.caption,
-    color: '#059669',
-    fontWeight: '600',
   },
   totalCard: {
     backgroundColor: '#f3f4f6',

@@ -33,7 +33,7 @@ export default function SalesInvoiceScreen() {
     
     try {
       const params = { 
-        voucher_type: 'sales_invoice',
+        voucher_type: 'Sales',
         limit: 100 
       };
       

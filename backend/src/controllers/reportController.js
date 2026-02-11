@@ -1,5 +1,6 @@
 const { Op, Sequelize } = require('sequelize');
 const logger = require('../utils/logger');
+const reportService = require('../services/reportService');
 
 function toNum(v, fallback = 0) {
   const n = parseFloat(v);
@@ -57,11 +58,28 @@ async function movementByLedger(tenantModels, { fromDate, toDate, asOnDate, befo
 module.exports = {
   async getTrialBalance(req, res, next) {
     try {
-      const { as_on_date, from_date } = req.query;
+      const { as_on_date, from_date, format } = req.query;
       const asOn = as_on_date || null;
       const from = from_date || null;
       const to = new Date().toISOString().slice(0, 10);
 
+      // Option 1: Use simplified report service (faster)
+      if (format === 'simple') {
+        const tbReport = await reportService.generateTrialBalanceReport(req.tenantModels, {
+          asOnDate: asOn,
+          fromDate: !asOn && from ? from : null,
+          toDate: !asOn && from ? to : null
+        });
+        
+        return res.json({
+          trialBalance: tbReport.ledgers,
+          totals: tbReport.totals,
+          as_on_date: asOn || to,
+          format: 'simple'
+        });
+      }
+
+      // Option 2: Use detailed format with account groups (default)
       const ledgers = await req.tenantModels.Ledger.findAll({ where: { is_active: true } });
       const groupMap = await loadGroupMap(req.masterModels, ledgers);
 
@@ -108,10 +126,30 @@ module.exports = {
 
   async getProfitLoss(req, res, next) {
     try {
-      const { from_date, to_date } = req.query;
+      const { from_date, to_date, format } = req.query;
       const from = from_date || new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0, 10);
       const to = to_date || new Date().toISOString().slice(0, 10);
 
+      // Option 1: Use simplified report service (faster, less detailed)
+      if (format === 'simple') {
+        const plReport = await reportService.generateProfitLossReport(req.tenantModels, { 
+          startDate: from, 
+          endDate: to 
+        });
+        
+        return res.json({
+          revenue: plReport.revenue,
+          cost_of_goods_sold: plReport.costOfGoodsSold,
+          gross_profit: plReport.grossProfit,
+          expenses: plReport.expenses,
+          net_profit: plReport.netProfit,
+          metrics: plReport.metrics,
+          period: { from_date: from, to_date: to },
+          format: 'simple'
+        });
+      }
+
+      // Option 2: Use detailed Tally-style format (default)
       console.log(`\n📊 === GENERATING TRADING & PROFIT & LOSS ACCOUNT ===`);
       console.log(`📅 Period: ${from} to ${to}`);
       console.log(`🏢 Tenant: ${req.tenant_id}`);
@@ -424,9 +462,26 @@ module.exports = {
 
   async getBalanceSheet(req, res, next) {
     try {
-      const { as_on_date } = req.query;
+      const { as_on_date, format } = req.query;
       const asOn = as_on_date || new Date().toISOString().slice(0, 10);
 
+      // Option 1: Use simplified report service (faster, less detailed)
+      if (format === 'simple') {
+        const bsReport = await reportService.generateBalanceSheetReport(req.tenantModels, { 
+          asOnDate: asOn 
+        });
+        
+        return res.json({
+          capital: bsReport.capital,
+          liabilities: bsReport.liabilities,
+          assets: bsReport.assets,
+          totals: bsReport.totals,
+          as_on_date: asOn,
+          format: 'simple'
+        });
+      }
+
+      // Option 2: Use detailed Tally-style format (default)
       console.log(`\n🏛️ === GENERATING TALLY-STYLE BALANCE SHEET ===`);
       console.log(`📅 As on: ${asOn}`);
       console.log(`🏢 Tenant: ${req.tenant_id}`);

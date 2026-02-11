@@ -34,6 +34,8 @@ export default function LoginScreen() {
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricType, setBiometricType] = useState('biometric'); // 'fingerprint', 'facial', or 'biometric'
   const [savedCredentials, setSavedCredentials] = useState(null);
+  const [allSavedCredentials, setAllSavedCredentials] = useState([]);
+  const [showAccountSelection, setShowAccountSelection] = useState(false);
   const { login } = useAuth();
   const { showSuccess, showError } = useNotification();
   const { showInfoConfirmation } = useConfirmation();
@@ -73,14 +75,43 @@ export default function LoginScreen() {
 
   const checkSavedCredentials = async () => {
     try {
-      const credentialsKey = buildStorageKey('biometric_credentials');
-      const saved = await AsyncStorage.getItem(credentialsKey);
+      // Get all saved biometric credentials (multiple accounts)
+      const credentialsKey = buildStorageKey('biometric_credentials_list');
+      const oldCredentialsKey = buildStorageKey('biometric_credentials');
+      
+      let saved = await AsyncStorage.getItem(credentialsKey);
+      
+      // Migration: Check if old format exists and migrate
+      if (!saved) {
+        const oldSaved = await AsyncStorage.getItem(oldCredentialsKey);
+        if (oldSaved) {
+          console.log('🔄 Migrating old biometric credentials to new format...');
+          const oldCredential = JSON.parse(oldSaved);
+          const newList = [oldCredential];
+          await AsyncStorage.setItem(credentialsKey, JSON.stringify(newList));
+          await AsyncStorage.removeItem(oldCredentialsKey);
+          saved = JSON.stringify(newList);
+          console.log('✅ Migration complete');
+        }
+      }
       
       if (saved) {
-        const credentials = JSON.parse(saved);
-        setSavedCredentials(credentials);
-        setEmail(credentials.email || '');
-        console.log('✅ Biometric credentials found for:', credentials.email);
+        const credentialsList = JSON.parse(saved);
+        
+        // If there are saved credentials, use the most recent one
+        if (credentialsList && credentialsList.length > 0) {
+          // Sort by savedAt to get the most recent
+          const sortedCredentials = credentialsList.sort((a, b) => 
+            new Date(b.savedAt) - new Date(a.savedAt)
+          );
+          
+          const mostRecent = sortedCredentials[0];
+          setSavedCredentials(mostRecent);
+          setAllSavedCredentials(sortedCredentials);
+          setEmail(mostRecent.email || '');
+          console.log('✅ Biometric credentials found for:', mostRecent.email);
+          console.log(`📋 Total saved accounts: ${credentialsList.length}`);
+        }
       } else {
         console.log('ℹ️  No biometric credentials saved yet');
       }
@@ -91,36 +122,63 @@ export default function LoginScreen() {
 
   const saveBiometricCredentials = async (email, password) => {
     try {
-      const credentialsKey = buildStorageKey('biometric_credentials');
-      await AsyncStorage.setItem(credentialsKey, JSON.stringify({
+      const credentialsKey = buildStorageKey('biometric_credentials_list');
+      const saved = await AsyncStorage.getItem(credentialsKey);
+      
+      let credentialsList = [];
+      if (saved) {
+        credentialsList = JSON.parse(saved);
+      }
+      
+      // Check if this email already exists
+      const existingIndex = credentialsList.findIndex(cred => cred.email === email);
+      
+      const newCredential = {
         email,
         password,
         savedAt: new Date().toISOString()
-      }));
+      };
+      
+      if (existingIndex >= 0) {
+        // Update existing credential
+        credentialsList[existingIndex] = newCredential;
+        console.log('🔄 Updated biometric credentials for:', email);
+      } else {
+        // Add new credential
+        credentialsList.push(newCredential);
+        console.log('➕ Added new biometric credentials for:', email);
+      }
+      
+      // Save the updated list
+      await AsyncStorage.setItem(credentialsKey, JSON.stringify(credentialsList));
+      console.log(`💾 Total saved accounts: ${credentialsList.length}`);
     } catch (error) {
       console.error('Error saving biometric credentials:', error);
     }
   };
 
-  const handleBiometricLogin = async () => {
-    if (!biometricAvailable || !savedCredentials) {
+  const handleBiometricLogin = async (selectedCredential = null) => {
+    const credToUse = selectedCredential || savedCredentials;
+    
+    if (!biometricAvailable || !credToUse) {
       showError('Biometric Login', 'Biometric authentication is not available or no credentials saved');
       return;
     }
 
     try {
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Authenticate to login to Finvera',
+        promptMessage: `Authenticate to login as ${credToUse.email}`,
         cancelLabel: 'Cancel',
         fallbackLabel: 'Use Password',
         disableDeviceFallback: false,
       });
 
       if (result.success) {
-        setEmail(savedCredentials.email);
-        setPassword(savedCredentials.password);
+        setEmail(credToUse.email);
+        setPassword(credToUse.password);
+        setShowAccountSelection(false);
         // Proceed with login using saved credentials
-        await handleLoginWithCredentials(savedCredentials.email, savedCredentials.password);
+        await handleLoginWithCredentials(credToUse.email, credToUse.password);
       } else {
         showError('Authentication Failed', 'Authentication was cancelled or failed');
       }
@@ -128,6 +186,18 @@ export default function LoginScreen() {
       console.error('Biometric authentication error:', error);
       showError('Authentication Error', 'Failed to authenticate');
     }
+  };
+
+  const handleShowAccountSelection = () => {
+    if (allSavedCredentials.length > 1) {
+      setShowAccountSelection(true);
+    } else {
+      handleBiometricLogin();
+    }
+  };
+
+  const handleSelectAccount = (credential) => {
+    handleBiometricLogin(credential);
   };
 
   const handleLoginWithCredentials = async (emailParam, passwordParam) => {
@@ -336,7 +406,53 @@ export default function LoginScreen() {
       </View>
 
       {/* Conditional Content */}
-      {showCompanySelection ? (
+      {showAccountSelection ? (
+        /* Account Selection for Biometric Login */
+        <View style={styles.formContainer}>
+          <View style={styles.form}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => setShowAccountSelection(false)}
+            >
+              <Ionicons name="arrow-back" size={20} color="#3e60ab" />
+              <Text style={styles.backButtonText}>Back</Text>
+            </TouchableOpacity>
+            
+            <Text style={styles.formTitle}>Select Account</Text>
+            <Text style={styles.companySubtitle}>
+              Choose which account to login with biometrics
+            </Text>
+            
+            <View style={styles.companiesContainer}>
+              {allSavedCredentials.map((credential, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.companyCard}
+                  onPress={() => handleSelectAccount(credential)}
+                  disabled={loading}
+                >
+                  <View style={styles.companyIcon}>
+                    <Ionicons 
+                      name="person-circle" 
+                      size={24} 
+                      color="#3e60ab" 
+                    />
+                  </View>
+                  <View style={styles.companyInfo}>
+                    <Text style={styles.companyName}>
+                      {credential.email}
+                    </Text>
+                    <Text style={styles.companyType}>
+                      Last used: {new Date(credential.savedAt).toLocaleDateString()}
+                    </Text>
+                  </View>
+                  <Ionicons name="finger-print" size={20} color="#3e60ab" />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+      ) : showCompanySelection ? (
         /* Company Selection Form */
         <View style={styles.formContainer}>
           <View style={styles.form}>
@@ -453,12 +569,14 @@ export default function LoginScreen() {
             {biometricAvailable && savedCredentials && (
               <TouchableOpacity
                 style={styles.biometricButton}
-                onPress={handleBiometricLogin}
+                onPress={handleShowAccountSelection}
                 disabled={loading}
               >
                 <View style={styles.biometricButtonContent}>
                   <Text style={styles.biometricButtonText}>
-                    Login with Biometrics
+                    {allSavedCredentials.length > 1 
+                      ? `Login with Biometrics (${allSavedCredentials.length} accounts)` 
+                      : 'Login with Biometrics'}
                   </Text>
                 </View>
               </TouchableOpacity>

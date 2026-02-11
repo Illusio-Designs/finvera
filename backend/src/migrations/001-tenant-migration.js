@@ -249,6 +249,9 @@ module.exports = {
         // Proforma Invoice fields
         validity_period: { type: Sequelize.INTEGER, allowNull: true, comment: 'Number of days the proforma invoice is valid (e.g., 30, 60, 90 days)' },
         valid_until: { type: Sequelize.DATE, allowNull: true, comment: 'Calculated date when the proforma invoice expires (voucher_date + validity_period)' },
+        // Supplier Invoice fields (for purchase invoices)
+        supplier_invoice_number: { type: Sequelize.STRING(100), allowNull: true, comment: 'Supplier invoice number for purchase invoices' },
+        supplier_invoice_date: { type: Sequelize.DATE, allowNull: true, comment: 'Supplier invoice date for purchase invoices' },
         // Company and Branch isolation
         company_id: { type: Sequelize.UUID, allowNull: true, comment: 'Company ID for explicit company-level isolation' },
         branch_id: { type: Sequelize.UUID, allowNull: true, comment: 'Branch ID for explicit branch-level isolation' },
@@ -286,6 +289,10 @@ module.exports = {
       // Add proforma invoice fields if they don't exist
       await addColumnIfNotExists('vouchers', 'validity_period', { type: Sequelize.INTEGER, allowNull: true, comment: 'Number of days the proforma invoice is valid (e.g., 30, 60, 90 days)' });
       await addColumnIfNotExists('vouchers', 'valid_until', { type: Sequelize.DATE, allowNull: true, comment: 'Calculated date when the proforma invoice expires (voucher_date + validity_period)' });
+      
+      // Add supplier invoice fields if they don't exist
+      await addColumnIfNotExists('vouchers', 'supplier_invoice_number', { type: Sequelize.STRING(100), allowNull: true, comment: 'Supplier invoice number for purchase invoices' });
+      await addColumnIfNotExists('vouchers', 'supplier_invoice_date', { type: Sequelize.DATE, allowNull: true, comment: 'Supplier invoice date for purchase invoices' });
       
       // Add company and branch isolation fields if they don't exist
       await addColumnIfNotExists('vouchers', 'company_id', { type: Sequelize.UUID, allowNull: true, comment: 'Company ID for explicit company-level isolation' });

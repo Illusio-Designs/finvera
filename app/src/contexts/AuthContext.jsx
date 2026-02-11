@@ -188,9 +188,10 @@ export const AuthProvider = ({ children }) => {
       const tokenKey = buildStorageKey(STORAGE_CONFIG.AUTH_TOKEN_KEY);
       const userKey = buildStorageKey(STORAGE_CONFIG.USER_DATA_KEY);
       const biometricKey = buildStorageKey('biometric_credentials');
+      const biometricListKey = buildStorageKey('biometric_credentials_list');
       
       // Remove everything including biometric credentials
-      await AsyncStorage.multiRemove([tokenKey, userKey, biometricKey]);
+      await AsyncStorage.multiRemove([tokenKey, userKey, biometricKey, biometricListKey]);
       setToken(null);
       setUser(null);
       
