@@ -1,4 +1,5 @@
 const logger = require('../utils/logger');
+const { Sequelize, Op } = require('sequelize');
 
 /**
  * Report Service
@@ -20,9 +21,6 @@ function toNum(v, fallback = 0) {
  * @returns {Object} - P&L report data
  */
 async function generateProfitLossReport(tenantModels, masterModels, options = {}) {
-  const { Sequelize } = tenantModels;
-  const { Op } = Sequelize;
-  
   try {
     const { startDate, endDate } = options;
     
@@ -196,6 +194,53 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
     const cogsPercentage = netSales > 0 ? (cogs / netSales * 100) : 0;
     
     return {
+      period: {
+        from: startDate,
+        to: endDate
+      },
+      trading_account: {
+        opening_stock: {
+          amount: openingStock
+        },
+        purchases: {
+          gross_purchases: totalPurchases,
+          purchase_returns: totalPurchaseReturns,
+          net_purchases: netPurchases
+        },
+        direct_expenses: {
+          total: totalDirectExpenses,
+          description: 'Direct expenses related to production'
+        },
+        gross_profit: grossProfit
+      },
+      sales_revenue: {
+        gross_sales: totalSales,
+        sales_returns: totalSalesReturns,
+        net_sales: netSales
+      },
+      closing_stock: {
+        amount: closingStock
+      },
+      profit_loss_account: {
+        gross_profit_brought_forward: grossProfit,
+        indirect_expenses: {
+          total: totalIndirectExpenses,
+          description: 'Operating and administrative expenses'
+        },
+        other_incomes: {
+          total: totalOtherIncomes,
+          description: 'Other income sources',
+          accounts: []
+        },
+        net_profit: netProfit
+      },
+      totals: {
+        gross_profit: grossProfit,
+        net_profit: netProfit,
+        gross_profit_margin: grossProfitMargin,
+        net_profit_margin: netProfitMargin
+      },
+      // Keep new structure for backward compatibility
       revenue: {
         sales: netSales,
         total: netSales
@@ -243,9 +288,6 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
  * @returns {Object} - Balance sheet data
  */
 async function generateBalanceSheetReport(tenantModels, masterModels, options = {}) {
-  const { Sequelize } = tenantModels;
-  const { Op } = Sequelize;
-  
   try {
     const { asOnDate } = options;
     const asOn = asOnDate || new Date().toISOString().slice(0, 10);
@@ -352,28 +394,94 @@ async function generateBalanceSheetReport(tenantModels, masterModels, options = 
         } else if (group.bs_category === 'noncurrent_liability') {
           liabilities.noncurrent_liabilities.push(ledgerInfo);
         } else if (group.is_tax_group) {
-          // GST/Tax ledgers - special handling
-          // Input GST (debit) = Asset, Output GST (credit) = Liability
-          if (balanceType === 'debit') {
-            // Input GST - treat as current asset
-            totalAssets += signedBalance;
-            totalLiabilities -= signedBalance; // Remove from liabilities
-            assets.current_assets.push({
-              ...ledgerInfo,
-              group: `${group.name} (Input GST)`
-            });
-          } else {
-            // Output GST - treat as current liability
-            liabilities.current_liabilities.push({
-              ...ledgerInfo,
-              group: `${group.name} (Output GST)`
-            });
-          }
+          // GST/Tax ledgers - DO NOT add individually
+          // We'll calculate Net GST Payable separately
+          // Skip adding to any category here
         } else {
           liabilities.other_liabilities.push(ledgerInfo);
         }
       }
     });
+
+    // Calculate Net GST Payable (Output GST - Input GST)
+    let totalInputGST = 0;
+    let totalOutputGST = 0;
+    const gstDetails = {
+      input: [],
+      output: []
+    };
+
+    ledgers.forEach(ledger => {
+      const group = groupMap.get(ledger.account_group_id);
+      if (!group || !group.is_tax_group) return;
+
+      const rawBalance = toNum(ledger.current_balance, 0);
+      const balanceType = (ledger.balance_type || 'debit').toLowerCase();
+      
+      // Check if it's Input or Output GST based on ledger code
+      const isInputGST = ledger.ledger_code && ledger.ledger_code.includes('INPUT');
+      const isOutputGST = ledger.ledger_code && ledger.ledger_code.includes('OUTPUT');
+
+      if (isInputGST && balanceType === 'debit') {
+        // Input GST with Debit balance (Asset - Tax Credit Available)
+        totalInputGST += rawBalance;
+        gstDetails.input.push({
+          name: ledger.ledger_name,
+          code: ledger.ledger_code,
+          balance: rawBalance
+        });
+      } else if (isOutputGST && balanceType === 'credit') {
+        // Output GST with Credit balance (Liability - Tax Collected)
+        totalOutputGST += rawBalance;
+        gstDetails.output.push({
+          name: ledger.ledger_name,
+          code: ledger.ledger_code,
+          balance: rawBalance
+        });
+      }
+    });
+
+    // Net GST Payable = Output GST - Input GST
+    const netGSTPayable = totalOutputGST - totalInputGST;
+    
+    // Add Net GST to appropriate side
+    if (Math.abs(netGSTPayable) >= 0.01) {
+      if (netGSTPayable > 0) {
+        // Net Payable - add to Current Liabilities
+        liabilities.current_liabilities.push({
+          name: 'Net GST Payable',
+          code: 'GST-NET',
+          balance: netGSTPayable,
+          balance_type: 'credit',
+          group: 'Duties & Taxes',
+          bs_category: 'current_liability',
+          gst_details: {
+            output_gst: totalOutputGST,
+            input_gst: totalInputGST,
+            net: netGSTPayable,
+            breakdown: gstDetails
+          }
+        });
+        totalLiabilities += netGSTPayable;
+      } else {
+        // Net Receivable - add to Current Assets
+        assets.current_assets.push({
+          name: 'Net GST Receivable',
+          code: 'GST-NET',
+          balance: Math.abs(netGSTPayable),
+          balance_type: 'debit',
+          group: 'Duties & Taxes',
+          bs_category: 'current_asset',
+          gst_details: {
+            output_gst: totalOutputGST,
+            input_gst: totalInputGST,
+            net: netGSTPayable,
+            breakdown: gstDetails
+          }
+        });
+        totalAssets += Math.abs(netGSTPayable);
+      }
+    }
 
     // Calculate totals
     const fixedAssetsTotal = assets.fixed_assets.reduce((sum, a) => sum + a.balance, 0);
@@ -475,9 +583,6 @@ async function generateBalanceSheetReport(tenantModels, masterModels, options = 
  * @returns {Object} - Trial balance data
  */
 async function generateTrialBalanceReport(tenantModels, masterModels, options = {}) {
-  const { Sequelize } = tenantModels;
-  const { Op } = Sequelize;
-  
   try {
     const { asOnDate } = options;
     const asOn = asOnDate || new Date().toISOString().slice(0, 10);
@@ -668,10 +773,178 @@ async function getCOGSAnalysis(tenantModels) {
   }
 }
 
+/**
+ * Generate Ledger Statement Report
+ * @param {Object} tenantModels - Tenant database models
+ * @param {Object} masterModels - Master database models
+ * @param {Object} options - Report options (ledgerId, fromDate, toDate)
+ * @returns {Object} - Ledger statement data
+ */
+async function generateLedgerStatementReport(tenantModels, masterModels, options = {}) {
+  const { Sequelize } = tenantModels;
+  const { Op } = Sequelize;
+  
+  try {
+    const { ledgerId, fromDate, toDate } = options;
+    
+    if (!ledgerId) {
+      throw new Error('ledger_id is required for ledger statement');
+    }
+    
+    console.log('📊 Report Service - Generating Ledger Statement');
+    console.log(`📅 Period: ${fromDate} to ${toDate}`);
+    console.log(`📒 Ledger ID: ${ledgerId}`);
+    
+    // Get ledger details
+    const ledger = await tenantModels.Ledger.findByPk(ledgerId);
+    if (!ledger) {
+      throw new Error('Ledger not found');
+    }
+    
+    console.log(`📒 Ledger: ${ledger.ledger_name} (${ledger.ledger_code})`);
+    
+    // Determine if this is a debit or credit ledger
+    const isDebitLedger = ledger.balance_type === 'debit' || ledger.opening_balance_type === 'Dr';
+    const openingBalanceUnsigned = toNum(ledger.opening_balance, 0);
+    
+    // STEP 1: Calculate opening balance (transactions before fromDate)
+    const [beforeMovements] = await tenantModels.sequelize.query(`
+      SELECT 
+        COALESCE(SUM(vle.debit_amount), 0) as total_debit,
+        COALESCE(SUM(vle.credit_amount), 0) as total_credit
+      FROM voucher_ledger_entries vle
+      JOIN vouchers v ON vle.voucher_id = v.id
+      WHERE vle.ledger_id = :ledgerId 
+        AND v.status = 'posted'
+        AND v.voucher_date < :fromDate
+    `, { 
+      replacements: { ledgerId, fromDate },
+      type: Sequelize.QueryTypes.SELECT
+    });
+    
+    const beforeDebit = toNum(beforeMovements[0]?.total_debit, 0);
+    const beforeCredit = toNum(beforeMovements[0]?.total_credit, 0);
+    
+    // Calculate opening balance
+    let openingBalSigned;
+    if (isDebitLedger) {
+      openingBalSigned = openingBalanceUnsigned + beforeDebit - beforeCredit;
+    } else {
+      openingBalSigned = -(openingBalanceUnsigned + beforeCredit - beforeDebit);
+    }
+    
+    console.log(`  Opening Balance: ₹${Math.abs(openingBalSigned).toFixed(2)} ${openingBalSigned >= 0 ? 'Dr' : 'Cr'}`);
+    
+    // STEP 2: Get all transactions in the period
+    const entries = await tenantModels.VoucherLedgerEntry.findAll({
+      where: { ledger_id: ledgerId },
+      include: [
+        {
+          model: tenantModels.Voucher,
+          as: 'voucher',
+          where: { 
+            status: 'posted',
+            voucher_date: {
+              [Op.gte]: fromDate,
+              [Op.lte]: toDate,
+            },
+          },
+          required: true,
+          attributes: ['id', 'voucher_date', 'voucher_number', 'voucher_type', 'narration'],
+        },
+      ],
+      order: [
+        [{ model: tenantModels.Voucher, as: 'voucher' }, 'voucher_date', 'ASC'],
+        [{ model: tenantModels.Voucher, as: 'voucher' }, 'voucher_number', 'ASC'],
+        ['createdAt', 'ASC']
+      ],
+    });
+    
+    console.log(`  Found ${entries.length} transactions in period`);
+    
+    // STEP 3: Build statement with running balance
+    let runningBalance = openingBalSigned;
+    const transactions = [];
+    let periodTotalDebit = 0;
+    let periodTotalCredit = 0;
+    
+    for (const entry of entries) {
+      if (!entry.voucher) continue;
+      
+      const debit = toNum(entry.debit_amount, 0);
+      const credit = toNum(entry.credit_amount, 0);
+      
+      periodTotalDebit += debit;
+      periodTotalCredit += credit;
+      
+      // Update running balance
+      if (isDebitLedger) {
+        runningBalance += debit - credit;
+      } else {
+        runningBalance += credit - debit;
+      }
+      
+      transactions.push({
+        date: entry.voucher.voucher_date,
+        voucher_number: entry.voucher.voucher_number,
+        voucher_type: entry.voucher.voucher_type,
+        particulars: entry.narration || entry.voucher.narration || entry.voucher.voucher_type,
+        debit: debit,
+        credit: credit,
+        balance: Math.abs(runningBalance),
+        balance_type: runningBalance >= 0 ? 'Dr' : 'Cr',
+        narration: entry.narration || entry.voucher.narration
+      });
+    }
+    
+    // STEP 4: Calculate closing balance
+    const closingBalSigned = runningBalance;
+    
+    console.log(`  Closing Balance: ₹${Math.abs(closingBalSigned).toFixed(2)} ${closingBalSigned >= 0 ? 'Dr' : 'Cr'}`);
+    console.log(`  Period Debit: ₹${periodTotalDebit.toFixed(2)}`);
+    console.log(`  Period Credit: ₹${periodTotalCredit.toFixed(2)}`);
+    
+    return {
+      ledger: {
+        id: ledger.id,
+        ledger_code: ledger.ledger_code,
+        ledger_name: ledger.ledger_name,
+        ledger_type: isDebitLedger ? 'debit' : 'credit'
+      },
+      period: {
+        from_date: fromDate,
+        to_date: toDate
+      },
+      opening_balance: {
+        amount: Math.abs(openingBalSigned),
+        type: openingBalSigned >= 0 ? 'Dr' : 'Cr'
+      },
+      transactions: transactions,
+      closing_balance: {
+        amount: Math.abs(closingBalSigned),
+        type: closingBalSigned >= 0 ? 'Dr' : 'Cr'
+      },
+      summary: {
+        opening_balance: Math.abs(openingBalSigned),
+        opening_balance_type: openingBalSigned >= 0 ? 'Dr' : 'Cr',
+        total_debit: periodTotalDebit,
+        total_credit: periodTotalCredit,
+        closing_balance: Math.abs(closingBalSigned),
+        closing_balance_type: closingBalSigned >= 0 ? 'Dr' : 'Cr',
+        transaction_count: transactions.length
+      }
+    };
+  } catch (error) {
+    logger.error('Error generating ledger statement:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   generateProfitLossReport,
   generateBalanceSheetReport,
   generateTrialBalanceReport,
+  generateLedgerStatementReport,
   getVoucherAnalysis,
   getCOGSAnalysis
 };

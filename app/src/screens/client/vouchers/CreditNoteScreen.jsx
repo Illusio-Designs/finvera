@@ -8,6 +8,7 @@ import { voucherAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
 import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 import { formatCurrency } from '../../../utils/businessLogic';
+import CreateCreditNoteModal from '../../../components/modals/CreateCreditNoteModal';
 
 export default function CreditNoteScreen() {
   const { openDrawer } = useDrawer();
@@ -18,6 +19,9 @@ export default function CreditNoteScreen() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editVoucher, setEditVoucher] = useState(null);
 
   const handleMenuPress = () => {
     openDrawer();
@@ -75,19 +79,19 @@ export default function CreditNoteScreen() {
   };
 
   const handleCreatecredit_note = () => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Create credit_note feature coming soon'
-    });
+    setEditMode(false);
+    setEditVoucher(null);
+    setShowCreateModal(true);
   };
 
-  const handleEditVoucher = () => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Edit credit_note feature coming soon'
-    });
+  const handleCreditNoteCreated = () => {
+    fetchVouchers();
+  };
+
+  const handleEditVoucher = (voucher) => {
+    setEditMode(true);
+    setEditVoucher(voucher);
+    setShowCreateModal(true);
   };
 
   const handleDeleteVoucher = () => {
@@ -252,7 +256,7 @@ export default function CreditNoteScreen() {
                     style={styles.actionButton}
                     onPress={(e) => {
                       e.stopPropagation();
-                      handleEditVoucher();
+                      handleEditVoucher(voucher);
                     }}
                   >
                     <Ionicons name="create-outline" size={16} color="#059669" />
@@ -358,6 +362,14 @@ export default function CreditNoteScreen() {
           </View>
         </View>
       </Modal>
+
+      <CreateCreditNoteModal
+        visible={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreditNoteCreated={handleCreditNoteCreated}
+        editMode={editMode}
+        voucherData={editVoucher}
+      />
     </View>
   );
 }

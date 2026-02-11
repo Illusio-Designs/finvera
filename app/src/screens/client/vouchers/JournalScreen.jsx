@@ -8,6 +8,7 @@ import { voucherAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
 import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 import { formatCurrency } from '../../../utils/businessLogic';
+import CreateJournalModal from '../../../components/modals/CreateJournalModal';
 
 export default function JournalScreen() {
   const { openDrawer } = useDrawer();
@@ -18,6 +19,9 @@ export default function JournalScreen() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editVoucher, setEditVoucher] = useState(null);
 
   const handleMenuPress = () => {
     openDrawer();
@@ -75,19 +79,19 @@ export default function JournalScreen() {
   };
 
   const handleCreatejournal = () => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Create journal feature coming soon'
-    });
+    setEditMode(false);
+    setEditVoucher(null);
+    setShowCreateModal(true);
   };
 
-  const handleEditVoucher = () => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Edit journal feature coming soon'
-    });
+  const handleJournalCreated = () => {
+    fetchVouchers();
+  };
+
+  const handleEditVoucher = (voucher) => {
+    setEditMode(true);
+    setEditVoucher(voucher);
+    setShowCreateModal(true);
   };
 
   const handleDeleteVoucher = () => {
@@ -252,7 +256,7 @@ export default function JournalScreen() {
                     style={styles.actionButton}
                     onPress={(e) => {
                       e.stopPropagation();
-                      handleEditVoucher();
+                      handleEditVoucher(voucher);
                     }}
                   >
                     <Ionicons name="create-outline" size={16} color="#059669" />
@@ -358,6 +362,14 @@ export default function JournalScreen() {
           </View>
         </View>
       </Modal>
+
+      <CreateJournalModal
+        visible={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onJournalCreated={handleJournalCreated}
+        editMode={editMode}
+        voucherData={editVoucher}
+      />
     </View>
   );
 }

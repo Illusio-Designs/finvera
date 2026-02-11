@@ -25,7 +25,7 @@ export default function LedgersScreen() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedLedger, setSelectedLedger] = useState(null);
   const [ledgerBalance, setLedgerBalance] = useState(null);
-  const [statementData, setStatementData] = useState([]);
+  const [statementData, setStatementData] = useState({ transactions: [], summary: null });
   const [statementLoading, setStatementLoading] = useState(false);
   const [dateRange, setDateRange] = useState({
     fromDate: '',
@@ -107,8 +107,19 @@ export default function LedgersScreen() {
       if (dateRange.toDate) params.to_date = dateRange.toDate;
       
       const response = await accountingAPI.ledgers.statement(ledger.id, params);
-      const statementData = response.data?.transactions || response.data?.statement || response.data?.data || [];
-      setStatementData(Array.isArray(statementData) ? statementData : []);
+      
+      // New API response format from report service
+      const data = response.data;
+      const transactions = data?.transactions || [];
+      
+      // Store full response for summary display
+      setStatementData({
+        transactions: Array.isArray(transactions) ? transactions : [],
+        summary: data?.summary || null,
+        opening_balance: data?.opening_balance || null,
+        closing_balance: data?.closing_balance || null,
+        period: data?.period || null
+      });
     } catch (error) {
       console.error('Error fetching ledger statement:', error);
       showNotification({
@@ -116,7 +127,7 @@ export default function LedgersScreen() {
         title: 'Error',
         message: 'Failed to load ledger statement'
       });
-      setStatementData([]);
+      setStatementData({ transactions: [], summary: null });
     } finally {
       setStatementLoading(false);
     }
@@ -573,7 +584,7 @@ export default function LedgersScreen() {
                 <View style={styles.loadingContainer}>
                   <Text style={styles.loadingText}>Loading statement...</Text>
                 </View>
-              ) : statementData.length === 0 ? (
+              ) : !statementData.transactions || statementData.transactions.length === 0 ? (
                 <View style={styles.comingSoonContainer}>
                   <Ionicons name="document-text-outline" size={64} color="#d1d5db" />
                   <Text style={styles.comingSoonTitle}>No Transactions</Text>
@@ -582,31 +593,116 @@ export default function LedgersScreen() {
                   </Text>
                 </View>
               ) : (
-                <View style={styles.transactionsList}>
-                  {statementData.map((transaction, index) => (
-                    <View key={index} style={styles.transactionCard}>
-                      <View style={styles.transactionHeader}>
-                        <Text style={styles.transactionDate}>
-                          {new Date(transaction.date).toLocaleDateString()}
-                        </Text>
-                        <Text style={styles.transactionVoucher}>
-                          {transaction.voucher_number}
-                        </Text>
+                <>
+                  {/* Summary Cards */}
+                  {statementData.summary && (
+                    <View style={styles.summarySection}>
+                      <View style={styles.summaryCards}>
+                        <View style={styles.summaryCard}>
+                          <Text style={styles.summaryCardLabel}>Opening Balance</Text>
+                          <Text style={styles.summaryCardValue}>
+                            {formatCurrency(statementData.summary.opening_balance || 0)}
+                          </Text>
+                          <Text style={styles.summaryCardType}>
+                            {statementData.summary.opening_balance_type || 'Dr'}
+                          </Text>
+                        </View>
+                        
+                        <View style={styles.summaryCard}>
+                          <Text style={styles.summaryCardLabel}>Closing Balance</Text>
+                          <Text style={styles.summaryCardValue}>
+                            {formatCurrency(statementData.summary.closing_balance || 0)}
+                          </Text>
+                          <Text style={styles.summaryCardType}>
+                            {statementData.summary.closing_balance_type || 'Dr'}
+                          </Text>
+                        </View>
                       </View>
-                      <Text style={styles.transactionDescription}>
-                        {transaction.description || transaction.narration}
-                      </Text>
-                      <View style={styles.transactionAmounts}>
-                        <Text style={styles.debitAmount}>
-                          Dr: {formatCurrency(transaction.debit_amount || 0)}
-                        </Text>
-                        <Text style={styles.creditAmount}>
-                          Cr: {formatCurrency(transaction.credit_amount || 0)}
+                      
+                      <View style={styles.summaryCards}>
+                        <View style={styles.summaryCard}>
+                          <Text style={styles.summaryCardLabel}>Total Debit</Text>
+                          <Text style={[styles.summaryCardValue, { color: '#dc2626' }]}>
+                            {formatCurrency(statementData.summary.total_debit || 0)}
+                          </Text>
+                        </View>
+                        
+                        <View style={styles.summaryCard}>
+                          <Text style={styles.summaryCardLabel}>Total Credit</Text>
+                          <Text style={[styles.summaryCardValue, { color: '#059669' }]}>
+                            {formatCurrency(statementData.summary.total_credit || 0)}
+                          </Text>
+                        </View>
+                      </View>
+                      
+                      <View style={styles.transactionCountCard}>
+                        <Ionicons name="receipt-outline" size={20} color="#6b7280" />
+                        <Text style={styles.transactionCountText}>
+                          {statementData.summary.transaction_count || 0} Transactions
                         </Text>
                       </View>
                     </View>
-                  ))}
-                </View>
+                  )}
+                  
+                  {/* Transactions List */}
+                  <View style={styles.transactionsList}>
+                    <Text style={styles.transactionsListTitle}>Transactions</Text>
+                    {statementData.transactions.map((transaction, index) => (
+                      <View key={index} style={styles.transactionCard}>
+                        <View style={styles.transactionHeader}>
+                          <Text style={styles.transactionDate}>
+                            {new Date(transaction.date).toLocaleDateString('en-IN', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric'
+                            })}
+                          </Text>
+                          <Text style={styles.transactionVoucher}>
+                            {transaction.voucher_number}
+                          </Text>
+                        </View>
+                        
+                        {transaction.voucher_type && (
+                          <View style={styles.voucherTypeBadge}>
+                            <Text style={styles.voucherTypeText}>
+                              {transaction.voucher_type.toUpperCase()}
+                            </Text>
+                          </View>
+                        )}
+                        
+                        {transaction.narration && (
+                          <Text style={styles.transactionDescription}>
+                            {transaction.narration}
+                          </Text>
+                        )}
+                        
+                        <View style={styles.transactionAmounts}>
+                          <View style={styles.amountColumn}>
+                            <Text style={styles.amountLabel}>Debit</Text>
+                            <Text style={styles.debitAmount}>
+                              {formatCurrency(transaction.debit || 0)}
+                            </Text>
+                          </View>
+                          <View style={styles.amountColumn}>
+                            <Text style={styles.amountLabel}>Credit</Text>
+                            <Text style={styles.creditAmount}>
+                              {formatCurrency(transaction.credit || 0)}
+                            </Text>
+                          </View>
+                          <View style={styles.amountColumn}>
+                            <Text style={styles.amountLabel}>Balance</Text>
+                            <Text style={[
+                              styles.balanceAmount,
+                              { color: transaction.balance >= 0 ? '#dc2626' : '#059669' }
+                            ]}>
+                              {formatCurrency(Math.abs(transaction.balance || 0))} {transaction.balance >= 0 ? 'Dr' : 'Cr'}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                </>
               )}
             </View>
           </ScrollView>
@@ -990,6 +1086,11 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
   },
+  transactionsListTitle: {
+    ...FONT_STYLES.h5,
+    color: '#111827',
+    marginBottom: 12,
+  },
   transactionCard: {
     backgroundColor: 'white',
     borderRadius: 8,
@@ -999,6 +1100,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
+    marginBottom: 8,
   },
   transactionHeader: {
     flexDirection: 'row',
@@ -1013,22 +1115,108 @@ const styles = StyleSheet.create({
   transactionVoucher: {
     ...FONT_STYLES.labelSmall,
     color: '#3e60ab',
+    fontWeight: '600',
+  },
+  voucherTypeBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: '#f3f4f6',
+    marginBottom: 8,
+  },
+  voucherTypeText: {
+    ...FONT_STYLES.captionSmall,
+    color: '#6b7280',
+    fontWeight: '600',
   },
   transactionDescription: {
     ...FONT_STYLES.label,
     color: '#111827',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   transactionAmounts: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+  },
+  amountColumn: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  amountLabel: {
+    ...FONT_STYLES.captionSmall,
+    color: '#9ca3af',
+    marginBottom: 4,
   },
   debitAmount: {
     ...FONT_STYLES.labelSmall,
     color: '#dc2626',
+    fontWeight: '600',
   },
   creditAmount: {
     ...FONT_STYLES.labelSmall,
     color: '#059669',
+    fontWeight: '600',
+  },
+  balanceAmount: {
+    ...FONT_STYLES.labelSmall,
+    fontWeight: '600',
+  },
+  // Summary Section Styles
+  summarySection: {
+    padding: 16,
+    gap: 12,
+  },
+  summaryCards: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  summaryCard: {
+    flex: 1,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    alignItems: 'center',
+  },
+  summaryCardLabel: {
+    ...FONT_STYLES.caption,
+    color: '#6b7280',
+    marginBottom: 8,
+  },
+  summaryCardValue: {
+    ...FONT_STYLES.h4,
+    color: '#111827',
+    marginBottom: 4,
+  },
+  summaryCardType: {
+    ...FONT_STYLES.captionSmall,
+    color: '#6b7280',
+    fontWeight: '600',
+  },
+  transactionCountCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    gap: 8,
+  },
+  transactionCountText: {
+    ...FONT_STYLES.label,
+    color: '#6b7280',
   },
 });

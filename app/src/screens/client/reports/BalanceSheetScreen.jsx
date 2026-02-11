@@ -10,6 +10,12 @@ import { reportsAPI } from '../../../lib/api';
 import { formatCurrency } from '../../../utils/businessLogic';
 import { FONT_STYLES } from '../../../utils/fonts';
 import TableSkeleton from '../../../components/ui/skeletons/TableSkeleton';
+import ModernDatePicker from '../../../components/ui/ModernDatePicker';
+
+const getCurrentDate = () => {
+  const today = new Date();
+  return today.toISOString().split('T')[0];
+};
 
 export default function BalanceSheetScreen() {
   const { openDrawer } = useDrawer();
@@ -17,6 +23,7 @@ export default function BalanceSheetScreen() {
   const [balanceSheetData, setBalanceSheetData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [asOnDate, setAsOnDate] = useState(getCurrentDate());
 
   const handleMenuPress = () => {
     openDrawer();
@@ -28,7 +35,7 @@ export default function BalanceSheetScreen() {
     
     try {
       const response = await reportsAPI.balanceSheet({ 
-        as_on_date: getCurrentDate()
+        as_on_date: asOnDate
       });
       setBalanceSheetData(response.data);
     } catch (error) {
@@ -48,7 +55,11 @@ export default function BalanceSheetScreen() {
         setLoading(false);
       }, remainingTime);
     }
-  }, [showNotification]);
+  }, [asOnDate, showNotification]);
+
+  const handleAsOnDateChange = (date) => {
+    setAsOnDate(date);
+  };
 
   const formatDateToDDMMYY = (dateString) => {
     if (!dateString) return '';
@@ -57,11 +68,6 @@ export default function BalanceSheetScreen() {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = String(date.getFullYear()).slice(-2);
     return `${day}/${month}/${year}`;
-  };
-
-  const getCurrentDate = () => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
   };
 
   useEffect(() => {
@@ -265,16 +271,29 @@ export default function BalanceSheetScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* Header Actions - Same as LedgersScreen */}
+        {/* Header Actions with Date Picker */}
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.exportButton} onPress={generatePDF}>
-            <Ionicons name="download" size={16} color="white" />
-            <Text style={styles.exportButtonText}>Export PDF</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
-            <Ionicons name="refresh" size={16} color="#3e60ab" />
-            <Text style={styles.refreshButtonText}>Refresh</Text>
-          </TouchableOpacity>
+          <View style={styles.actionButtonsRow}>
+            <TouchableOpacity style={styles.exportButton} onPress={generatePDF}>
+              <Ionicons name="download" size={16} color="white" />
+              <Text style={styles.exportButtonText}>Export PDF</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
+              <Ionicons name="refresh" size={16} color="#3e60ab" />
+              <Text style={styles.refreshButtonText}>Refresh</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.datePickerRow}>
+            <View style={styles.datePickerContainer}>
+              <ModernDatePicker
+                label="As On Date"
+                value={asOnDate}
+                onDateChange={handleAsOnDateChange}
+                placeholder="Select date"
+              />
+            </View>
+          </View>
         </View>
 
         {loading ? (
@@ -614,14 +633,24 @@ const styles = StyleSheet.create({
 
   // Header Actions - Same as LedgersScreen
   headerActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
+    gap: 12,
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  datePickerRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  datePickerContainer: {
+    flex: 1,
   },
   exportButton: {
     flexDirection: 'row',

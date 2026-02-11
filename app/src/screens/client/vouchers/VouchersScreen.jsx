@@ -86,12 +86,6 @@ export default function VouchersScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState(null);
-  const [voucherStats, setVoucherStats] = useState({
-    total: 0,
-    draft: 0,
-    posted: 0,
-    totalAmount: 0
-  });
 
   const handleMenuPress = () => {
     openDrawer();
@@ -110,17 +104,6 @@ export default function VouchersScreen() {
       const data = response.data?.data || response.data || [];
       const voucherList = Array.isArray(data) ? data : [];
       setVouchers(voucherList);
-      
-      // Calculate stats
-      const stats = voucherList.reduce((acc, voucher) => {
-        acc.total += 1;
-        if (voucher.status === 'draft') acc.draft += 1;
-        if (voucher.status === 'posted') acc.posted += 1;
-        acc.totalAmount += parseFloat(voucher.total_amount || 0);
-        return acc;
-      }, { total: 0, draft: 0, posted: 0, totalAmount: 0 });
-      
-      setVoucherStats(stats);
     } catch (error) {
       console.error('Vouchers fetch error:', error);
       showNotification({
@@ -232,30 +215,80 @@ export default function VouchersScreen() {
       onPress={() => handleVoucherPress(item)}
       activeOpacity={0.7}
     >
-      <View style={styles.voucherHeader}>
-        <View style={styles.voucherInfo}>
+      <View style={styles.voucherCardHeader}>
+        <View style={styles.voucherMainInfo}>
           <Text style={styles.voucherNumber}>{item.voucher_number || 'N/A'}</Text>
           <Text style={styles.voucherType}>{item.voucher_type?.replace('_', ' ').toUpperCase() || 'N/A'}</Text>
+          {item.party_name && (
+            <Text style={styles.voucherParty}>{item.party_name}</Text>
+          )}
         </View>
         <View style={styles.voucherAmount}>
-          <Text style={styles.amountText}>{formatCurrency(item.total_amount || 0)}</Text>
+          <Text style={styles.voucherBalance}>{formatCurrency(item.total_amount || 0)}</Text>
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
             <Text style={styles.statusText}>{item.status?.toUpperCase() || 'DRAFT'}</Text>
           </View>
         </View>
       </View>
       
-      <View style={styles.voucherFooter}>
-        <View style={styles.voucherDetail}>
-          <Ionicons name="calendar-outline" size={16} color="#6b7280" />
-          <Text style={styles.detailText}>{formatDate(item.voucher_date)}</Text>
-        </View>
-        {item.party_name && (
-          <View style={styles.voucherDetail}>
-            <Ionicons name="person-outline" size={16} color="#6b7280" />
-            <Text style={styles.detailText}>{item.party_name}</Text>
-          </View>
+      <View style={styles.voucherCardActions}>
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={(e) => {
+            e.stopPropagation();
+            handleVoucherPress(item);
+          }}
+        >
+          <Ionicons name="eye-outline" size={16} color="#3e60ab" />
+          <Text style={styles.actionButtonText}>View</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={(e) => {
+            e.stopPropagation();
+            showNotification({
+              type: 'info',
+              title: 'Coming Soon',
+              message: 'Print functionality will be available soon'
+            });
+          }}
+        >
+          <Ionicons name="print-outline" size={16} color="#2563eb" />
+          <Text style={styles.actionButtonText}>Print</Text>
+        </TouchableOpacity>
+        
+        {item.status === 'draft' && (
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              showNotification({
+                type: 'info',
+                title: 'Coming Soon',
+                message: 'Edit functionality will be available soon'
+              });
+            }}
+          >
+            <Ionicons name="create-outline" size={16} color="#059669" />
+            <Text style={styles.actionButtonText}>Edit</Text>
+          </TouchableOpacity>
         )}
+        
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={(e) => {
+            e.stopPropagation();
+            showNotification({
+              type: 'info',
+              title: 'Coming Soon',
+              message: 'Delete functionality will be available soon'
+            });
+          }}
+        >
+          <Ionicons name="trash-outline" size={16} color="#dc2626" />
+          <Text style={styles.actionButtonText}>Delete</Text>
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
@@ -274,37 +307,7 @@ export default function VouchersScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* Header Section */}
-        <View style={styles.headerSection}>
-          <Text style={styles.sectionTitle}>Voucher Management</Text>
-          <Text style={styles.sectionSubtitle}>
-            Create, manage and track all your business vouchers
-          </Text>
-          
-          {/* Stats Cards */}
-          <View style={styles.statsContainer}>
-            <View style={styles.statsRow}>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>{voucherStats.total}</Text>
-                <Text style={styles.statLabel}>Total Vouchers</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>{voucherStats.draft}</Text>
-                <Text style={styles.statLabel}>Draft</Text>
-              </View>
-            </View>
-            <View style={styles.statsRow}>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>{voucherStats.posted}</Text>
-                <Text style={styles.statLabel}>Posted</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>{formatCurrency(voucherStats.totalAmount)}</Text>
-                <Text style={styles.statLabel}>Total Amount</Text>
-              </View>
-            </View>
-          </View>
-        </View>
+
 
         {/* Create Voucher Section */}
         <View style={styles.section}>
@@ -370,103 +373,107 @@ export default function VouchersScreen() {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Voucher Details</Text>
-            <TouchableOpacity 
-              onPress={() => setShowDetailModal(false)}
-              style={styles.closeButton}
-            >
+            <Text style={styles.modalTitle}>
+              {selectedVoucher?.voucher_number || 'Voucher Details'}
+            </Text>
+            <TouchableOpacity onPress={() => setShowDetailModal(false)}>
               <Ionicons name="close" size={24} color="#6b7280" />
             </TouchableOpacity>
           </View>
           
-          {selectedVoucher && (
-            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
-              <View style={styles.detailCard}>
-                <Text style={styles.detailCardTitle}>Voucher Information</Text>
-                
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Voucher Number</Text>
-                  <Text style={styles.detailValue}>{selectedVoucher.voucher_number || 'N/A'}</Text>
-                </View>
-                
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Type</Text>
-                  <View style={[styles.typeBadge, { backgroundColor: '#3e60ab' }]}>
-                    <Text style={styles.typeBadgeText}>
-                      {selectedVoucher.voucher_type?.replace('_', ' ').toUpperCase() || 'N/A'}
+          <ScrollView style={styles.modalContent}>
+            {selectedVoucher && (
+              <View style={styles.detailContainer}>
+                {/* Amount Card */}
+                <View style={styles.balanceCards}>
+                  <View style={styles.balanceCard}>
+                    <Text style={styles.balanceCardLabel}>Total Amount</Text>
+                    <Text style={styles.balanceCardValue}>
+                      {formatCurrency(selectedVoucher.total_amount || 0)}
+                    </Text>
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(selectedVoucher.status) }]}>
+                      <Text style={styles.statusText}>{selectedVoucher.status?.toUpperCase() || 'DRAFT'}</Text>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.balanceCard}>
+                    <Text style={styles.balanceCardLabel}>Voucher Date</Text>
+                    <Text style={styles.balanceCardValue}>
+                      {formatDate(selectedVoucher.voucher_date)}
                     </Text>
                   </View>
                 </View>
-                
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Date</Text>
-                  <Text style={styles.detailValue}>{formatDate(selectedVoucher.voucher_date)}</Text>
-                </View>
-                
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Amount</Text>
-                  <Text style={[styles.detailValue, styles.amountValue]}>
-                    {formatCurrency(selectedVoucher.total_amount || 0)}
-                  </Text>
-                </View>
-                
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Status</Text>
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(selectedVoucher.status) }]}>
-                    <Text style={styles.statusText}>{selectedVoucher.status?.toUpperCase() || 'DRAFT'}</Text>
-                  </View>
-                </View>
-                
-                {selectedVoucher.party_name && (
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Party Name</Text>
-                    <Text style={styles.detailValue}>{selectedVoucher.party_name}</Text>
-                  </View>
-                )}
-                
-                {selectedVoucher.reference && (
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Reference</Text>
-                    <Text style={styles.detailValue}>{selectedVoucher.reference}</Text>
-                  </View>
-                )}
-                
-                {selectedVoucher.narration && (
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Narration</Text>
-                    <Text style={styles.detailValue}>{selectedVoucher.narration}</Text>
-                  </View>
-                )}
-              </View>
 
-              <View style={styles.modalActions}>
-                <TouchableOpacity 
-                  style={[styles.modalActionButton, styles.modalActionButtonSecondary]}
-                  onPress={() => setShowDetailModal(false)}
-                >
-                  <Ionicons name="eye-outline" size={16} color="#3e60ab" />
-                  <Text style={[styles.modalActionText, { color: '#3e60ab' }]}>View Full Details</Text>
-                </TouchableOpacity>
-                
-                {selectedVoucher.status === 'draft' && (
-                  <TouchableOpacity 
-                    style={styles.modalActionButton}
-                    onPress={() => {
-                      setShowDetailModal(false);
-                      showNotification({
-                        type: 'info',
-                        title: 'Coming Soon',
-                        message: 'Edit voucher functionality will be available soon'
-                      });
-                    }}
-                  >
-                    <Ionicons name="create-outline" size={16} color="white" />
-                    <Text style={styles.modalActionText}>Edit Voucher</Text>
-                  </TouchableOpacity>
-                )}
+                {/* Voucher Information */}
+                <View style={styles.infoSection}>
+                  <Text style={styles.infoSectionTitle}>Voucher Information</Text>
+                  <View style={styles.infoGrid}>
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>Voucher Number</Text>
+                      <Text style={styles.infoValue}>{selectedVoucher.voucher_number || 'N/A'}</Text>
+                    </View>
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>Voucher Type</Text>
+                      <Text style={styles.infoValue}>
+                        {selectedVoucher.voucher_type?.replace('_', ' ').toUpperCase() || 'N/A'}
+                      </Text>
+                    </View>
+                    {selectedVoucher.party_name && (
+                      <View style={styles.infoItem}>
+                        <Text style={styles.infoLabel}>Party Name</Text>
+                        <Text style={styles.infoValue}>{selectedVoucher.party_name}</Text>
+                      </View>
+                    )}
+                    {selectedVoucher.reference && (
+                      <View style={styles.infoItem}>
+                        <Text style={styles.infoLabel}>Reference</Text>
+                        <Text style={styles.infoValue}>{selectedVoucher.reference}</Text>
+                      </View>
+                    )}
+                    {selectedVoucher.narration && (
+                      <View style={styles.infoItem}>
+                        <Text style={styles.infoLabel}>Narration</Text>
+                        <Text style={styles.infoValue}>{selectedVoucher.narration}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
               </View>
-            </ScrollView>
-          )}
+            )}
+          </ScrollView>
+          
+          <View style={styles.modalActions}>
+            <TouchableOpacity 
+              style={styles.modalActionButton}
+              onPress={() => {
+                setShowDetailModal(false);
+                showNotification({
+                  type: 'info',
+                  title: 'Coming Soon',
+                  message: 'Print functionality will be available soon'
+                });
+              }}
+            >
+              <Ionicons name="print-outline" size={16} color="white" />
+              <Text style={styles.modalActionText}>Print</Text>
+            </TouchableOpacity>
+            {selectedVoucher?.status === 'draft' && (
+              <TouchableOpacity 
+                style={[styles.modalActionButton, styles.modalActionButtonSecondary]}
+                onPress={() => {
+                  setShowDetailModal(false);
+                  showNotification({
+                    type: 'info',
+                    title: 'Coming Soon',
+                    message: 'Edit functionality will be available soon'
+                  });
+                }}
+              >
+                <Ionicons name="create-outline" size={16} color="#3e60ab" />
+                <Text style={[styles.modalActionText, { color: '#3e60ab' }]}>Edit</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </Modal>
     </View>
@@ -484,39 +491,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     paddingBottom: 100,
-  },
-  headerSection: {
-    marginBottom: 24,
-  },
-  statsContainer: {
-    marginTop: 16,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  statNumber: {
-    ...FONT_STYLES.h4,
-    color: '#3e60ab',
-    marginBottom: 4,
-  },
-  statLabel: {
-    ...FONT_STYLES.caption,
-    color: '#6b7280',
-    textAlign: 'center',
   },
   section: {
     marginBottom: 24,
@@ -591,19 +565,19 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
   },
-  voucherHeader: {
+  voucherCardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 12,
   },
-  voucherInfo: {
+  voucherMainInfo: {
     flex: 1,
   },
   voucherNumber: {
@@ -612,16 +586,49 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   voucherType: {
-    ...FONT_STYLES.label,
+    ...FONT_STYLES.caption,
     color: '#6b7280',
+    marginBottom: 2,
+  },
+  voucherParty: {
+    ...FONT_STYLES.caption,
+    color: '#9ca3af',
   },
   voucherAmount: {
     alignItems: 'flex-end',
   },
-  amountText: {
+  voucherBalance: {
     ...FONT_STYLES.h5,
-    color: '#3e60ab',
+    color: '#111827',
     marginBottom: 4,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  statusText: {
+    ...FONT_STYLES.captionSmall,
+    color: 'white',
+  },
+  voucherCardActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#f9fafb',
+  },
+  actionButtonText: {
+    ...FONT_STYLES.captionSmall,
+    marginLeft: 4,
   },
   amountValue: {
     color: '#3e60ab',
@@ -635,30 +642,6 @@ const styles = StyleSheet.create({
   typeBadgeText: {
     ...FONT_STYLES.labelSmall,
     color: 'white',
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    alignSelf: 'flex-end',
-  },
-  statusText: {
-    ...FONT_STYLES.labelSmall,
-    color: 'white',
-  },
-  voucherFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  voucherDetail: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  detailText: {
-    ...FONT_STYLES.label,
-    color: '#6b7280',
   },
   loadingContainer: {
     backgroundColor: 'white',
@@ -706,7 +689,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
@@ -714,63 +698,88 @@ const styles = StyleSheet.create({
   modalTitle: {
     ...FONT_STYLES.h4,
     color: '#111827',
-  },
-  closeButton: {
-    padding: 4,
+    flex: 1,
   },
   modalContent: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
-  detailCard: {
+  detailContainer: {
+    gap: 20,
+  },
+  balanceCards: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  balanceCard: {
+    flex: 1,
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
   },
-  detailCardTitle: {
+  balanceCardLabel: {
+    ...FONT_STYLES.caption,
+    color: '#6b7280',
+    marginBottom: 8,
+  },
+  balanceCardValue: {
+    ...FONT_STYLES.h2,
+    color: '#111827',
+    marginBottom: 8,
+  },
+  infoSection: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  infoSectionTitle: {
     ...FONT_STYLES.h5,
     color: '#111827',
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+  infoGrid: {
+    gap: 12,
   },
-  detailLabel: {
-    ...FONT_STYLES.label,
+  infoItem: {
+    marginBottom: 8,
+  },
+  infoLabel: {
+    ...FONT_STYLES.caption,
     color: '#6b7280',
-    flex: 1,
+    marginBottom: 4,
   },
-  detailValue: {
+  infoValue: {
     ...FONT_STYLES.label,
     color: '#111827',
-    flex: 1,
-    textAlign: 'right',
   },
   modalActions: {
     flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: 'white',
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
     gap: 12,
-    marginTop: 16,
   },
   modalActionButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 12,
+    paddingVertical: 12,
     borderRadius: 8,
     backgroundColor: '#3e60ab',
-    gap: 8,
   },
   modalActionButtonSecondary: {
     backgroundColor: 'white',
@@ -780,5 +789,6 @@ const styles = StyleSheet.create({
   modalActionText: {
     ...FONT_STYLES.label,
     color: 'white',
+    marginLeft: 8,
   },
 });
