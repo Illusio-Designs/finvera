@@ -12,88 +12,191 @@ const logger = require('../utils/logger');
  * @returns {Object} - P&L report data
  */
 async function generateProfitLossReport(tenantModels, options = {}) {
+  const { Sequelize } = tenantModels;
+  const { Op } = Sequelize;
+  
   try {
     const { startDate, endDate } = options;
     
-    // Get Sales, Purchase, and other P&L accounts
-    const plAccounts = await tenantModels.Ledger.findAll({
-      where: {
-        ledger_name: {
-          [tenantModels.Sequelize.Op.or]: [
-            { [tenantModels.Sequelize.Op.like]: '%Sales%' },
-            { [tenantModels.Sequelize.Op.like]: '%Purchase%' },
-            { [tenantModels.Sequelize.Op.like]: '%Round Off%' }
-          ]
-        }
-      },
-      include: [{
-        model: tenantModels.VoucherLedgerEntry,
-        as: 'ledgerEntries',
-        attributes: ['debit_amount', 'credit_amount'],
-        required: false
-      }]
+    console.log('📊 Report Service - Generating P&L Report');
+    console.log(`📅 Period: ${startDate} to ${endDate}`);
+    
+    // Get master models to access AccountGroup
+    const masterModels = require('../models/masterModels');
+    
+    // Get all account groups
+    const accountGroups = await masterModels.AccountGroup.findAll();
+    console.log(`📊 Total account groups: ${accountGroups.length}`);
+    
+    // Create a map of group_id to group
+    const groupMap = new Map();
+    accountGroups.forEach(g => groupMap.set(g.id, g));
+    
+    // Get all active ledgers
+    const ledgers = await tenantModels.Ledger.findAll({ 
+      where: { is_active: true }
+    });
+    console.log(`📊 Total active ledgers: ${ledgers.length}`);
+    
+    // Build voucher where clause for date range
+    const voucherWhere = { status: 'posted' };
+    if (startDate && endDate) {
+      voucherWhere.voucher_date = { [Op.between]: [startDate, endDate] };
+    }
+    
+    // Get ledger movements (debit/credit totals) for the period
+    const ledgerEntries = await tenantModels.VoucherLedgerEntry.findAll({
+      attributes: [
+        'ledger_id',
+        [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.debit_amount')), 'total_debit'],
+        [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.credit_amount')), 'total_credit'],
+      ],
+      include: [{ 
+        model: tenantModels.Voucher, 
+        as: 'voucher', 
+        attributes: [], 
+        where: voucherWhere, 
+        required: true 
+      }],
+      group: ['ledger_id'],
+      raw: true,
     });
     
-    // Get Stock information
-    const stockLedger = await tenantModels.Ledger.findOne({
-      where: {
-        ledger_name: {
-          [tenantModels.Sequelize.Op.like]: '%Stock%'
-        }
-      },
-      include: [{
-        model: tenantModels.VoucherLedgerEntry,
-        as: 'ledgerEntries',
-        attributes: ['debit_amount', 'credit_amount'],
-        required: false
-      }]
+    console.log(`📊 Ledger entries with movements: ${ledgerEntries.length}`);
+    
+    // Create movement map
+    const moveMap = new Map();
+    ledgerEntries.forEach(entry => {
+      moveMap.set(entry.ledger_id, {
+        debit: parseFloat(entry.total_debit || 0),
+        credit: parseFloat(entry.total_credit || 0)
+      });
     });
     
-    const openingStock = parseFloat(stockLedger?.opening_balance || 0);
-    const closingStock = parseFloat(stockLedger?.current_balance || 0);
+    // Get stock information
+    const stockLedgers = ledgers.filter(l => {
+      const group = groupMap.get(l.account_group_id);
+      return group && group.group_code === 'INV';
+    });
     
-    // Calculate totals
-    let sales = 0;
-    let purchases = 0;
-    let expenses = 0;
+    let openingStock = 0;
+    let closingStock = 0;
     
-    plAccounts.forEach(ledger => {
-      const name = ledger.ledger_name.toLowerCase();
-      const entries = ledger.ledgerEntries || [];
+    // Get inventory items for stock calculation
+    const inventoryItems = await tenantModels.InventoryItem.findAll({
+      where: { is_active: true }
+    });
+    
+    if (inventoryItems.length > 0) {
+      inventoryItems.forEach(item => {
+        const qty = parseFloat(item.quantity_on_hand || 0);
+        const avgCost = parseFloat(item.avg_cost || 0);
+        openingStock += parseFloat(item.opening_balance || 0);
+        closingStock += qty * avgCost;
+      });
+    } else {
+      // Fallback to ledger balances
+      stockLedgers.forEach(ledger => {
+        openingStock += parseFloat(ledger.opening_balance || 0);
+        closingStock += parseFloat(ledger.current_balance || 0);
+      });
+    }
+    
+    console.log(`📊 Opening Stock: ${openingStock}, Closing Stock: ${closingStock}`);
+    
+    // Initialize totals
+    let totalSales = 0;
+    let totalSalesReturns = 0;
+    let totalPurchases = 0;
+    let totalPurchaseReturns = 0;
+    let totalDirectExpenses = 0;
+    let totalIndirectExpenses = 0;
+    let totalOtherIncomes = 0;
+    
+    // Process each ledger
+    ledgers.forEach(ledger => {
+      const group = groupMap.get(ledger.account_group_id);
+      if (!group) return;
       
-      const totalCredit = entries.reduce((sum, e) => sum + parseFloat(e.credit_amount || 0), 0);
-      const totalDebit = entries.reduce((sum, e) => sum + parseFloat(e.debit_amount || 0), 0);
+      const move = moveMap.get(ledger.id) || { debit: 0, credit: 0 };
+      const movementSigned = move.debit - move.credit;
       
-      if (name.includes('sales') && !name.includes('test')) {
-        sales = totalCredit - totalDebit;
-      } else if (name.includes('purchase') && !name.includes('test')) {
-        purchases = totalDebit - totalCredit;
-      } else if (name.includes('round off')) {
-        expenses += Math.abs(totalDebit - totalCredit);
+      // Skip stock accounts
+      if (group.group_code === 'INV') return;
+      
+      // INCOME ACCOUNTS
+      if (group.nature === 'income') {
+        const amt = -movementSigned; // income increases on credit
+        if (amt <= 0.009) return;
+        
+        console.log(`💰 Income: ${ledger.ledger_name} (${group.group_code}) = ${amt}`);
+        
+        // Sales
+        if (['SAL', 'SALES'].includes(group.group_code)) {
+          totalSales += amt;
+        }
+        // Sales Returns
+        else if (['SAL_RET', 'SALES_RETURNS'].includes(group.group_code)) {
+          totalSalesReturns += amt;
+        }
+        // Other Incomes
+        else {
+          totalOtherIncomes += amt;
+        }
+      }
+      // EXPENSE ACCOUNTS
+      else if (group.nature === 'expense') {
+        const amt = movementSigned; // expense increases on debit
+        if (amt <= 0.009) return;
+        
+        console.log(`💸 Expense: ${ledger.ledger_name} (${group.group_code}) = ${amt}`);
+        
+        // Purchases
+        if (['PUR', 'PURCHASE'].includes(group.group_code)) {
+          totalPurchases += amt;
+        }
+        // Purchase Returns
+        else if (['PUR_RET', 'PURCHASE_RETURNS'].includes(group.group_code)) {
+          totalPurchaseReturns += amt;
+        }
+        // Direct Expenses
+        else if (['DIR_EXP', 'FREIGHT_IN', 'CARRIAGE', 'WAGES', 'MFG_EXP', 'PROD_EXP'].includes(group.group_code)) {
+          totalDirectExpenses += amt;
+        }
+        // Indirect Expenses
+        else {
+          totalIndirectExpenses += amt;
+        }
       }
     });
     
-    // Calculate COGS
-    const cogs = openingStock + purchases - closingStock;
+    // Calculate P&L components
+    const netSales = totalSales - totalSalesReturns;
+    const netPurchases = totalPurchases - totalPurchaseReturns;
+    const cogs = openingStock + netPurchases + totalDirectExpenses - closingStock;
+    const grossProfit = netSales - cogs;
+    const netProfit = grossProfit + totalOtherIncomes - totalIndirectExpenses;
     
-    // Calculate profits
-    const grossProfit = sales - cogs;
-    const netProfit = grossProfit - expenses;
+    console.log(`📊 Calculations:`);
+    console.log(`  Sales: ${totalSales}, Returns: ${totalSalesReturns}, Net: ${netSales}`);
+    console.log(`  Purchases: ${totalPurchases}, Returns: ${totalPurchaseReturns}, Net: ${netPurchases}`);
+    console.log(`  COGS: ${cogs}, Gross Profit: ${grossProfit}, Net Profit: ${netProfit}`);
     
     // Calculate margins
-    const grossProfitMargin = sales > 0 ? (grossProfit / sales * 100) : 0;
-    const netProfitMargin = sales > 0 ? (netProfit / sales * 100) : 0;
-    const cogsPercentage = sales > 0 ? (cogs / sales * 100) : 0;
+    const grossProfitMargin = netSales > 0 ? (grossProfit / netSales * 100) : 0;
+    const netProfitMargin = netSales > 0 ? (netProfit / netSales * 100) : 0;
+    const cogsPercentage = netSales > 0 ? (cogs / netSales * 100) : 0;
     
     return {
       revenue: {
-        sales,
-        total: sales
+        sales: netSales,
+        total: netSales
       },
       costOfGoodsSold: {
         openingStock,
-        purchases,
-        goodsAvailable: openingStock + purchases,
+        purchases: netPurchases,
+        directExpenses: totalDirectExpenses,
+        goodsAvailable: openingStock + netPurchases + totalDirectExpenses,
         closingStock,
         total: cogs
       },
@@ -102,8 +205,11 @@ async function generateProfitLossReport(tenantModels, options = {}) {
         margin: grossProfitMargin
       },
       expenses: {
-        roundOff: expenses,
-        total: expenses
+        indirect: totalIndirectExpenses,
+        total: totalIndirectExpenses
+      },
+      otherIncomes: {
+        total: totalOtherIncomes
       },
       netProfit: {
         amount: netProfit,

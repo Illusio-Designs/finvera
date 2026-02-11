@@ -182,6 +182,36 @@ module.exports = {
       console.log(`📊 Posted vouchers in period: ${postedVouchers.length}`);
       console.log(`📊 Voucher types:`, postedVouchers.map(v => ({ type: v.voucher_type, amount: v.total_amount, date: v.voucher_date })));
 
+      // Also check ALL vouchers (including draft) for debugging
+      const allVouchers = await req.tenantModels.Voucher.findAll({
+        where: {
+          voucher_date: { [Op.between]: [from, to] }
+        }
+      });
+      console.log(`📊 ALL vouchers in period (including draft): ${allVouchers.length}`);
+      if (allVouchers.length > 0) {
+        console.log(`📊 All voucher details:`, allVouchers.map(v => ({ 
+          number: v.voucher_number,
+          type: v.voucher_type, 
+          status: v.status,
+          amount: v.total_amount, 
+          date: v.voucher_date 
+        })));
+      }
+
+      // Check if there are ANY vouchers at all
+      const anyVouchers = await req.tenantModels.Voucher.findAll({ limit: 10 });
+      console.log(`📊 Total vouchers in database (sample): ${anyVouchers.length}`);
+      if (anyVouchers.length > 0) {
+        console.log(`📊 Sample vouchers:`, anyVouchers.map(v => ({ 
+          number: v.voucher_number,
+          type: v.voucher_type, 
+          status: v.status,
+          amount: v.total_amount, 
+          date: v.voucher_date?.toISOString().split('T')[0]
+        })));
+      }
+
       // Get opening and closing stock values
       const stockLedgers = ledgers.filter(l => {
         const group = groupMap.get(l.account_group_id);
