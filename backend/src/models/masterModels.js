@@ -223,7 +223,7 @@ models.AccountGroup = masterSequelize.define('AccountGroup', {
     comment: 'For hierarchical chart of accounts',
   },
   nature: {
-    type: DataTypes.ENUM('asset', 'liability', 'income', 'expense'),
+    type: DataTypes.ENUM('asset', 'liability', 'equity', 'income', 'expense'),
     allowNull: false,
   },
   affects_gross_profit: {
@@ -242,6 +242,26 @@ models.AccountGroup = masterSequelize.define('AccountGroup', {
     type: DataTypes.STRING(20),
     unique: true,
     comment: 'Unique code for the group',
+  },
+  bs_category: {
+    type: DataTypes.STRING(30),
+    allowNull: true,
+    comment: 'Balance sheet category: current_asset, fixed_asset, current_liability, noncurrent_liability, equity, tax_control',
+  },
+  affects_pl: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    comment: 'Whether this group affects Profit & Loss statement',
+  },
+  is_tax_group: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    comment: 'Whether this is a tax-related group (GST, TDS, etc.)',
+  },
+  ptoprt: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    comment: 'Whether this group/category should be printed in reports',
   },
 }, {
   tableName: 'account_groups',

@@ -935,62 +935,70 @@ module.exports = {
         console.log('   ✓ Added: is_tax_group');
       }
 
+      if (!existingColumns.includes('ptoprt')) {
+        await queryInterface.sequelize.query(`
+          ALTER TABLE account_groups 
+          ADD COLUMN ptoprt BOOLEAN DEFAULT false COMMENT 'Whether this group/category should be printed in reports'
+        `);
+        console.log('   ✓ Added: ptoprt');
+      }
+
       // Update existing groups with proper metadata
       console.log('📋 Updating group metadata...');
 
       // ASSET GROUPS - Current Assets
       await queryInterface.sequelize.query(`
         UPDATE account_groups 
-        SET nature='asset', bs_category='current_asset', affects_pl=false 
+        SET nature='asset', bs_category='current_asset', affects_pl=false, ptoprt=true 
         WHERE group_code IN ('BANK','CASH','CA','LA','INV','SD')
       `);
 
       // ASSET GROUPS - Fixed Assets
       await queryInterface.sequelize.query(`
         UPDATE account_groups 
-        SET nature='asset', bs_category='fixed_asset', affects_pl=false 
+        SET nature='asset', bs_category='fixed_asset', affects_pl=false, ptoprt=true 
         WHERE group_code='FA'
       `);
 
       // LIABILITY GROUPS - Current Liabilities
       await queryInterface.sequelize.query(`
         UPDATE account_groups 
-        SET nature='liability', bs_category='current_liability', affects_pl=false 
+        SET nature='liability', bs_category='current_liability', affects_pl=false, ptoprt=true 
         WHERE group_code IN ('CL','SC')
       `);
 
       // LIABILITY GROUPS - Non-current Liabilities
       await queryInterface.sequelize.query(`
         UPDATE account_groups 
-        SET nature='liability', bs_category='noncurrent_liability', affects_pl=false 
+        SET nature='liability', bs_category='noncurrent_liability', affects_pl=false, ptoprt=true 
         WHERE group_code='LOAN'
       `);
 
       // EQUITY GROUPS
       await queryInterface.sequelize.query(`
         UPDATE account_groups 
-        SET nature='equity', bs_category='equity', affects_pl=false 
+        SET nature='equity', bs_category='equity', affects_pl=false, ptoprt=true 
         WHERE group_code IN ('CAP','RES')
       `);
 
       // TAX CONTROL GROUP (Special handling for GST)
       await queryInterface.sequelize.query(`
         UPDATE account_groups 
-        SET nature='liability', bs_category='tax_control', is_tax_group=true, affects_pl=false 
+        SET nature='liability', bs_category='tax_control', is_tax_group=true, affects_pl=false, ptoprt=false 
         WHERE group_code='DT'
       `);
 
       // INCOME GROUPS (affects P&L)
       await queryInterface.sequelize.query(`
         UPDATE account_groups 
-        SET nature='income', affects_pl=true 
+        SET nature='income', affects_pl=true, ptoprt=true 
         WHERE group_code IN ('DIR_INC','IND_INC','SAL')
       `);
 
       // EXPENSE GROUPS (affects P&L)
       await queryInterface.sequelize.query(`
         UPDATE account_groups 
-        SET nature='expense', affects_pl=true 
+        SET nature='expense', affects_pl=true, ptoprt=true 
         WHERE group_code IN ('DIR_EXP','IND_EXP','PUR')
       `);
 

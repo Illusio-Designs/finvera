@@ -24,12 +24,10 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
   try {
     const { startDate, endDate } = options;
     
-    console.log('📊 Report Service - Generating P&L Report');
-    console.log(`📅 Period: ${startDate} to ${endDate}`);
+    logger.info(`Generating P&L Report for period: ${startDate} to ${endDate}`);
     
     // Get all account groups with new metadata
     const accountGroups = await masterModels.AccountGroup.findAll();
-    console.log(`📊 Total account groups: ${accountGroups.length}`);
     
     // Create a map of group_id to group
     const groupMap = new Map();
@@ -39,7 +37,6 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
     const ledgers = await tenantModels.Ledger.findAll({ 
       where: { is_active: true }
     });
-    console.log(`📊 Total active ledgers: ${ledgers.length}`);
     
     // Build voucher where clause for date range
     const voucherWhere = { status: 'posted' };
@@ -47,25 +44,31 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
       voucherWhere.voucher_date = { [Op.between]: [startDate, endDate] };
     }
     
-    // Get ledger movements (debit/credit totals) for the period
-    const ledgerEntries = await tenantModels.VoucherLedgerEntry.findAll({
-      attributes: [
-        'ledger_id',
-        [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.debit_amount')), 'total_debit'],
-        [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.credit_amount')), 'total_credit'],
-      ],
-      include: [{ 
-        model: tenantModels.Voucher, 
-        as: 'voucher', 
-        attributes: [], 
-        where: voucherWhere, 
-        required: true 
-      }],
-      group: ['ledger_id'],
-      raw: true,
+    // STEP 1: Get posted voucher IDs for the period
+    const postedVouchers = await tenantModels.Voucher.findAll({
+      where: voucherWhere,
+      attributes: ['id'],
+      raw: true
     });
     
-    console.log(`📊 Ledger entries with movements: ${ledgerEntries.length}`);
+    const voucherIds = postedVouchers.map(v => v.id);
+    
+    // STEP 2: Get ledger movements for these vouchers
+    let ledgerEntries = [];
+    if (voucherIds.length > 0) {
+      ledgerEntries = await tenantModels.VoucherLedgerEntry.findAll({
+        attributes: [
+          'ledger_id',
+          [Sequelize.fn('SUM', Sequelize.col('debit_amount')), 'total_debit'],
+          [Sequelize.fn('SUM', Sequelize.col('credit_amount')), 'total_credit'],
+        ],
+        where: {
+          voucher_id: { [Op.in]: voucherIds }
+        },
+        group: ['ledger_id'],
+        raw: true,
+      });
+    }
     
     // Create movement map
     const moveMap = new Map();
@@ -105,8 +108,6 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
       });
     }
     
-    console.log(`📊 Opening Stock: ${openingStock}, Closing Stock: ${closingStock}`);
-    
     // Initialize totals
     let totalSales = 0;
     let totalSalesReturns = 0;
@@ -119,10 +120,7 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
     // Process each ledger - USE affects_pl flag
     ledgers.forEach(ledger => {
       const group = groupMap.get(ledger.account_group_id);
-      if (!group) return;
-      
-      // Only process P&L accounts (affects_pl = true)
-      if (!group.affects_pl) return;
+      if (!group || !group.affects_pl) return;
       
       const move = moveMap.get(ledger.id) || { debit: 0, credit: 0 };
       const movementSigned = move.debit - move.credit;
@@ -134,8 +132,6 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
       if (group.nature === 'income') {
         const amt = -movementSigned; // income increases on credit
         if (amt <= 0.009) return;
-        
-        console.log(`💰 Income: ${ledger.ledger_name} (${group.group_code}) = ${amt}`);
         
         // Sales
         if (['SAL', 'SALES'].includes(group.group_code)) {
@@ -154,8 +150,6 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
       else if (group.nature === 'expense') {
         const amt = movementSigned; // expense increases on debit
         if (amt <= 0.009) return;
-        
-        console.log(`💸 Expense: ${ledger.ledger_name} (${group.group_code}) = ${amt}`);
         
         // Purchases
         if (['PUR', 'PURCHASE'].includes(group.group_code)) {
@@ -182,11 +176,6 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
     const cogs = openingStock + netPurchases + totalDirectExpenses - closingStock;
     const grossProfit = netSales - cogs;
     const netProfit = grossProfit + totalOtherIncomes - totalIndirectExpenses;
-    
-    console.log(`📊 Calculations:`);
-    console.log(`  Sales: ${totalSales}, Returns: ${totalSalesReturns}, Net: ${netSales}`);
-    console.log(`  Purchases: ${totalPurchases}, Returns: ${totalPurchaseReturns}, Net: ${netPurchases}`);
-    console.log(`  COGS: ${cogs}, Gross Profit: ${grossProfit}, Net Profit: ${netProfit}`);
     
     // Calculate margins
     const grossProfitMargin = netSales > 0 ? (grossProfit / netSales * 100) : 0;
@@ -292,8 +281,7 @@ async function generateBalanceSheetReport(tenantModels, masterModels, options = 
     const { asOnDate } = options;
     const asOn = asOnDate || new Date().toISOString().slice(0, 10);
     
-    console.log('📊 Report Service - Generating Balance Sheet');
-    console.log(`📅 As on: ${asOn}`);
+    logger.info(`Generating Balance Sheet as on: ${asOn}`);
     
     // Get all account groups with new metadata
     const accountGroups = await masterModels.AccountGroup.findAll();
@@ -503,10 +491,6 @@ async function generateBalanceSheetReport(tenantModels, masterModels, options = 
     const debtToEquity = (capitalTotal + reservesTotal) > 0 ? (noncurrentLiabilitiesTotal / (capitalTotal + reservesTotal)) : 0;
     const workingCapital = currentAssetsTotal - currentLiabilitiesTotal;
 
-    console.log(`  Total Assets: ₹${totalAssets.toFixed(2)}`);
-    console.log(`  Total Liabilities: ₹${totalLiabilities.toFixed(2)}`);
-    console.log(`  Difference: ₹${difference.toFixed(2)} ${isBalanced ? '✓' : '✗'}`);
-
     return {
       liabilities_and_equity: {
         capital: {
@@ -587,8 +571,7 @@ async function generateTrialBalanceReport(tenantModels, masterModels, options = 
     const { asOnDate } = options;
     const asOn = asOnDate || new Date().toISOString().slice(0, 10);
     
-    console.log('📊 Report Service - Generating Trial Balance');
-    console.log(`📅 As on: ${asOn}`);
+    logger.info(`Generating Trial Balance as on: ${asOn}`);
     
     // Get all account groups
     const accountGroups = await masterModels.AccountGroup.findAll();
@@ -606,22 +589,31 @@ async function generateTrialBalanceReport(tenantModels, masterModels, options = 
       voucher_date: { [Op.lte]: asOn }
     };
     
-    const ledgerEntries = await tenantModels.VoucherLedgerEntry.findAll({
-      attributes: [
-        'ledger_id',
-        [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.debit_amount')), 'total_debit'],
-        [Sequelize.fn('SUM', Sequelize.col('VoucherLedgerEntry.credit_amount')), 'total_credit'],
-      ],
-      include: [{ 
-        model: tenantModels.Voucher, 
-        as: 'voucher', 
-        attributes: [], 
-        where: voucherWhere, 
-        required: true 
-      }],
-      group: ['ledger_id'],
-      raw: true,
+    // STEP 1: Get posted voucher IDs up to the date
+    const postedVouchers = await tenantModels.Voucher.findAll({
+      where: voucherWhere,
+      attributes: ['id'],
+      raw: true
     });
+    
+    const voucherIds = postedVouchers.map(v => v.id);
+    
+    // STEP 2: Get ledger movements for these vouchers
+    let ledgerEntries = [];
+    if (voucherIds.length > 0) {
+      ledgerEntries = await tenantModels.VoucherLedgerEntry.findAll({
+        attributes: [
+          'ledger_id',
+          [Sequelize.fn('SUM', Sequelize.col('debit_amount')), 'total_debit'],
+          [Sequelize.fn('SUM', Sequelize.col('credit_amount')), 'total_credit'],
+        ],
+        where: {
+          voucher_id: { [Op.in]: voucherIds }
+        },
+        group: ['ledger_id'],
+        raw: true,
+      });
+    }
     
     const moveMap = new Map();
     ledgerEntries.forEach(entry => {
@@ -791,17 +783,13 @@ async function generateLedgerStatementReport(tenantModels, masterModels, options
       throw new Error('ledger_id is required for ledger statement');
     }
     
-    console.log('📊 Report Service - Generating Ledger Statement');
-    console.log(`📅 Period: ${fromDate} to ${toDate}`);
-    console.log(`📒 Ledger ID: ${ledgerId}`);
+    logger.info(`Generating Ledger Statement for ledger ${ledgerId} from ${fromDate} to ${toDate}`);
     
     // Get ledger details
     const ledger = await tenantModels.Ledger.findByPk(ledgerId);
     if (!ledger) {
       throw new Error('Ledger not found');
     }
-    
-    console.log(`📒 Ledger: ${ledger.ledger_name} (${ledger.ledger_code})`);
     
     // Determine if this is a debit or credit ledger
     const isDebitLedger = ledger.balance_type === 'debit' || ledger.opening_balance_type === 'Dr';
@@ -833,8 +821,6 @@ async function generateLedgerStatementReport(tenantModels, masterModels, options
       openingBalSigned = -(openingBalanceUnsigned + beforeCredit - beforeDebit);
     }
     
-    console.log(`  Opening Balance: ₹${Math.abs(openingBalSigned).toFixed(2)} ${openingBalSigned >= 0 ? 'Dr' : 'Cr'}`);
-    
     // STEP 2: Get all transactions in the period
     const entries = await tenantModels.VoucherLedgerEntry.findAll({
       where: { ledger_id: ledgerId },
@@ -859,8 +845,6 @@ async function generateLedgerStatementReport(tenantModels, masterModels, options
         ['createdAt', 'ASC']
       ],
     });
-    
-    console.log(`  Found ${entries.length} transactions in period`);
     
     // STEP 3: Build statement with running balance
     let runningBalance = openingBalSigned;
@@ -899,10 +883,6 @@ async function generateLedgerStatementReport(tenantModels, masterModels, options
     
     // STEP 4: Calculate closing balance
     const closingBalSigned = runningBalance;
-    
-    console.log(`  Closing Balance: ₹${Math.abs(closingBalSigned).toFixed(2)} ${closingBalSigned >= 0 ? 'Dr' : 'Cr'}`);
-    console.log(`  Period Debit: ₹${periodTotalDebit.toFixed(2)}`);
-    console.log(`  Period Credit: ₹${periodTotalCredit.toFixed(2)}`);
     
     return {
       ledger: {
