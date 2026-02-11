@@ -10,6 +10,18 @@ import { reportsAPI } from '../../../lib/api';
 import { formatCurrency } from '../../../utils/businessLogic';
 import { FONT_STYLES } from '../../../utils/fonts';
 import TableSkeleton from '../../../components/ui/skeletons/TableSkeleton';
+import ModernDatePicker from '../../../components/ui/ModernDatePicker';
+
+const getCurrentDate = () => {
+  const today = new Date();
+  return today.toISOString().split('T')[0];
+};
+
+const getFirstDayOfMonth = () => {
+  const today = new Date();
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  return firstDay.toISOString().split('T')[0];
+};
 
 export default function ProfitLossScreen() {
   const { openDrawer } = useDrawer();
@@ -17,6 +29,8 @@ export default function ProfitLossScreen() {
   const [profitLossData, setProfitLossData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [fromDate, setFromDate] = useState(getFirstDayOfMonth());
+  const [toDate, setToDate] = useState(getCurrentDate());
 
   const handleMenuPress = () => {
     openDrawer();
@@ -28,8 +42,8 @@ export default function ProfitLossScreen() {
     
     try {
       const response = await reportsAPI.profitLoss({ 
-        from_date: getFirstDayOfMonth(),
-        to_date: getCurrentDate()
+        from_date: fromDate,
+        to_date: toDate
       });
       setProfitLossData(response.data);
     } catch (error) {
@@ -49,17 +63,14 @@ export default function ProfitLossScreen() {
         setLoading(false);
       }, remainingTime);
     }
-  }, [showNotification]);
+  }, [fromDate, toDate, showNotification]);
 
-  const getCurrentDate = () => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
+  const handleFromDateChange = (date) => {
+    setFromDate(date);
   };
 
-  const getFirstDayOfMonth = () => {
-    const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    return firstDay.toISOString().split('T')[0];
+  const handleToDateChange = (date) => {
+    setToDate(date);
   };
 
   useEffect(() => {
@@ -708,16 +719,37 @@ export default function ProfitLossScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* Header Actions - Same as LedgersScreen */}
+        {/* Header Actions with Date Pickers */}
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.exportButton} onPress={generatePDF}>
-            <Ionicons name="download" size={16} color="white" />
-            <Text style={styles.exportButtonText}>Export PDF</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
-            <Ionicons name="refresh" size={16} color="#3e60ab" />
-            <Text style={styles.refreshButtonText}>Refresh</Text>
-          </TouchableOpacity>
+          <View style={styles.actionButtonsRow}>
+            <TouchableOpacity style={styles.exportButton} onPress={generatePDF}>
+              <Ionicons name="download" size={16} color="white" />
+              <Text style={styles.exportButtonText}>Export PDF</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
+              <Ionicons name="refresh" size={16} color="#3e60ab" />
+              <Text style={styles.refreshButtonText}>Refresh</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.datePickersRow}>
+            <View style={styles.datePickerContainer}>
+              <ModernDatePicker
+                label="From Date"
+                value={fromDate}
+                onDateChange={handleFromDateChange}
+                placeholder="Select from date"
+              />
+            </View>
+            <View style={styles.datePickerContainer}>
+              <ModernDatePicker
+                label="To Date"
+                value={toDate}
+                onDateChange={handleToDateChange}
+                placeholder="Select to date"
+              />
+            </View>
+          </View>
         </View>
 
         {loading ? (
@@ -836,16 +868,26 @@ const styles = StyleSheet.create({
     paddingBottom: 120, // Extra padding for better scrolling
   },
 
-  // Header Actions - Same as LedgersScreen
+  // Header Actions with Date Pickers
   headerActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  datePickersRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  datePickerContainer: {
+    flex: 1,
   },
   exportButton: {
     flexDirection: 'row',

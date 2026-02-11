@@ -25,11 +25,19 @@ async function movementByLedger(tenantModels, { fromDate, toDate, asOnDate, befo
   } else if (asOnDate) {
     voucherWhere.voucher_date = { [Op.lte]: asOnDate };
   } else if (fromDate && toDate) {
-    voucherWhere.voucher_date = { [Op.between]: [fromDate, toDate] };
+    // Use DATE() function to compare only the date part, ignoring time
+    voucherWhere[Op.and] = [
+      Sequelize.where(Sequelize.fn('DATE', Sequelize.col('voucher.voucher_date')), '>=', fromDate),
+      Sequelize.where(Sequelize.fn('DATE', Sequelize.col('voucher.voucher_date')), '<=', toDate)
+    ];
   } else if (fromDate) {
-    voucherWhere.voucher_date = { [Op.gte]: fromDate };
+    voucherWhere[Op.and] = [
+      Sequelize.where(Sequelize.fn('DATE', Sequelize.col('voucher.voucher_date')), '>=', fromDate)
+    ];
   } else if (toDate) {
-    voucherWhere.voucher_date = { [Op.lte]: toDate };
+    voucherWhere[Op.and] = [
+      Sequelize.where(Sequelize.fn('DATE', Sequelize.col('voucher.voucher_date')), '<=', toDate)
+    ];
   }
 
   // When using includes, Sequelize.col() needs the model name prefix with attribute name
@@ -176,7 +184,10 @@ module.exports = {
       const postedVouchers = await req.tenantModels.Voucher.findAll({
         where: {
           status: 'posted',
-          voucher_date: { [Op.between]: [from, to] }
+          [Op.and]: [
+            Sequelize.where(Sequelize.fn('DATE', Sequelize.col('voucher_date')), '>=', from),
+            Sequelize.where(Sequelize.fn('DATE', Sequelize.col('voucher_date')), '<=', to)
+          ]
         }
       });
       console.log(`📊 Posted vouchers in period: ${postedVouchers.length}`);
@@ -185,7 +196,10 @@ module.exports = {
       // Also check ALL vouchers (including draft) for debugging
       const allVouchers = await req.tenantModels.Voucher.findAll({
         where: {
-          voucher_date: { [Op.between]: [from, to] }
+          [Op.and]: [
+            Sequelize.where(Sequelize.fn('DATE', Sequelize.col('voucher_date')), '>=', from),
+            Sequelize.where(Sequelize.fn('DATE', Sequelize.col('voucher_date')), '<=', to)
+          ]
         }
       });
       console.log(`📊 ALL vouchers in period (including draft): ${allVouchers.length}`);
