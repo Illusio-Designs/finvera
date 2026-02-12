@@ -455,7 +455,8 @@ module.exports = {
         if (!req.body.ledger_entries || req.body.ledger_entries.length === 0) {
           console.log('📊 Auto-generating ledger entries...');
           const autoLedgerEntries = await generateLedgerEntriesByType(
-            req.tenantModels, 
+            req.tenantModels,
+            req.masterModels,
             voucher, 
             voucherItems, 
             transaction
@@ -483,7 +484,8 @@ module.exports = {
         if (['journal', 'payment', 'receipt', 'contra'].includes(voucherType)) {
           console.log('📊 Auto-generating ledger entries for', voucherType, '...');
           const autoLedgerEntries = await generateLedgerEntriesByType(
-            req.tenantModels, 
+            req.tenantModels,
+            req.masterModels,
             voucher, 
             [], 
             transaction

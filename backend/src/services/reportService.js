@@ -330,13 +330,22 @@ async function generateBalanceSheetReport(tenantModels, masterModels, options = 
       where: { is_active: true }
     });
     
-    // Calculate P&L for the period (to add to liabilities)
+    // Calculate P&L for the financial year (to add to equity)
+    // Financial year start: April 1st of current or previous year
+    const asOnYear = new Date(asOn).getFullYear();
+    const asOnMonth = new Date(asOn).getMonth(); // 0-11
+    const financialYearStart = asOnMonth >= 3 ? // April (3) or later
+      `${asOnYear}-04-01` : 
+      `${asOnYear - 1}-04-01`;
+    
     const plReport = await generateProfitLossReport(tenantModels, masterModels, {
-      startDate: '2026-01-31',
+      startDate: financialYearStart,
       endDate: asOn
     });
     
     const netProfitLoss = plReport.netProfit.amount;
+    
+    logger.info(`Financial Year: ${financialYearStart} to ${asOn}, Net Profit: ₹${netProfitLoss.toFixed(2)}`);
     
     // Categorize assets and liabilities using bs_category
     const assets = {
@@ -452,11 +461,12 @@ async function generateBalanceSheetReport(tenantModels, masterModels, options = 
       const rawBalance = toNum(ledger.current_balance, 0);
       const balanceType = (ledger.balance_type || 'debit').toLowerCase();
       
-      // Check if it's Input or Output GST based on ledger code
-      const isInputGST = ledger.ledger_code && ledger.ledger_code.includes('INPUT');
-      const isOutputGST = ledger.ledger_code && ledger.ledger_code.includes('OUTPUT');
+      // Determine if it's Input or Output GST based on ledger code or name
+      const ledgerIdentifier = (ledger.ledger_code || ledger.ledger_name || '').toUpperCase();
+      const isInputGST = ledgerIdentifier.includes('INPUT') || ledgerIdentifier.includes('RCM_INPUT');
+      const isOutputGST = ledgerIdentifier.includes('OUTPUT') && !ledgerIdentifier.includes('RCM_INPUT');
 
-      if (isInputGST && balanceType === 'debit') {
+      if (isInputGST && balanceType === 'debit' && rawBalance > 0) {
         // Input GST with Debit balance (Asset - Tax Credit Available)
         totalInputGST += rawBalance;
         gstDetails.input.push({
@@ -464,7 +474,7 @@ async function generateBalanceSheetReport(tenantModels, masterModels, options = 
           code: ledger.ledger_code,
           balance: rawBalance
         });
-      } else if (isOutputGST && balanceType === 'credit') {
+      } else if (isOutputGST && balanceType === 'credit' && rawBalance > 0) {
         // Output GST with Credit balance (Liability - Tax Collected)
         totalOutputGST += rawBalance;
         gstDetails.output.push({
@@ -531,6 +541,17 @@ async function generateBalanceSheetReport(tenantModels, masterModels, options = 
 
     const difference = totalAssets - totalLiabilities;
     const isBalanced = Math.abs(difference) < 1.0;
+    
+    // Validation: Balance Sheet MUST balance
+    if (!isBalanced) {
+      logger.error(`Balance Sheet NOT BALANCED! Difference: ₹${difference.toFixed(2)}`);
+      logger.error(`Total Assets: ₹${totalAssets.toFixed(2)}`);
+      logger.error(`Total Liabilities + Equity: ₹${totalLiabilities.toFixed(2)}`);
+      // Don't throw error in production, but log it prominently
+      // throw new Error(`Balance Sheet does not balance. Difference: ₹${difference.toFixed(2)}`);
+    } else {
+      logger.info(`✓ Balance Sheet is balanced (difference: ₹${difference.toFixed(2)})`);
+    }
 
     // Key ratios
     const currentRatio = currentLiabilitiesTotal > 0 ? (currentAssetsTotal / currentLiabilitiesTotal) : 0;

@@ -1,4 +1,5 @@
 const logger = require('../utils/logger');
+const { Op } = require('sequelize');
 
 /**
  * Voucher Posting Service
@@ -6,14 +7,51 @@ const logger = require('../utils/logger');
  */
 
 /**
+ * Helper function to get master group ID
+ */
+async function getMasterGroupId(masterModels, groupCode) {
+  const group = await masterModels.AccountGroup.findOne({ where: { group_code: groupCode } });
+  if (!group) throw new Error(`Master AccountGroup not found for group_code=${groupCode}`);
+  return group.id;
+}
+
+/**
+ * Helper function to get or create system ledger
+ */
+async function getOrCreateSystemLedger({ tenantModels, masterModels, tenant_id }, { ledgerCode, ledgerName, groupCode }, transaction) {
+  if (!tenant_id) {
+    throw new Error('tenant_id is required for creating system ledgers');
+  }
+
+  const existing =
+    (ledgerCode ? await tenantModels.Ledger.findOne({ where: { ledger_code: ledgerCode }, transaction }) : null) ||
+    (ledgerName ? await tenantModels.Ledger.findOne({ where: { ledger_name: ledgerName }, transaction }) : null);
+
+  if (existing) return existing;
+
+  const groupId = await getMasterGroupId(masterModels, groupCode);
+  return tenantModels.Ledger.create({
+    ledger_name: ledgerName,
+    ledger_code: ledgerCode || null,
+    account_group_id: groupId,
+    opening_balance: 0,
+    opening_balance_type: 'Dr',
+    balance_type: 'debit',
+    is_active: true,
+    tenant_id: tenant_id,
+  }, { transaction });
+}
+
+/**
  * Generate ledger entries based on voucher type
  * @param {Object} tenantModels - Tenant database models
+ * @param {Object} masterModels - Master database models
  * @param {Object} voucher - Voucher object
  * @param {Array} items - Voucher items
  * @param {Object} transaction - Database transaction
  * @returns {Array} - Array of ledger entries
  */
-async function generateLedgerEntriesByType(tenantModels, voucher, items, transaction) {
+async function generateLedgerEntriesByType(tenantModels, masterModels, voucher, items, transaction) {
   const voucherType = voucher.voucher_type?.toLowerCase();
   
   switch (voucherType) {
@@ -22,17 +60,17 @@ async function generateLedgerEntriesByType(tenantModels, voucher, items, transac
     case 'tax_invoice':
     case 'retail_invoice':
     case 'export_invoice':
-      return await generateSalesInvoiceEntries(tenantModels, voucher, items, transaction);
+      return await generateSalesInvoiceEntries(tenantModels, masterModels, voucher, items, transaction);
     
     // Purchase related vouchers
     case 'purchase_invoice':
     case 'purchase':
-      return await generatePurchaseInvoiceEntries(tenantModels, voucher, items, transaction);
+      return await generatePurchaseInvoiceEntries(tenantModels, masterModels, voucher, items, transaction);
     
     // Delivery and supply vouchers (no accounting entries, just inventory movement)
     case 'delivery_challan':
     case 'bill_of_supply':
-      return await generateDeliveryChallanEntries(tenantModels, voucher, items, transaction);
+      return await generateDeliveryChallanEntries(tenantModels, masterModels, voucher, items, transaction);
     
     // Order vouchers (no accounting entries until converted to invoice)
     case 'sales_order':
@@ -43,25 +81,25 @@ async function generateLedgerEntriesByType(tenantModels, voucher, items, transac
     
     // Payment and receipt vouchers
     case 'payment':
-      return await generatePaymentEntries(tenantModels, voucher, items, transaction);
+      return await generatePaymentEntries(tenantModels, masterModels, voucher, items, transaction);
     
     case 'receipt':
-      return await generateReceiptEntries(tenantModels, voucher, items, transaction);
+      return await generateReceiptEntries(tenantModels, masterModels, voucher, items, transaction);
     
     // Journal voucher
     case 'journal':
-      return await generateJournalEntries(tenantModels, voucher, items, transaction);
+      return await generateJournalEntries(tenantModels, masterModels, voucher, items, transaction);
     
     // Credit and debit notes
     case 'credit_note':
-      return await generateCreditNoteEntries(tenantModels, voucher, items, transaction);
+      return await generateCreditNoteEntries(tenantModels, masterModels, voucher, items, transaction);
     
     case 'debit_note':
-      return await generateDebitNoteEntries(tenantModels, voucher, items, transaction);
+      return await generateDebitNoteEntries(tenantModels, masterModels, voucher, items, transaction);
     
     // Contra voucher
     case 'contra':
-      return await generateContraEntries(tenantModels, voucher, items, transaction);
+      return await generateContraEntries(tenantModels, masterModels, voucher, items, transaction);
     
     default:
       logger.warn(`No posting method defined for voucher type: ${voucherType}`);
@@ -72,7 +110,7 @@ async function generateLedgerEntriesByType(tenantModels, voucher, items, transac
 /**
  * Generate ledger entries for Sales Invoice
  */
-async function generateSalesInvoiceEntries(tenantModels, voucher, items, transaction) {
+async function generateSalesInvoiceEntries(tenantModels, masterModels, voucher, items, transaction) {
   const ledgerEntries = [];
   
   // Calculate totals
@@ -95,12 +133,14 @@ async function generateSalesInvoiceEntries(tenantModels, voucher, items, transac
     }
   }
   
-  // Find required ledgers
-  const salesLedger = await findLedger(tenantModels, voucher.tenant_id, ['Sales', '%sales%'], transaction);
-  const cgstLedger = await findLedger(tenantModels, voucher.tenant_id, ['CGST Output', '%CGST Output%'], transaction);
-  const sgstLedger = await findLedger(tenantModels, voucher.tenant_id, ['SGST Output', '%SGST Output%'], transaction);
-  const igstLedger = await findLedger(tenantModels, voucher.tenant_id, ['IGST Output', '%IGST Output%'], transaction);
-  const stockLedger = await findLedger(tenantModels, voucher.tenant_id, ['%Stock%'], transaction);
+  const ctx = { tenantModels, masterModels, tenant_id: voucher.tenant_id };
+  
+  // Get or create required ledgers
+  const salesLedger = await getOrCreateSystemLedger(ctx, 
+    { ledgerCode: 'SALES', ledgerName: 'Sales', groupCode: 'SAL' }, transaction);
+  
+  const stockLedger = await getOrCreateSystemLedger(ctx,
+    { ledgerCode: 'INVENTORY', ledgerName: 'Stock in Hand', groupCode: 'INV' }, transaction);
   
   // 1. Debit Customer Account (Sundry Debtor)
   if (voucher.party_ledger_id) {
@@ -125,7 +165,9 @@ async function generateSalesInvoiceEntries(tenantModels, voucher, items, transac
   }
   
   // 3. Credit CGST (Output Tax)
-  if (cgstLedger && totalCGST > 0) {
+  if (totalCGST > 0) {
+    const cgstLedger = await getOrCreateSystemLedger(ctx,
+      { ledgerCode: 'CGST-OUTPUT', ledgerName: 'Output CGST', groupCode: 'DT' }, transaction);
     ledgerEntries.push({
       voucher_id: voucher.id,
       ledger_id: cgstLedger.id,
@@ -136,7 +178,9 @@ async function generateSalesInvoiceEntries(tenantModels, voucher, items, transac
   }
   
   // 4. Credit SGST (Output Tax)
-  if (sgstLedger && totalSGST > 0) {
+  if (totalSGST > 0) {
+    const sgstLedger = await getOrCreateSystemLedger(ctx,
+      { ledgerCode: 'SGST-OUTPUT', ledgerName: 'Output SGST', groupCode: 'DT' }, transaction);
     ledgerEntries.push({
       voucher_id: voucher.id,
       ledger_id: sgstLedger.id,
@@ -147,7 +191,9 @@ async function generateSalesInvoiceEntries(tenantModels, voucher, items, transac
   }
   
   // 5. Credit IGST (for interstate sales)
-  if (igstLedger && totalIGST > 0) {
+  if (totalIGST > 0) {
+    const igstLedger = await getOrCreateSystemLedger(ctx,
+      { ledgerCode: 'IGST-OUTPUT', ledgerName: 'Output IGST', groupCode: 'DT' }, transaction);
     ledgerEntries.push({
       voucher_id: voucher.id,
       ledger_id: igstLedger.id,
@@ -157,7 +203,7 @@ async function generateSalesInvoiceEntries(tenantModels, voucher, items, transac
     });
   }
   
-  // 6. Credit Stock in Hand (Cost of Goods Sold)
+  // 6. Credit Stock in Hand (reduce inventory value)
   if (stockLedger && totalCOGS > 0) {
     ledgerEntries.push({
       voucher_id: voucher.id,
@@ -169,13 +215,27 @@ async function generateSalesInvoiceEntries(tenantModels, voucher, items, transac
     logger.info(`Added Stock in Hand credit entry: ${totalCOGS} (COGS)`);
   }
   
+  // 7. Debit Cost of Goods Sold (record expense)
+  if (totalCOGS > 0) {
+    const cogsLedger = await getOrCreateSystemLedger(ctx,
+      { ledgerCode: 'COGS', ledgerName: 'Cost of Goods Sold', groupCode: 'DIR_EXP' }, transaction);
+    ledgerEntries.push({
+      voucher_id: voucher.id,
+      ledger_id: cogsLedger.id,
+      debit_amount: totalCOGS,
+      credit_amount: 0,
+      tenant_id: voucher.tenant_id,
+    });
+    logger.info(`Added COGS debit entry: ${totalCOGS}`);
+  }
+  
   return ledgerEntries;
 }
 
 /**
  * Generate ledger entries for Purchase Invoice
  */
-async function generatePurchaseInvoiceEntries(tenantModels, voucher, items, transaction) {
+async function generatePurchaseInvoiceEntries(tenantModels, masterModels, voucher, items, transaction) {
   const ledgerEntries = [];
   
   // Calculate totals
@@ -185,11 +245,11 @@ async function generatePurchaseInvoiceEntries(tenantModels, voucher, items, tran
   const totalIGST = items.reduce((sum, item) => sum + parseFloat(item.igst_amount || 0), 0);
   const totalAmount = subtotal + totalCGST + totalSGST + totalIGST;
   
-  // Find required ledgers
-  const cgstLedger = await findLedger(tenantModels, voucher.tenant_id, ['CGST Input', '%CGST Input%'], transaction);
-  const sgstLedger = await findLedger(tenantModels, voucher.tenant_id, ['SGST Input', '%SGST Input%'], transaction);
-  const igstLedger = await findLedger(tenantModels, voucher.tenant_id, ['IGST Input', '%IGST Input%'], transaction);
-  const stockLedger = await findLedger(tenantModels, voucher.tenant_id, ['%Stock%'], transaction);
+  const ctx = { tenantModels, masterModels, tenant_id: voucher.tenant_id };
+  
+  // Get or create required ledgers
+  const stockLedger = await getOrCreateSystemLedger(ctx,
+    { ledgerCode: 'INVENTORY', ledgerName: 'Stock in Hand', groupCode: 'INV' }, transaction);
   
   // 1. Debit Stock in Hand (inventory value increases) - Perpetual Inventory System
   if (stockLedger && subtotal > 0) {
@@ -204,7 +264,9 @@ async function generatePurchaseInvoiceEntries(tenantModels, voucher, items, tran
   }
   
   // 2. Debit CGST (Input Tax Credit)
-  if (cgstLedger && totalCGST > 0) {
+  if (totalCGST > 0) {
+    const cgstLedger = await getOrCreateSystemLedger(ctx,
+      { ledgerCode: 'CGST-INPUT', ledgerName: 'Input CGST', groupCode: 'DT' }, transaction);
     ledgerEntries.push({
       voucher_id: voucher.id,
       ledger_id: cgstLedger.id,
@@ -215,7 +277,9 @@ async function generatePurchaseInvoiceEntries(tenantModels, voucher, items, tran
   }
   
   // 3. Debit SGST (Input Tax Credit)
-  if (sgstLedger && totalSGST > 0) {
+  if (totalSGST > 0) {
+    const sgstLedger = await getOrCreateSystemLedger(ctx,
+      { ledgerCode: 'SGST-INPUT', ledgerName: 'Input SGST', groupCode: 'DT' }, transaction);
     ledgerEntries.push({
       voucher_id: voucher.id,
       ledger_id: sgstLedger.id,
@@ -226,7 +290,9 @@ async function generatePurchaseInvoiceEntries(tenantModels, voucher, items, tran
   }
   
   // 4. Debit IGST (for interstate purchases)
-  if (igstLedger && totalIGST > 0) {
+  if (totalIGST > 0) {
+    const igstLedger = await getOrCreateSystemLedger(ctx,
+      { ledgerCode: 'IGST-INPUT', ledgerName: 'Input IGST', groupCode: 'DT' }, transaction);
     ledgerEntries.push({
       voucher_id: voucher.id,
       ledger_id: igstLedger.id,
@@ -255,7 +321,7 @@ async function generatePurchaseInvoiceEntries(tenantModels, voucher, items, tran
  * These are typically for goods movement without immediate sale
  * No accounting entries, just for tracking
  */
-async function generateDeliveryChallanEntries(tenantModels, voucher, items, transaction) {
+async function generateDeliveryChallanEntries(tenantModels, masterModels, voucher, items, transaction) {
   // Delivery challans don't create accounting entries
   // They are used for goods movement tracking only
   logger.info('Delivery Challan/Bill of Supply - No ledger entries generated (goods movement only)');
@@ -265,7 +331,7 @@ async function generateDeliveryChallanEntries(tenantModels, voucher, items, tran
 /**
  * Generate ledger entries for Payment Voucher
  */
-async function generatePaymentEntries(tenantModels, voucher, items, transaction) {
+async function generatePaymentEntries(tenantModels, masterModels, voucher, items, transaction) {
   const ledgerEntries = [];
   
   // Payment: Debit Party (Creditor/Expense), Credit Bank/Cash
@@ -299,7 +365,7 @@ async function generatePaymentEntries(tenantModels, voucher, items, transaction)
 /**
  * Generate ledger entries for Receipt Voucher
  */
-async function generateReceiptEntries(tenantModels, voucher, items, transaction) {
+async function generateReceiptEntries(tenantModels, masterModels, voucher, items, transaction) {
   const ledgerEntries = [];
   
   // Receipt: Debit Bank/Cash, Credit Party (Debtor/Income)
@@ -333,7 +399,7 @@ async function generateReceiptEntries(tenantModels, voucher, items, transaction)
 /**
  * Generate ledger entries for Journal Voucher
  */
-async function generateJournalEntries(tenantModels, voucher, items, transaction) {
+async function generateJournalEntries(tenantModels, masterModels, voucher, items, transaction) {
   // Journal entries can be provided manually in ledger_entries
   // Or we can generate them if debit_ledger_id and credit_ledger_id are provided
   
@@ -369,7 +435,7 @@ async function generateJournalEntries(tenantModels, voucher, items, transaction)
 /**
  * Generate ledger entries for Credit Note
  */
-async function generateCreditNoteEntries(tenantModels, voucher, items, transaction) {
+async function generateCreditNoteEntries(tenantModels, masterModels, voucher, items, transaction) {
   const ledgerEntries = [];
   
   // Credit Note: Reverse of Sales Invoice
@@ -445,7 +511,7 @@ async function generateCreditNoteEntries(tenantModels, voucher, items, transacti
 /**
  * Generate ledger entries for Debit Note
  */
-async function generateDebitNoteEntries(tenantModels, voucher, items, transaction) {
+async function generateDebitNoteEntries(tenantModels, masterModels, voucher, items, transaction) {
   const ledgerEntries = [];
   
   // Debit Note: Reverse of Purchase Invoice
@@ -521,7 +587,7 @@ async function generateDebitNoteEntries(tenantModels, voucher, items, transactio
 /**
  * Generate ledger entries for Contra Voucher
  */
-async function generateContraEntries(tenantModels, voucher, items, transaction) {
+async function generateContraEntries(tenantModels, masterModels, voucher, items, transaction) {
   // Contra entries are typically manually created (bank to cash, cash to bank)
   // Return empty array as they should be provided in the request
   logger.info('Contra voucher - ledger entries should be provided manually');
@@ -534,7 +600,7 @@ async function generateContraEntries(tenantModels, voucher, items, transaction) 
 async function findLedger(tenantModels, tenantId, patterns, transaction) {
   const conditions = patterns.map(pattern => {
     if (pattern.includes('%')) {
-      return { [tenantModels.Sequelize.Op.like]: pattern };
+      return { [Op.like]: pattern };
     }
     return pattern;
   });
@@ -542,7 +608,7 @@ async function findLedger(tenantModels, tenantId, patterns, transaction) {
   return await tenantModels.Ledger.findOne({
     where: { 
       ledger_name: {
-        [tenantModels.Sequelize.Op.or]: conditions
+        [Op.or]: conditions
       },
       tenant_id: tenantId
     },
