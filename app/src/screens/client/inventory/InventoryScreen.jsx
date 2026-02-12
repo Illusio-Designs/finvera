@@ -93,19 +93,19 @@ export default function InventoryScreen() {
       const data = response?.data?.data || response?.data?.items || response?.data || [];
       const items = Array.isArray(data) ? data : [];
       
-      // Calculate stats
+      // Calculate stats using actual_stock (COGS method)
       const totalItems = items.length;
       const totalValue = items.reduce((sum, item) => {
-        const qty = parseFloat(item.quantity_on_hand) || 0;
+        const qty = parseFloat(item.actual_stock || item.quantity_on_hand) || 0;
         const cost = parseFloat(item.avg_cost) || 0;
         return sum + (qty * cost);
       }, 0);
       const lowStock = items.filter(item => {
-        const qty = parseFloat(item.quantity_on_hand) || 0;
+        const qty = parseFloat(item.actual_stock || item.quantity_on_hand) || 0;
         return qty > 0 && qty <= 10;
       }).length;
       const outOfStock = items.filter(item => {
-        const qty = parseFloat(item.quantity_on_hand) || 0;
+        const qty = parseFloat(item.actual_stock || item.quantity_on_hand) || 0;
         return qty === 0;
       }).length;
       

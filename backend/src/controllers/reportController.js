@@ -257,4 +257,64 @@ module.exports = {
       next(err);
     }
   },
+
+  async getReceivables(req, res, next) {
+    try {
+      const { as_on_date, include_zero_balance } = req.query;
+      const asOn = as_on_date || new Date().toISOString().slice(0, 10);
+      const includeZero = include_zero_balance === 'true';
+
+      console.log(`\n💰 === GENERATING RECEIVABLES REPORT ===`);
+      console.log(`📅 As on: ${asOn}`);
+      console.log(`🏢 Tenant: ${req.tenant_id}`);
+
+      const receivablesData = await reportService.generateReceivablesReport(
+        req.tenantModels,
+        req.masterModels,
+        { 
+          asOnDate: asOn,
+          includeZeroBalance: includeZero
+        }
+      );
+
+      console.log(`✅ Receivables Report generated successfully`);
+      console.log(`📊 Total Customers: ${receivablesData.summary.total_customers}`);
+      console.log(`📊 Total Receivable: ₹${receivablesData.summary.total_receivable.toFixed(2)}`);
+
+      res.json(receivablesData);
+    } catch (err) {
+      logger.error('Receivables Report generation error:', err);
+      next(err);
+    }
+  },
+
+  async getPayables(req, res, next) {
+    try {
+      const { as_on_date, include_zero_balance } = req.query;
+      const asOn = as_on_date || new Date().toISOString().slice(0, 10);
+      const includeZero = include_zero_balance === 'true';
+
+      console.log(`\n💸 === GENERATING PAYABLES REPORT ===`);
+      console.log(`📅 As on: ${asOn}`);
+      console.log(`🏢 Tenant: ${req.tenant_id}`);
+
+      const payablesData = await reportService.generatePayablesReport(
+        req.tenantModels,
+        req.masterModels,
+        { 
+          asOnDate: asOn,
+          includeZeroBalance: includeZero
+        }
+      );
+
+      console.log(`✅ Payables Report generated successfully`);
+      console.log(`📊 Total Suppliers: ${payablesData.summary.total_suppliers}`);
+      console.log(`📊 Total Payable: ₹${payablesData.summary.total_payable.toFixed(2)}`);
+
+      res.json(payablesData);
+    } catch (err) {
+      logger.error('Payables Report generation error:', err);
+      next(err);
+    }
+  },
 };

@@ -419,6 +419,16 @@ module.exports = {
       const gstPayable = parseFloat((netGst > 0 ? netGst : 0).toFixed(2));
       const gstCredit = parseFloat((netGst < 0 ? Math.abs(netGst) : 0).toFixed(2));
 
+      // Format GST details for dashboard display
+      const gstDetails = {
+        input_gst: parseFloat(gstInput.toFixed(2)),      // Tax paid on purchases (ITC available)
+        output_gst: parseFloat(gstOutput.toFixed(2)),    // Tax collected on sales (liability)
+        rcm_input: parseFloat(rcmInput.toFixed(2)),      // RCM Input credit
+        net_gst: parseFloat(netGst.toFixed(2)),          // Output - Input + RCM
+        gst_payable: gstPayable,                         // Amount to pay (if positive)
+        gst_credit: gstCredit,                           // Credit available (if negative)
+      };
+
       // Format voucher type breakdown
       const voucherTypes = {};
       voucherTypeBreakdown.forEach((item) => {
@@ -466,6 +476,7 @@ module.exports = {
           current_month_purchase: parseFloat(currentMonthPurchase || 0),
           active_ledgers: activeLedgersCount,
         },
+        gst: gstDetails,  // Add GST breakdown
         voucher_types: voucherTypes,
         recent_activity: recentActivity,
       };

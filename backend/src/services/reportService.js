@@ -979,11 +979,297 @@ async function generateLedgerStatementReport(tenantModels, masterModels, options
   }
 }
 
+/**
+ * Generate Receivables Report (Accounts Receivable / Sundry Debtors)
+ * @param {Object} tenantModels - Tenant database models
+ * @param {Object} masterModels - Master database models
+ * @param {Object} options - Report options (asOnDate, includeZeroBalance)
+ * @returns {Object} - Receivables report data
+ */
+async function generateReceivablesReport(tenantModels, masterModels, options = {}) {
+  try {
+    const { asOnDate, includeZeroBalance = false } = options;
+    const asOn = asOnDate || new Date().toISOString().slice(0, 10);
+    
+    logger.info(`Generating Receivables Report as on: ${asOn}`);
+    
+    // Get all account groups
+    const accountGroups = await masterModels.AccountGroup.findAll();
+    const groupMap = new Map();
+    accountGroups.forEach(g => groupMap.set(g.id, g));
+    
+    // Find Sundry Debtors group (customers/receivables)
+    const debtorsGroup = accountGroups.find(g => 
+      g.group_code === 'SDEB' || g.name.toLowerCase().includes('sundry debtor') || 
+      g.name.toLowerCase().includes('accounts receivable')
+    );
+    
+    if (!debtorsGroup) {
+      throw new Error('Sundry Debtors account group not found');
+    }
+    
+    // Get all active ledgers under Sundry Debtors
+    const debtorLedgers = await tenantModels.Ledger.findAll({
+      where: { 
+        account_group_id: debtorsGroup.id,
+        is_active: true
+      }
+    });
+    
+    // Get movements up to asOnDate for each ledger
+    const voucherWhere = { 
+      status: 'posted',
+      voucher_date: { [Op.lte]: asOn + ' 23:59:59' }
+    };
+    
+    const postedVouchers = await tenantModels.Voucher.findAll({
+      where: voucherWhere,
+      attributes: ['id'],
+      raw: true
+    });
+    
+    const voucherIds = postedVouchers.map(v => v.id);
+    
+    let ledgerEntries = [];
+    if (voucherIds.length > 0) {
+      ledgerEntries = await tenantModels.VoucherLedgerEntry.findAll({
+        attributes: [
+          'ledger_id',
+          [Sequelize.fn('SUM', Sequelize.col('debit_amount')), 'total_debit'],
+          [Sequelize.fn('SUM', Sequelize.col('credit_amount')), 'total_credit'],
+        ],
+        where: {
+          voucher_id: { [Op.in]: voucherIds },
+          ledger_id: { [Op.in]: debtorLedgers.map(l => l.id) }
+        },
+        group: ['ledger_id'],
+        raw: true,
+      });
+    }
+    
+    const moveMap = new Map();
+    ledgerEntries.forEach(entry => {
+      moveMap.set(entry.ledger_id, {
+        debit: toNum(entry.total_debit, 0),
+        credit: toNum(entry.total_credit, 0)
+      });
+    });
+    
+    const receivables = [];
+    let totalReceivable = 0;
+    
+    debtorLedgers.forEach(ledger => {
+      const opening = toNum(ledger.opening_balance, 0);
+      const move = moveMap.get(ledger.id) || { debit: 0, credit: 0 };
+      
+      // Receivables are debit balances (customers owe us)
+      const balance = opening + move.debit - move.credit;
+      
+      if (balance > 0.01 || (includeZeroBalance && Math.abs(balance) < 0.01)) {
+        receivables.push({
+          ledger_id: ledger.id,
+          ledger_code: ledger.ledger_code,
+          ledger_name: ledger.ledger_name,
+          opening_balance: opening,
+          debit: move.debit,
+          credit: move.credit,
+          closing_balance: balance,
+          contact_person: ledger.contact_person,
+          phone: ledger.phone,
+          email: ledger.email,
+          address: ledger.address
+        });
+        
+        totalReceivable += balance;
+      }
+    });
+    
+    // Sort by balance descending
+    receivables.sort((a, b) => b.closing_balance - a.closing_balance);
+    
+    return {
+      report_type: 'receivables',
+      as_on_date: asOn,
+      summary: {
+        total_customers: receivables.length,
+        total_receivable: totalReceivable,
+        average_receivable: receivables.length > 0 ? totalReceivable / receivables.length : 0
+      },
+      receivables: receivables,
+      aging_analysis: calculateAgingAnalysis(receivables, 'receivable')
+    };
+  } catch (error) {
+    logger.error('Error generating receivables report:', error);
+    throw error;
+  }
+}
+
+/**
+ * Generate Payables Report (Accounts Payable / Sundry Creditors)
+ * @param {Object} tenantModels - Tenant database models
+ * @param {Object} masterModels - Master database models
+ * @param {Object} options - Report options (asOnDate, includeZeroBalance)
+ * @returns {Object} - Payables report data
+ */
+async function generatePayablesReport(tenantModels, masterModels, options = {}) {
+  try {
+    const { asOnDate, includeZeroBalance = false } = options;
+    const asOn = asOnDate || new Date().toISOString().slice(0, 10);
+    
+    logger.info(`Generating Payables Report as on: ${asOn}`);
+    
+    // Get all account groups
+    const accountGroups = await masterModels.AccountGroup.findAll();
+    const groupMap = new Map();
+    accountGroups.forEach(g => groupMap.set(g.id, g));
+    
+    // Find Sundry Creditors group (suppliers/payables)
+    const creditorsGroup = accountGroups.find(g => 
+      g.group_code === 'SCRE' || g.name.toLowerCase().includes('sundry creditor') || 
+      g.name.toLowerCase().includes('accounts payable')
+    );
+    
+    if (!creditorsGroup) {
+      throw new Error('Sundry Creditors account group not found');
+    }
+    
+    // Get all active ledgers under Sundry Creditors
+    const creditorLedgers = await tenantModels.Ledger.findAll({
+      where: { 
+        account_group_id: creditorsGroup.id,
+        is_active: true
+      }
+    });
+    
+    // Get movements up to asOnDate for each ledger
+    const voucherWhere = { 
+      status: 'posted',
+      voucher_date: { [Op.lte]: asOn + ' 23:59:59' }
+    };
+    
+    const postedVouchers = await tenantModels.Voucher.findAll({
+      where: voucherWhere,
+      attributes: ['id'],
+      raw: true
+    });
+    
+    const voucherIds = postedVouchers.map(v => v.id);
+    
+    let ledgerEntries = [];
+    if (voucherIds.length > 0) {
+      ledgerEntries = await tenantModels.VoucherLedgerEntry.findAll({
+        attributes: [
+          'ledger_id',
+          [Sequelize.fn('SUM', Sequelize.col('debit_amount')), 'total_debit'],
+          [Sequelize.fn('SUM', Sequelize.col('credit_amount')), 'total_credit'],
+        ],
+        where: {
+          voucher_id: { [Op.in]: voucherIds },
+          ledger_id: { [Op.in]: creditorLedgers.map(l => l.id) }
+        },
+        group: ['ledger_id'],
+        raw: true,
+      });
+    }
+    
+    const moveMap = new Map();
+    ledgerEntries.forEach(entry => {
+      moveMap.set(entry.ledger_id, {
+        debit: toNum(entry.total_debit, 0),
+        credit: toNum(entry.total_credit, 0)
+      });
+    });
+    
+    const payables = [];
+    let totalPayable = 0;
+    
+    creditorLedgers.forEach(ledger => {
+      const opening = toNum(ledger.opening_balance, 0);
+      const move = moveMap.get(ledger.id) || { debit: 0, credit: 0 };
+      
+      // Payables are credit balances (we owe suppliers)
+      const balance = opening + move.credit - move.debit;
+      
+      if (balance > 0.01 || (includeZeroBalance && Math.abs(balance) < 0.01)) {
+        payables.push({
+          ledger_id: ledger.id,
+          ledger_code: ledger.ledger_code,
+          ledger_name: ledger.ledger_name,
+          opening_balance: opening,
+          debit: move.debit,
+          credit: move.credit,
+          closing_balance: balance,
+          contact_person: ledger.contact_person,
+          phone: ledger.phone,
+          email: ledger.email,
+          address: ledger.address
+        });
+        
+        totalPayable += balance;
+      }
+    });
+    
+    // Sort by balance descending
+    payables.sort((a, b) => b.closing_balance - a.closing_balance);
+    
+    return {
+      report_type: 'payables',
+      as_on_date: asOn,
+      summary: {
+        total_suppliers: payables.length,
+        total_payable: totalPayable,
+        average_payable: payables.length > 0 ? totalPayable / payables.length : 0
+      },
+      payables: payables,
+      aging_analysis: calculateAgingAnalysis(payables, 'payable')
+    };
+  } catch (error) {
+    logger.error('Error generating payables report:', error);
+    throw error;
+  }
+}
+
+/**
+ * Helper function to calculate aging analysis
+ * @param {Array} items - Receivables or payables items
+ * @param {String} type - 'receivable' or 'payable'
+ * @returns {Object} - Aging analysis data
+ */
+function calculateAgingAnalysis(items, type) {
+  // Simple aging buckets: 0-30, 31-60, 61-90, 90+ days
+  const aging = {
+    current: { count: 0, amount: 0 },        // 0-30 days
+    days_31_60: { count: 0, amount: 0 },     // 31-60 days
+    days_61_90: { count: 0, amount: 0 },     // 61-90 days
+    over_90: { count: 0, amount: 0 }         // 90+ days
+  };
+  
+  // Note: For proper aging analysis, we would need invoice dates
+  // This is a simplified version that categorizes based on balance amount
+  // In a real implementation, you'd query vouchers with due dates
+  
+  items.forEach(item => {
+    const amount = item.closing_balance;
+    
+    // Simplified categorization (in real app, use actual aging from invoice dates)
+    if (amount > 0) {
+      // For now, put all in current bucket
+      // TODO: Implement proper aging based on invoice/voucher dates
+      aging.current.count++;
+      aging.current.amount += amount;
+    }
+  });
+  
+  return aging;
+}
+
 module.exports = {
   generateProfitLossReport,
   generateBalanceSheetReport,
   generateTrialBalanceReport,
   generateLedgerStatementReport,
+  generateReceivablesReport,
+  generatePayablesReport,
   getVoucherAnalysis,
   getCOGSAnalysis
 };

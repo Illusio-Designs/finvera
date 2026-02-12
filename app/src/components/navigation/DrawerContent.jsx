@@ -9,19 +9,34 @@ export default function DrawerContent() {
   const navigation = useNavigation();
   const { user, logout } = useAuth();
 
-  const menuItems = [
-    { label: 'Dashboard', icon: 'home-outline', screen: 'Dashboard' },
-    { label: 'Profile', icon: 'person-outline', screen: 'Profile' },
-    { label: 'Companies', icon: 'business-outline', screen: 'Companies' },
-    { label: 'Branches', icon: 'git-branch-outline', screen: 'Branches' },
-    { label: 'Ledgers', icon: 'folder-outline', screen: 'Ledgers' },
-    { label: 'Inventory Items', icon: 'cube-outline', screen: 'InventoryItems' },
-    { label: 'Vouchers', icon: 'document-text-outline', screen: 'Vouchers' },
-    { label: 'Reports', icon: 'bar-chart-outline', screen: 'Reports' },
-    { label: 'GST Management', icon: 'receipt-outline', screen: 'GST' },
-    { label: 'TDS Management', icon: 'calculator-outline', screen: 'TDS' },
-    { label: 'Settings', icon: 'settings-outline', screen: 'Settings' },
-    { label: 'Support', icon: 'help-circle-outline', screen: 'Support' },
+  const menuSections = [
+    {
+      title: 'Main',
+      items: [
+        { label: 'Dashboard', icon: 'home-outline', screen: 'Dashboard' },
+        { label: 'Companies', icon: 'business-outline', screen: 'Companies' },
+        { label: 'Branches', icon: 'git-branch-outline', screen: 'Branches' },
+        { label: 'Ledgers', icon: 'folder-outline', screen: 'Ledgers' },
+        { label: 'Inventory Items', icon: 'cube-outline', screen: 'InventoryItems' },
+        { label: 'Vouchers', icon: 'document-text-outline', screen: 'Vouchers' },
+        { label: 'Reports', icon: 'bar-chart-outline', screen: 'Reports' },
+      ]
+    },
+    {
+      title: 'Management',
+      items: [
+        { label: 'GST Management', icon: 'receipt-outline', screen: 'GST' },
+        { label: 'TDS Management', icon: 'calculator-outline', screen: 'TDS' },
+      ]
+    },
+    {
+      title: 'Account',
+      items: [
+        { label: 'Profile', icon: 'person-outline', screen: 'Profile' },
+        { label: 'Settings', icon: 'settings-outline', screen: 'Settings' },
+        { label: 'Support', icon: 'headset-outline', screen: 'Support' },
+      ]
+    }
   ];
 
   const handleMenuPress = (screen) => {
@@ -58,16 +73,21 @@ export default function DrawerContent() {
 
       {/* Menu Items */}
       <ScrollView style={styles.menuContainer} showsVerticalScrollIndicator={false}>
-        {menuItems.map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.menuItem}
-            onPress={() => handleMenuPress(item.screen)}
-          >
-            <Ionicons name={item.icon} size={24} color="#6b7280" />
-            <Text style={styles.menuLabel}>{item.label}</Text>
-            <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
-          </TouchableOpacity>
+        {menuSections.map((section, sectionIndex) => (
+          <View key={sectionIndex}>
+            <Text style={styles.sectionTitle}>{section.title}</Text>
+            {section.items.map((item, itemIndex) => (
+              <TouchableOpacity
+                key={itemIndex}
+                style={styles.menuItem}
+                onPress={() => handleMenuPress(item.screen)}
+              >
+                <Ionicons name={item.icon} size={24} color="#6b7280" />
+                <Text style={styles.menuLabel}>{item.label}</Text>
+                <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+              </TouchableOpacity>
+            ))}
+          </View>
         ))}
       </ScrollView>
 
@@ -140,6 +160,16 @@ const styles = StyleSheet.create({
   menuContainer: {
     flex: 1,
     paddingTop: 16,
+  },
+  sectionTitle: {
+    ...FONT_STYLES.caption,
+    color: '#9ca3af',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    fontWeight: '600',
   },
   menuItem: {
     flexDirection: 'row',

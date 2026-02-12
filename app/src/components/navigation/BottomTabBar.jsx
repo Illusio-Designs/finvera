@@ -49,12 +49,12 @@ export default function BottomTabBar({ currentRoute = 'Dashboard' }) {
       isActive: currentRoute === 'Ledgers'
     },
     {
-      icon: 'headset-outline',
-      activeIcon: 'headset',
-      label: 'Support',
+      icon: 'cube-outline',
+      activeIcon: 'cube',
+      label: 'Inventory',
       action: 'navigate',
-      screen: 'Support',
-      isActive: currentRoute === 'Support'
+      screen: 'Inventory',
+      isActive: currentRoute === 'Inventory'
     }
   ];
 

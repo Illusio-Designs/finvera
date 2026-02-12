@@ -97,8 +97,45 @@ module.exports = {
 
       const { count, rows } = result;
 
+      // Calculate actual stock from stock movements for each item
+      const itemsWithActualStock = await Promise.all(rows.map(async (item) => {
+        try {
+          // Calculate actual stock from stock movements
+          const movements = await req.tenantModels.StockMovement.findAll({
+            where: { inventory_item_id: item.id },
+            attributes: ['movement_type', 'quantity'],
+          });
+
+          let actualStock = 0;
+          movements.forEach(movement => {
+            const qty = parseFloat(movement.quantity) || 0;
+            if (movement.movement_type === 'IN' || movement.movement_type === 'ADJUSTMENT') {
+              actualStock += Math.abs(qty);
+            } else if (movement.movement_type === 'OUT') {
+              actualStock -= Math.abs(qty);
+            }
+          });
+
+          // Ensure actual stock is not negative
+          actualStock = Math.max(0, actualStock);
+
+          return {
+            ...item.toJSON(),
+            actual_stock: actualStock,
+            stock_value: actualStock * (parseFloat(item.avg_cost) || 0),
+          };
+        } catch (error) {
+          logger.error(`Error calculating actual stock for item ${item.id}:`, error);
+          return {
+            ...item.toJSON(),
+            actual_stock: item.quantity_on_hand || 0,
+            stock_value: (item.quantity_on_hand || 0) * (parseFloat(item.avg_cost) || 0),
+          };
+        }
+      }));
+
       res.json({
-        data: Array.isArray(rows) ? rows : [],
+        data: Array.isArray(itemsWithActualStock) ? itemsWithActualStock : [],
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
@@ -130,7 +167,32 @@ module.exports = {
         return res.status(404).json({ error: 'Inventory item not found' });
       }
 
-      res.json({ data: item });
+      // Calculate actual stock from stock movements
+      const movements = await req.tenantModels.StockMovement.findAll({
+        where: { inventory_item_id: id },
+        attributes: ['movement_type', 'quantity'],
+      });
+
+      let actualStock = 0;
+      movements.forEach(movement => {
+        const qty = parseFloat(movement.quantity) || 0;
+        if (movement.movement_type === 'IN' || movement.movement_type === 'ADJUSTMENT') {
+          actualStock += Math.abs(qty);
+        } else if (movement.movement_type === 'OUT') {
+          actualStock -= Math.abs(qty);
+        }
+      });
+
+      // Ensure actual stock is not negative
+      actualStock = Math.max(0, actualStock);
+
+      const itemData = {
+        ...item.toJSON(),
+        actual_stock: actualStock,
+        stock_value: actualStock * (parseFloat(item.avg_cost) || 0),
+      };
+
+      res.json({ data: itemData });
     } catch (error) {
       logger.error('Error getting inventory item:', error);
       next(error);

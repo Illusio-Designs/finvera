@@ -49,6 +49,8 @@ module.exports = {
             opening_balance: 0,
             opening_balance_type: balanceType,
             balance_type: balanceType === 'Dr' ? 'debit' : 'credit',
+            current_balance: 0,
+            tenant_id: '',  // Empty string for tenant_id
             is_default: true,
             is_active: true,
             createdAt: now,
@@ -78,15 +80,17 @@ module.exports = {
       addLedger('INV-001', 'Stock in Hand', 'INV', 'Dr');
 
       // GST Ledgers - Separate Input (Asset) and Output (Liability)
-      // Input GST = Debit balance (Asset - Input Tax Credit)
-      addLedger('CGST-INPUT', 'Input CGST', 'DT', 'Dr');
-      addLedger('SGST-INPUT', 'Input SGST', 'DT', 'Dr');
-      addLedger('IGST-INPUT', 'Input IGST', 'DT', 'Dr');
+      // Input GST = Debit balance (Asset - Input Tax Credit that can be claimed)
+      // Input GST is an asset because it represents tax paid that will be recovered
+      addLedger('CGST-INPUT', 'Input CGST', 'CA', 'Dr');  // Current Assets
+      addLedger('SGST-INPUT', 'Input SGST', 'CA', 'Dr');  // Current Assets
+      addLedger('IGST-INPUT', 'Input IGST', 'CA', 'Dr');  // Current Assets
       
-      // Output GST = Credit balance (Liability - Output Tax)
-      addLedger('CGST-OUTPUT', 'Output CGST', 'DT', 'Cr');
-      addLedger('SGST-OUTPUT', 'Output SGST', 'DT', 'Cr');
-      addLedger('IGST-OUTPUT', 'Output IGST', 'DT', 'Cr');
+      // Output GST = Credit balance (Liability - Tax collected from customers)
+      // Output GST is a liability because it represents tax collected that must be paid to government
+      addLedger('CGST-OUTPUT', 'Output CGST', 'DT', 'Cr');  // Duties & Taxes
+      addLedger('SGST-OUTPUT', 'Output SGST', 'DT', 'Cr');  // Duties & Taxes
+      addLedger('IGST-OUTPUT', 'Output IGST', 'DT', 'Cr');  // Duties & Taxes
 
       // Insert default ledgers (check for existing first to avoid duplicates)
       if (defaultLedgers.length > 0) {
@@ -135,6 +139,7 @@ module.exports = {
         const defaultNumberingSeries = [
           {
             id: Sequelize.literal('(UUID())'),
+            tenant_id: '',  // Empty string for tenant_id
             voucher_type: 'sales_invoice',
             series_name: 'Sales Invoice Series',
             prefix: 'SI',
@@ -153,6 +158,7 @@ module.exports = {
           },
           {
             id: Sequelize.literal('(UUID())'),
+            tenant_id: '',
             voucher_type: 'tax_invoice',
             series_name: 'Tax Invoice Series',
             prefix: 'TI',
@@ -171,6 +177,7 @@ module.exports = {
           },
           {
             id: Sequelize.literal('(UUID())'),
+            tenant_id: '',
             voucher_type: 'bill_of_supply',
             series_name: 'Bill of Supply Series',
             prefix: 'BS',
@@ -189,6 +196,7 @@ module.exports = {
           },
           {
             id: Sequelize.literal('(UUID())'),
+            tenant_id: '',
             voucher_type: 'retail_invoice',
             series_name: 'Retail Invoice Series',
             prefix: 'RI',
@@ -207,6 +215,7 @@ module.exports = {
           },
           {
             id: Sequelize.literal('(UUID())'),
+            tenant_id: '',
             voucher_type: 'export_invoice',
             series_name: 'Export Invoice Series',
             prefix: 'EI',
@@ -225,6 +234,7 @@ module.exports = {
           },
           {
             id: Sequelize.literal('(UUID())'),
+            tenant_id: '',
             voucher_type: 'delivery_challan',
             series_name: 'Delivery Challan Series',
             prefix: 'DC',
@@ -243,6 +253,7 @@ module.exports = {
           },
           {
             id: Sequelize.literal('(UUID())'),
+            tenant_id: '',
             voucher_type: 'proforma_invoice',
             series_name: 'Proforma Invoice Series',
             prefix: 'PI',
@@ -261,6 +272,7 @@ module.exports = {
           },
           {
             id: Sequelize.literal('(UUID())'),
+            tenant_id: '',
             voucher_type: 'purchase_invoice',
             series_name: 'Purchase Invoice Series',
             prefix: 'PI',

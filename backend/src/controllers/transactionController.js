@@ -209,26 +209,90 @@ module.exports = {
    */
   async createContra(req, res, next) {
     try {
-      const { from_ledger_id, to_ledger_id, amount, narration } = req.body;
+      const { from_ledger_id, to_ledger_id, amount, narration, voucher_date } = req.body;
 
+      // Validate required fields
+      if (!from_ledger_id || !to_ledger_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'Both from_ledger_id and to_ledger_id are required',
+        });
+      }
+
+      if (!amount || parseFloat(amount) <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Amount must be greater than zero',
+        });
+      }
+
+      // Verify that both ledgers exist and are cash/bank accounts
+      const { tenantModels, masterModels } = req;
+      
+      const [fromLedger, toLedger] = await Promise.all([
+        tenantModels.Ledger.findByPk(from_ledger_id, {
+          include: [{
+            model: masterModels.AccountGroup,
+            as: 'accountGroup',
+            attributes: ['id', 'name', 'group_code'],
+          }],
+        }),
+        tenantModels.Ledger.findByPk(to_ledger_id, {
+          include: [{
+            model: masterModels.AccountGroup,
+            as: 'accountGroup',
+            attributes: ['id', 'name', 'group_code'],
+          }],
+        }),
+      ]);
+
+      if (!fromLedger) {
+        return res.status(404).json({
+          success: false,
+          message: 'From ledger not found',
+        });
+      }
+
+      if (!toLedger) {
+        return res.status(404).json({
+          success: false,
+          message: 'To ledger not found',
+        });
+      }
+
+      // Validate that both ledgers are cash or bank accounts
+      const validGroups = ['CASH', 'BANK'];
+      const fromGroupCode = fromLedger.accountGroup?.group_code;
+      const toGroupCode = toLedger.accountGroup?.group_code;
+
+      if (!validGroups.includes(fromGroupCode) || !validGroups.includes(toGroupCode)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Contra entries can only be made between Cash and Bank accounts',
+        });
+      }
+
+      // Create ledger entries
       const ledgerEntries = [
         {
           ledger_id: to_ledger_id,
           debit_amount: parseFloat(amount),
           credit_amount: 0,
-          narration: narration || 'Transfer received',
+          narration: narration || `Transfer from ${fromLedger.ledger_name}`,
         },
         {
           ledger_id: from_ledger_id,
           debit_amount: 0,
           credit_amount: parseFloat(amount),
-          narration: narration || 'Transfer made',
+          narration: narration || `Transfer to ${toLedger.ledger_name}`,
         },
       ];
 
       req.body.voucher_type = 'Contra';
       req.body.ledger_entries = ledgerEntries;
       req.body.total_amount = parseFloat(amount);
+      req.body.voucher_date = voucher_date || new Date();
+      req.body.status = 'posted'; // Contra entries are typically posted immediately
 
       return voucherController.create(req, res, next);
     } catch (err) {

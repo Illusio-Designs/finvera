@@ -114,25 +114,26 @@ export default function CustomDrawer({ visible, onClose }) {
       title: 'Main Navigation',
       items: [
         { name: 'Dashboard', icon: 'home-outline', color: '#3e60ab', screen: 'Dashboard' },
-        { name: 'Reports & Analytics', icon: 'bar-chart-outline', color: '#f59e0b', screen: 'Reports' },
       ]
     },
     {
-      title: 'Quick Actions',
-      items: [
-        { name: 'Create Voucher', icon: 'add-circle-outline', color: '#10b981', screen: 'CreateVoucher', description: 'New voucher/invoice' },
-        { name: 'Quick Entry', icon: 'flash-outline', color: '#3e60ab', screen: 'QuickEntry', description: 'Fast data entry' },
-      ]
-    },
-    {
-      title: 'Accounting & Finance',
+      title: 'Vouchers',
       expandable: true,
       items: [
-        { name: 'Vouchers & Invoices', icon: 'document-text-outline', color: '#10b981', screen: 'Vouchers' },
-        { name: 'Account Ledgers', icon: 'folder-outline', color: '#059669', screen: 'Ledgers' },
+        { name: 'All Vouchers', icon: 'document-text-outline', color: '#10b981', screen: 'Vouchers' },
         { name: 'Payment Vouchers', icon: 'card-outline', color: '#3b82f6', screen: 'PaymentVouchers' },
         { name: 'Receipt Vouchers', icon: 'wallet-outline', color: '#10b981', screen: 'ReceiptVouchers' },
         { name: 'Journal Entries', icon: 'book-outline', color: '#8b5cf6', screen: 'JournalEntries' },
+        { name: 'Contra Vouchers', icon: 'repeat-outline', color: '#f59e0b', screen: 'ContraVouchers' },
+        { name: 'Debit Note', icon: 'remove-circle-outline', color: '#ef4444', screen: 'DebitNote' },
+        { name: 'Credit Note', icon: 'add-circle-outline', color: '#059669', screen: 'CreditNote' },
+      ]
+    },
+    {
+      title: 'Accounting',
+      expandable: true,
+      items: [
+        { name: 'Account Ledgers', icon: 'folder-outline', color: '#059669', screen: 'Ledgers' },
         { name: 'Stock Transfers', icon: 'swap-horizontal-outline', color: '#3b82f6', screen: 'InventoryTransfer' },
       ]
     },
@@ -192,13 +193,13 @@ export default function CustomDrawer({ visible, onClose }) {
         { name: 'Tally Import', icon: 'cloud-upload-outline', color: '#3e60ab', screen: 'TallyImport' },
         { name: 'Notifications', icon: 'notifications-outline', color: '#f59e0b', screen: 'Notifications' },
         { name: 'Settings', icon: 'settings-outline', color: '#6b7280', screen: 'Settings' },
-        { name: 'Help & Support', icon: 'help-circle-outline', color: '#ef4444', screen: 'Support' },
       ]
     },
     {
       title: 'Account',
       items: [
         { name: 'Profile', icon: 'person-outline', color: '#8b5cf6', screen: 'Profile' },
+        { name: 'Support', icon: 'headset-outline', color: '#ef4444', screen: 'Support' },
         { name: 'Sign Out', icon: 'log-out-outline', color: '#ef4444', action: 'logout' },
       ]
     }

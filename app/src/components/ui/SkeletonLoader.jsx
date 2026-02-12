@@ -52,16 +52,18 @@ export function SkeletonBox({ width, height, borderRadius = 8, style }) {
 /**
  * Skeleton Stat Card - For dashboard stats
  */
-export function SkeletonStatCard({ style }) {
+export function SkeletonStatCard({ style, fullWidth = false }) {
   return (
-    <View style={[styles.statCard, style]}>
-      <View style={styles.statCardContent}>
-        <View style={styles.statCardLeft}>
-          <SkeletonBox width="60%" height={14} style={{ marginBottom: 8 }} />
-          <SkeletonBox width="80%" height={24} style={{ marginBottom: 6 }} />
-          <SkeletonBox width="50%" height={12} />
+    <View style={[fullWidth ? styles.statCardFull : styles.statCard, style]}>
+      <View style={styles.statCardHeader}>
+        <View style={{ flex: 1, marginRight: 16 }}>
+          <SkeletonBox width="75%" height={18} style={{ marginBottom: 8 }} />
+          <SkeletonBox width="55%" height={14} />
         </View>
-        <SkeletonBox width={40} height={40} borderRadius={20} />
+        <SkeletonBox width={52} height={52} borderRadius={26} />
+      </View>
+      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+        <SkeletonBox width="90%" height={40} />
       </View>
     </View>
   );
@@ -109,9 +111,34 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: '48%',
-    backgroundColor: '#f0f4fc',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 20,
+    minHeight: 140,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  statCardFull: {
+    width: 340,
+    backgroundColor: 'white',
+    borderRadius: 24,
+    padding: 24,
+    height: 210,
+    marginRight: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  statCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 36,
   },
   statCardContent: {
     flexDirection: 'row',

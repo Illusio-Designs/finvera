@@ -587,12 +587,59 @@ async function generateDebitNoteEntries(tenantModels, masterModels, voucher, ite
 
 /**
  * Generate ledger entries for Contra Voucher
+ * Contra vouchers are used for transfers between cash and bank accounts
  */
 async function generateContraEntries(tenantModels, masterModels, voucher, items, transaction) {
-  // Contra entries are typically manually created (bank to cash, cash to bank)
-  // Return empty array as they should be provided in the request
-  logger.info('Contra voucher - ledger entries should be provided manually');
-  return [];
+  logger.info('Generating contra voucher entries');
+  
+  const entries = [];
+  
+  // If ledger entries are already provided in the voucher, use them
+  if (voucher.ledger_entries && voucher.ledger_entries.length > 0) {
+    logger.info('Using provided ledger entries for contra voucher');
+    return voucher.ledger_entries;
+  }
+  
+  // Otherwise, generate entries from items if available
+  if (!items || items.length === 0) {
+    logger.warn('No items or ledger entries provided for contra voucher');
+    return [];
+  }
+  
+  // For contra vouchers, items should have ledger_id, debit_amount, and credit_amount
+  for (const item of items) {
+    if (!item.ledger_id) {
+      logger.warn('Item missing ledger_id in contra voucher');
+      continue;
+    }
+    
+    const debitAmount = parseFloat(item.debit_amount || 0);
+    const creditAmount = parseFloat(item.credit_amount || 0);
+    
+    if (debitAmount === 0 && creditAmount === 0) {
+      logger.warn('Item has zero debit and credit amounts');
+      continue;
+    }
+    
+    entries.push({
+      ledger_id: item.ledger_id,
+      debit_amount: debitAmount,
+      credit_amount: creditAmount,
+      narration: item.narration || voucher.narration || 'Contra entry',
+    });
+  }
+  
+  // Validate that debits equal credits
+  const totalDebit = entries.reduce((sum, entry) => sum + entry.debit_amount, 0);
+  const totalCredit = entries.reduce((sum, entry) => sum + entry.credit_amount, 0);
+  
+  if (Math.abs(totalDebit - totalCredit) > 0.01) {
+    logger.error(`Contra voucher unbalanced: Debit=${totalDebit}, Credit=${totalCredit}`);
+    throw new Error('Contra voucher entries must be balanced (total debits must equal total credits)');
+  }
+  
+  logger.info(`Generated ${entries.length} contra entries (Total: ${totalDebit.toFixed(2)})`);
+  return entries;
 }
 
 /**

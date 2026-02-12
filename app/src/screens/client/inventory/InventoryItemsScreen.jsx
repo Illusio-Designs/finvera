@@ -221,15 +221,18 @@ export default function InventoryItemsScreen() {
                     </Text>
                     <View style={[
                       styles.stockBadge,
-                      { backgroundColor: (item.quantity_on_hand || 0) > 0 ? '#ecfdf5' : '#fef2f2' }
+                      { backgroundColor: (item.actual_stock || item.quantity_on_hand || 0) > 0 ? '#ecfdf5' : '#fef2f2' }
                     ]}>
                       <Text style={[
                         styles.stockText,
-                        { color: (item.quantity_on_hand || 0) > 0 ? '#059669' : '#dc2626' }
+                        { color: (item.actual_stock || item.quantity_on_hand || 0) > 0 ? '#059669' : '#dc2626' }
                       ]}>
-                        Stock: {item.quantity_on_hand || 0} {item.uqc || ''}
+                        Stock: {item.actual_stock || item.quantity_on_hand || 0} {item.uqc || ''}
                       </Text>
                     </View>
+                    <Text style={styles.stockValueText}>
+                      Value: {formatCurrency((item.actual_stock || item.quantity_on_hand || 0) * (item.avg_cost || 0))}
+                    </Text>
                   </View>
                 </View>
                 
@@ -303,28 +306,28 @@ export default function InventoryItemsScreen() {
                   </View>
                   
                   <View style={styles.priceCard}>
-                    <Text style={styles.priceCardLabel}>Stock Value</Text>
+                    <Text style={styles.priceCardLabel}>Stock Value (COGS)</Text>
                     <Text style={styles.priceCardValue}>
-                      {formatCurrency((selectedItem.quantity_on_hand || 0) * (selectedItem.avg_cost || 0))}
+                      {formatCurrency((selectedItem.actual_stock || selectedItem.quantity_on_hand || 0) * (selectedItem.avg_cost || 0))}
                     </Text>
                   </View>
                 </View>
 
                 {/* Stock Information */}
                 <View style={styles.infoSection}>
-                  <Text style={styles.infoSectionTitle}>Stock Information</Text>
+                  <Text style={styles.infoSectionTitle}>Stock Information (COGS Method)</Text>
                   <View style={styles.infoGrid}>
                     <View style={styles.infoItem}>
-                      <Text style={styles.infoLabel}>Current Stock</Text>
-                      <Text style={styles.infoValue}>{selectedItem.quantity_on_hand || 0} {selectedItem.uqc || 'Units'}</Text>
+                      <Text style={styles.infoLabel}>Actual Stock</Text>
+                      <Text style={styles.infoValue}>{selectedItem.actual_stock || selectedItem.quantity_on_hand || 0} {selectedItem.uqc || 'Units'}</Text>
                     </View>
                     <View style={styles.infoItem}>
-                      <Text style={styles.infoLabel}>Average Cost</Text>
+                      <Text style={styles.infoLabel}>Average Cost (COGS)</Text>
                       <Text style={styles.infoValue}>{formatCurrency(selectedItem.avg_cost || 0)}</Text>
                     </View>
                     <View style={styles.infoItem}>
                       <Text style={styles.infoLabel}>Total Value</Text>
-                      <Text style={styles.infoValue}>{formatCurrency((selectedItem.quantity_on_hand || 0) * (selectedItem.avg_cost || 0))}</Text>
+                      <Text style={styles.infoValue}>{formatCurrency((selectedItem.actual_stock || selectedItem.quantity_on_hand || 0) * (selectedItem.avg_cost || 0))}</Text>
                     </View>
                   </View>
                 </View>
@@ -564,6 +567,11 @@ const styles = StyleSheet.create({
   },
   stockText: {
     ...FONT_STYLES.captionSmall,
+  },
+  stockValueText: {
+    ...FONT_STYLES.captionSmall,
+    color: '#6b7280',
+    marginTop: 2,
   },
   itemCardActions: {
     flexDirection: 'row',

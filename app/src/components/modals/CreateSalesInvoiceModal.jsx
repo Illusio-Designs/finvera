@@ -1354,7 +1354,7 @@ export default function CreateSalesInvoiceModal({
                           <Text style={styles.modalItemSubtext}>Code: {item.item_code}</Text>
                         )}
                         <Text style={styles.modalItemSubtext}>
-                          Stock: {parseFloat(item.quantity_on_hand || 0).toFixed(2)} • 
+                          Stock: {parseFloat(item.actual_stock || item.quantity_on_hand || 0).toFixed(2)} • 
                           Price: ₹{parseFloat(item.selling_price || item.avg_cost || 0).toFixed(2)} •
                           GST: {parseFloat(item.gst_rate || 0)}%
                         </Text>

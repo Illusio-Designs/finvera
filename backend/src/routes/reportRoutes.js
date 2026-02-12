@@ -14,6 +14,8 @@ router.get('/trial-balance', reportController.getTrialBalance);
 router.get('/balance-sheet', reportController.getBalanceSheet);
 router.get('/profit-loss', reportController.getProfitLoss);
 router.get('/ledger-statement', reportController.getLedgerStatement);
+router.get('/receivables', reportController.getReceivables);
+router.get('/payables', reportController.getPayables);
 router.get('/stock-summary', reportController.getStockSummary);
 router.get('/stock-ledger', reportController.getStockLedger);
 

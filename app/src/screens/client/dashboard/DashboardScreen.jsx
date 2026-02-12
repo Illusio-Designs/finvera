@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../../contexts/AuthContext.jsx';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
@@ -15,6 +15,9 @@ export default function DashboardScreen() {
   const navigation = useNavigation();
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
+  const scrollViewRef = useRef(null);
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
+  const dotAnimations = useRef([0, 1, 2, 3].map(() => new Animated.Value(8))).current;
   const [dashboardData, setDashboardData] = useState({
     stats: {
       total_vouchers: 0,
@@ -33,6 +36,14 @@ export default function DashboardScreen() {
       current_month_sales: 0,
       current_month_purchase: 0,
       active_ledgers: 0,
+    },
+    gst: {
+      input_gst: 0,
+      output_gst: 0,
+      rcm_input: 0,
+      net_gst: 0,
+      gst_payable: 0,
+      gst_credit: 0,
     },
     recent_activity: [],
   });
@@ -64,6 +75,14 @@ export default function DashboardScreen() {
       const data = response.data?.data || response.data || {};
       setDashboardData({
         stats: data.stats || {},
+        gst: data.gst || {
+          input_gst: 0,
+          output_gst: 0,
+          rcm_input: 0,
+          net_gst: 0,
+          gst_payable: 0,
+          gst_credit: 0,
+        },
         recent_activity: data.recent_activity || [],
       });
       
@@ -96,6 +115,14 @@ export default function DashboardScreen() {
           current_month_sales: 0,
           current_month_purchase: 0,
           active_ledgers: 0,
+        },
+        gst: {
+          input_gst: 0,
+          output_gst: 0,
+          rcm_input: 0,
+          net_gst: 0,
+          gst_payable: 0,
+          gst_credit: 0,
         },
         recent_activity: [],
       });
@@ -176,7 +203,71 @@ export default function DashboardScreen() {
     setRefreshing(false);
   }, [fetchDashboardData, fetchCompanyName, fetchRecentTickets]);
 
-  const { stats } = dashboardData;
+  // Animate pagination dots
+  useEffect(() => {
+    dotAnimations.forEach((anim, index) => {
+      Animated.timing(anim, {
+        toValue: index === activeCardIndex ? 24 : 8,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    });
+  }, [activeCardIndex, dotAnimations]);
+
+  // Auto-scroll carousel
+  useEffect(() => {
+    if (statsLoading) return;
+
+    const interval = setInterval(() => {
+      setActiveCardIndex((prevIndex) => {
+        const nextIndex = (prevIndex + 1) % 4; // 4 cards total
+        
+        // Scroll to next card
+        if (scrollViewRef.current) {
+          scrollViewRef.current.scrollTo({
+            x: nextIndex * 356, // 340px card + 16px margin
+            animated: true,
+          });
+        }
+        
+        return nextIndex;
+      });
+    }, 5000); // Auto-scroll every 5 seconds (slower)
+
+    return () => clearInterval(interval);
+  }, [statsLoading]);
+
+  // Handle manual scroll
+  const handleScroll = (event) => {
+    const scrollPosition = event.nativeEvent.contentOffset.x;
+    const index = Math.round(scrollPosition / 356);
+    if (index >= 0 && index < 4) {
+      setActiveCardIndex(index);
+    }
+  };
+
+  // Handle scroll end - reset auto-scroll timer
+  const handleScrollEnd = (event) => {
+    const scrollPosition = event.nativeEvent.contentOffset.x;
+    const index = Math.round(scrollPosition / 356);
+    if (index >= 0 && index < 4) {
+      setActiveCardIndex(index);
+    }
+  };
+
+  const { stats, gst } = dashboardData;
+
+  // Calculate GST display value (Input - Output)
+  const gstDisplayValue = (gst.input_gst || 0) - (gst.output_gst || 0);
+  const gstDisplayText = gstDisplayValue >= 0 
+    ? `${formatCurrency(Math.abs(gstDisplayValue))} Credit`
+    : `${formatCurrency(Math.abs(gstDisplayValue))} Payable`;
+
+  // Calculate Cash on Hand display
+  const cashOnHand = stats.cash_on_hand || 0;
+  const cashDisplayText = cashOnHand >= 0
+    ? formatCurrency(Math.abs(cashOnHand))
+    : `${formatCurrency(Math.abs(cashOnHand))} -`;
 
   const statCards = [
     {
@@ -197,19 +288,19 @@ export default function DashboardScreen() {
     },
     {
       title: 'Cash on Hand',
-      value: formatCurrency(stats.cash_on_hand || 0),
-      subtitle: 'Available cash',
+      value: cashDisplayText,
+      subtitle: cashOnHand >= 0 ? 'Available cash' : 'Cash deficit',
       icon: 'wallet',
-      color: '#3e60ab',
-      bgColor: '#f0f4fc',
+      color: cashOnHand >= 0 ? '#3e60ab' : '#ef4444',
+      bgColor: cashOnHand >= 0 ? '#f0f4fc' : '#fef2f2',
     },
     {
-      title: 'Duties & Taxes',
-      value: formatCurrency(stats.gst_payable || 0),
-      subtitle: 'GST Payable',
+      title: 'GST (Input - Output)',
+      value: gstDisplayText,
+      subtitle: `In: ${formatCurrency(gst.input_gst || 0)} | Out: ${formatCurrency(gst.output_gst || 0)}`,
       icon: 'alert-circle',
-      color: '#f59e0b',
-      bgColor: '#fffbeb',
+      color: gstDisplayValue >= 0 ? '#10b981' : '#ef4444',
+      bgColor: gstDisplayValue >= 0 ? '#ecfdf5' : '#fef2f2',
     }
   ];
 
@@ -277,30 +368,71 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* Stats Grid */}
-        <View style={styles.statsGrid}>
+        {/* Stats Carousel */}
+        <View style={styles.statsSection}>
           {statsLoading ? (
-            <>
-              <SkeletonStatCard />
-              <SkeletonStatCard />
-              <SkeletonStatCard />
-              <SkeletonStatCard />
-            </>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              pagingEnabled
+              decelerationRate="fast"
+              contentContainerStyle={styles.statsCarousel}
+              style={{ overflow: 'visible' }}
+            >
+              <SkeletonStatCard fullWidth />
+              <SkeletonStatCard fullWidth />
+              <SkeletonStatCard fullWidth />
+              <SkeletonStatCard fullWidth />
+            </ScrollView>
           ) : (
-            statCards.map((card, index) => (
-              <TouchableOpacity key={index} style={[styles.statCard, { backgroundColor: card.bgColor }]}>
-                <View style={styles.statCardContent}>
-                  <View style={styles.statCardLeft}>
-                    <Text style={styles.statCardTitle}>{card.title}</Text>
-                    <Text style={[styles.statCardValue, { color: card.color }]}>{card.value}</Text>
-                    <Text style={styles.statCardSubtitle}>{card.subtitle}</Text>
+            <>
+              <ScrollView 
+                ref={scrollViewRef}
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                pagingEnabled
+                decelerationRate="fast"
+                snapToInterval={356}
+                contentContainerStyle={styles.statsCarousel}
+                onScroll={handleScroll}
+                onMomentumScrollEnd={handleScrollEnd}
+                scrollEventThrottle={16}
+                style={{ overflow: 'visible' }}
+              >
+                {statCards.map((card, index) => (
+                  <View key={index} style={styles.statCardFull}>
+                    <View style={styles.statCardHeader}>
+                      <View style={styles.statCardTitleContainer}>
+                        <Text style={styles.statCardTitle}>{card.title}</Text>
+                        <Text style={styles.statCardSubtitle}>{card.subtitle}</Text>
+                      </View>
+                      <View style={[styles.statCardIcon, { backgroundColor: card.bgColor }]}>
+                        <Ionicons name={card.icon} size={26} color={card.color} />
+                      </View>
+                    </View>
+                    <View style={styles.statCardValueContainer}>
+                      <Text style={[styles.statCardValue, { color: card.color }]}>{card.value}</Text>
+                    </View>
                   </View>
-                  <View style={[styles.statCardIcon, { backgroundColor: card.color }]}>
-                    <Ionicons name={card.icon} size={24} color="white" />
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))
+                ))}
+              </ScrollView>
+              
+              {/* Pagination Dots */}
+              <View style={styles.paginationContainer}>
+                {statCards.map((_, index) => (
+                  <Animated.View
+                    key={index}
+                    style={[
+                      styles.paginationDot,
+                      {
+                        width: dotAnimations[index],
+                        backgroundColor: activeCardIndex === index ? '#3e60ab' : '#d1d5db',
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
+            </>
           )}
         </View>
 
@@ -527,45 +659,89 @@ const styles = StyleSheet.create({
     ...FONT_STYLES.h3,
     color: '#111827',
   },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  statsSection: {
+    marginTop: 20,
+    marginBottom: 24,
+    paddingBottom: 8,
+  },
+  statsCarousel: {
     paddingHorizontal: 20,
-    paddingTop: 20,
-    gap: 12,
+    paddingVertical: 4,
   },
-  statCard: {
-    width: '48%',
-    borderRadius: 12,
-    padding: 16,
+  statCardFull: {
+    width: 340,
+    borderRadius: 24,
+    padding: 24,
+    height: 210,
+    backgroundColor: 'white',
+    marginRight: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  statCardContent: {
+  statCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    marginBottom: 36,
   },
-  statCardLeft: {
+  statCardTitleContainer: {
     flex: 1,
+    marginRight: 16,
   },
   statCardTitle: {
-    ...FONT_STYLES.captionSmall,
-    color: '#6b7280',
-    marginBottom: 4,
-  },
-  statCardValue: {
-    ...FONT_STYLES.h3,
-    marginBottom: 2,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 6,
+    letterSpacing: -0.3,
   },
   statCardSubtitle: {
-    ...FONT_STYLES.captionSmall,
+    fontSize: 14,
     color: '#9ca3af',
+    fontWeight: '400',
+    lineHeight: 18,
+  },
+  statCardValueContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  statCardValue: {
+    fontSize: 34,
+    fontWeight: '700',
+    letterSpacing: -1,
+    lineHeight: 40,
   },
   statCardIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 8,
+    gap: 8,
+    height: 12,
+  },
+  paginationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#d1d5db',
+    transition: 'all 0.3s ease',
+  },
+  paginationDotActive: {
+    width: 24,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#3e60ab',
   },
   section: {
     marginTop: 24,

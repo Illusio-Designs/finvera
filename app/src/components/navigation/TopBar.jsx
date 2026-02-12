@@ -32,16 +32,16 @@ export default function TopBar({
 
   return (
     <>
-      <StatusBar barStyle="dark-content" backgroundColor="white" />
+      <StatusBar barStyle="light-content" backgroundColor="#3e60ab" />
       <View style={styles.container}>
         <View style={styles.leftSection}>
           {showBackButton ? (
             <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
-              <Ionicons name="arrow-back" size={24} color="#3e60ab" />
+              <Ionicons name="arrow-back" size={24} color="white" />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity style={styles.menuButton} onPress={onMenuPress}>
-              <Ionicons name="menu" size={24} color="#3e60ab" />
+              <Ionicons name="menu" size={24} color="white" />
             </TouchableOpacity>
           )}
           <Text style={styles.title}>{title}</Text>
@@ -50,7 +50,7 @@ export default function TopBar({
         <View style={styles.rightSection}>
           {showSearch && (
             <TouchableOpacity style={styles.searchButton} onPress={handleSearchPress}>
-              <Ionicons name="search" size={24} color="#3e60ab" />
+              <Ionicons name="search" size={24} color="white" />
             </TouchableOpacity>
           )}
         </View>
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 50,
     paddingBottom: 16,
-    backgroundColor: 'white',
+    backgroundColor: '#3e60ab',
     borderBottomWidth: 0,
     elevation: 0,
     shadowOpacity: 0,
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...FONT_STYLES.h3,
-    color: '#111827',
+    color: 'white',
   },
   rightSection: {
     flexDirection: 'row',
