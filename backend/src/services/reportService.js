@@ -832,9 +832,6 @@ async function getCOGSAnalysis(tenantModels) {
  * @returns {Object} - Ledger statement data
  */
 async function generateLedgerStatementReport(tenantModels, masterModels, options = {}) {
-  const { Sequelize } = tenantModels;
-  const { Op } = Sequelize;
-  
   try {
     const { ledgerId, fromDate, toDate } = options;
     

@@ -313,7 +313,7 @@ export default function PayablesScreen() {
             <View style={styles.reportHeader}>
               <Text style={styles.reportTitle}>Payables Report</Text>
               <Text style={styles.reportSubtitle}>Sundry Creditors (Accounts Payable)</Text>
-              <Text style={styles.reportDate}>As on {formatDateToDDMMYY(payablesData.as_on_date)}</Text>
+              <Text style={styles.reportDate} numberOfLines={1}>As on {formatDateToDDMMYY(payablesData.as_on_date)}</Text>
             </View>
 
             <View style={styles.summarySection}>

@@ -163,6 +163,7 @@ export default function CustomDrawer({ visible, onClose }) {
       items: [
         { name: 'Balance Sheet', icon: 'document-text-outline', color: '#3e60ab', screen: 'BalanceSheet' },
         { name: 'Profit & Loss', icon: 'trending-up-outline', color: '#10b981', screen: 'ProfitLoss' },
+        { name: 'Ledger Statement', icon: 'document-outline', color: '#f59e0b', screen: 'LedgerStatement' },
         { name: 'Receivables', icon: 'people-outline', color: '#059669', screen: 'Receivables' },
         { name: 'Payables', icon: 'card-outline', color: '#dc2626', screen: 'Payables' },
         { name: 'Trial Balance', icon: 'list-outline', color: '#8b5cf6', screen: 'TrialBalance' },

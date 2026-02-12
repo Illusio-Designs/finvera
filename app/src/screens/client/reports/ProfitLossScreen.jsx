@@ -769,7 +769,7 @@ export default function ProfitLossScreen() {
             {/* Clean Report Header */}
             <View style={styles.reportHeader}>
               <Text style={styles.reportTitle}>Trading & Profit & Loss Account</Text>
-              <Text style={styles.reportDate}>
+              <Text style={styles.reportDate} numberOfLines={1}>
                 For the period {formatDateToDDMMYY(profitLossData.period?.from_date)} to {formatDateToDDMMYY(profitLossData.period?.to_date)}
               </Text>
               <View style={styles.reportSummary}>

@@ -313,7 +313,7 @@ export default function BalanceSheetScreen() {
             {/* Clean Report Header */}
             <View style={styles.reportHeader}>
               <Text style={styles.reportTitle}>Balance Sheet</Text>
-              <Text style={styles.reportDate}>As on {formatDateToDDMMYY(balanceSheetData.as_on_date)}</Text>
+              <Text style={styles.reportDate} numberOfLines={1}>As on {formatDateToDDMMYY(balanceSheetData.as_on_date)}</Text>
               <View style={styles.reportSummary}>
                 <Text style={styles.summaryText}>
                   Total Assets: <Text style={[styles.summaryAmount, { color: '#059669' }]}>

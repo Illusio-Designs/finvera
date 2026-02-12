@@ -84,6 +84,7 @@ import BalanceSheetScreen from './src/screens/client/reports/BalanceSheetScreen.
 import ProfitLossScreen from './src/screens/client/reports/ProfitLossScreen.jsx';
 import ReceivablesScreen from './src/screens/client/reports/ReceivablesScreen.jsx';
 import PayablesScreen from './src/screens/client/reports/PayablesScreen.jsx';
+import LedgerStatementScreen from './src/screens/client/reports/LedgerStatementScreen.jsx';
 
 // Phase 5: Extended Vouchers Screens
 import PaymentScreen from './src/screens/client/vouchers/PaymentScreen.jsx';
@@ -360,6 +361,7 @@ function AppNavigator() {
             <Stack.Screen name="ProfitLoss" component={ProfitLossScreen} />
             <Stack.Screen name="Receivables" component={ReceivablesScreen} />
             <Stack.Screen name="Payables" component={PayablesScreen} />
+            <Stack.Screen name="LedgerStatement" component={LedgerStatementScreen} />
             
             {/* Phase 5: Extended Vouchers Screens */}
             <Stack.Screen name="Payment" component={PaymentScreen} />

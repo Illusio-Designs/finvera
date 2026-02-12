@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../../components/navigation/TopBar';
 import DatePicker from '../../../components/ui/ModernDatePicker';
+import Dropdown from '../../../components/ui/Dropdown';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
-import { reportsAPI } from '../../../lib/api';
+import { reportsAPI, accountingAPI } from '../../../lib/api';
 import { useNavigation } from '@react-navigation/native';
 import { FONT_STYLES } from '../../../utils/fonts';
 import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
@@ -19,6 +20,7 @@ export default function ReportsScreen() {
   const [selectedReport, setSelectedReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [ledgers, setLedgers] = useState([]);
   const [dateRange, setDateRange] = useState({
     from_date: '',
     to_date: '',
@@ -30,8 +32,15 @@ export default function ReportsScreen() {
     const startTime = Date.now();
     
     const loadData = async () => {
-      // Simulate data loading
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Fetch ledgers for dropdown
+      try {
+        const response = await accountingAPI.ledgers.list({ limit: 100 });
+        const data = response.data?.data || response.data || [];
+        setLedgers(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('Error fetching ledgers:', error);
+        setLedgers([]);
+      }
       
       // Ensure skeleton shows for at least 3 seconds
       const elapsedTime = Date.now() - startTime;
@@ -104,9 +113,7 @@ export default function ReportsScreen() {
       description: 'Detailed transaction history',
       icon: 'document-text',
       color: '#f59e0b',
-      apiCall: 'ledgerStatement',
-      hasDateRange: true,
-      requiresLedger: true,
+      screen: 'LedgerStatement',
       category: 'Accounting',
     },
   ];
@@ -377,17 +384,17 @@ export default function ReportsScreen() {
 
                 {selectedReport?.requiresLedger && (
                   <View style={styles.formGroup}>
-                    <Text style={styles.label}>Ledger ID</Text>
-                    <View style={styles.inputContainer}>
-                      <Ionicons name="folder-outline" size={16} color="#9ca3af" style={styles.inputIcon} />
-                      <TextInput
-                        style={styles.input}
-                        value={dateRange.ledger_id}
-                        onChangeText={(text) => setDateRange(prev => ({ ...prev, ledger_id: text }))}
-                        placeholder="Enter ledger ID"
-                        placeholderTextColor="#9ca3af"
-                      />
-                    </View>
+                    <Dropdown
+                      label="Select Ledger"
+                      value={dateRange.ledger_id}
+                      onSelect={(value) => setDateRange(prev => ({ ...prev, ledger_id: value }))}
+                      options={ledgers.map(ledger => ({
+                        label: `${ledger.ledger_name} ${ledger.ledger_code ? `(${ledger.ledger_code})` : ''}`,
+                        value: ledger.id
+                      }))}
+                      placeholder="Choose a ledger"
+                      searchable={true}
+                    />
                   </View>
                 )}
               </View>
@@ -639,29 +646,6 @@ const styles = StyleSheet.create({
   },
   formGroup: {
     marginTop: 16,
-  },
-  label: {
-    ...FONT_STYLES.label,
-    color: '#374151',
-    marginBottom: 8,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    backgroundColor: '#f9fafb',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  inputIcon: {
-    marginRight: 8,
-  },
-  input: {
-    flex: 1,
-    ...FONT_STYLES.body,
-    color: '#111827',
   },
   actionButtons: {
     flexDirection: 'row',

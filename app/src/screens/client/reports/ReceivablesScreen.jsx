@@ -313,7 +313,7 @@ export default function ReceivablesScreen() {
             <View style={styles.reportHeader}>
               <Text style={styles.reportTitle}>Receivables Report</Text>
               <Text style={styles.reportSubtitle}>Sundry Debtors (Accounts Receivable)</Text>
-              <Text style={styles.reportDate}>As on {formatDateToDDMMYY(receivablesData.as_on_date)}</Text>
+              <Text style={styles.reportDate} numberOfLines={1}>As on {formatDateToDDMMYY(receivablesData.as_on_date)}</Text>
             </View>
 
             <View style={styles.summarySection}>

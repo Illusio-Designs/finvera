@@ -123,10 +123,14 @@ const ModernDatePicker = ({
       >
         <View style={styles.dateContent}>
           <Ionicons name="calendar-outline" size={20} color="#6b7280" style={styles.calendarIcon} />
-          <Text style={[
-            styles.dateText,
-            !displayValue && styles.placeholderText
-          ]}>
+          <Text 
+            style={[
+              styles.dateText,
+              !displayValue && styles.placeholderText
+            ]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
             {displayValue || placeholder}
           </Text>
         </View>
@@ -266,15 +270,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    minWidth: 0,
   },
   calendarIcon: {
     marginRight: 12,
     opacity: 0.7,
+    flexShrink: 0,
   },
   dateText: {
     ...FONT_STYLES.h5,
     color: '#111827',
-    flex: 1
+    flex: 1,
+    flexShrink: 1,
+    numberOfLines: 1,
   },
   placeholderText: {
     color: '#9ca3af',
