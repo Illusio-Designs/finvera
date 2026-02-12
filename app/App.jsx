@@ -82,6 +82,8 @@ import TDSScreen from './src/screens/client/tax/TDSScreen.jsx';
 // Phase 4: Reports Screens
 import BalanceSheetScreen from './src/screens/client/reports/BalanceSheetScreen.jsx';
 import ProfitLossScreen from './src/screens/client/reports/ProfitLossScreen.jsx';
+import ReceivablesScreen from './src/screens/client/reports/ReceivablesScreen.jsx';
+import PayablesScreen from './src/screens/client/reports/PayablesScreen.jsx';
 
 // Phase 5: Extended Vouchers Screens
 import PaymentScreen from './src/screens/client/vouchers/PaymentScreen.jsx';
@@ -356,6 +358,8 @@ function AppNavigator() {
             {/* Phase 4: Reports Screens */}
             <Stack.Screen name="BalanceSheet" component={BalanceSheetScreen} />
             <Stack.Screen name="ProfitLoss" component={ProfitLossScreen} />
+            <Stack.Screen name="Receivables" component={ReceivablesScreen} />
+            <Stack.Screen name="Payables" component={PayablesScreen} />
             
             {/* Phase 5: Extended Vouchers Screens */}
             <Stack.Screen name="Payment" component={PaymentScreen} />

@@ -331,70 +331,28 @@ async function generateDeliveryChallanEntries(tenantModels, masterModels, vouche
 
 /**
  * Generate ledger entries for Payment Voucher
+ * Note: Payment vouchers should have ledger_entries provided in the request
+ * This function is a fallback for legacy support
  */
 async function generatePaymentEntries(tenantModels, masterModels, voucher, items, transaction) {
-  const ledgerEntries = [];
+  logger.info('Payment voucher - ledger entries should be provided in request');
   
-  // Payment: Debit Party (Creditor/Expense), Credit Bank/Cash
-  const totalAmount = parseFloat(voucher.total_amount || 0);
-  
-  // 1. Debit Party Account
-  if (voucher.party_ledger_id && totalAmount > 0) {
-    ledgerEntries.push({
-      voucher_id: voucher.id,
-      ledger_id: voucher.party_ledger_id,
-      debit_amount: totalAmount,
-      credit_amount: 0,
-      tenant_id: voucher.tenant_id,
-    });
-  }
-  
-  // 2. Credit Bank/Cash Account (from voucher.bank_ledger_id or default cash)
-  if (voucher.bank_ledger_id && totalAmount > 0) {
-    ledgerEntries.push({
-      voucher_id: voucher.id,
-      ledger_id: voucher.bank_ledger_id,
-      debit_amount: 0,
-      credit_amount: totalAmount,
-      tenant_id: voucher.tenant_id,
-    });
-  }
-  
-  return ledgerEntries;
+  // Payment vouchers should have ledger_entries already provided by the controller
+  // This function returns empty array as entries are created by transactionController.createPayment
+  return [];
 }
 
 /**
  * Generate ledger entries for Receipt Voucher
+ * Note: Receipt vouchers should have ledger_entries provided in the request
+ * This function is a fallback for legacy support
  */
 async function generateReceiptEntries(tenantModels, masterModels, voucher, items, transaction) {
-  const ledgerEntries = [];
+  logger.info('Receipt voucher - ledger entries should be provided in request');
   
-  // Receipt: Debit Bank/Cash, Credit Party (Debtor/Income)
-  const totalAmount = parseFloat(voucher.total_amount || 0);
-  
-  // 1. Debit Bank/Cash Account
-  if (voucher.bank_ledger_id && totalAmount > 0) {
-    ledgerEntries.push({
-      voucher_id: voucher.id,
-      ledger_id: voucher.bank_ledger_id,
-      debit_amount: totalAmount,
-      credit_amount: 0,
-      tenant_id: voucher.tenant_id,
-    });
-  }
-  
-  // 2. Credit Party Account
-  if (voucher.party_ledger_id && totalAmount > 0) {
-    ledgerEntries.push({
-      voucher_id: voucher.id,
-      ledger_id: voucher.party_ledger_id,
-      debit_amount: 0,
-      credit_amount: totalAmount,
-      tenant_id: voucher.tenant_id,
-    });
-  }
-  
-  return ledgerEntries;
+  // Receipt vouchers should have ledger_entries already provided by the controller
+  // This function returns empty array as entries are created by transactionController.createReceipt
+  return [];
 }
 
 /**
@@ -410,27 +368,76 @@ async function generateJournalEntries(tenantModels, masterModels, voucher, items
     
     const amount = parseFloat(voucher.total_amount || voucher.amount || 0);
     
+    if (amount <= 0) {
+      logger.error('Journal voucher has zero or negative amount');
+      throw new Error('Journal voucher requires a positive amount');
+    }
+    
     return [
       {
+        voucher_id: voucher.id,
         ledger_id: voucher.debit_ledger_id,
         debit_amount: amount,
         credit_amount: 0,
-        narration: voucher.narration || 'Debit entry',
+        narration: voucher.narration || 'Journal entry - Debit',
         tenant_id: voucher.tenant_id
       },
       {
+        voucher_id: voucher.id,
         ledger_id: voucher.credit_ledger_id,
         debit_amount: 0,
         credit_amount: amount,
-        narration: voucher.narration || 'Credit entry',
+        narration: voucher.narration || 'Journal entry - Credit',
         tenant_id: voucher.tenant_id
       }
     ];
   }
   
+  // Check if ledger entries are provided in items format
+  if (items && items.length > 0) {
+    logger.info('Journal voucher - generating entries from items');
+    
+    const entries = [];
+    for (const item of items) {
+      if (!item.ledger_id) {
+        logger.warn('Journal item missing ledger_id');
+        continue;
+      }
+      
+      const debitAmount = parseFloat(item.debit_amount || 0);
+      const creditAmount = parseFloat(item.credit_amount || 0);
+      
+      if (debitAmount === 0 && creditAmount === 0) {
+        logger.warn('Journal item has zero debit and credit amounts');
+        continue;
+      }
+      
+      entries.push({
+        voucher_id: voucher.id,
+        ledger_id: item.ledger_id,
+        debit_amount: debitAmount,
+        credit_amount: creditAmount,
+        narration: item.narration || voucher.narration || 'Journal entry',
+        tenant_id: voucher.tenant_id,
+      });
+    }
+    
+    // Validate that debits equal credits
+    const totalDebit = entries.reduce((sum, entry) => sum + entry.debit_amount, 0);
+    const totalCredit = entries.reduce((sum, entry) => sum + entry.credit_amount, 0);
+    
+    if (Math.abs(totalDebit - totalCredit) > 0.01) {
+      logger.error(`Journal voucher unbalanced: Debit=${totalDebit}, Credit=${totalCredit}`);
+      throw new Error('Journal voucher entries must be balanced (total debits must equal total credits)');
+    }
+    
+    logger.info(`Generated ${entries.length} journal entries (Total: ${totalDebit.toFixed(2)})`);
+    return entries;
+  }
+  
   // Otherwise, ledger entries should be provided manually in the request
-  logger.info('Journal voucher - ledger entries should be provided manually');
-  return [];
+  logger.warn('Journal voucher - no ledger entries provided');
+  throw new Error('Journal voucher requires either debit_ledger_id/credit_ledger_id or items with ledger entries');
 }
 
 /**

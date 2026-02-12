@@ -233,6 +233,8 @@ export const reportsAPI = {
   profitLoss: (params) => apiClient.get('/reports/profit-loss', { params }),
   trialBalance: (params) => apiClient.get('/reports/trial-balance', { params }),
   ledgerStatement: (params) => apiClient.get('/reports/ledger-statement', { params }),
+  receivables: (params) => apiClient.get('/reports/receivables', { params }),
+  payables: (params) => apiClient.get('/reports/payables', { params }),
   stockLedger: (params) => apiClient.get('/reports/stock-ledger', { params }),
   stockSummary: (params) => apiClient.get('/reports/stock-summary', { params }),
 };
