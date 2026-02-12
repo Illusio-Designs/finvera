@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../../components/navigation/TopBar';
 import CreateInventoryItemModal from '../../../components/modals/CreateInventoryItemModal';
@@ -89,6 +89,41 @@ export default function InventoryItemsScreen() {
     // Refresh the items list after updating an item
     fetchData();
     setShowDetailModal(false);
+  };
+
+  const handleDeleteItem = async (item) => {
+    Alert.alert(
+      'Delete Item',
+      `Are you sure you want to delete "${item.item_name}"?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await inventoryAPI.items.delete(item.id);
+              showNotification({
+                type: 'success',
+                title: 'Success',
+                message: 'Item deleted successfully'
+              });
+              fetchData();
+            } catch (error) {
+              console.error('Delete item error:', error);
+              showNotification({
+                type: 'error',
+                title: 'Error',
+                message: error.response?.data?.message || 'Failed to delete item'
+              });
+            }
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -182,17 +217,17 @@ export default function InventoryItemsScreen() {
                   </View>
                   <View style={styles.itemAmount}>
                     <Text style={styles.itemPrice}>
-                      {formatCurrency(item.sale_price || item.purchase_price || 0)}
+                      {formatCurrency(item.avg_cost || 0)}
                     </Text>
                     <View style={[
                       styles.stockBadge,
-                      { backgroundColor: (item.current_stock || 0) > 0 ? '#ecfdf5' : '#fef2f2' }
+                      { backgroundColor: (item.quantity_on_hand || 0) > 0 ? '#ecfdf5' : '#fef2f2' }
                     ]}>
                       <Text style={[
                         styles.stockText,
-                        { color: (item.current_stock || 0) > 0 ? '#059669' : '#dc2626' }
+                        { color: (item.quantity_on_hand || 0) > 0 ? '#059669' : '#dc2626' }
                       ]}>
-                        Stock: {item.current_stock || 0}
+                        Stock: {item.quantity_on_hand || 0} {item.uqc || ''}
                       </Text>
                     </View>
                   </View>
@@ -225,11 +260,7 @@ export default function InventoryItemsScreen() {
                     style={styles.actionButton}
                     onPress={(e) => {
                       e.stopPropagation();
-                      showNotification({
-                        type: 'info',
-                        title: 'Coming Soon',
-                        message: 'Delete feature coming soon'
-                      });
+                      handleDeleteItem(item);
                     }}
                   >
                     <Ionicons name="trash-outline" size={16} color="#dc2626" />
@@ -285,7 +316,7 @@ export default function InventoryItemsScreen() {
                   <View style={styles.infoGrid}>
                     <View style={styles.infoItem}>
                       <Text style={styles.infoLabel}>Current Stock</Text>
-                      <Text style={styles.infoValue}>{selectedItem.quantity_on_hand || selectedItem.current_stock || 0} {selectedItem.uqc || selectedItem.unit || 'Units'}</Text>
+                      <Text style={styles.infoValue}>{selectedItem.quantity_on_hand || 0} {selectedItem.uqc || 'Units'}</Text>
                     </View>
                     <View style={styles.infoItem}>
                       <Text style={styles.infoLabel}>Average Cost</Text>

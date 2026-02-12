@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../../components/navigation/TopBar';
 import CreateWarehouseModal from '../../../components/modals/CreateWarehouseModal';
@@ -85,12 +85,39 @@ export default function WarehousesScreen() {
     setShowEditModal(true);
   };
 
-  const handleDeleteWarehouse = (warehouse) => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Delete warehouse feature coming soon'
-    });
+  const handleDeleteWarehouse = async (warehouse) => {
+    Alert.alert(
+      'Delete Warehouse',
+      `Are you sure you want to delete "${warehouse.warehouse_name}"?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await inventoryAPI.warehouses.delete(warehouse.id);
+              showNotification({
+                type: 'success',
+                title: 'Success',
+                message: 'Warehouse deleted successfully'
+              });
+              fetchWarehouses();
+            } catch (error) {
+              console.error('Delete warehouse error:', error);
+              showNotification({
+                type: 'error',
+                title: 'Error',
+                message: error.response?.data?.message || 'Failed to delete warehouse'
+              });
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleWarehouseCreated = () => {

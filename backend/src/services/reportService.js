@@ -104,19 +104,17 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
       closingStock += toNum(ledger.current_balance, 0);
     });
     
-    // Initialize totals for Trading Account (affects_gross_profit = true)
+    // Initialize totals for Trading Account (Direct Expenses = COGS in Perpetual System)
     let totalSales = 0;
     let totalSalesReturns = 0;
-    let totalPurchases = 0;
-    let totalPurchaseReturns = 0;
-    let totalDirectExpenses = 0;
+    let totalDirectExpenses = 0; // This includes COGS ledger
     let totalDirectIncomes = 0;
     
-    // Initialize totals for P&L Account (affects_gross_profit = false)
+    // Initialize totals for P&L Account
     let totalIndirectExpenses = 0;
     let totalIndirectIncomes = 0;
     
-    // Process each ledger - USE affects_pl flag
+    // Process each ledger - USE affects_pl flag (PERPETUAL SYSTEM - NO PURCHASE ACCOUNT)
     ledgers.forEach(ledger => {
       const group = groupMap.get(ledger.account_group_id);
       if (!group || !group.affects_pl) return;
@@ -155,18 +153,10 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
         
         // Check if this affects gross profit (Trading Account)
         if (group.affects_gross_profit) {
-          // Purchases
-          if (['PUR', 'PURCHASE'].includes(group.group_code)) {
-            totalPurchases += amt;
-          }
-          // Purchase Returns
-          else if (['PUR_RET', 'PURCHASE_RETURNS'].includes(group.group_code)) {
-            totalPurchaseReturns += amt;
-          }
-          // Direct Expenses
-          else {
-            totalDirectExpenses += amt;
-          }
+          // Direct Expenses (includes COGS in Perpetual System)
+          // NOTE: In Perpetual System, Purchase account is NOT used
+          // COGS is posted directly when goods are sold
+          totalDirectExpenses += amt;
         } else {
           // Indirect Expenses (P&L Account)
           totalIndirectExpenses += amt;
@@ -174,12 +164,12 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
       }
     });
     
-    // Calculate P&L components using correct formulas
+    // Calculate P&L components using PERPETUAL SYSTEM
     const netSales = totalSales - totalSalesReturns;
-    const netPurchases = totalPurchases - totalPurchaseReturns;
     
-    // COGS = Opening Stock + Net Purchases + Direct Expenses - Closing Stock
-    const cogs = openingStock + netPurchases + totalDirectExpenses - closingStock;
+    // In Perpetual System: COGS comes directly from COGS ledger (Direct Expenses)
+    // NO formula needed: Opening + Purchase - Closing
+    const cogs = totalDirectExpenses;
     
     // Gross Profit = Net Sales + Direct Income - COGS
     const grossProfit = netSales + totalDirectIncomes - cogs;
@@ -192,12 +182,12 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
     const netProfitMargin = netSales > 0 ? (netProfit / netSales * 100) : 0;
     const cogsPercentage = netSales > 0 ? (cogs / netSales * 100) : 0;
     
-    // Calculate totals for Tally-style format (both sides must balance)
-    // Left side (Debit): Opening Stock + Purchases + Direct Expenses + Indirect Expenses + Net Profit (if profit)
-    const totalLeftSide = openingStock + netPurchases + totalDirectExpenses + totalIndirectExpenses + (netProfit > 0 ? netProfit : 0);
+    // PERPETUAL SYSTEM: Totals for Tally-style format
+    // Left side (Debit): COGS + Indirect Expenses + Net Profit (if profit)
+    const totalLeftSide = cogs + totalIndirectExpenses + (netProfit > 0 ? netProfit : 0);
     
-    // Right side (Credit): Sales + Direct Income + Closing Stock + Indirect Income + Net Loss (if loss)
-    const totalRightSide = netSales + totalDirectIncomes + closingStock + totalIndirectIncomes + (netProfit < 0 ? Math.abs(netProfit) : 0);
+    // Right side (Credit): Sales + Direct Income + Indirect Income + Net Loss (if loss)
+    const totalRightSide = netSales + totalDirectIncomes + totalIndirectIncomes + (netProfit < 0 ? Math.abs(netProfit) : 0);
     
     return {
       period: {
@@ -207,16 +197,17 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
       trading_account: {
         opening_stock: {
           amount: openingStock,
-          description: 'Stock at the beginning of period'
+          description: 'Stock at the beginning of period (for reference only)'
         },
         purchases: {
-          gross_purchases: totalPurchases,
-          purchase_returns: totalPurchaseReturns,
-          net_purchases: netPurchases
+          gross_purchases: 0,
+          purchase_returns: 0,
+          net_purchases: 0,
+          note: 'Perpetual System: Purchase account not used, stock updated directly'
         },
         direct_expenses: {
           total: totalDirectExpenses,
-          description: 'Direct expenses related to production/trading'
+          description: 'COGS (Cost of Goods Sold) - Posted automatically on sales'
         },
         direct_incomes: {
           total: totalDirectIncomes,
@@ -224,11 +215,11 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
         },
         closing_stock: {
           amount: closingStock,
-          description: 'Stock at the end of period'
+          description: 'Current stock balance (Balance Sheet item, not P&L)'
         },
         cost_of_goods_sold: {
           amount: cogs,
-          formula: 'Opening Stock + Net Purchases + Direct Expenses - Closing Stock'
+          formula: 'COGS Ledger Balance (Perpetual System)'
         },
         gross_profit: {
           amount: grossProfit,
@@ -264,7 +255,7 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
         total_right_side: totalRightSide,
         is_balanced: Math.abs(totalLeftSide - totalRightSide) < 1.0
       },
-      // Backward compatibility structure
+      // Backward compatibility structure (PERPETUAL SYSTEM)
       revenue: {
         sales: netSales,
         direct_income: totalDirectIncomes,
@@ -272,11 +263,12 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
       },
       costOfGoodsSold: {
         openingStock,
-        purchases: netPurchases,
+        purchases: 0, // Not used in Perpetual System
         directExpenses: totalDirectExpenses,
-        goodsAvailable: openingStock + netPurchases + totalDirectExpenses,
+        goodsAvailable: 0, // Not applicable in Perpetual System
         closingStock,
-        total: cogs
+        total: cogs,
+        note: 'Perpetual System: COGS from ledger balance, not calculated from formula'
       },
       grossProfit: {
         amount: grossProfit,

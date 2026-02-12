@@ -247,11 +247,12 @@ async function generatePurchaseInvoiceEntries(tenantModels, masterModels, vouche
   
   const ctx = { tenantModels, masterModels, tenant_id: voucher.tenant_id };
   
-  // Get or create required ledgers
+  // Get or create Stock ledger
   const stockLedger = await getOrCreateSystemLedger(ctx,
     { ledgerCode: 'INVENTORY', ledgerName: 'Stock in Hand', groupCode: 'INV' }, transaction);
   
-  // 1. Debit Stock in Hand (inventory value increases) - Perpetual Inventory System
+  // 1. Debit Stock in Hand (Perpetual Inventory System - Tally Style)
+  // Only taxable value goes to stock, GST is separate
   if (stockLedger && subtotal > 0) {
     ledgerEntries.push({
       voucher_id: voucher.id,
@@ -263,7 +264,7 @@ async function generatePurchaseInvoiceEntries(tenantModels, masterModels, vouche
     logger.info(`Added Stock in Hand debit entry: ${subtotal}`);
   }
   
-  // 2. Debit CGST (Input Tax Credit)
+  // 2. Debit CGST (Input Tax Credit - Asset)
   if (totalCGST > 0) {
     const cgstLedger = await getOrCreateSystemLedger(ctx,
       { ledgerCode: 'CGST-INPUT', ledgerName: 'Input CGST', groupCode: 'DT' }, transaction);
@@ -276,7 +277,7 @@ async function generatePurchaseInvoiceEntries(tenantModels, masterModels, vouche
     });
   }
   
-  // 3. Debit SGST (Input Tax Credit)
+  // 3. Debit SGST (Input Tax Credit - Asset)
   if (totalSGST > 0) {
     const sgstLedger = await getOrCreateSystemLedger(ctx,
       { ledgerCode: 'SGST-INPUT', ledgerName: 'Input SGST', groupCode: 'DT' }, transaction);
@@ -289,7 +290,7 @@ async function generatePurchaseInvoiceEntries(tenantModels, masterModels, vouche
     });
   }
   
-  // 4. Debit IGST (for interstate purchases)
+  // 4. Debit IGST (for interstate purchases - Input Tax Credit)
   if (totalIGST > 0) {
     const igstLedger = await getOrCreateSystemLedger(ctx,
       { ledgerCode: 'IGST-INPUT', ledgerName: 'Input IGST', groupCode: 'DT' }, transaction);
@@ -302,7 +303,7 @@ async function generatePurchaseInvoiceEntries(tenantModels, masterModels, vouche
     });
   }
   
-  // 5. Credit Supplier Account (Sundry Creditor)
+  // 5. Credit Supplier Account (Sundry Creditor - Liability)
   if (voucher.party_ledger_id) {
     ledgerEntries.push({
       voucher_id: voucher.id,
