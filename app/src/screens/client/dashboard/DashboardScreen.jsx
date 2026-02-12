@@ -277,6 +277,7 @@ export default function DashboardScreen() {
       icon: 'trending-up',
       color: '#10b981',
       bgColor: '#ecfdf5',
+      screen: 'Receivables',
     },
     {
       title: 'Payables',
@@ -285,6 +286,7 @@ export default function DashboardScreen() {
       icon: 'trending-down',
       color: '#ef4444',
       bgColor: '#fef2f2',
+      screen: 'Payables',
     },
     {
       title: 'Cash on Hand',
@@ -400,7 +402,12 @@ export default function DashboardScreen() {
                 style={{ overflow: 'visible' }}
               >
                 {statCards.map((card, index) => (
-                  <View key={index} style={styles.statCardFull}>
+                  <TouchableOpacity 
+                    key={index} 
+                    style={styles.statCardFull}
+                    onPress={() => card.screen && handleNavigateToScreen(card.screen)}
+                    activeOpacity={card.screen ? 0.7 : 1}
+                  >
                     <View style={styles.statCardHeader}>
                       <View style={styles.statCardTitleContainer}>
                         <Text style={styles.statCardTitle}>{card.title}</Text>
@@ -412,8 +419,14 @@ export default function DashboardScreen() {
                     </View>
                     <View style={styles.statCardValueContainer}>
                       <Text style={[styles.statCardValue, { color: card.color }]}>{card.value}</Text>
+                      {card.screen && (
+                        <View style={styles.viewDetailsContainer}>
+                          <Text style={styles.viewDetailsText}>Tap to view details</Text>
+                          <Ionicons name="arrow-forward" size={14} color="#6b7280" />
+                        </View>
+                      )}
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 ))}
               </ScrollView>
               
@@ -713,6 +726,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -1,
     lineHeight: 40,
+  },
+  viewDetailsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 4,
+  },
+  viewDetailsText: {
+    ...FONT_STYLES.captionSmall,
+    color: '#6b7280',
   },
   statCardIcon: {
     width: 52,

@@ -316,23 +316,45 @@ export default function PayablesScreen() {
               <Text style={styles.reportDate}>As on {formatDateToDDMMYY(payablesData.as_on_date)}</Text>
             </View>
 
-            <View style={styles.summaryCards}>
-              <View style={styles.summaryCard}>
-                <Ionicons name="business" size={24} color="#3e60ab" />
-                <Text style={styles.summaryValue}>{payablesData.summary?.total_suppliers || 0}</Text>
-                <Text style={styles.summaryLabel}>Total Suppliers</Text>
+            <View style={styles.summarySection}>
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryCard}>
+                  <View style={styles.summaryCardIcon}>
+                    <Ionicons name="business" size={24} color="#3e60ab" />
+                  </View>
+                  <View style={styles.summaryCardContent}>
+                    <Text style={styles.summaryCardLabel}>Total Suppliers</Text>
+                    <Text style={styles.summaryCardValue}>{payablesData.summary?.total_suppliers || 0}</Text>
+                  </View>
+                </View>
               </View>
-              <View style={styles.summaryCard}>
-                <Ionicons name="card" size={24} color="#dc2626" />
-                <Text style={[styles.summaryValue, { color: '#dc2626' }]}>
-                  {formatCurrency(payablesData.summary?.total_payable || 0)}
-                </Text>
-                <Text style={styles.summaryLabel}>Total Payable</Text>
+
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryCard}>
+                  <View style={styles.summaryCardIcon}>
+                    <Ionicons name="card" size={24} color="#dc2626" />
+                  </View>
+                  <View style={styles.summaryCardContent}>
+                    <Text style={styles.summaryCardLabel}>Total Payable</Text>
+                    <Text style={[styles.summaryCardValue, { color: '#dc2626' }]}>
+                      {formatCurrency(payablesData.summary?.total_payable || 0)}
+                    </Text>
+                  </View>
+                </View>
               </View>
-              <View style={styles.summaryCard}>
-                <Ionicons name="stats-chart" size={24} color="#f59e0b" />
-                <Text style={styles.summaryValue}>{formatCurrency(payablesData.summary?.average_payable || 0)}</Text>
-                <Text style={styles.summaryLabel}>Average per Supplier</Text>
+
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryCard}>
+                  <View style={styles.summaryCardIcon}>
+                    <Ionicons name="stats-chart" size={24} color="#f59e0b" />
+                  </View>
+                  <View style={styles.summaryCardContent}>
+                    <Text style={styles.summaryCardLabel}>Average per Supplier</Text>
+                    <Text style={styles.summaryCardValue}>
+                      {formatCurrency(payablesData.summary?.average_payable || 0)}
+                    </Text>
+                  </View>
+                </View>
               </View>
             </View>
 
@@ -551,34 +573,47 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
-  summaryCards: {
-    flexDirection: 'row',
+  summarySection: {
     paddingHorizontal: 16,
     paddingVertical: 16,
     gap: 12,
   },
+  summaryRow: {
+    width: '100%',
+  },
   summaryCard: {
-    flex: 1,
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
+    flexDirection: 'row',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowRadius: 3,
     elevation: 2,
   },
-  summaryValue: {
-    ...FONT_STYLES.h5,
-    color: '#111827',
-    marginTop: 8,
-    marginBottom: 4,
+  summaryCardIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#f0f9ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
-  summaryLabel: {
+  summaryCardContent: {
+    flex: 1,
+  },
+  summaryCardLabel: {
     ...FONT_STYLES.caption,
     color: '#6b7280',
-    textAlign: 'center',
+    marginBottom: 4,
+  },
+  summaryCardValue: {
+    ...FONT_STYLES.h4,
+    color: '#111827',
+    fontWeight: '600',
   },
   tableContainer: {
     paddingHorizontal: 16,
