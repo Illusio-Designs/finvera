@@ -97,9 +97,9 @@ async function generateSalesInvoiceEntries(tenantModels, voucher, items, transac
   
   // Find required ledgers
   const salesLedger = await findLedger(tenantModels, voucher.tenant_id, ['Sales', '%sales%'], transaction);
-  const cgstLedger = await findLedger(tenantModels, voucher.tenant_id, ['%CGST%'], transaction);
-  const sgstLedger = await findLedger(tenantModels, voucher.tenant_id, ['%SGST%'], transaction);
-  const igstLedger = await findLedger(tenantModels, voucher.tenant_id, ['%IGST%'], transaction);
+  const cgstLedger = await findLedger(tenantModels, voucher.tenant_id, ['CGST Output', '%CGST Output%'], transaction);
+  const sgstLedger = await findLedger(tenantModels, voucher.tenant_id, ['SGST Output', '%SGST Output%'], transaction);
+  const igstLedger = await findLedger(tenantModels, voucher.tenant_id, ['IGST Output', '%IGST Output%'], transaction);
   const stockLedger = await findLedger(tenantModels, voucher.tenant_id, ['%Stock%'], transaction);
   
   // 1. Debit Customer Account (Sundry Debtor)
@@ -186,25 +186,12 @@ async function generatePurchaseInvoiceEntries(tenantModels, voucher, items, tran
   const totalAmount = subtotal + totalCGST + totalSGST + totalIGST;
   
   // Find required ledgers
-  const purchaseLedger = await findLedger(tenantModels, voucher.tenant_id, ['Purchase', 'Purchases', '%purchase%'], transaction);
-  const cgstLedger = await findLedger(tenantModels, voucher.tenant_id, ['%CGST%'], transaction);
-  const sgstLedger = await findLedger(tenantModels, voucher.tenant_id, ['%SGST%'], transaction);
-  const igstLedger = await findLedger(tenantModels, voucher.tenant_id, ['%IGST%'], transaction);
+  const cgstLedger = await findLedger(tenantModels, voucher.tenant_id, ['CGST Input', '%CGST Input%'], transaction);
+  const sgstLedger = await findLedger(tenantModels, voucher.tenant_id, ['SGST Input', '%SGST Input%'], transaction);
+  const igstLedger = await findLedger(tenantModels, voucher.tenant_id, ['IGST Input', '%IGST Input%'], transaction);
   const stockLedger = await findLedger(tenantModels, voucher.tenant_id, ['%Stock%'], transaction);
   
-  // 1. Debit Purchase Account
-  if (purchaseLedger && subtotal > 0) {
-    ledgerEntries.push({
-      voucher_id: voucher.id,
-      ledger_id: purchaseLedger.id,
-      debit_amount: subtotal,
-      credit_amount: 0,
-      tenant_id: voucher.tenant_id,
-    });
-    logger.info(`Added Purchase debit entry: ${subtotal}`);
-  }
-  
-  // 2. Debit Stock in Hand (inventory value increases)
+  // 1. Debit Stock in Hand (inventory value increases) - Perpetual Inventory System
   if (stockLedger && subtotal > 0) {
     ledgerEntries.push({
       voucher_id: voucher.id,
@@ -216,7 +203,7 @@ async function generatePurchaseInvoiceEntries(tenantModels, voucher, items, tran
     logger.info(`Added Stock in Hand debit entry: ${subtotal}`);
   }
   
-  // 3. Debit CGST (Input Tax Credit)
+  // 2. Debit CGST (Input Tax Credit)
   if (cgstLedger && totalCGST > 0) {
     ledgerEntries.push({
       voucher_id: voucher.id,
@@ -227,7 +214,7 @@ async function generatePurchaseInvoiceEntries(tenantModels, voucher, items, tran
     });
   }
   
-  // 4. Debit SGST (Input Tax Credit)
+  // 3. Debit SGST (Input Tax Credit)
   if (sgstLedger && totalSGST > 0) {
     ledgerEntries.push({
       voucher_id: voucher.id,
@@ -238,7 +225,7 @@ async function generatePurchaseInvoiceEntries(tenantModels, voucher, items, tran
     });
   }
   
-  // 5. Debit IGST (for interstate purchases)
+  // 4. Debit IGST (for interstate purchases)
   if (igstLedger && totalIGST > 0) {
     ledgerEntries.push({
       voucher_id: voucher.id,
@@ -249,7 +236,7 @@ async function generatePurchaseInvoiceEntries(tenantModels, voucher, items, tran
     });
   }
   
-  // 6. Credit Supplier Account (Sundry Creditor)
+  // 5. Credit Supplier Account (Sundry Creditor)
   if (voucher.party_ledger_id) {
     ledgerEntries.push({
       voucher_id: voucher.id,
@@ -393,9 +380,9 @@ async function generateCreditNoteEntries(tenantModels, voucher, items, transacti
   const totalAmount = subtotal + totalCGST + totalSGST + totalIGST;
   
   const salesLedger = await findLedger(tenantModels, voucher.tenant_id, ['Sales', '%sales%'], transaction);
-  const cgstLedger = await findLedger(tenantModels, voucher.tenant_id, ['%CGST%'], transaction);
-  const sgstLedger = await findLedger(tenantModels, voucher.tenant_id, ['%SGST%'], transaction);
-  const igstLedger = await findLedger(tenantModels, voucher.tenant_id, ['%IGST%'], transaction);
+  const cgstLedger = await findLedger(tenantModels, voucher.tenant_id, ['CGST Output', '%CGST Output%'], transaction);
+  const sgstLedger = await findLedger(tenantModels, voucher.tenant_id, ['SGST Output', '%SGST Output%'], transaction);
+  const igstLedger = await findLedger(tenantModels, voucher.tenant_id, ['IGST Output', '%IGST Output%'], transaction);
   
   // 1. Credit Customer Account (reverse debit)
   if (voucher.party_ledger_id) {
@@ -469,9 +456,9 @@ async function generateDebitNoteEntries(tenantModels, voucher, items, transactio
   const totalAmount = subtotal + totalCGST + totalSGST + totalIGST;
   
   const purchaseLedger = await findLedger(tenantModels, voucher.tenant_id, ['Purchase', 'Purchases', '%purchase%'], transaction);
-  const cgstLedger = await findLedger(tenantModels, voucher.tenant_id, ['%CGST%'], transaction);
-  const sgstLedger = await findLedger(tenantModels, voucher.tenant_id, ['%SGST%'], transaction);
-  const igstLedger = await findLedger(tenantModels, voucher.tenant_id, ['%IGST%'], transaction);
+  const cgstLedger = await findLedger(tenantModels, voucher.tenant_id, ['CGST Input', '%CGST Input%'], transaction);
+  const sgstLedger = await findLedger(tenantModels, voucher.tenant_id, ['SGST Input', '%SGST Input%'], transaction);
+  const igstLedger = await findLedger(tenantModels, voucher.tenant_id, ['IGST Input', '%IGST Input%'], transaction);
   
   // 1. Debit Supplier Account (reverse credit)
   if (voucher.party_ledger_id) {

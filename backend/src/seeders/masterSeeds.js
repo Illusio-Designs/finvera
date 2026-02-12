@@ -11,31 +11,31 @@ const masterModels = require('../models/masterModels');
 async function seedAccountGroups() {
   const groups = [
     // Assets
-    { group_code: 'CA', name: 'Current Assets', parent_id: null, nature: 'asset', is_system: true },
-    { group_code: 'CASH', name: 'Cash-in-Hand', parent_id: null, nature: 'asset', is_system: true },
-    { group_code: 'BANK', name: 'Bank Accounts', parent_id: null, nature: 'asset', is_system: true },
-    { group_code: 'SD', name: 'Sundry Debtors', parent_id: null, nature: 'asset', is_system: true },
-    { group_code: 'FA', name: 'Fixed Assets', parent_id: null, nature: 'asset', is_system: true },
-    { group_code: 'INV', name: 'Stock-in-Hand', parent_id: null, nature: 'asset', is_system: true },
-    { group_code: 'LA', name: 'Loans & Advances (Asset)', parent_id: null, nature: 'asset', is_system: true },
+    { group_code: 'CA', name: 'Current Assets', parent_id: null, nature: 'asset', bs_category: 'current_asset', affects_pl: false, affects_gross_profit: false, is_tax_group: false, ptoprt: true, is_system: true },
+    { group_code: 'CASH', name: 'Cash-in-Hand', parent_id: null, nature: 'asset', bs_category: 'current_asset', affects_pl: false, affects_gross_profit: false, is_tax_group: false, ptoprt: true, is_system: true },
+    { group_code: 'BANK', name: 'Bank Accounts', parent_id: null, nature: 'asset', bs_category: 'current_asset', affects_pl: false, affects_gross_profit: false, is_tax_group: false, ptoprt: true, is_system: true },
+    { group_code: 'SD', name: 'Sundry Debtors', parent_id: null, nature: 'asset', bs_category: 'current_asset', affects_pl: false, affects_gross_profit: false, is_tax_group: false, ptoprt: true, is_system: true },
+    { group_code: 'FA', name: 'Fixed Assets', parent_id: null, nature: 'asset', bs_category: 'fixed_asset', affects_pl: false, affects_gross_profit: false, is_tax_group: false, ptoprt: true, is_system: true },
+    { group_code: 'INV', name: 'Stock-in-Hand', parent_id: null, nature: 'asset', bs_category: 'current_asset', affects_pl: false, affects_gross_profit: false, is_tax_group: false, ptoprt: true, is_system: true },
+    { group_code: 'LA', name: 'Loans & Advances (Asset)', parent_id: null, nature: 'asset', bs_category: 'current_asset', affects_pl: false, affects_gross_profit: false, is_tax_group: false, ptoprt: true, is_system: true },
     
     // Liabilities
-    { group_code: 'CL', name: 'Current Liabilities', parent_id: null, nature: 'liability', is_system: true },
-    { group_code: 'SC', name: 'Sundry Creditors', parent_id: null, nature: 'liability', is_system: true },
-    { group_code: 'DT', name: 'Duties & Taxes', parent_id: null, nature: 'liability', is_system: true },
-    { group_code: 'CAP', name: 'Capital Account', parent_id: null, nature: 'liability', is_system: true },
-    { group_code: 'RES', name: 'Reserves & Surplus', parent_id: null, nature: 'liability', is_system: true },
-    { group_code: 'LOAN', name: 'Loans (Liability)', parent_id: null, nature: 'liability', is_system: true },
+    { group_code: 'CL', name: 'Current Liabilities', parent_id: null, nature: 'liability', bs_category: 'current_liability', affects_pl: false, affects_gross_profit: false, is_tax_group: false, ptoprt: true, is_system: true },
+    { group_code: 'SC', name: 'Sundry Creditors', parent_id: null, nature: 'liability', bs_category: 'current_liability', affects_pl: false, affects_gross_profit: false, is_tax_group: false, ptoprt: true, is_system: true },
+    { group_code: 'DT', name: 'Duties & Taxes', parent_id: null, nature: 'liability', bs_category: 'tax_control', affects_pl: false, affects_gross_profit: false, is_tax_group: true, ptoprt: false, is_system: true },
+    { group_code: 'CAP', name: 'Capital Account', parent_id: null, nature: 'equity', bs_category: 'equity', affects_pl: false, affects_gross_profit: false, is_tax_group: false, ptoprt: true, is_system: true },
+    { group_code: 'RES', name: 'Reserves & Surplus', parent_id: null, nature: 'equity', bs_category: 'equity', affects_pl: false, affects_gross_profit: false, is_tax_group: false, ptoprt: true, is_system: true },
+    { group_code: 'LOAN', name: 'Loans (Liability)', parent_id: null, nature: 'liability', bs_category: 'noncurrent_liability', affects_pl: false, affects_gross_profit: false, is_tax_group: false, ptoprt: true, is_system: true },
     
     // Income
-    { group_code: 'SAL', name: 'Sales Accounts', parent_id: null, nature: 'income', affects_gross_profit: true, is_system: true },
-    { group_code: 'DIR_INC', name: 'Direct Income', parent_id: null, nature: 'income', affects_gross_profit: true, is_system: true },
-    { group_code: 'IND_INC', name: 'Indirect Income', parent_id: null, nature: 'income', affects_gross_profit: false, is_system: true },
+    { group_code: 'SAL', name: 'Sales Accounts', parent_id: null, nature: 'income', bs_category: null, affects_pl: true, affects_gross_profit: true, is_tax_group: false, ptoprt: true, is_system: true },
+    { group_code: 'DIR_INC', name: 'Direct Income', parent_id: null, nature: 'income', bs_category: null, affects_pl: true, affects_gross_profit: true, is_tax_group: false, ptoprt: true, is_system: true },
+    { group_code: 'IND_INC', name: 'Indirect Income', parent_id: null, nature: 'income', bs_category: null, affects_pl: true, affects_gross_profit: false, is_tax_group: false, ptoprt: true, is_system: true },
     
     // Expenses
-    { group_code: 'PUR', name: 'Purchase Accounts', parent_id: null, nature: 'expense', affects_gross_profit: true, is_system: true },
-    { group_code: 'DIR_EXP', name: 'Direct Expenses', parent_id: null, nature: 'expense', affects_gross_profit: true, is_system: true },
-    { group_code: 'IND_EXP', name: 'Indirect Expenses', parent_id: null, nature: 'expense', affects_gross_profit: false, is_system: true },
+    { group_code: 'PUR', name: 'Purchase Accounts', parent_id: null, nature: 'expense', bs_category: null, affects_pl: true, affects_gross_profit: true, is_tax_group: false, ptoprt: true, is_system: true },
+    { group_code: 'DIR_EXP', name: 'Direct Expenses', parent_id: null, nature: 'expense', bs_category: null, affects_pl: true, affects_gross_profit: true, is_tax_group: false, ptoprt: true, is_system: true },
+    { group_code: 'IND_EXP', name: 'Indirect Expenses', parent_id: null, nature: 'expense', bs_category: null, affects_pl: true, affects_gross_profit: false, is_tax_group: false, ptoprt: true, is_system: true },
   ];
 
   await masterModels.AccountGroup.bulkCreate(groups, { ignoreDuplicates: true });

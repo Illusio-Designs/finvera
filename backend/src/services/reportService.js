@@ -98,34 +98,23 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
     let openingStock = 0;
     let closingStock = 0;
     
-    // Get inventory items for stock calculation
-    const inventoryItems = await tenantModels.InventoryItem.findAll({
-      where: { is_active: true }
+    // Calculate stock values from ledger balances
+    stockLedgers.forEach(ledger => {
+      openingStock += toNum(ledger.opening_balance, 0);
+      closingStock += toNum(ledger.current_balance, 0);
     });
     
-    if (inventoryItems.length > 0) {
-      inventoryItems.forEach(item => {
-        const qty = toNum(item.quantity_on_hand, 0);
-        const avgCost = toNum(item.avg_cost, 0);
-        openingStock += toNum(item.opening_balance, 0);
-        closingStock += qty * avgCost;
-      });
-    } else {
-      // Fallback to ledger balances
-      stockLedgers.forEach(ledger => {
-        openingStock += toNum(ledger.opening_balance, 0);
-        closingStock += toNum(ledger.current_balance, 0);
-      });
-    }
-    
-    // Initialize totals
+    // Initialize totals for Trading Account (affects_gross_profit = true)
     let totalSales = 0;
     let totalSalesReturns = 0;
     let totalPurchases = 0;
     let totalPurchaseReturns = 0;
     let totalDirectExpenses = 0;
+    let totalDirectIncomes = 0;
+    
+    // Initialize totals for P&L Account (affects_gross_profit = false)
     let totalIndirectExpenses = 0;
-    let totalOtherIncomes = 0;
+    let totalIndirectIncomes = 0;
     
     // Process each ledger - USE affects_pl flag
     ledgers.forEach(ledger => {
@@ -135,25 +124,28 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
       const move = moveMap.get(ledger.id) || { debit: 0, credit: 0 };
       const movementSigned = move.debit - move.credit;
       
-      // Skip stock accounts
-      if (group.group_code === 'INV') return;
-      
       // INCOME ACCOUNTS
       if (group.nature === 'income') {
         const amt = -movementSigned; // income increases on credit
         if (amt <= 0.009) return;
         
-        // Sales
-        if (['SAL', 'SALES'].includes(group.group_code)) {
-          totalSales += amt;
-        }
-        // Sales Returns
-        else if (['SAL_RET', 'SALES_RETURNS'].includes(group.group_code)) {
-          totalSalesReturns += amt;
-        }
-        // Other Incomes (DIR_INC, IND_INC)
-        else {
-          totalOtherIncomes += amt;
+        // Check if this affects gross profit (Trading Account)
+        if (group.affects_gross_profit) {
+          // Sales
+          if (['SAL', 'SALES'].includes(group.group_code)) {
+            totalSales += amt;
+          }
+          // Sales Returns
+          else if (['SAL_RET', 'SALES_RETURNS'].includes(group.group_code)) {
+            totalSalesReturns += amt;
+          }
+          // Direct Income
+          else {
+            totalDirectIncomes += amt;
+          }
+        } else {
+          // Indirect Income (P&L Account)
+          totalIndirectIncomes += amt;
         }
       }
       // EXPENSE ACCOUNTS
@@ -161,43 +153,51 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
         const amt = movementSigned; // expense increases on debit
         if (amt <= 0.009) return;
         
-        // Purchases
-        if (['PUR', 'PURCHASE'].includes(group.group_code)) {
-          totalPurchases += amt;
-        }
-        // Purchase Returns
-        else if (['PUR_RET', 'PURCHASE_RETURNS'].includes(group.group_code)) {
-          totalPurchaseReturns += amt;
-        }
-        // Direct Expenses (DIR_EXP)
-        else if (['DIR_EXP'].includes(group.group_code)) {
-          totalDirectExpenses += amt;
-        }
-        // Indirect Expenses (IND_EXP)
-        else {
+        // Check if this affects gross profit (Trading Account)
+        if (group.affects_gross_profit) {
+          // Purchases
+          if (['PUR', 'PURCHASE'].includes(group.group_code)) {
+            totalPurchases += amt;
+          }
+          // Purchase Returns
+          else if (['PUR_RET', 'PURCHASE_RETURNS'].includes(group.group_code)) {
+            totalPurchaseReturns += amt;
+          }
+          // Direct Expenses
+          else {
+            totalDirectExpenses += amt;
+          }
+        } else {
+          // Indirect Expenses (P&L Account)
           totalIndirectExpenses += amt;
         }
       }
     });
     
-    // Calculate P&L components
+    // Calculate P&L components using correct formulas
     const netSales = totalSales - totalSalesReturns;
     const netPurchases = totalPurchases - totalPurchaseReturns;
+    
+    // COGS = Opening Stock + Net Purchases + Direct Expenses - Closing Stock
     const cogs = openingStock + netPurchases + totalDirectExpenses - closingStock;
-    const grossProfit = netSales - cogs;
-    const netProfit = grossProfit + totalOtherIncomes - totalIndirectExpenses;
+    
+    // Gross Profit = Net Sales + Direct Income - COGS
+    const grossProfit = netSales + totalDirectIncomes - cogs;
+    
+    // Net Profit = Gross Profit + Indirect Income - Indirect Expenses
+    const netProfit = grossProfit + totalIndirectIncomes - totalIndirectExpenses;
     
     // Calculate margins
     const grossProfitMargin = netSales > 0 ? (grossProfit / netSales * 100) : 0;
     const netProfitMargin = netSales > 0 ? (netProfit / netSales * 100) : 0;
     const cogsPercentage = netSales > 0 ? (cogs / netSales * 100) : 0;
     
-    // Calculate totals for left and right sides (Tally-style format)
-    // Left side: Opening Stock + Purchases + Direct Expenses + Indirect Expenses + Net Profit (if profit)
+    // Calculate totals for Tally-style format (both sides must balance)
+    // Left side (Debit): Opening Stock + Purchases + Direct Expenses + Indirect Expenses + Net Profit (if profit)
     const totalLeftSide = openingStock + netPurchases + totalDirectExpenses + totalIndirectExpenses + (netProfit > 0 ? netProfit : 0);
     
-    // Right side: Sales + Closing Stock + Other Incomes + Net Loss (if loss)
-    const totalRightSide = netSales + closingStock + totalOtherIncomes + (netProfit < 0 ? Math.abs(netProfit) : 0);
+    // Right side (Credit): Sales + Direct Income + Closing Stock + Indirect Income + Net Loss (if loss)
+    const totalRightSide = netSales + totalDirectIncomes + closingStock + totalIndirectIncomes + (netProfit < 0 ? Math.abs(netProfit) : 0);
     
     return {
       period: {
@@ -206,7 +206,8 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
       },
       trading_account: {
         opening_stock: {
-          amount: openingStock
+          amount: openingStock,
+          description: 'Stock at the beginning of period'
         },
         purchases: {
           gross_purchases: totalPurchases,
@@ -215,30 +216,44 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
         },
         direct_expenses: {
           total: totalDirectExpenses,
-          description: 'Direct expenses related to production'
+          description: 'Direct expenses related to production/trading'
         },
-        gross_profit: grossProfit
+        direct_incomes: {
+          total: totalDirectIncomes,
+          description: 'Direct income related to trading operations'
+        },
+        closing_stock: {
+          amount: closingStock,
+          description: 'Stock at the end of period'
+        },
+        cost_of_goods_sold: {
+          amount: cogs,
+          formula: 'Opening Stock + Net Purchases + Direct Expenses - Closing Stock'
+        },
+        gross_profit: {
+          amount: grossProfit,
+          formula: 'Net Sales + Direct Income - COGS'
+        }
       },
       sales_revenue: {
         gross_sales: totalSales,
         sales_returns: totalSalesReturns,
         net_sales: netSales
       },
-      closing_stock: {
-        amount: closingStock
-      },
       profit_loss_account: {
         gross_profit_brought_forward: grossProfit,
+        indirect_incomes: {
+          total: totalIndirectIncomes,
+          description: 'Other income sources not related to core operations'
+        },
         indirect_expenses: {
           total: totalIndirectExpenses,
           description: 'Operating and administrative expenses'
         },
-        other_incomes: {
-          total: totalOtherIncomes,
-          description: 'Other income sources',
-          accounts: []
-        },
-        net_profit: netProfit
+        net_profit: {
+          amount: netProfit,
+          type: netProfit >= 0 ? 'profit' : 'loss'
+        }
       },
       totals: {
         gross_profit: grossProfit,
@@ -246,12 +261,14 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
         gross_profit_margin: grossProfitMargin,
         net_profit_margin: netProfitMargin,
         total_left_side: totalLeftSide,
-        total_right_side: totalRightSide
+        total_right_side: totalRightSide,
+        is_balanced: Math.abs(totalLeftSide - totalRightSide) < 1.0
       },
-      // Keep new structure for backward compatibility
+      // Backward compatibility structure
       revenue: {
         sales: netSales,
-        total: netSales
+        direct_income: totalDirectIncomes,
+        total: netSales + totalDirectIncomes
       },
       costOfGoodsSold: {
         openingStock,
@@ -270,7 +287,8 @@ async function generateProfitLossReport(tenantModels, masterModels, options = {}
         total: totalIndirectExpenses
       },
       otherIncomes: {
-        total: totalOtherIncomes
+        indirect: totalIndirectIncomes,
+        total: totalIndirectIncomes
       },
       netProfit: {
         amount: netProfit,

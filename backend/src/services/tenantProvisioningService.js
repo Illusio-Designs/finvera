@@ -614,27 +614,51 @@ class TenantProvisioningService {
 
       // Default ledgers to create
       const defaultLedgers = [
+        // GST Input Tax Credit (Asset - Debit balance)
         {
-          ledger_name: 'CGST',
-          ledger_code: 'CGST-001',
+          ledger_name: 'CGST Input',
+          ledger_code: 'CGST-INPUT-001',
+          account_group_code: 'GST_INPUT', // GST Input Tax Credit
+          balance_type: 'debit',
+          opening_balance: 0,
+        },
+        {
+          ledger_name: 'SGST Input',
+          ledger_code: 'SGST-INPUT-001',
+          account_group_code: 'GST_INPUT', // GST Input Tax Credit
+          balance_type: 'debit',
+          opening_balance: 0,
+        },
+        {
+          ledger_name: 'IGST Input',
+          ledger_code: 'IGST-INPUT-001',
+          account_group_code: 'GST_INPUT', // GST Input Tax Credit
+          balance_type: 'debit',
+          opening_balance: 0,
+        },
+        // GST Output Tax Payable (Liability - Credit balance)
+        {
+          ledger_name: 'CGST Output',
+          ledger_code: 'CGST-OUTPUT-001',
           account_group_code: 'DT', // Duties & Taxes
           balance_type: 'credit',
           opening_balance: 0,
         },
         {
-          ledger_name: 'SGST',
-          ledger_code: 'SGST-001',
+          ledger_name: 'SGST Output',
+          ledger_code: 'SGST-OUTPUT-001',
           account_group_code: 'DT', // Duties & Taxes
           balance_type: 'credit',
           opening_balance: 0,
         },
         {
-          ledger_name: 'IGST',
-          ledger_code: 'IGST-001',
+          ledger_name: 'IGST Output',
+          ledger_code: 'IGST-OUTPUT-001',
           account_group_code: 'DT', // Duties & Taxes
           balance_type: 'credit',
           opening_balance: 0,
         },
+        // Other default ledgers
         {
           ledger_name: 'Cash on Hand',
           ledger_code: 'CASH-001',
@@ -656,13 +680,8 @@ class TenantProvisioningService {
           balance_type: 'credit',
           opening_balance: 0,
         },
-        {
-          ledger_name: 'Purchase',
-          ledger_code: 'PUR-001',
-          account_group_code: 'PUR', // Purchase Accounts
-          balance_type: 'debit',
-          opening_balance: 0,
-        },
+        // Note: Purchase account not created in perpetual inventory system
+        // Purchases go directly to Stock in Hand
       ];
 
       // Create each default ledger
