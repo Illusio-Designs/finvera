@@ -581,7 +581,14 @@ module.exports = {
       const voucher = await req.tenantModels.Voucher.findByPk(req.params.id, {
         include: [
           { model: req.tenantModels.Ledger, as: 'partyLedger', attributes: ['id', 'ledger_name'] },
-          { model: req.tenantModels.VoucherItem, as: 'items' }
+          { model: req.tenantModels.VoucherItem, as: 'items' },
+          { 
+            model: req.tenantModels.VoucherLedgerEntry, 
+            as: 'ledgerEntries',
+            include: [
+              { model: req.tenantModels.Ledger, as: 'ledger', attributes: ['id', 'ledger_name'] }
+            ]
+          }
         ]
       });
       
@@ -589,7 +596,13 @@ module.exports = {
         return res.status(404).json({ message: 'Voucher not found' });
       }
       
-      res.json(voucher);
+      // Format response with ledger_entries for frontend compatibility
+      const voucherData = voucher.toJSON();
+      if (voucherData.ledgerEntries) {
+        voucherData.ledger_entries = voucherData.ledgerEntries;
+      }
+      
+      res.json(voucherData);
     } catch (err) {
       next(err);
     }

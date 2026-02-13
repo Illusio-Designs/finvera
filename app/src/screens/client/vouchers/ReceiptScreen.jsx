@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useConfirmation } from '../../../contexts/ConfirmationContext';
 import { voucherAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
 import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
@@ -13,6 +14,7 @@ import CreateReceiptModal from '../../../components/modals/CreateReceiptModal';
 export default function ReceiptScreen() {
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
+  const { showDangerConfirmation } = useConfirmation();
   const [vouchers, setVouchers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -73,9 +75,19 @@ export default function ReceiptScreen() {
     setRefreshing(false);
   }, [fetchVouchers]);
 
-  const handleVoucherPress = (voucher) => {
-    setSelectedVoucher(voucher);
-    setShowDetailModal(true);
+  const handleVoucherPress = async (voucher) => {
+    try {
+      // Fetch full voucher details
+      const response = await voucherAPI.get(voucher.id);
+      const fullVoucher = response?.data?.data || response?.data;
+      setSelectedVoucher(fullVoucher);
+      setShowDetailModal(true);
+    } catch (error) {
+      console.error('Fetch voucher details error:', error);
+      // Fallback to list data if fetch fails
+      setSelectedVoucher(voucher);
+      setShowDetailModal(true);
+    }
   };
 
   const handleCreateReceipt = () => {
@@ -88,18 +100,52 @@ export default function ReceiptScreen() {
     fetchVouchers();
   };
 
-  const handleEditVoucher = (voucher) => {
-    setEditMode(true);
-    setEditVoucher(voucher);
-    setShowCreateModal(true);
+  const handleEditVoucher = async (voucher) => {
+    try {
+      // Fetch full voucher details
+      const response = await voucherAPI.get(voucher.id);
+      const fullVoucher = response?.data?.data || response?.data;
+      setEditMode(true);
+      setEditVoucher(fullVoucher);
+      setShowCreateModal(true);
+    } catch (error) {
+      console.error('Fetch voucher details error:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to load receipt details for editing'
+      });
+    }
   };
 
-  const handleDeleteVoucher = () => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Delete receipt feature coming soon'
-    });
+  const handleDeleteVoucher = async (voucher) => {
+    const confirmed = await showDangerConfirmation(
+      'Delete Receipt',
+      `Are you sure you want to delete receipt ${voucher.voucher_number}? This action cannot be undone.`,
+      {
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+      }
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await voucherAPI.delete(voucher.id);
+      showNotification({
+        type: 'success',
+        title: 'Success',
+        message: 'Receipt deleted successfully'
+      });
+      fetchVouchers();
+    } catch (error) {
+      console.error('Delete voucher error:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: error.response?.data?.message || 'Failed to delete receipt'
+      });
+    }
   };
 
   const formatDate = (dateString) => {
@@ -267,7 +313,7 @@ export default function ReceiptScreen() {
                     style={styles.actionButton}
                     onPress={(e) => {
                       e.stopPropagation();
-                      handleDeleteVoucher();
+                      handleDeleteVoucher(voucher);
                     }}
                   >
                     <Ionicons name="trash-outline" size={16} color="#dc2626" />

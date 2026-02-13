@@ -44,6 +44,7 @@ export default function CreateLedgerModal({
     account_group_id: '',
     gstin: '',
     pan: '',
+    pan_no: '',
     address: '',
     city: '',
     state: '',
@@ -52,7 +53,13 @@ export default function CreateLedgerModal({
     email: '',
     opening_balance: 0,
     balance_type: 'debit',
-    description: ''
+    description: '',
+    // TDS/TCS fields
+    is_tds_applicable: false,
+    tds_section_code: '',
+    tds_deductor_type: '',
+    is_tcs_applicable: false,
+    tcs_section_code: '',
   });
 
   const [accountGroups, setAccountGroups] = useState([]);
@@ -60,10 +67,21 @@ export default function CreateLedgerModal({
   const [showAccountGroupModal, setShowAccountGroupModal] = useState(false);
   const [showBalanceTypeModal, setShowBalanceTypeModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // TDS/TCS state
+  const [tdsSections, setTdsSections] = useState([]);
+  const [tcsSections, setTcsSections] = useState([]);
+  const [showTdsSectionModal, setShowTdsSectionModal] = useState(false);
+  const [showTcsSectionModal, setShowTcsSectionModal] = useState(false);
+  const [showDeductorTypeModal, setShowDeductorTypeModal] = useState(false);
+  const [companyTdsEnabled, setCompanyTdsEnabled] = useState(false);
+  const [companyTcsEnabled, setCompanyTcsEnabled] = useState(false);
 
   useEffect(() => {
     if (visible) {
       fetchAccountGroups();
+      fetchTdsTcsSections();
+      fetchCompanyConfig();
       
       // Populate form with edit data
       if (isEdit && editData) {
@@ -71,7 +89,8 @@ export default function CreateLedgerModal({
           ledger_name: editData.ledger_name || '',
           account_group_id: editData.account_group_id || '',
           gstin: editData.gstin || '',
-          pan: editData.pan || '',
+          pan: editData.pan || editData.pan_no || '',
+          pan_no: editData.pan_no || editData.pan || '',
           address: editData.address || '',
           city: editData.city || '',
           state: editData.state || '',
@@ -80,7 +99,13 @@ export default function CreateLedgerModal({
           email: editData.email || '',
           opening_balance: editData.opening_balance || 0,
           balance_type: editData.balance_type || 'debit',
-          description: editData.description || ''
+          description: editData.description || '',
+          // TDS/TCS fields
+          is_tds_applicable: editData.is_tds_applicable || false,
+          tds_section_code: editData.tds_section_code || '',
+          tds_deductor_type: editData.tds_deductor_type || '',
+          is_tcs_applicable: editData.is_tcs_applicable || false,
+          tcs_section_code: editData.tcs_section_code || '',
         });
       } else {
         // Reset form for create mode
@@ -89,6 +114,7 @@ export default function CreateLedgerModal({
           account_group_id: '',
           gstin: '',
           pan: '',
+          pan_no: '',
           address: '',
           city: '',
           state: '',
@@ -97,7 +123,13 @@ export default function CreateLedgerModal({
           email: '',
           opening_balance: 0,
           balance_type: 'debit',
-          description: ''
+          description: '',
+          // TDS/TCS fields
+          is_tds_applicable: false,
+          tds_section_code: '',
+          tds_deductor_type: '',
+          is_tcs_applicable: false,
+          tcs_section_code: '',
         });
       }
     }
@@ -139,6 +171,33 @@ export default function CreateLedgerModal({
         title: 'Error',
         message: 'Failed to load account groups'
       });
+    }
+  };
+
+  const fetchTdsTcsSections = async () => {
+    try {
+      // Fetch TDS sections
+      const tdsResponse = await accountingAPI.tdsTcs.getTDSSections();
+      setTdsSections(tdsResponse.data?.data || []);
+      
+      // Fetch TCS sections
+      const tcsResponse = await accountingAPI.tdsTcs.getTCSSections();
+      setTcsSections(tcsResponse.data?.data || []);
+    } catch (error) {
+      console.error('TDS/TCS sections fetch error:', error);
+      // Don't show error notification, just log it
+    }
+  };
+
+  const fetchCompanyConfig = async () => {
+    try {
+      // Get current company from context or storage
+      // For now, we'll assume TDS/TCS is enabled
+      // You can fetch this from company settings API
+      setCompanyTdsEnabled(true);
+      setCompanyTcsEnabled(true);
+    } catch (error) {
+      console.error('Company config fetch error:', error);
     }
   };
 
@@ -222,7 +281,8 @@ export default function CreateLedgerModal({
     try {
       const payload = {
         ...formData,
-        opening_balance: parseFloat(formData.opening_balance) || 0
+        opening_balance: parseFloat(formData.opening_balance) || 0,
+        pan_no: formData.pan_no || formData.pan, // Ensure pan_no is sent
       };
 
       let response;
@@ -553,6 +613,131 @@ export default function CreateLedgerModal({
                   </View>
                 </View>
               </View>
+
+              {/* TDS/TCS Settings - Only show for Sundry Creditors/Debtors */}
+              {selectedAccountGroup && (
+                (selectedAccountGroup.name?.toLowerCase().includes('sundry creditor') || 
+                 selectedAccountGroup.name?.toLowerCase().includes('sundry debtor')) && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>TDS/TCS Settings</Text>
+                  
+                  {/* TDS Section - Only for Sundry Creditors (Vendors) */}
+                  {selectedAccountGroup.name?.toLowerCase().includes('sundry creditor') && companyTdsEnabled && (
+                    <>
+                      <View style={styles.switchRow}>
+                        <View style={styles.switchLabel}>
+                          <Text style={styles.inputLabel}>Enable TDS</Text>
+                          <Text style={styles.switchDescription}>
+                            Tax Deducted at Source for vendor payments
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={[styles.switch, formData.is_tds_applicable && styles.switchActive]}
+                          onPress={() => setFormData(prev => ({ 
+                            ...prev, 
+                            is_tds_applicable: !prev.is_tds_applicable,
+                            tds_section_code: !prev.is_tds_applicable ? '' : prev.tds_section_code,
+                            tds_deductor_type: !prev.is_tds_applicable ? '' : prev.tds_deductor_type,
+                          }))}
+                        >
+                          <View style={[styles.switchThumb, formData.is_tds_applicable && styles.switchThumbActive]} />
+                        </TouchableOpacity>
+                      </View>
+
+                      {formData.is_tds_applicable && (
+                        <>
+                          <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>TDS Section *</Text>
+                            <TouchableOpacity
+                              style={[styles.input, styles.selectInput]}
+                              onPress={() => setShowTdsSectionModal(true)}
+                            >
+                              <Text style={[styles.inputText, !formData.tds_section_code && styles.placeholder]}>
+                                {formData.tds_section_code ? 
+                                  `${formData.tds_section_code} - ${tdsSections.find(s => s.section_code === formData.tds_section_code)?.description || ''}` : 
+                                  'Select TDS Section'
+                                }
+                              </Text>
+                              <Ionicons name="chevron-down" size={20} color="#6b7280" />
+                            </TouchableOpacity>
+                          </View>
+
+                          <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>Deductor Type *</Text>
+                            <TouchableOpacity
+                              style={[styles.input, styles.selectInput]}
+                              onPress={() => setShowDeductorTypeModal(true)}
+                            >
+                              <Text style={[styles.inputText, !formData.tds_deductor_type && styles.placeholder]}>
+                                {formData.tds_deductor_type || 'Select Deductor Type'}
+                              </Text>
+                              <Ionicons name="chevron-down" size={20} color="#6b7280" />
+                            </TouchableOpacity>
+                          </View>
+
+                          <View style={styles.infoBox}>
+                            <Ionicons name="information-circle" size={20} color="#3b82f6" />
+                            <Text style={styles.infoText}>
+                              PAN is mandatory when TDS is applicable. Please ensure PAN is entered above.
+                            </Text>
+                          </View>
+                        </>
+                      )}
+                    </>
+                  )}
+
+                  {/* TCS Section - Only for Sundry Debtors (Customers) */}
+                  {selectedAccountGroup.name?.toLowerCase().includes('sundry debtor') && companyTcsEnabled && (
+                    <>
+                      <View style={styles.switchRow}>
+                        <View style={styles.switchLabel}>
+                          <Text style={styles.inputLabel}>Enable TCS</Text>
+                          <Text style={styles.switchDescription}>
+                            Tax Collected at Source for customer sales
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={[styles.switch, formData.is_tcs_applicable && styles.switchActive]}
+                          onPress={() => setFormData(prev => ({ 
+                            ...prev, 
+                            is_tcs_applicable: !prev.is_tcs_applicable,
+                            tcs_section_code: !prev.is_tcs_applicable ? '' : prev.tcs_section_code,
+                          }))}
+                        >
+                          <View style={[styles.switchThumb, formData.is_tcs_applicable && styles.switchThumbActive]} />
+                        </TouchableOpacity>
+                      </View>
+
+                      {formData.is_tcs_applicable && (
+                        <>
+                          <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>TCS Section *</Text>
+                            <TouchableOpacity
+                              style={[styles.input, styles.selectInput]}
+                              onPress={() => setShowTcsSectionModal(true)}
+                            >
+                              <Text style={[styles.inputText, !formData.tcs_section_code && styles.placeholder]}>
+                                {formData.tcs_section_code ? 
+                                  `${formData.tcs_section_code} - ${tcsSections.find(s => s.section_code === formData.tcs_section_code)?.description || ''}` : 
+                                  'Select TCS Section'
+                                }
+                              </Text>
+                              <Ionicons name="chevron-down" size={20} color="#6b7280" />
+                            </TouchableOpacity>
+                          </View>
+
+                          <View style={styles.infoBox}>
+                            <Ionicons name="information-circle" size={20} color="#3b82f6" />
+                            <Text style={styles.infoText}>
+                              PAN is mandatory when TCS is applicable. Please ensure PAN is entered above.
+                            </Text>
+                          </View>
+                        </>
+                      )}
+                    </>
+                  )}
+                </View>
+              ))}
             </View>
           </ScrollView>
 
@@ -661,6 +846,148 @@ export default function CreateLedgerModal({
                 <Text style={styles.accountGroupDetail}>Liabilities, Income and Equity</Text>
               </View>
               {formData.balance_type === 'credit' && (
+                <Ionicons name="checkmark-circle" size={24} color="#10b981" />
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* TDS Section Selection Modal */}
+      <Modal
+        visible={showTdsSectionModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowTdsSectionModal(false)}
+      >
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Select TDS Section</Text>
+            <TouchableOpacity 
+              onPress={() => setShowTdsSectionModal(false)} 
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color="#6b7280" />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.accountGroupList}>
+            {tdsSections.map((section) => (
+              <TouchableOpacity
+                key={section.id}
+                style={styles.accountGroupItem}
+                onPress={() => {
+                  setFormData(prev => ({ ...prev, tds_section_code: section.section_code }));
+                  setShowTdsSectionModal(false);
+                }}
+              >
+                <View style={styles.accountGroupContent}>
+                  <Text style={styles.accountGroupName}>{section.section_code}</Text>
+                  <Text style={styles.accountGroupDetail}>{section.description}</Text>
+                  <Text style={styles.accountGroupParent}>
+                    Individual: {section.rate_individual}% | Company: {section.rate_company}%
+                  </Text>
+                </View>
+                {formData.tds_section_code === section.section_code && (
+                  <Ionicons name="checkmark-circle" size={24} color="#10b981" />
+                )}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* TCS Section Selection Modal */}
+      <Modal
+        visible={showTcsSectionModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowTcsSectionModal(false)}
+      >
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Select TCS Section</Text>
+            <TouchableOpacity 
+              onPress={() => setShowTcsSectionModal(false)} 
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color="#6b7280" />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.accountGroupList}>
+            {tcsSections.map((section) => (
+              <TouchableOpacity
+                key={section.id}
+                style={styles.accountGroupItem}
+                onPress={() => {
+                  setFormData(prev => ({ ...prev, tcs_section_code: section.section_code }));
+                  setShowTcsSectionModal(false);
+                }}
+              >
+                <View style={styles.accountGroupContent}>
+                  <Text style={styles.accountGroupName}>{section.section_code}</Text>
+                  <Text style={styles.accountGroupDetail}>{section.description}</Text>
+                  <Text style={styles.accountGroupParent}>
+                    Rate: {section.rate}%
+                  </Text>
+                </View>
+                {formData.tcs_section_code === section.section_code && (
+                  <Ionicons name="checkmark-circle" size={24} color="#10b981" />
+                )}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Deductor Type Selection Modal */}
+      <Modal
+        visible={showDeductorTypeModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowDeductorTypeModal(false)}
+      >
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Select Deductor Type</Text>
+            <TouchableOpacity 
+              onPress={() => setShowDeductorTypeModal(false)} 
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color="#6b7280" />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.accountGroupList}>
+            <TouchableOpacity
+              style={styles.accountGroupItem}
+              onPress={() => {
+                setFormData(prev => ({ ...prev, tds_deductor_type: 'Individual' }));
+                setShowDeductorTypeModal(false);
+              }}
+            >
+              <View style={styles.accountGroupContent}>
+                <Text style={styles.accountGroupName}>Individual</Text>
+                <Text style={styles.accountGroupDetail}>Individual or HUF deductor</Text>
+              </View>
+              {formData.tds_deductor_type === 'Individual' && (
+                <Ionicons name="checkmark-circle" size={24} color="#10b981" />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.accountGroupItem}
+              onPress={() => {
+                setFormData(prev => ({ ...prev, tds_deductor_type: 'Company' }));
+                setShowDeductorTypeModal(false);
+              }}
+            >
+              <View style={styles.accountGroupContent}>
+                <Text style={styles.accountGroupName}>Company</Text>
+                <Text style={styles.accountGroupDetail}>Company or firm deductor</Text>
+              </View>
+              {formData.tds_deductor_type === 'Company' && (
                 <Ionicons name="checkmark-circle" size={24} color="#10b981" />
               )}
             </TouchableOpacity>
@@ -879,5 +1206,60 @@ const styles = StyleSheet.create({
   },
   phoneInputWrapper: {
     marginTop: 0,
+  },
+  // TDS/TCS Styles
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingVertical: 8,
+  },
+  switchLabel: {
+    flex: 1,
+    marginRight: 12,
+  },
+  switchDescription: {
+    ...FONT_STYLES.caption,
+    color: '#6b7280',
+    marginTop: 4,
+  },
+  switch: {
+    width: 51,
+    height: 31,
+    borderRadius: 16,
+    backgroundColor: '#d1d5db',
+    padding: 2,
+    justifyContent: 'center',
+  },
+  switchActive: {
+    backgroundColor: '#10b981',
+  },
+  switchThumb: {
+    width: 27,
+    height: 27,
+    borderRadius: 14,
+    backgroundColor: 'white',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  switchThumbActive: {
+    transform: [{ translateX: 20 }],
+  },
+  infoBox: {
+    flexDirection: 'row',
+    backgroundColor: '#eff6ff',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+    gap: 8,
+  },
+  infoText: {
+    ...FONT_STYLES.caption,
+    color: '#3b82f6',
+    flex: 1,
   },
 });

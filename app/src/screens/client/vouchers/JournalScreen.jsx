@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useConfirmation } from '../../../contexts/ConfirmationContext';
 import { voucherAPI } from '../../../lib/api';
 import { FONT_STYLES } from '../../../utils/fonts';
 import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
@@ -13,6 +14,7 @@ import CreateJournalModal from '../../../components/modals/CreateJournalModal';
 export default function JournalScreen() {
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
+  const { showDangerConfirmation } = useConfirmation();
   const [vouchers, setVouchers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -73,9 +75,19 @@ export default function JournalScreen() {
     setRefreshing(false);
   }, [fetchVouchers]);
 
-  const handleVoucherPress = (voucher) => {
-    setSelectedVoucher(voucher);
-    setShowDetailModal(true);
+  const handleVoucherPress = async (voucher) => {
+    try {
+      // Fetch full voucher details including ledger entries
+      const response = await voucherAPI.get(voucher.id);
+      const fullVoucher = response?.data?.data || response?.data;
+      setSelectedVoucher(fullVoucher);
+      setShowDetailModal(true);
+    } catch (error) {
+      console.error('Fetch voucher details error:', error);
+      // Fallback to list data if fetch fails
+      setSelectedVoucher(voucher);
+      setShowDetailModal(true);
+    }
   };
 
   const handleCreatejournal = () => {
@@ -88,18 +100,52 @@ export default function JournalScreen() {
     fetchVouchers();
   };
 
-  const handleEditVoucher = (voucher) => {
-    setEditMode(true);
-    setEditVoucher(voucher);
-    setShowCreateModal(true);
+  const handleEditVoucher = async (voucher) => {
+    try {
+      // Fetch full voucher details including ledger entries
+      const response = await voucherAPI.get(voucher.id);
+      const fullVoucher = response?.data?.data || response?.data;
+      setEditMode(true);
+      setEditVoucher(fullVoucher);
+      setShowCreateModal(true);
+    } catch (error) {
+      console.error('Fetch voucher details error:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to load voucher details for editing'
+      });
+    }
   };
 
-  const handleDeleteVoucher = () => {
-    showNotification({
-      type: 'info',
-      title: 'Coming Soon',
-      message: 'Delete journal feature coming soon'
-    });
+  const handleDeleteVoucher = async (voucher) => {
+    const confirmed = await showDangerConfirmation(
+      'Delete Journal Voucher',
+      `Are you sure you want to delete voucher ${voucher.voucher_number}? This action cannot be undone.`,
+      {
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+      }
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await voucherAPI.delete(voucher.id);
+      showNotification({
+        type: 'success',
+        title: 'Success',
+        message: 'Journal voucher deleted successfully'
+      });
+      fetchVouchers();
+    } catch (error) {
+      console.error('Delete voucher error:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: error.response?.data?.message || 'Failed to delete journal voucher'
+      });
+    }
   };
 
   const formatDate = (dateString) => {
@@ -267,7 +313,7 @@ export default function JournalScreen() {
                     style={styles.actionButton}
                     onPress={(e) => {
                       e.stopPropagation();
-                      handleDeleteVoucher();
+                      handleDeleteVoucher(voucher);
                     }}
                   >
                     <Ionicons name="trash-outline" size={16} color="#dc2626" />
@@ -337,6 +383,48 @@ export default function JournalScreen() {
                     )}
                   </View>
                 </View>
+
+                {selectedVoucher.ledger_entries && selectedVoucher.ledger_entries.length > 0 && (
+                  <View style={styles.infoSection}>
+                    <Text style={styles.infoSectionTitle}>Ledger Entries</Text>
+                    
+                    {/* Debit Entries */}
+                    <Text style={styles.entriesSubtitle}>Debit Entries</Text>
+                    {selectedVoucher.ledger_entries
+                      .filter(entry => parseFloat(entry.debit_amount || 0) > 0)
+                      .map((entry, index) => (
+                        <View key={`debit-${index}`} style={styles.entryCard}>
+                          <Text style={styles.entryLedger}>
+                            {entry.ledger?.ledger_name || 'Unknown Ledger'}
+                          </Text>
+                          <Text style={styles.entryAmount}>
+                            Dr: {formatCurrency(entry.debit_amount || 0)}
+                          </Text>
+                          {entry.narration && (
+                            <Text style={styles.entryNarration}>{entry.narration}</Text>
+                          )}
+                        </View>
+                      ))}
+                    
+                    {/* Credit Entries */}
+                    <Text style={[styles.entriesSubtitle, { marginTop: 12 }]}>Credit Entries</Text>
+                    {selectedVoucher.ledger_entries
+                      .filter(entry => parseFloat(entry.credit_amount || 0) > 0)
+                      .map((entry, index) => (
+                        <View key={`credit-${index}`} style={styles.entryCard}>
+                          <Text style={styles.entryLedger}>
+                            {entry.ledger?.ledger_name || 'Unknown Ledger'}
+                          </Text>
+                          <Text style={styles.entryAmount}>
+                            Cr: {formatCurrency(entry.credit_amount || 0)}
+                          </Text>
+                          {entry.narration && (
+                            <Text style={styles.entryNarration}>{entry.narration}</Text>
+                          )}
+                        </View>
+                      ))}
+                  </View>
+                )}
 
                 <View style={styles.infoSection}>
                   <Text style={styles.infoSectionTitle}>Amount</Text>
@@ -412,6 +500,11 @@ const styles = StyleSheet.create({
   detailContainer: { gap: 20 },
   infoSection: { backgroundColor: 'white', borderRadius: 12, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
   infoSectionTitle: { ...FONT_STYLES.h5, color: '#111827', marginBottom: 16 },
+  entriesSubtitle: { ...FONT_STYLES.label, color: '#374151', fontWeight: '600', marginBottom: 8, marginTop: 4 },
+  entryCard: { backgroundColor: '#f9fafb', padding: 12, borderRadius: 8, marginBottom: 8 },
+  entryLedger: { ...FONT_STYLES.label, color: '#111827', marginBottom: 4, fontWeight: '600' },
+  entryAmount: { ...FONT_STYLES.body, color: '#059669', marginBottom: 2 },
+  entryNarration: { ...FONT_STYLES.caption, color: '#6b7280', fontStyle: 'italic' },
   infoGrid: { gap: 12 },
   infoItem: { marginBottom: 8 },
   infoLabel: { ...FONT_STYLES.caption, color: '#6b7280', marginBottom: 4 },

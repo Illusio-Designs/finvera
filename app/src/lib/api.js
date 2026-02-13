@@ -105,6 +105,14 @@ export const accountingAPI = {
       return apiClient.post('/accounting/tally-import', formData, config);
     },
   },
+  // TDS/TCS APIs
+  tdsTcs: {
+    getTDSSections: () => apiClient.get('/tds-tcs/sections/tds'),
+    getTCSSections: () => apiClient.get('/tds-tcs/sections/tcs'),
+    getCompanyConfig: (companyId) => apiClient.get(`/tds-tcs/company/${companyId}/config`),
+    createTDSLedgers: () => apiClient.post('/tds-tcs/ledgers/tds'),
+    createTCSLedgers: () => apiClient.post('/tds-tcs/ledgers/tcs'),
+  },
 };
 
 // Voucher APIs

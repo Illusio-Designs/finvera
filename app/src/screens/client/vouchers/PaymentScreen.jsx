@@ -74,9 +74,19 @@ export default function PaymentScreen() {
     setRefreshing(false);
   }, [fetchVouchers]);
 
-  const handleVoucherPress = (voucher) => {
-    setSelectedVoucher(voucher);
-    setShowDetailModal(true);
+  const handleVoucherPress = async (voucher) => {
+    try {
+      // Fetch full voucher details
+      const response = await voucherAPI.get(voucher.id);
+      const fullVoucher = response?.data?.data || response?.data;
+      setSelectedVoucher(fullVoucher);
+      setShowDetailModal(true);
+    } catch (error) {
+      console.error('Fetch voucher details error:', error);
+      // Fallback to list data if fetch fails
+      setSelectedVoucher(voucher);
+      setShowDetailModal(true);
+    }
   };
 
   const handleCreatePayment = () => {
@@ -88,9 +98,21 @@ export default function PaymentScreen() {
     setEditingVoucher(null);
   };
 
-  const handleEditVoucher = (voucher) => {
-    setEditingVoucher(voucher);
-    setShowCreateModal(true);
+  const handleEditVoucher = async (voucher) => {
+    try {
+      // Fetch full voucher details
+      const response = await voucherAPI.get(voucher.id);
+      const fullVoucher = response?.data?.data || response?.data;
+      setEditingVoucher(fullVoucher);
+      setShowCreateModal(true);
+    } catch (error) {
+      console.error('Fetch voucher details error:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to load payment details for editing'
+      });
+    }
   };
 
   const handleDeleteVoucher = async (voucher) => {
