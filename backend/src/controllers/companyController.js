@@ -360,6 +360,8 @@ module.exports = {
         books_beginning_date,
         bank_details,
         compliance,
+        is_tds_enabled,
+        is_tcs_enabled,
       } = req.body || {};
 
       // Validate business_type if provided
@@ -392,7 +394,32 @@ module.exports = {
         books_beginning_date,
         bank_details,
         compliance,
+        is_tds_enabled: is_tds_enabled !== undefined ? is_tds_enabled : company.is_tds_enabled,
+        is_tcs_enabled: is_tcs_enabled !== undefined ? is_tcs_enabled : company.is_tcs_enabled,
       });
+
+      // Auto-create statutory ledgers when TDS/TCS is enabled
+      const TDSTCSService = require('../services/tdsTcsService');
+      
+      // If TDS was just enabled, create TDS ledgers
+      if (is_tds_enabled === true && !company.is_tds_enabled) {
+        try {
+          await TDSTCSService.createTDSLedgers(req.tenantModels, req.masterModels, req.tenant_id);
+        } catch (error) {
+          logger.error('Error creating TDS ledgers:', error);
+          // Don't fail the update, just log the error
+        }
+      }
+
+      // If TCS was just enabled, create TCS ledgers
+      if (is_tcs_enabled === true && !company.is_tcs_enabled) {
+        try {
+          await TDSTCSService.createTCSLedgers(req.tenantModels, req.masterModels, req.tenant_id);
+        } catch (error) {
+          logger.error('Error creating TCS ledgers:', error);
+          // Don't fail the update, just log the error
+        }
+      }
 
       return res.json({ success: true, data: company });
     } catch (err) {

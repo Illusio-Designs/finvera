@@ -48,25 +48,31 @@ module.exports = {
             role: req.user.role
           });
           
-          // All users are stored in the main database (finvera_main)
-          // So let's fetch user details from there directly
-          const mainConnection = await tenantConnectionManager.getConnection({
-            id: 'main_db',
-            db_name: process.env.DB_NAME || 'finvera_main',
-            db_host: process.env.DB_HOST || 'localhost',
-            db_port: parseInt(process.env.DB_PORT) || 3306,
-            db_user: process.env.DB_USER || 'root',
-            db_password: process.env.DB_PASSWORD || '',
-          });
+          // Users are stored in the tenant database (finvera_db)
+          // Use tenantModels if available (from tenant middleware)
+          let user = null;
           
-          const mainModels = tenantModelsFactory(mainConnection);
+          if (req.tenantModels && req.tenantModels.User) {
+            console.log('🎫 Fetching user from tenant database (via tenantModels)...');
+            user = await req.tenantModels.User.findByPk(req.user.id);
+          } else {
+            // Fallback: Connect to tenant database manually
+            console.log('🎫 Tenant models not available, connecting to tenant database manually...');
+            const tenantConnection = await tenantConnectionManager.getConnection({
+              id: req.user.tenant_id || 'tenant_db',
+              db_name: process.env.DB_NAME || 'finvera_db',
+              db_host: process.env.DB_HOST || 'localhost',
+              db_port: parseInt(process.env.DB_PORT) || 3306,
+              db_user: process.env.DB_USER || 'root',
+              db_password: process.env.DB_PASSWORD || '',
+            });
+            
+            const tenantModels = tenantModelsFactory(tenantConnection);
+            user = await tenantModels.User.findByPk(req.user.id);
+          }
           
-          console.log('🎫 Fetching user from main database...');
-          
-          // Fetch user details from main database
-          const user = await mainModels.User.findByPk(req.user.id);
           if (user) {
-            console.log('🎫 Found user in main database:', {
+            console.log('🎫 Found user in tenant database:', {
               id: user.id,
               name: user.name,
               email: user.email,
@@ -84,7 +90,7 @@ module.exports = {
               finalClientPhone
             });
           } else {
-            console.log('🎫 User not found in main database');
+            console.log('🎫 User not found in tenant database');
           }
         } catch (userFetchError) {
           console.error('🎫 Error fetching user details:', userFetchError);

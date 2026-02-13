@@ -306,6 +306,89 @@ models.VoucherType = masterSequelize.define('VoucherType', {
 
 // GST Rate and TDS Section models removed - now using Sandbox API for live data
 
+// TDS Section Master Model (SHARED - Phase 1: Foundation Layer)
+models.TDSSection = masterSequelize.define('TDSSection', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  section_code: {
+    type: DataTypes.STRING(20),
+    allowNull: false,
+    unique: true,
+    comment: 'Section code (194C, 194J, etc.)',
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+    comment: 'Description of the section',
+  },
+  rate_individual: {
+    type: DataTypes.DECIMAL(5, 2),
+    allowNull: false,
+    comment: 'TDS rate for individuals (%)',
+  },
+  rate_company: {
+    type: DataTypes.DECIMAL(5, 2),
+    allowNull: false,
+    comment: 'TDS rate for companies (%)',
+  },
+  threshold_limit: {
+    type: DataTypes.DECIMAL(18, 2),
+    allowNull: true,
+    comment: 'Threshold limit for TDS applicability',
+  },
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+    allowNull: false,
+  },
+}, {
+  tableName: 'tds_section_master',
+  timestamps: true,
+  underscored: true,
+});
+
+// TCS Section Master Model (SHARED - Phase 1: Foundation Layer)
+models.TCSSection = masterSequelize.define('TCSSection', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  section_code: {
+    type: DataTypes.STRING(20),
+    allowNull: false,
+    unique: true,
+    comment: 'Section code (206C1H, etc.)',
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+    comment: 'Description of the section',
+  },
+  rate: {
+    type: DataTypes.DECIMAL(5, 2),
+    allowNull: false,
+    comment: 'TCS rate (%)',
+  },
+  threshold_limit: {
+    type: DataTypes.DECIMAL(18, 2),
+    allowNull: true,
+    comment: 'Threshold limit for TCS applicability',
+  },
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+    allowNull: false,
+  },
+}, {
+  tableName: 'tcs_section_master',
+  timestamps: true,
+  underscored: true,
+});
+
 // Accounting Year Template (SHARED)
 models.AccountingYear = masterSequelize.define('AccountingYear', {
   id: {
@@ -403,6 +486,8 @@ async function syncMasterModels() {
   await models.AccountGroup.sync({ alter: false });
   await models.VoucherType.sync({ alter: false });
   // GST Rate and TDS Section models removed - using Sandbox API
+  await models.TDSSection.sync({ alter: false });
+  await models.TCSSection.sync({ alter: false });
   await models.AccountingYear.sync({ alter: false });
   
   // Create subscription_plans table in master DB if it doesn't exist (needed for Subscription FK)

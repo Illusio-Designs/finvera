@@ -127,7 +127,7 @@ function AnimatedTab({ tab, onPress }) {
           <Ionicons
             name={tab.isActive ? tab.activeIcon : tab.icon}
             size={21}
-            color={tab.isActive ? '#ffffff' : '#9ca3af'}
+            color={tab.isActive ? '#3e60ab' : '#ffffff'}
           />
         </Animated.View>
         {tab.isActive && (
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#3e60ab',
     marginHorizontal: 20,
     marginBottom: 16,
     paddingVertical: 10,
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-evenly',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#f3f4f6',
+    borderColor: '#3e60ab',
   },
   tab: {
     alignItems: 'center',
@@ -190,18 +190,16 @@ const styles = StyleSheet.create({
     minHeight: 40,
   },
   activeTabContent: {
-    backgroundColor: '#3e60ab',
-    shadowColor: '#3e60ab',
+    backgroundColor: '#ffffff',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 6,
     elevation: 4,
   },
   tabLabel: {
-    ...FONT_STYLES.captionSmall,
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 11,
+    ...FONT_STYLES.labelSmall,
+    color: '#3e60ab',
     letterSpacing: 0.2,
   },
 });

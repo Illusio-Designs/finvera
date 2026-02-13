@@ -1,6 +1,7 @@
 const { Op } = require('sequelize');
 const { Sequelize } = require('sequelize');
 const logger = require('../utils/logger');
+const LedgerValidator = require('../validators/ledgerValidator');
 
 /**
  * Run migration to add missing columns to ledgers table
@@ -41,7 +42,7 @@ async function runLedgerMigration(sequelize) {
 module.exports = {
   async list(req, res, next) {
     try {
-      const { page = 1, limit = 20, search, account_group_id } = req.query;
+      const { page = 1, limit = 20, search, account_group_id, exclude_system } = req.query;
       const offset = (page - 1) * limit;
       const where = {};
 
@@ -54,6 +55,11 @@ module.exports = {
 
       if (account_group_id) {
         where.account_group_id = account_group_id;
+      }
+
+      // Filter out system-generated ledgers if requested (for voucher dropdowns)
+      if (exclude_system === 'true') {
+        where.is_system_generated = false;
       }
 
       // Try to get ledgers - handle case where country column might not exist
@@ -143,6 +149,7 @@ module.exports = {
         // Standard fields
         gstin,
         pan,
+        pan_no,
         address,
         city,
         state,
@@ -150,6 +157,12 @@ module.exports = {
         country,
         phone,
         email,
+        // TDS/TCS fields
+        is_tds_applicable,
+        tds_section_code,
+        tds_deductor_type,
+        is_tcs_applicable,
+        tcs_section_code,
         // Shipping locations (array)
         shipping_locations,
         ...dynamicFields
@@ -159,6 +172,49 @@ module.exports = {
         return res.status(400).json({
           success: false,
           message: 'ledger_name and account_group_id are required',
+        });
+      }
+
+      // Validate ledger data
+      const validationData = {
+        ledger_name,
+        account_group_id,
+        opening_balance,
+        balance_type,
+        pan_no: pan_no || pan,
+        gstin,
+        is_tds_applicable,
+        tds_section_code,
+        tds_deductor_type,
+        is_tcs_applicable,
+        tcs_section_code,
+      };
+
+      const validationErrors = await LedgerValidator.validateLedgerData(
+        validationData,
+        req.tenantModels,
+        req.masterModels,
+        false
+      );
+
+      if (validationErrors.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: validationErrors,
+        });
+      }
+
+      // Check uniqueness
+      const uniquenessErrors = await LedgerValidator.validateUniqueness(
+        ledger_name,
+        req.tenantModels
+      );
+
+      if (uniquenessErrors.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: uniquenessErrors[0],
         });
       }
 
@@ -234,6 +290,7 @@ module.exports = {
         description: description || null,
         gstin: gstin || null,
         pan: pan || null,
+        pan_no: pan_no || pan || null,
         address: address || null,
         city: city || null,
         state: state || null,
@@ -241,6 +298,12 @@ module.exports = {
         country: country || null,
         phone: phone || null,
         email: email || null,
+        // TDS/TCS fields
+        is_tds_applicable: is_tds_applicable || false,
+        tds_section_code: tds_section_code || null,
+        tds_deductor_type: tds_deductor_type || null,
+        is_tcs_applicable: is_tcs_applicable || false,
+        tcs_section_code: tcs_section_code || null,
         tenant_id: req.tenant_id, // Add tenant_id from middleware
       };
       
@@ -350,6 +413,7 @@ module.exports = {
         // Standard fields
         gstin,
         pan,
+        pan_no,
         address,
         city,
         state,
@@ -357,6 +421,12 @@ module.exports = {
         country,
         phone,
         email,
+        // TDS/TCS fields
+        is_tds_applicable,
+        tds_section_code,
+        tds_deductor_type,
+        is_tcs_applicable,
+        tcs_section_code,
         // Shipping locations (array)
         shipping_locations,
         is_active,
@@ -367,6 +437,74 @@ module.exports = {
 
       if (!ledger) {
         return res.status(404).json({ message: 'Ledger not found' });
+      }
+
+      // Check system-generated ledger protection
+      if (ledger.is_system_generated) {
+        const protectionErrors = [];
+        
+        if (ledger_name && ledger_name !== ledger.ledger_name) {
+          protectionErrors.push(...LedgerValidator.validateSystemLedgerProtection(ledger, 'update_name'));
+        }
+        
+        if (account_group_id && account_group_id !== ledger.account_group_id) {
+          protectionErrors.push(...LedgerValidator.validateSystemLedgerProtection(ledger, 'update_group'));
+        }
+
+        if (protectionErrors.length > 0) {
+          return res.status(403).json({
+            success: false,
+            message: 'System-generated ledger cannot be modified',
+            errors: protectionErrors,
+          });
+        }
+      }
+
+      // Validate update data
+      const validationData = {
+        ledger_name: ledger_name || ledger.ledger_name,
+        account_group_id: account_group_id || ledger.account_group_id,
+        opening_balance,
+        balance_type,
+        pan_no: pan_no || pan,
+        gstin,
+        is_tds_applicable,
+        tds_section_code,
+        tds_deductor_type,
+        is_tcs_applicable,
+        tcs_section_code,
+      };
+
+      const validationErrors = await LedgerValidator.validateLedgerData(
+        validationData,
+        req.tenantModels,
+        req.masterModels,
+        true,
+        ledger
+      );
+
+      if (validationErrors.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: validationErrors,
+        });
+      }
+
+      // Check uniqueness if name is being changed
+      if (ledger_name && ledger_name !== ledger.ledger_name) {
+        const uniquenessErrors = await LedgerValidator.validateUniqueness(
+          ledger_name,
+          req.tenantModels,
+          id
+        );
+
+        if (uniquenessErrors.length > 0) {
+          return res.status(400).json({
+            success: false,
+            message: uniquenessErrors[0],
+          });
+        }
       }
 
       const updateData = {};
@@ -382,6 +520,7 @@ module.exports = {
       if (description !== undefined) updateData.description = description;
       if (gstin !== undefined) updateData.gstin = gstin;
       if (pan !== undefined) updateData.pan = pan;
+      if (pan_no !== undefined) updateData.pan_no = pan_no;
       if (address !== undefined) updateData.address = address;
       if (city !== undefined) updateData.city = city;
       if (state !== undefined) updateData.state = state;
@@ -390,6 +529,13 @@ module.exports = {
       if (phone !== undefined) updateData.phone = phone;
       if (email !== undefined) updateData.email = email;
       if (is_active !== undefined) updateData.is_active = is_active;
+      
+      // TDS/TCS fields
+      if (is_tds_applicable !== undefined) updateData.is_tds_applicable = is_tds_applicable;
+      if (tds_section_code !== undefined) updateData.tds_section_code = tds_section_code;
+      if (tds_deductor_type !== undefined) updateData.tds_deductor_type = tds_deductor_type;
+      if (is_tcs_applicable !== undefined) updateData.is_tcs_applicable = is_tcs_applicable;
+      if (tcs_section_code !== undefined) updateData.tcs_section_code = tcs_section_code;
 
       // Handle shipping_locations and dynamic fields in additional_fields JSON
       const additionalFields = {};
@@ -524,6 +670,16 @@ module.exports = {
 
       if (!ledger) {
         return res.status(404).json({ message: 'Ledger not found' });
+      }
+
+      // Check system-generated ledger protection
+      if (ledger.is_system_generated) {
+        const protectionErrors = LedgerValidator.validateSystemLedgerProtection(ledger, 'delete');
+        return res.status(403).json({
+          success: false,
+          message: 'Cannot delete system-generated ledger',
+          errors: protectionErrors,
+        });
       }
 
       // Check if ledger is used in any vouchers

@@ -258,12 +258,12 @@ export default function LedgerStatementScreen() {
                             </View>
                             <View style={[styles.tableCell, styles.amountColumn]}>
                               <Text style={[styles.tableCellAmountText, { color: '#dc2626' }]}>
-                                {txn.debit_amount > 0 ? formatCurrency(txn.debit_amount) : '-'}
+                                {(txn.debit || txn.debit_amount) > 0 ? formatCurrency(txn.debit || txn.debit_amount) : '-'}
                               </Text>
                             </View>
                             <View style={[styles.tableCell, styles.amountColumn]}>
                               <Text style={[styles.tableCellAmountText, { color: '#059669' }]}>
-                                {txn.credit_amount > 0 ? formatCurrency(txn.credit_amount) : '-'}
+                                {(txn.credit || txn.credit_amount) > 0 ? formatCurrency(txn.credit || txn.credit_amount) : '-'}
                               </Text>
                             </View>
                             <View style={[styles.tableCell, styles.amountColumn]}>

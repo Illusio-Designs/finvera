@@ -19,14 +19,6 @@ module.exports = (sequelize) => {
       allowNull: false,
     },
     name: DataTypes.STRING,
-    first_name: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    last_name: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
     phone: DataTypes.STRING,
     profile_image: DataTypes.STRING,
     role: {
