@@ -7,6 +7,7 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { taxAPI } from '../../../lib/api';
 import { formatCurrency } from '../../../utils/businessLogic';
+import ModernDatePicker from '../../../components/ui/ModernDatePicker';
 
 export default function TCSReportScreen() {
   const { openDrawer } = useDrawer();
@@ -104,21 +105,19 @@ export default function TCSReportScreen() {
           
           <View style={styles.formRow}>
             <View style={styles.formGroupHalf}>
-              <Text style={styles.label}>From Date *</Text>
-              <TextInput
-                style={styles.input}
+              <ModernDatePicker
+                label="From Date *"
                 value={filters.from_date}
-                onChangeText={(text) => setFilters(prev => ({ ...prev, from_date: text }))}
-                placeholder="YYYY-MM-DD"
+                onDateChange={(date) => setFilters(prev => ({ ...prev, from_date: date }))}
+                placeholder="Select from date"
               />
             </View>
             <View style={styles.formGroupHalf}>
-              <Text style={styles.label}>To Date *</Text>
-              <TextInput
-                style={styles.input}
+              <ModernDatePicker
+                label="To Date *"
                 value={filters.to_date}
-                onChangeText={(text) => setFilters(prev => ({ ...prev, to_date: text }))}
-                placeholder="YYYY-MM-DD"
+                onDateChange={(date) => setFilters(prev => ({ ...prev, to_date: date }))}
+                placeholder="Select to date"
               />
             </View>
           </View>

@@ -28,6 +28,7 @@ async function clearTestData() {
       'inventory_items',
       'ledgers',
       'gstins',
+      'users',
     ];
     
     for (const table of tables) {

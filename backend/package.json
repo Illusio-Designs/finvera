@@ -11,7 +11,7 @@
     "migrate:undo": "sequelize db:migrate:undo",
     "seed": "sequelize db:seed:all",
     "seed:undo": "sequelize db:seed:undo:all",
-    "seed:test-data": "node scripts/clear-test-data.js && node scripts/seed-test-data.js && node scripts/create-default-ledgers.js && node scripts/fix-company-provisioning.js",
+    "seed:test-data": "node scripts/clear-test-data.js && node scripts/seed-test-data.js && node scripts/fix-company-provisioning.js",
     "verify:test-user": "node scripts/verify-user-company.js",
     "verify:test-data": "node scripts/verify-test-data.js",
     "verify:ledgers": "node scripts/check-default-ledgers.js",

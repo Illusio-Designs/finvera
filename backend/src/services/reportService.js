@@ -401,21 +401,30 @@ async function generateBalanceSheetReport(tenantModels, masterModels, options = 
 
       // ASSETS - Use bs_category
       if (group.nature === 'asset') {
-        totalAssets += signedBalance;
+        // Check if this is a GST/TDS ledger that should be netted
+        const ledgerIdentifier = (ledger.ledger_code || ledger.ledger_name || '').toUpperCase();
+        const isGSTorTDS = ledgerIdentifier.includes('GST') || ledgerIdentifier.includes('TDS');
+        
+        if (!isGSTorTDS) {
+          totalAssets += signedBalance;
+        }
 
-        if (group.bs_category === 'fixed_asset') {
+        if (group.bs_category === 'fixed_asset' && !isGSTorTDS) {
           assets.fixed_assets.push(ledgerInfo);
-        } else if (group.bs_category === 'current_asset') {
+        } else if (group.bs_category === 'current_asset' && !isGSTorTDS) {
           assets.current_assets.push(ledgerInfo);
-        } else if (group.bs_category === 'investment') {
+        } else if (group.bs_category === 'investment' && !isGSTorTDS) {
           assets.investments.push(ledgerInfo);
-        } else {
+        } else if (!isGSTorTDS) {
           assets.other_assets.push(ledgerInfo);
         }
       }
       // LIABILITIES & EQUITY - Use bs_category and is_tax_group
       else if (group.nature === 'liability' || group.nature === 'equity') {
-        totalLiabilities += signedBalance;
+        // Skip tax groups here - we'll handle them separately for netting
+        if (!group.is_tax_group) {
+          totalLiabilities += signedBalance;
+        }
 
         if (group.nature === 'equity' || group.bs_category === 'equity') {
           // Capital and Reserves
@@ -424,15 +433,15 @@ async function generateBalanceSheetReport(tenantModels, masterModels, options = 
           } else {
             liabilities.reserves.push(ledgerInfo);
           }
-        } else if (group.bs_category === 'current_liability') {
+        } else if (group.bs_category === 'current_liability' && !group.is_tax_group) {
           liabilities.current_liabilities.push(ledgerInfo);
-        } else if (group.bs_category === 'noncurrent_liability') {
+        } else if (group.bs_category === 'noncurrent_liability' && !group.is_tax_group) {
           liabilities.noncurrent_liabilities.push(ledgerInfo);
         } else if (group.is_tax_group) {
           // GST/Tax ledgers - DO NOT add individually
-          // We'll calculate Net GST Payable separately
+          // We'll calculate Net GST Payable and TDS separately
           // Skip adding to any category here
-        } else {
+        } else if (!group.is_tax_group) {
           liabilities.other_liabilities.push(ledgerInfo);
         }
       }
@@ -441,22 +450,33 @@ async function generateBalanceSheetReport(tenantModels, masterModels, options = 
     // Calculate Net GST Payable (Output GST - Input GST)
     let totalInputGST = 0;
     let totalOutputGST = 0;
+    let totalTDSPayable = 0;
+    let totalTDSReceivable = 0;
     const gstDetails = {
       input: [],
       output: []
     };
+    const tdsDetails = {
+      payable: [],
+      receivable: []
+    };
 
     ledgers.forEach(ledger => {
       const group = groupMap.get(ledger.account_group_id);
-      if (!group || !group.is_tax_group) return;
+      if (!group) return;
 
       const rawBalance = toNum(ledger.current_balance, 0);
       const balanceType = (ledger.balance_type || 'debit').toLowerCase();
       
       // Determine if it's Input or Output GST based on ledger code or name
       const ledgerIdentifier = (ledger.ledger_code || ledger.ledger_name || '').toUpperCase();
-      const isInputGST = ledgerIdentifier.includes('INPUT') || ledgerIdentifier.includes('RCM_INPUT');
-      const isOutputGST = ledgerIdentifier.includes('OUTPUT') && !ledgerIdentifier.includes('RCM_INPUT');
+      const isInputGST = ledgerIdentifier.includes('INPUT') && ledgerIdentifier.includes('GST');
+      const isOutputGST = ledgerIdentifier.includes('OUTPUT') && ledgerIdentifier.includes('GST');
+      const isTDSPayable = ledgerIdentifier.includes('TDS') && ledgerIdentifier.includes('PAYABLE');
+      const isTDSReceivable = ledgerIdentifier.includes('TDS') && ledgerIdentifier.includes('RECEIVABLE');
+      
+      // Skip if not a GST/TDS ledger
+      if (!isInputGST && !isOutputGST && !isTDSPayable && !isTDSReceivable) return;
 
       if (isInputGST && balanceType === 'debit' && rawBalance > 0) {
         // Input GST with Debit balance (Asset - Tax Credit Available)
@@ -470,6 +490,22 @@ async function generateBalanceSheetReport(tenantModels, masterModels, options = 
         // Output GST with Credit balance (Liability - Tax Collected)
         totalOutputGST += rawBalance;
         gstDetails.output.push({
+          name: ledger.ledger_name,
+          code: ledger.ledger_code,
+          balance: rawBalance
+        });
+      } else if (isTDSPayable && balanceType === 'credit' && rawBalance > 0) {
+        // TDS Payable (Liability - Tax deducted to be paid to govt)
+        totalTDSPayable += rawBalance;
+        tdsDetails.payable.push({
+          name: ledger.ledger_name,
+          code: ledger.ledger_code,
+          balance: rawBalance
+        });
+      } else if (isTDSReceivable && balanceType === 'debit' && rawBalance > 0) {
+        // TDS Receivable (Asset - Tax deducted by others)
+        totalTDSReceivable += rawBalance;
+        tdsDetails.receivable.push({
           name: ledger.ledger_name,
           code: ledger.ledger_code,
           balance: rawBalance
@@ -517,6 +553,40 @@ async function generateBalanceSheetReport(tenantModels, masterModels, options = 
         });
         totalAssets += Math.abs(netGSTPayable);
       }
+    }
+
+    // Add TDS Payable to Current Liabilities
+    if (totalTDSPayable >= 0.01) {
+      liabilities.current_liabilities.push({
+        name: 'TDS Payable',
+        code: 'TDS-PAYABLE',
+        balance: totalTDSPayable,
+        balance_type: 'credit',
+        group: 'Duties & Taxes',
+        bs_category: 'current_liability',
+        tds_details: {
+          total: totalTDSPayable,
+          breakdown: tdsDetails.payable
+        }
+      });
+      totalLiabilities += totalTDSPayable;
+    }
+
+    // Add TDS Receivable to Current Assets
+    if (totalTDSReceivable >= 0.01) {
+      assets.current_assets.push({
+        name: 'TDS Receivable',
+        code: 'TDS-RECEIVABLE',
+        balance: totalTDSReceivable,
+        balance_type: 'debit',
+        group: 'Duties & Taxes',
+        bs_category: 'current_asset',
+        tds_details: {
+          total: totalTDSReceivable,
+          breakdown: tdsDetails.receivable
+        }
+      });
+      totalAssets += totalTDSReceivable;
     }
 
     // Calculate totals

@@ -36,8 +36,24 @@ async function createDefaultLedgers() {
     
     await masterConnection.end();
     
+    // Get the actual tenant ID from master database
+    const masterConn2 = await mysql.createConnection({
+      host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || 3306,
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || '',
+      database: process.env.MASTER_DB_NAME || 'finvera_master',
+    });
+    
+    const [tenantData] = await masterConn2.query(
+      'SELECT id FROM tenant_master WHERE subdomain = ?',
+      ['trader-test']
+    );
+    
+    const TENANT_ID = tenantData[0]?.id || 'test-tenant-001';
+    await masterConn2.end();
+    
     const now = new Date();
-    const TENANT_ID = 'test-tenant-001';
     
     // Define default ledgers
     const defaultLedgers = [

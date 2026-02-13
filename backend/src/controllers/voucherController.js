@@ -272,6 +272,20 @@ module.exports = {
       const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
       const where = {};
 
+      // Filter by company_id if available (multi-company support)
+      if (req.company_id) {
+        where.company_id = req.company_id;
+      }
+
+      // Debug logging
+      console.log('🔍 Voucher List Query:', {
+        company_id: req.company_id,
+        tenant_id: req.tenant_id,
+        where,
+        voucher_type,
+        status,
+      });
+
       if (voucher_type) where.voucher_type = voucher_type;
       if (status) where.status = status;
       if (startDate && endDate) {
@@ -295,6 +309,17 @@ module.exports = {
         limit: parseInt(limit, 10),
         offset,
         order: [['voucher_date', 'DESC'], ['voucher_number', 'DESC']],
+      });
+
+      // Debug logging
+      console.log('📊 Voucher Query Result:', {
+        count: vouchers.count,
+        rows: vouchers.rows.length,
+        sample: vouchers.rows[0] ? {
+          id: vouchers.rows[0].id,
+          voucher_number: vouchers.rows[0].voucher_number,
+          company_id: vouchers.rows[0].company_id,
+        } : null,
       });
 
       // Calculate subtotal and tax_amount for each voucher

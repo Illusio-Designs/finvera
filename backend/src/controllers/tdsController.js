@@ -446,5 +446,200 @@ module.exports = {
       next(err);
     }
   },
-};
 
+  // ==================== TDS/TCS REPORT APIs ====================
+
+  /**
+   * Generate TDS Report
+   */
+  async generateTDSReport(req, res, next) {
+    try {
+      const { from_date, to_date, section, deductee_pan } = req.query;
+
+      if (!from_date || !to_date) {
+        return res.status(400).json({
+          success: false,
+          message: 'from_date and to_date are required'
+        });
+      }
+
+      const where = {};
+
+      if (section) {
+        where.tds_section = section;
+      }
+
+      if (deductee_pan) {
+        where.deductee_pan = deductee_pan;
+      }
+
+      // Get all TDS transactions with voucher date filtering
+      const transactions = await req.tenantModels.TDSDetail.findAll({
+        where,
+        include: [
+          {
+            model: req.tenantModels.Voucher,
+            as: 'voucher',
+            attributes: ['voucher_number', 'voucher_date', 'voucher_type'],
+            where: {
+              voucher_date: {
+                [Op.between]: [from_date, to_date]
+              }
+            },
+            required: true
+          }
+        ],
+        order: [[{ model: req.tenantModels.Voucher, as: 'voucher' }, 'voucher_date', 'DESC']]
+      });
+
+      // Calculate summary
+      const summary = {
+        total_transactions: transactions.length,
+        total_tds_amount: transactions.reduce((sum, t) => sum + parseFloat(t.tds_amount || 0), 0),
+        total_payment_amount: transactions.reduce((sum, t) => sum + parseFloat(t.taxable_amount || 0), 0)
+      };
+
+      // Section-wise breakdown
+      const sectionWise = {};
+      transactions.forEach(t => {
+        const sec = t.tds_section;
+        if (!sectionWise[sec]) {
+          sectionWise[sec] = {
+            section: sec,
+            count: 0,
+            total_tds: 0
+          };
+        }
+        sectionWise[sec].count++;
+        sectionWise[sec].total_tds += parseFloat(t.tds_amount || 0);
+      });
+
+      res.json({
+        success: true,
+        data: {
+          summary,
+          section_wise: Object.values(sectionWise),
+          transactions: transactions.map(t => ({
+            deductee_name: t.deductee_name,
+            deductee_pan: t.deductee_pan,
+            tds_section: t.tds_section,
+            tds_rate: t.tds_rate,
+            taxable_amount: t.taxable_amount,
+            tds_amount: t.tds_amount,
+            deduction_date: t.voucher?.voucher_date,
+            voucher_number: t.voucher?.voucher_number,
+            voucher_type: t.voucher?.voucher_type
+          }))
+        }
+      });
+    } catch (error) {
+      logger.error('Error generating TDS report:', error);
+      next(error);
+    }
+  },
+
+  /**
+   * Generate TCS Report
+   */
+  async generateTCSReport(req, res, next) {
+    try {
+      const { from_date, to_date, section, buyer_pan } = req.query;
+
+      if (!from_date || !to_date) {
+        return res.status(400).json({
+          success: false,
+          message: 'from_date and to_date are required'
+        });
+      }
+
+      // Check if TCS table exists
+      if (!req.tenantModels.TCSDetail) {
+        return res.json({
+          success: true,
+          data: {
+            summary: {
+              total_transactions: 0,
+              total_tcs_amount: 0,
+              total_sale_amount: 0
+            },
+            section_wise: [],
+            transactions: []
+          }
+        });
+      }
+
+      const where = {};
+
+      if (section) {
+        where.tcs_section = section;
+      }
+
+      if (buyer_pan) {
+        where.buyer_pan = buyer_pan;
+      }
+
+      // Get all TCS transactions with voucher date filtering
+      const transactions = await req.tenantModels.TCSDetail.findAll({
+        where,
+        include: [
+          {
+            model: req.tenantModels.Voucher,
+            as: 'voucher',
+            attributes: ['voucher_number', 'voucher_date', 'voucher_type'],
+            where: {
+              voucher_date: {
+                [Op.between]: [from_date, to_date]
+              }
+            },
+            required: true
+          }
+        ],
+        order: [[{ model: req.tenantModels.Voucher, as: 'voucher' }, 'voucher_date', 'DESC']]
+      });
+
+      // Calculate summary
+      const summary = {
+        total_transactions: transactions.length,
+        total_tcs_amount: transactions.reduce((sum, t) => sum + parseFloat(t.tcs_amount || 0), 0),
+        total_sale_amount: transactions.reduce((sum, t) => sum + parseFloat(t.taxable_amount || 0), 0)
+      };
+
+      // Section-wise breakdown
+      const sectionWise = {};
+      transactions.forEach(t => {
+        const sec = t.tcs_section;
+        if (!sectionWise[sec]) {
+          sectionWise[sec] = {
+            section: sec,
+            count: 0,
+            total_tcs: 0
+          };
+        }
+        sectionWise[sec].count++;
+        sectionWise[sec].total_tcs += parseFloat(t.tcs_amount || 0);
+      });
+
+      res.json({
+        success: true,
+        data: {
+          summary,
+          section_wise: Object.values(sectionWise),
+          transactions: transactions.map(t => ({
+            buyer_name: t.buyer_name,
+            buyer_pan: t.buyer_pan,
+            tcs_section: t.tcs_section,
+            tcs_rate: t.tcs_rate,
+            taxable_amount: t.taxable_amount,
+            tcs_amount: t.tcs_amount,
+            collection_date: t.voucher?.voucher_date,
+            voucher_number: t.voucher?.voucher_number,
+            voucher_type: t.voucher?.voucher_type
+          }))
+        }
+      });
+    } catch (error) {
+      logger.error('Error generating TCS report:', error);
+      next(error);
+    }
+  }
+};

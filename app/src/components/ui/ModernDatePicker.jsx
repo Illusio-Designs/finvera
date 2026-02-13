@@ -18,8 +18,15 @@ const ModernDatePicker = ({
   error = false,
   label,
 }) => {
+  // Parse date without timezone conversion
+  const parseDate = (dateString) => {
+    if (!dateString) return null;
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
   const [showPicker, setShowPicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(value ? new Date(value) : null);
+  const [selectedDate, setSelectedDate] = useState(value ? parseDate(value) : null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const formatDate = (date) => {
@@ -35,7 +42,11 @@ const ModernDatePicker = ({
   };
 
   const formatDateForAPI = (date) => {
-    return date.toISOString().split('T')[0];
+    // Use local date without timezone conversion
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const getMonthName = (date) => {
@@ -88,7 +99,7 @@ const ModernDatePicker = ({
   };
 
   const handleCancel = () => {
-    setSelectedDate(value ? new Date(value) : null);
+    setSelectedDate(value ? parseDate(value) : null);
     setShowPicker(false);
   };
 

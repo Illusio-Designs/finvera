@@ -44,5 +44,8 @@ router.post('/reports/tcs', tdsController.submitTCSReportJob);
 router.get('/reports/tcs/:job_id', tdsController.getTCSReportJobStatus);
 router.post('/reports/tcs/search', tdsController.searchTCSReportJobs);
 
+// TDS/TCS Report Generation
+router.get('/report', tdsController.generateTDSReport);
+
 module.exports = router;
 
