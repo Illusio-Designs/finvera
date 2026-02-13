@@ -191,6 +191,20 @@ models.Company = masterSequelize.define('Company', {
     allowNull: true,
   },
 
+  // TDS/TCS Settings (Phase 1: Foundation Layer)
+  is_tds_enabled: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    allowNull: false,
+    comment: 'Enable TDS (Tax Deducted at Source) compliance',
+  },
+  is_tcs_enabled: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    allowNull: false,
+    comment: 'Enable TCS (Tax Collected at Source) compliance',
+  },
+
   is_active: {
     type: DataTypes.BOOLEAN,
     defaultValue: true,

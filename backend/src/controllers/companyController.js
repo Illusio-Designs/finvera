@@ -399,12 +399,12 @@ module.exports = {
       });
 
       // Auto-create statutory ledgers when TDS/TCS is enabled
-      const TDSTCSService = require('../services/tdsTcsService');
+      const tdsService = require('../services/tdsService');
       
       // If TDS was just enabled, create TDS ledgers
       if (is_tds_enabled === true && !company.is_tds_enabled) {
         try {
-          await TDSTCSService.createTDSLedgers(req.tenantModels, req.masterModels, req.tenant_id);
+          await tdsService.createTDSLedgers(req.tenantModels, req.masterModels, req.tenant_id);
         } catch (error) {
           logger.error('Error creating TDS ledgers:', error);
           // Don't fail the update, just log the error
@@ -414,7 +414,7 @@ module.exports = {
       // If TCS was just enabled, create TCS ledgers
       if (is_tcs_enabled === true && !company.is_tcs_enabled) {
         try {
-          await TDSTCSService.createTCSLedgers(req.tenantModels, req.masterModels, req.tenant_id);
+          await tdsService.createTCSLedgers(req.tenantModels, req.masterModels, req.tenant_id);
         } catch (error) {
           logger.error('Error creating TCS ledgers:', error);
           // Don't fail the update, just log the error

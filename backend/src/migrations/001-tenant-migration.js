@@ -139,6 +139,53 @@ module.exports = {
         bank_branch: { type: Sequelize.STRING, allowNull: true },
         is_default: { type: Sequelize.BOOLEAN, defaultValue: false },
         is_active: { type: Sequelize.BOOLEAN, defaultValue: true },
+        
+        // TDS/TCS Fields (Phase 1: Foundation Layer)
+        is_system_generated: {
+          type: Sequelize.BOOLEAN,
+          defaultValue: false,
+          allowNull: false,
+          comment: 'System-generated ledgers (TDS/TCS Payable) - cannot be edited/deleted',
+        },
+        system_code: {
+          type: Sequelize.STRING(50),
+          allowNull: true,
+          unique: true,
+          comment: 'Unique system code (TDS_PAYABLE, TCS_PAYABLE, etc.)',
+        },
+        is_tds_applicable: {
+          type: Sequelize.BOOLEAN,
+          defaultValue: false,
+          allowNull: false,
+          comment: 'Mark if TDS should be deducted for this party',
+        },
+        tds_section_code: {
+          type: Sequelize.STRING(20),
+          allowNull: true,
+          comment: 'TDS Section (194C, 194J, etc.)',
+        },
+        tds_deductor_type: {
+          type: Sequelize.ENUM('Individual', 'Company'),
+          allowNull: true,
+          comment: 'Type of deductor for TDS rate determination',
+        },
+        is_tcs_applicable: {
+          type: Sequelize.BOOLEAN,
+          defaultValue: false,
+          allowNull: false,
+          comment: 'Mark if TCS should be collected for this party',
+        },
+        tcs_section_code: {
+          type: Sequelize.STRING(20),
+          allowNull: true,
+          comment: 'TCS Section (206C1H, etc.)',
+        },
+        pan_no: {
+          type: Sequelize.STRING(20),
+          allowNull: true,
+          comment: 'PAN number - mandatory for TDS/TCS',
+        },
+        
         tenant_id: { type: Sequelize.STRING, allowNull: false },
         createdAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
         updatedAt: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
@@ -215,6 +262,83 @@ module.exports = {
             allowNull: true,
           });
           console.log('✓ Added bank_branch column to ledgers');
+        }
+        
+        // Add TDS/TCS fields if they don't exist (Phase 1: Foundation Layer)
+        if (!tableDesc.is_system_generated) {
+          await queryInterface.addColumn('ledgers', 'is_system_generated', {
+            type: Sequelize.BOOLEAN,
+            defaultValue: false,
+            allowNull: false,
+            comment: 'System-generated ledgers (TDS/TCS Payable) - cannot be edited/deleted',
+          });
+          console.log('✓ Added is_system_generated column to ledgers');
+        }
+        
+        if (!tableDesc.system_code) {
+          await queryInterface.addColumn('ledgers', 'system_code', {
+            type: Sequelize.STRING(50),
+            allowNull: true,
+            unique: true,
+            comment: 'Unique system code (TDS_PAYABLE, TCS_PAYABLE, etc.)',
+          });
+          console.log('✓ Added system_code column to ledgers');
+        }
+        
+        if (!tableDesc.is_tds_applicable) {
+          await queryInterface.addColumn('ledgers', 'is_tds_applicable', {
+            type: Sequelize.BOOLEAN,
+            defaultValue: false,
+            allowNull: false,
+            comment: 'Mark if TDS should be deducted for this party',
+          });
+          console.log('✓ Added is_tds_applicable column to ledgers');
+        }
+        
+        if (!tableDesc.tds_section_code) {
+          await queryInterface.addColumn('ledgers', 'tds_section_code', {
+            type: Sequelize.STRING(20),
+            allowNull: true,
+            comment: 'TDS Section (194C, 194J, etc.)',
+          });
+          console.log('✓ Added tds_section_code column to ledgers');
+        }
+        
+        if (!tableDesc.tds_deductor_type) {
+          await queryInterface.addColumn('ledgers', 'tds_deductor_type', {
+            type: Sequelize.ENUM('Individual', 'Company'),
+            allowNull: true,
+            comment: 'Type of deductor for TDS rate determination',
+          });
+          console.log('✓ Added tds_deductor_type column to ledgers');
+        }
+        
+        if (!tableDesc.is_tcs_applicable) {
+          await queryInterface.addColumn('ledgers', 'is_tcs_applicable', {
+            type: Sequelize.BOOLEAN,
+            defaultValue: false,
+            allowNull: false,
+            comment: 'Mark if TCS should be collected for this party',
+          });
+          console.log('✓ Added is_tcs_applicable column to ledgers');
+        }
+        
+        if (!tableDesc.tcs_section_code) {
+          await queryInterface.addColumn('ledgers', 'tcs_section_code', {
+            type: Sequelize.STRING(20),
+            allowNull: true,
+            comment: 'TCS Section (206C1H, etc.)',
+          });
+          console.log('✓ Added tcs_section_code column to ledgers');
+        }
+        
+        if (!tableDesc.pan_no) {
+          await queryInterface.addColumn('ledgers', 'pan_no', {
+            type: Sequelize.STRING(20),
+            allowNull: true,
+            comment: 'PAN number - mandatory for TDS/TCS',
+          });
+          console.log('✓ Added pan_no column to ledgers');
         }
       } catch (error) {
         console.log('⚠️  Could not check/add columns to ledgers:', error.message);

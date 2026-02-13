@@ -1337,6 +1337,236 @@ class TDSService {
       deducteeDetails: tdsReturn.deductee_details,
     };
   }
+
+  /**
+   * Auto-create statutory ledgers when TDS is enabled
+   * Phase 1: Foundation Layer
+   * 
+   * @param {Object} tenantModels - Tenant database models
+   * @param {Object} masterModels - Master database models
+   * @param {string} tenantId - Tenant ID
+   * @returns {Promise<Array>} Created ledgers
+   */
+  async createTDSLedgers(tenantModels, masterModels, tenantId) {
+    try {
+      // Find "Duties & Taxes" group
+      const dutiesTaxGroup = await masterModels.AccountGroup.findOne({
+        where: { name: 'Duties & Taxes' },
+      });
+
+      if (!dutiesTaxGroup) {
+        throw new Error('Duties & Taxes account group not found');
+      }
+
+      // Find "Current Assets" group for TDS Receivable
+      const currentAssetsGroup = await masterModels.AccountGroup.findOne({
+        where: { name: 'Current Assets' },
+      });
+
+      const ledgersToCreate = [
+        {
+          ledger_name: 'TDS Payable',
+          system_code: 'TDS_PAYABLE',
+          account_group_id: dutiesTaxGroup.id,
+          description: 'System-generated ledger for TDS payable to government',
+        },
+      ];
+
+      // Optionally create TDS Receivable
+      if (currentAssetsGroup) {
+        ledgersToCreate.push({
+          ledger_name: 'TDS Receivable',
+          system_code: 'TDS_RECEIVABLE',
+          account_group_id: currentAssetsGroup.id,
+          description: 'System-generated ledger for TDS receivable',
+        });
+      }
+
+      const createdLedgers = [];
+
+      for (const ledgerData of ledgersToCreate) {
+        // Check if already exists
+        const existing = await tenantModels.Ledger.findOne({
+          where: { system_code: ledgerData.system_code },
+        });
+
+        if (!existing) {
+          // Generate ledger code
+          const groupCode = dutiesTaxGroup.group_code || 'TAX';
+          const ledgerCode = await this.generateLedgerCode(tenantModels, groupCode);
+
+          const ledger = await tenantModels.Ledger.create({
+            ...ledgerData,
+            ledger_code: ledgerCode,
+            is_system_generated: true,
+            opening_balance: 0,
+            balance_type: 'credit',
+            opening_balance_type: 'Cr',
+            currency: 'INR',
+            tenant_id: tenantId,
+          });
+
+          createdLedgers.push(ledger);
+          logger.info(`✅ Created TDS ledger: ${ledgerData.ledger_name}`);
+        } else {
+          logger.info(`ℹ️ TDS ledger already exists: ${ledgerData.ledger_name}`);
+        }
+      }
+
+      return createdLedgers;
+    } catch (error) {
+      logger.error('Error creating TDS ledgers:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Auto-create statutory ledgers when TCS is enabled
+   * Phase 1: Foundation Layer
+   * 
+   * @param {Object} tenantModels - Tenant database models
+   * @param {Object} masterModels - Master database models
+   * @param {string} tenantId - Tenant ID
+   * @returns {Promise<Array>} Created ledgers
+   */
+  async createTCSLedgers(tenantModels, masterModels, tenantId) {
+    try {
+      // Find "Duties & Taxes" group
+      const dutiesTaxGroup = await masterModels.AccountGroup.findOne({
+        where: { name: 'Duties & Taxes' },
+      });
+
+      if (!dutiesTaxGroup) {
+        throw new Error('Duties & Taxes account group not found');
+      }
+
+      const ledgerData = {
+        ledger_name: 'TCS Payable',
+        system_code: 'TCS_PAYABLE',
+        account_group_id: dutiesTaxGroup.id,
+        description: 'System-generated ledger for TCS payable to government',
+      };
+
+      // Check if already exists
+      const existing = await tenantModels.Ledger.findOne({
+        where: { system_code: ledgerData.system_code },
+      });
+
+      if (!existing) {
+        // Generate ledger code
+        const groupCode = dutiesTaxGroup.group_code || 'TAX';
+        const ledgerCode = await this.generateLedgerCode(tenantModels, groupCode);
+
+        const ledger = await tenantModels.Ledger.create({
+          ...ledgerData,
+          ledger_code: ledgerCode,
+          is_system_generated: true,
+          opening_balance: 0,
+          balance_type: 'credit',
+          opening_balance_type: 'Cr',
+          currency: 'INR',
+          tenant_id: tenantId,
+        });
+
+        logger.info(`✅ Created TCS ledger: ${ledgerData.ledger_name}`);
+        return [ledger];
+      } else {
+        logger.info(`ℹ️ TCS ledger already exists: ${ledgerData.ledger_name}`);
+        return [existing];
+      }
+    } catch (error) {
+      logger.error('Error creating TCS ledgers:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate unique ledger code
+   * @param {Object} tenantModels - Tenant database models
+   * @param {string} groupCode - Account group code prefix
+   * @returns {Promise<string>} Generated ledger code
+   */
+  async generateLedgerCode(tenantModels, groupCode) {
+    const lastLedger = await tenantModels.Ledger.findOne({
+      where: {
+        ledger_code: {
+          [require('sequelize').Op.like]: `${groupCode}%`,
+        },
+      },
+      order: [['ledger_code', 'DESC']],
+    });
+
+    if (lastLedger && lastLedger.ledger_code) {
+      const lastNumber = parseInt(lastLedger.ledger_code.replace(groupCode, '')) || 0;
+      return `${groupCode}${String(lastNumber + 1).padStart(4, '0')}`;
+    }
+
+    return `${groupCode}0001`;
+  }
+
+  /**
+   * Get TDS sections from master database
+   * @param {Object} masterModels - Master database models
+   * @returns {Promise<Array>} TDS sections
+   */
+  async getTDSSectionsFromDB(masterModels) {
+    try {
+      const sections = await masterModels.TDSSection.findAll({
+        where: { is_active: true },
+        order: [['section_code', 'ASC']],
+      });
+      return sections;
+    } catch (error) {
+      logger.error('Error fetching TDS sections:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get TCS sections from master database
+   * @param {Object} masterModels - Master database models
+   * @returns {Promise<Array>} TCS sections
+   */
+  async getTCSSectionsFromDB(masterModels) {
+    try {
+      const sections = await masterModels.TCSSection.findAll({
+        where: { is_active: true },
+        order: [['section_code', 'ASC']],
+      });
+      return sections;
+    } catch (error) {
+      logger.error('Error fetching TCS sections:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get company TDS/TCS configuration
+   * @param {Object} masterModels - Master database models
+   * @param {string} companyId - Company ID
+   * @returns {Promise<Object>} Company TDS/TCS config
+   */
+  async getCompanyTDSTCSConfig(masterModels, companyId) {
+    try {
+      const company = await masterModels.Company.findByPk(companyId, {
+        attributes: ['id', 'company_name', 'is_tds_enabled', 'is_tcs_enabled'],
+      });
+
+      if (!company) {
+        throw new Error('Company not found');
+      }
+
+      return {
+        company_id: company.id,
+        company_name: company.company_name,
+        is_tds_enabled: company.is_tds_enabled || false,
+        is_tcs_enabled: company.is_tcs_enabled || false,
+      };
+    } catch (error) {
+      logger.error('Error fetching company TDS/TCS config:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new TDSService();
