@@ -116,9 +116,27 @@ export default function ReportsScreen() {
       screen: 'LedgerStatement',
       category: 'Accounting',
     },
+    {
+      id: 'tds-report',
+      title: 'TDS Report',
+      description: 'Tax Deducted at Source summary',
+      icon: 'document-text',
+      color: '#3e60ab',
+      screen: 'TDSReport',
+      category: 'Tax',
+    },
+    {
+      id: 'tcs-report',
+      title: 'TCS Report',
+      description: 'Tax Collected at Source summary',
+      icon: 'document-attach',
+      color: '#10b981',
+      screen: 'TCSReport',
+      category: 'Tax',
+    },
   ];
 
-  const categories = ['All', 'Financial', 'Accounting'];
+  const categories = ['All', 'Financial', 'Accounting', 'Tax'];
   const filteredReports = selectedCategory === 'All' 
     ? reports 
     : reports.filter(report => report.category === selectedCategory);

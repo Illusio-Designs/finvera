@@ -161,20 +161,21 @@ export default function CustomDrawer({ visible, onClose }) {
       title: 'Financial Reports',
       expandable: true,
       items: [
-        { name: 'Balance Sheet', icon: 'document-text-outline', color: '#3e60ab', screen: 'BalanceSheet' },
+        { name: 'All Reports', icon: 'analytics-outline', color: '#3e60ab', screen: 'Reports' },
+        { name: 'Balance Sheet', icon: 'document-text-outline', color: '#3b82f6', screen: 'BalanceSheet' },
         { name: 'Profit & Loss', icon: 'trending-up-outline', color: '#10b981', screen: 'ProfitLoss' },
         { name: 'Ledger Statement', icon: 'document-outline', color: '#f59e0b', screen: 'LedgerStatement' },
         { name: 'Receivables', icon: 'people-outline', color: '#059669', screen: 'Receivables' },
         { name: 'Payables', icon: 'card-outline', color: '#dc2626', screen: 'Payables' },
-        { name: 'Trial Balance', icon: 'list-outline', color: '#8b5cf6', screen: 'TrialBalance' },
+        { name: 'TDS Report', icon: 'receipt-outline', color: '#3b82f6', screen: 'TDSReport' },
+        { name: 'TCS Report', icon: 'document-attach-outline', color: '#10b981', screen: 'TCSReport' },
       ]
     },
     {
       title: 'Tax Management',
       expandable: true,
       items: [
-        { name: 'Income Tax', icon: 'document-text-outline', color: '#3e60ab', screen: 'IncomeTax' },
-        { name: 'TDS Management', icon: 'receipt-outline', color: '#f59e0b', screen: 'TDS' },
+        { name: 'Income Tax', icon: 'calculator-outline', color: '#3e60ab', screen: 'IncomeTax' },
       ]
     },
     {

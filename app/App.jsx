@@ -77,7 +77,6 @@ import EWayBillScreen from './src/screens/client/gst/EWayBillScreen.jsx';
 // Phase 4: Tax Management Screens
 import IncomeTaxScreen from './src/screens/client/tax/IncomeTaxScreen.jsx';
 import TaxCalculatorScreen from './src/screens/client/tax/TaxCalculatorScreen.jsx';
-import TDSScreen from './src/screens/client/tax/TDSScreen.jsx';
 
 // Phase 4: Reports Screens
 import BalanceSheetScreen from './src/screens/client/reports/BalanceSheetScreen.jsx';
@@ -85,6 +84,8 @@ import ProfitLossScreen from './src/screens/client/reports/ProfitLossScreen.jsx'
 import ReceivablesScreen from './src/screens/client/reports/ReceivablesScreen.jsx';
 import PayablesScreen from './src/screens/client/reports/PayablesScreen.jsx';
 import LedgerStatementScreen from './src/screens/client/reports/LedgerStatementScreen.jsx';
+import TDSReportScreen from './src/screens/client/reports/TDSReportScreen.jsx';
+import TCSReportScreen from './src/screens/client/reports/TCSReportScreen.jsx';
 
 // Phase 5: Extended Vouchers Screens
 import PaymentScreen from './src/screens/client/vouchers/PaymentScreen.jsx';
@@ -354,7 +355,6 @@ function AppNavigator() {
             {/* Phase 4: Tax Management Screens */}
             <Stack.Screen name="IncomeTax" component={IncomeTaxScreen} />
             <Stack.Screen name="TaxCalculator" component={TaxCalculatorScreen} />
-            <Stack.Screen name="TDS" component={TDSScreen} />
             
             {/* Phase 4: Reports Screens */}
             <Stack.Screen name="BalanceSheet" component={BalanceSheetScreen} />
@@ -362,6 +362,8 @@ function AppNavigator() {
             <Stack.Screen name="Receivables" component={ReceivablesScreen} />
             <Stack.Screen name="Payables" component={PayablesScreen} />
             <Stack.Screen name="LedgerStatement" component={LedgerStatementScreen} />
+            <Stack.Screen name="TDSReport" component={TDSReportScreen} />
+            <Stack.Screen name="TCSReport" component={TCSReportScreen} />
             
             {/* Phase 5: Extended Vouchers Screens */}
             <Stack.Screen name="Payment" component={PaymentScreen} />

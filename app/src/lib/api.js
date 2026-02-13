@@ -316,6 +316,7 @@ export const taxAPI = {
     generateReturn: (data) => apiClient.post('/tds/generate-return', data),
     generateCertificate: (id) => apiClient.post(`/tds/${id}/generate-certificate`),
     getReturnStatus: (returnId) => apiClient.get(`/tds/return-status/${returnId}`),
+    report: (params) => apiClient.get('/tds/report', { params }),
     // Analytics APIs
     createPotentialNoticeJob: (data) => apiClient.post('/tds/analytics/potential-notice', data),
     getAnalyticsJobStatus: (jobId) => apiClient.get(`/tds/analytics/job-status/${jobId}`),
@@ -329,6 +330,11 @@ export const taxAPI = {
     submitTCSReport: (data) => apiClient.post('/tds/reports/tcs-report', data),
     getTCSReportStatus: (jobId) => apiClient.get(`/tds/reports/tcs-report/${jobId}`),
     searchTCSReports: (data) => apiClient.post('/tds/reports/search-tcs', data),
+  },
+  tcs: {
+    list: (params) => apiClient.get('/tcs', { params }),
+    calculate: (data) => apiClient.post('/tcs/calculate', data),
+    report: (params) => apiClient.get('/tcs/report', { params }),
   },
   incomeTax: {
     calculate: (data) => apiClient.post('/income-tax/calculate', data),
