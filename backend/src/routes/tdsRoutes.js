@@ -1,5 +1,6 @@
 const { Router } = require('express');
 const tdsController = require('../controllers/tdsController');
+const tdsTcsController = require('../controllers/tdsTcsController');
 const { authenticate } = require('../middleware/auth');
 const { setTenantContext, requireTenant, resolveTenant } = require('../middleware/tenant');
 
@@ -10,6 +11,16 @@ router.use(setTenantContext);
 router.use(requireTenant);
 router.use(resolveTenant);
 
+// TDS/TCS Section Master Data
+router.get('/sections/tds', tdsTcsController.getTDSSections);
+router.get('/sections/tcs', tdsTcsController.getTCSSections);
+router.get('/company/:companyId/config', tdsTcsController.getCompanyConfig);
+
+// TDS Ledger Creation
+router.post('/ledgers/tds', tdsTcsController.createTDSLedgers);
+router.post('/ledgers/tcs', tdsTcsController.createTCSLedgers);
+
+// Existing TDS routes
 router.get('/', tdsController.list);
 router.post('/calculate', tdsController.calculateTDS);
 router.post('/return', tdsController.generateReturn);

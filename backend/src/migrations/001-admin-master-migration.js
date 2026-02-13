@@ -540,6 +540,44 @@ module.exports = {
         allowNull: false,
         comment: 'Enable TCS (Tax Collected at Source) compliance',
       });
+      
+      // Add TDS/TCS configuration fields
+      await addColumnIfNotExists('companies', 'tan_number', {
+        type: Sequelize.STRING(10),
+        allowNull: true,
+        comment: 'Tax Deduction and Collection Account Number (TAN)',
+      });
+      
+      await addColumnIfNotExists('companies', 'tds_circle', {
+        type: Sequelize.STRING(100),
+        allowNull: true,
+        comment: 'TDS Circle/Ward',
+      });
+      
+      await addColumnIfNotExists('companies', 'tds_ao_code', {
+        type: Sequelize.STRING(50),
+        allowNull: true,
+        comment: 'TDS Assessing Officer Code',
+      });
+      
+      await addColumnIfNotExists('companies', 'tds_deductor_type', {
+        type: Sequelize.ENUM('individual', 'company', 'government', 'others'),
+        allowNull: true,
+        defaultValue: 'company',
+        comment: 'Type of TDS Deductor',
+      });
+      
+      await addColumnIfNotExists('companies', 'tds_responsible_person', {
+        type: Sequelize.STRING(200),
+        allowNull: true,
+        comment: 'Person responsible for TDS compliance',
+      });
+      
+      await addColumnIfNotExists('companies', 'tds_responsible_designation', {
+        type: Sequelize.STRING(100),
+        allowNull: true,
+        comment: 'Designation of responsible person',
+      });
     }
 
     // 3. TENANT_REVIEWS TABLE (in master DB)

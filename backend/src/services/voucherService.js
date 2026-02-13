@@ -2165,12 +2165,70 @@ class VoucherService {
       }
     }
 
-    // Credit party (Creditor)
+    // Check for TDS 194Q (Purchase of Goods) - Automatic Calculation
+    let tdsAmount = 0;
+    let netPartyAmount = roundedTotal;
+    
+    if (partyLedger.is_tds_applicable && partyLedger.tds_section_code === '194Q') {
+      console.log('\n🔍 TDS 194Q Applicable - Calculating...');
+      
+      // Get TDS section details
+      const tdsSection = await masterModels.TDSSectionMaster.findOne({
+        where: { section_code: '194Q', is_active: true }
+      });
+      
+      if (tdsSection) {
+        // Calculate TDS amount
+        const tdsRate = partyLedger.tds_deductor_type === 'individual' 
+          ? tdsSection.rate_individual 
+          : tdsSection.rate_non_individual;
+        
+        tdsAmount = (roundedTotal * tdsRate) / 100;
+        netPartyAmount = roundedTotal - tdsAmount;
+        
+        console.log('💰 TDS Calculation:', {
+          total_amount: roundedTotal,
+          tds_rate: tdsRate,
+          tds_amount: tdsAmount,
+          net_party_amount: netPartyAmount,
+          deductor_type: partyLedger.tds_deductor_type
+        });
+        
+        // Create TDS Payable ledger entry
+        const tdsPayableLedger = await getOrCreateSystemLedger(
+          { tenantModels, masterModels, tenant_id },
+          { 
+            ledgerCode: 'TDS-194Q-PAYABLE', 
+            ledgerName: 'TDS Payable - 194Q (Purchase of Goods)', 
+            groupCode: 'CL' 
+          }
+        );
+        
+        if (tdsPayableLedger && tdsAmount > 0) {
+          ledgerEntries.push({
+            ledger_id: tdsPayableLedger.id,
+            debit_amount: 0,
+            credit_amount: tdsAmount,
+            narration: `TDS 194Q @ ${tdsRate}% on purchase from ${partyLedger.ledger_name}`
+          });
+          
+          console.log('✅ TDS Payable entry added:', tdsAmount);
+        }
+      } else {
+        console.warn('⚠️ TDS Section 194Q not found in master data');
+      }
+    } else {
+      console.log('ℹ️ TDS not applicable for this supplier');
+    }
+
+    // Credit party (Creditor) - NET amount after TDS deduction
     ledgerEntries.push({
       ledger_id: party_ledger_id,
       debit_amount: 0,
-      credit_amount: roundedTotal,
-      narration: narration || `Purchase invoice from ${partyLedger.ledger_name}`,
+      credit_amount: netPartyAmount,
+      narration: tdsAmount > 0 
+        ? `Purchase from ${partyLedger.ledger_name} (Net after TDS ₹${tdsAmount.toFixed(2)})`
+        : narration || `Purchase invoice from ${partyLedger.ledger_name}`,
     });
 
     if (Math.abs(roundOffAmount) > 0.000001) {
@@ -2186,6 +2244,18 @@ class VoucherService {
       });
     }
 
+    console.log('\n📊 Final Invoice Summary:', {
+      subtotal,
+      cgst: totalCGST,
+      sgst: totalSGST,
+      igst: totalIGST,
+      cess: totalCess,
+      round_off: roundOffAmount,
+      tds_amount: tdsAmount,
+      net_party_amount: netPartyAmount,
+      total_amount: roundedTotal
+    });
+
     return {
       subtotal,
       cgst_amount: totalCGST,
@@ -2193,6 +2263,8 @@ class VoucherService {
       igst_amount: totalIGST,
       cess_amount: totalCess,
       round_off: roundOffAmount,
+      tds_amount: tdsAmount,
+      net_party_amount: netPartyAmount,
       total_amount: roundedTotal,
       place_of_supply: pos,
       is_reverse_charge: !!is_reverse_charge,

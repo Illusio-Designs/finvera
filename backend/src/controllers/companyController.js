@@ -362,6 +362,12 @@ module.exports = {
         compliance,
         is_tds_enabled,
         is_tcs_enabled,
+        tan_number,
+        tds_circle,
+        tds_ao_code,
+        tds_deductor_type,
+        tds_responsible_person,
+        tds_responsible_designation,
       } = req.body || {};
 
       // Validate business_type if provided
@@ -396,6 +402,12 @@ module.exports = {
         compliance,
         is_tds_enabled: is_tds_enabled !== undefined ? is_tds_enabled : company.is_tds_enabled,
         is_tcs_enabled: is_tcs_enabled !== undefined ? is_tcs_enabled : company.is_tcs_enabled,
+        tan_number: tan_number !== undefined ? tan_number : company.tan_number,
+        tds_circle: tds_circle !== undefined ? tds_circle : company.tds_circle,
+        tds_ao_code: tds_ao_code !== undefined ? tds_ao_code : company.tds_ao_code,
+        tds_deductor_type: tds_deductor_type !== undefined ? tds_deductor_type : company.tds_deductor_type,
+        tds_responsible_person: tds_responsible_person !== undefined ? tds_responsible_person : company.tds_responsible_person,
+        tds_responsible_designation: tds_responsible_designation !== undefined ? tds_responsible_designation : company.tds_responsible_designation,
       });
 
       // Auto-create statutory ledgers when TDS/TCS is enabled

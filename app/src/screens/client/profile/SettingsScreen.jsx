@@ -7,7 +7,7 @@ import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotification } from '../../../contexts/NotificationContext';
-import { tenantAPI } from '../../../lib/api';
+import { tenantAPI, companyAPI } from '../../../lib/api';
 import { buildUploadUrl } from '../../../config/env';
 import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
@@ -19,21 +19,31 @@ export default function SettingsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showBarcodeModal, setShowBarcodeModal] = useState(false);
+  const [showGSTModal, setShowGSTModal] = useState(false);
+  const [showTDSConfigModal, setShowTDSConfigModal] = useState(false);
+  
+  const [companyInfo, setCompanyInfo] = useState({
+    id: null,
+    business_type: 'trader',
+  });
+  
   const [preferences, setPreferences] = useState({
     // App preferences only
     biometric: false,
   });
+  
   const [barcodeSettings, setBarcodeSettings] = useState({
     barcode_enabled: false,
     default_barcode_type: 'CODE128',
     default_barcode_prefix: 'FV',
   });
+  
   const [tempBarcodeSettings, setTempBarcodeSettings] = useState({
     default_barcode_type: 'CODE128',
     default_barcode_prefix: 'FV',
   });
   
-  // GST & Compliance Settings
+  // GST & Compliance Settings (from Company)
   const [gstSettings, setGstSettings] = useState({
     einvoice_enabled: false,
     einvoice_threshold: 0,
@@ -45,22 +55,41 @@ export default function SettingsScreen() {
     auto_generate_ewaybill: false,
     ewaybill_username: '',
     ewaybill_password: '',
-    tds_enabled: false,
-    default_tds_section: '',
+    tds_tcs_enabled: false,
   });
   
-  // Voucher Numbering Settings
+  const [tempGSTSettings, setTempGSTSettings] = useState({});
+  
+  // Voucher Numbering Settings (from Tenant)
   const [numberingSettings, setNumberingSettings] = useState({
     auto_numbering_enabled: true,
-    numbering_prefix: 'FV',
-    numbering_start: 1,
-    numbering_padding: 4,
+    use_advanced_numbering: false, // Whether to use NumberingSeries or simple numbering
   });
   
-  const [showGSTModal, setShowGSTModal] = useState(false);
-  const [showNumberingModal, setShowNumberingModal] = useState(false);
-  const [tempGSTSettings, setTempGSTSettings] = useState({});
   const [tempNumberingSettings, setTempNumberingSettings] = useState({});
+  
+  // TDS/TCS Configuration (from Company)
+  const [tdsConfig, setTdsConfig] = useState({
+    tan_number: '',
+    tds_circle: '',
+    tds_ao_code: '',
+    tds_deductor_type: 'company',
+    tds_responsible_person: '',
+    tds_responsible_designation: '',
+    default_tds_section: '',
+    default_tcs_section: '',
+  });
+  
+  const [tempTDSConfig, setTempTDSConfig] = useState({
+    tan_number: '',
+    tds_circle: '',
+    tds_ao_code: '',
+    tds_deductor_type: 'company',
+    tds_responsible_person: '',
+    tds_responsible_designation: '',
+    default_tds_section: '',
+    default_tcs_section: '',
+  });
 
   const handleMenuPress = () => {
     openDrawer();
@@ -68,8 +97,10 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     checkBiometricAvailability();
-    fetchBarcodeSettings();
-  }, []);
+    if (user?.company_id) {
+      fetchBarcodeSettings();
+    }
+  }, [user?.company_id]);
 
   const fetchBarcodeSettings = async () => {
     try {
@@ -78,7 +109,87 @@ export default function SettingsScreen() {
       const tenant = response?.data?.data || response?.data;
       const settings = tenant?.settings || {};
       
-      // Barcode Settings
+      // Get company ID from user context
+      const companyId = user?.company_id;
+      
+      if (!companyId) {
+        console.warn('No company_id found in user context');
+        setLoading(false);
+        return;
+      }
+      
+      // Fetch company configuration
+      try {
+        const companyResponse = await companyAPI.get(companyId);
+        const company = companyResponse?.data?.data || companyResponse?.data;
+        
+        if (company) {
+          // Store company info
+          setCompanyInfo({
+            id: company.id,
+            business_type: company.business_type || 'trader',
+          });
+          
+          // GST & Compliance Settings (from Company compliance JSON)
+          const compliance = company.compliance || {};
+          setGstSettings({
+            einvoice_enabled: compliance.einvoice_enabled === true,
+            einvoice_threshold: compliance.einvoice_threshold || 0,
+            auto_generate_einvoice: compliance.auto_generate_einvoice === true,
+            einvoice_username: compliance.einvoice_username || '',
+            einvoice_password: compliance.einvoice_password || '',
+            ewaybill_enabled: compliance.ewaybill_enabled === true,
+            ewaybill_threshold: compliance.ewaybill_threshold || 50000,
+            auto_generate_ewaybill: compliance.auto_generate_ewaybill === true,
+            ewaybill_username: compliance.ewaybill_username || '',
+            ewaybill_password: compliance.ewaybill_password || '',
+            tds_tcs_enabled: company.is_tds_enabled === true || company.is_tcs_enabled === true,
+          });
+          
+          setTempGSTSettings({
+            einvoice_threshold: compliance.einvoice_threshold || 0,
+            auto_generate_einvoice: compliance.auto_generate_einvoice === true,
+            einvoice_username: compliance.einvoice_username || '',
+            einvoice_password: compliance.einvoice_password || '',
+            ewaybill_threshold: compliance.ewaybill_threshold || 50000,
+            auto_generate_ewaybill: compliance.auto_generate_ewaybill === true,
+            ewaybill_username: compliance.ewaybill_username || '',
+            ewaybill_password: compliance.ewaybill_password || '',
+          });
+          
+          // TDS/TCS Configuration (from Company)
+          setTdsConfig({
+            tan_number: company.tan_number || '',
+            tds_circle: company.tds_circle || '',
+            tds_ao_code: company.tds_ao_code || '',
+            tds_deductor_type: company.tds_deductor_type || 'company',
+            tds_responsible_person: company.tds_responsible_person || '',
+            tds_responsible_designation: company.tds_responsible_designation || '',
+            default_tds_section: compliance.default_tds_section || '',
+            default_tcs_section: compliance.default_tcs_section || '',
+          });
+          
+          setTempTDSConfig({
+            tan_number: company.tan_number || '',
+            tds_circle: company.tds_circle || '',
+            tds_ao_code: company.tds_ao_code || '',
+            tds_deductor_type: company.tds_deductor_type || 'company',
+            tds_responsible_person: company.tds_responsible_person || '',
+            tds_responsible_designation: company.tds_responsible_designation || '',
+            default_tds_section: compliance.default_tds_section || '',
+            default_tcs_section: compliance.default_tcs_section || '',
+          });
+        }
+      } catch (companyError) {
+        console.error('Error fetching company config:', companyError);
+        showNotification({
+          type: 'error',
+          title: 'Error',
+          message: 'Failed to load company settings'
+        });
+      }
+      
+      // Barcode Settings (from Tenant)
       setBarcodeSettings({
         barcode_enabled: settings.barcode_enabled === true,
         default_barcode_type: settings.default_barcode_type || 'CODE128',
@@ -90,49 +201,23 @@ export default function SettingsScreen() {
         default_barcode_prefix: settings.default_barcode_prefix || 'FV',
       });
       
-      // GST & Compliance Settings
-      setGstSettings({
-        einvoice_enabled: settings.einvoice_enabled === true,
-        einvoice_threshold: settings.einvoice_threshold || 0,
-        auto_generate_einvoice: settings.auto_generate_einvoice === true,
-        einvoice_username: settings.einvoice_username || '',
-        einvoice_password: settings.einvoice_password || '',
-        ewaybill_enabled: settings.ewaybill_enabled === true,
-        ewaybill_threshold: settings.ewaybill_threshold || 50000,
-        auto_generate_ewaybill: settings.auto_generate_ewaybill === true,
-        ewaybill_username: settings.ewaybill_username || '',
-        ewaybill_password: settings.ewaybill_password || '',
-        tds_enabled: settings.tds_enabled === true,
-        default_tds_section: settings.default_tds_section || '',
-      });
-      
-      setTempGSTSettings({
-        einvoice_threshold: settings.einvoice_threshold || 0,
-        auto_generate_einvoice: settings.auto_generate_einvoice === true,
-        einvoice_username: settings.einvoice_username || '',
-        einvoice_password: settings.einvoice_password || '',
-        ewaybill_threshold: settings.ewaybill_threshold || 50000,
-        auto_generate_ewaybill: settings.auto_generate_ewaybill === true,
-        ewaybill_username: settings.ewaybill_username || '',
-        ewaybill_password: settings.ewaybill_password || '',
-        default_tds_section: settings.default_tds_section || '',
-      });
-      
-      // Voucher Numbering Settings
+      // Voucher Numbering Settings (from Tenant)
       setNumberingSettings({
         auto_numbering_enabled: settings.auto_numbering_enabled !== false,
-        numbering_prefix: settings.numbering_prefix || 'FV',
-        numbering_start: settings.numbering_start || 1,
-        numbering_padding: settings.numbering_padding || 4,
+        use_advanced_numbering: settings.use_advanced_numbering === true,
       });
       
       setTempNumberingSettings({
-        numbering_prefix: settings.numbering_prefix || 'FV',
-        numbering_start: settings.numbering_start || 1,
-        numbering_padding: settings.numbering_padding || 4,
+        auto_numbering_enabled: settings.auto_numbering_enabled !== false,
+        use_advanced_numbering: settings.use_advanced_numbering === true,
       });
     } catch (error) {
       console.error('Error fetching settings:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to load settings'
+      });
     } finally {
       setLoading(false);
     }
@@ -170,12 +255,78 @@ export default function SettingsScreen() {
   const updateGSTSettings = async (newSettings) => {
     try {
       setLoading(true);
-      await tenantAPI.updateProfile({
-        settings: {
-          ...gstSettings,
-          ...newSettings,
-        }
-      });
+      
+      if (!companyInfo.id) {
+        showNotification({
+          type: 'error',
+          title: 'Error',
+          message: 'Company information not loaded'
+        });
+        return;
+      }
+      
+      // Fetch current company to get existing compliance data
+      const companyResponse = await companyAPI.get(companyInfo.id);
+      const company = companyResponse?.data?.data || companyResponse?.data;
+      const existingCompliance = company?.compliance || {};
+      
+      // Prepare company update data
+      const companyUpdateData = {};
+      const complianceUpdateData = { ...existingCompliance };
+      
+      // E-Invoice settings
+      if (newSettings.einvoice_enabled !== undefined) {
+        complianceUpdateData.einvoice_enabled = newSettings.einvoice_enabled;
+      }
+      if (newSettings.einvoice_threshold !== undefined) {
+        complianceUpdateData.einvoice_threshold = newSettings.einvoice_threshold;
+      }
+      if (newSettings.auto_generate_einvoice !== undefined) {
+        complianceUpdateData.auto_generate_einvoice = newSettings.auto_generate_einvoice;
+      }
+      if (newSettings.einvoice_username !== undefined) {
+        complianceUpdateData.einvoice_username = newSettings.einvoice_username;
+      }
+      if (newSettings.einvoice_password !== undefined) {
+        complianceUpdateData.einvoice_password = newSettings.einvoice_password;
+      }
+      
+      // E-Way Bill settings
+      if (newSettings.ewaybill_enabled !== undefined) {
+        complianceUpdateData.ewaybill_enabled = newSettings.ewaybill_enabled;
+      }
+      if (newSettings.ewaybill_threshold !== undefined) {
+        complianceUpdateData.ewaybill_threshold = newSettings.ewaybill_threshold;
+      }
+      if (newSettings.auto_generate_ewaybill !== undefined) {
+        complianceUpdateData.auto_generate_ewaybill = newSettings.auto_generate_ewaybill;
+      }
+      if (newSettings.ewaybill_username !== undefined) {
+        complianceUpdateData.ewaybill_username = newSettings.ewaybill_username;
+      }
+      if (newSettings.ewaybill_password !== undefined) {
+        complianceUpdateData.ewaybill_password = newSettings.ewaybill_password;
+      }
+      
+      // TDS/TCS settings
+      if (newSettings.tds_enabled !== undefined) {
+        companyUpdateData.is_tds_enabled = newSettings.tds_enabled;
+      }
+      if (newSettings.tcs_enabled !== undefined) {
+        companyUpdateData.is_tcs_enabled = newSettings.tcs_enabled;
+      }
+      if (newSettings.default_tds_section !== undefined) {
+        complianceUpdateData.default_tds_section = newSettings.default_tds_section;
+      }
+      if (newSettings.default_tcs_section !== undefined) {
+        complianceUpdateData.default_tcs_section = newSettings.default_tcs_section;
+      }
+      
+      // Always update compliance JSON
+      companyUpdateData.compliance = complianceUpdateData;
+      
+      // Update company
+      await companyAPI.update(companyInfo.id, companyUpdateData);
       
       setGstSettings(prev => ({ ...prev, ...newSettings }));
       
@@ -189,7 +340,7 @@ export default function SettingsScreen() {
       showNotification({
         type: 'error',
         title: 'Error',
-        message: 'Failed to update GST settings'
+        message: error.response?.data?.message || 'Failed to update GST settings'
       });
     } finally {
       setLoading(false);
@@ -270,9 +421,13 @@ export default function SettingsScreen() {
     } else if (key === 'ewaybill_enabled') {
       const newValue = !gstSettings.ewaybill_enabled;
       await updateGSTSettings({ ewaybill_enabled: newValue });
-    } else if (key === 'tds_enabled') {
-      const newValue = !gstSettings.tds_enabled;
-      await updateGSTSettings({ tds_enabled: newValue });
+    } else if (key === 'tds_tcs_enabled') {
+      const newValue = !gstSettings.tds_tcs_enabled;
+      // Update both TDS and TCS together
+      await updateGSTSettings({ 
+        tds_enabled: newValue,
+        tcs_enabled: newValue 
+      });
     } else if (key === 'auto_numbering_enabled') {
       const newValue = !numberingSettings.auto_numbering_enabled;
       await updateNumberingSettings({ auto_numbering_enabled: newValue });
@@ -389,23 +544,77 @@ export default function SettingsScreen() {
       auto_generate_ewaybill: gstSettings.auto_generate_ewaybill,
       ewaybill_username: gstSettings.ewaybill_username,
       ewaybill_password: gstSettings.ewaybill_password,
-      default_tds_section: gstSettings.default_tds_section,
+      default_tds_section: tdsConfig.default_tds_section,
+      default_tcs_section: tdsConfig.default_tcs_section,
     });
     setShowGSTModal(true);
   };
+  
+  const handleTDSConfig = () => {
+    setTempTDSConfig({
+      tan_number: tdsConfig.tan_number,
+      tds_circle: tdsConfig.tds_circle,
+      tds_ao_code: tdsConfig.tds_ao_code,
+      tds_deductor_type: tdsConfig.tds_deductor_type,
+      tds_responsible_person: tdsConfig.tds_responsible_person,
+      tds_responsible_designation: tdsConfig.tds_responsible_designation,
+    });
+    setShowTDSConfigModal(true);
+  };
+  
+  const saveTDSConfig = async () => {
+    try {
+      setLoading(true);
+      
+      if (!companyInfo.id) {
+        showNotification({
+          type: 'error',
+          title: 'Error',
+          message: 'Company information not loaded'
+        });
+        return;
+      }
+      
+      // Update company with TDS config
+      await companyAPI.update(companyInfo.id, tempTDSConfig);
+      
+      setTdsConfig(prev => ({ ...prev, ...tempTDSConfig }));
+      setShowTDSConfigModal(false);
+      
+      showNotification({
+        type: 'success',
+        title: 'Success',
+        message: 'TDS/TCS configuration updated successfully'
+      });
+    } catch (error) {
+      console.error('Error saving TDS config:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: error.response?.data?.message || 'Failed to update TDS configuration'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const saveGSTConfig = async () => {
-    await updateGSTSettings(tempGSTSettings);
+    const updateData = {
+      ...tempGSTSettings,
+      default_tds_section: tempGSTSettings.default_tds_section,
+      default_tcs_section: tempGSTSettings.default_tcs_section,
+    };
+    await updateGSTSettings(updateData);
     setShowGSTModal(false);
   };
   
   const handleNumberingConfig = () => {
-    setTempNumberingSettings({
-      numbering_prefix: numberingSettings.numbering_prefix,
-      numbering_start: numberingSettings.numbering_start,
-      numbering_padding: numberingSettings.numbering_padding,
+    // Show informative message about numbering series
+    showNotification({
+      type: 'info',
+      title: 'Advanced Numbering',
+      message: 'Voucher numbering is managed through Numbering Series. Each voucher type can have its own numbering format with prefixes, sequences, and automatic resets.'
     });
-    setShowNumberingModal(true);
   };
 
   const saveNumberingConfig = async () => {
@@ -452,21 +661,21 @@ export default function SettingsScreen() {
           disabled: !gstSettings.ewaybill_enabled
         },
         {
-          key: 'tds_enabled',
-          label: 'TDS',
-          description: 'Enable Tax Deducted at Source',
+          key: 'tds_tcs_enabled',
+          label: 'TDS/TCS',
+          description: 'Enable Tax Deducted/Collected at Source',
           type: 'switch',
-          value: gstSettings.tds_enabled,
+          value: gstSettings.tds_tcs_enabled,
           icon: 'calculator-outline'
         },
         {
-          key: 'tds_config',
-          label: 'TDS Configuration',
-          description: `Default Section: ${gstSettings.default_tds_section || 'Not Set'}`,
+          key: 'tds_tcs_config',
+          label: 'TDS/TCS Configuration',
+          description: `TAN: ${tdsConfig.tan_number || 'Not Set'}`,
           type: 'navigation',
           icon: 'settings-outline',
-          onPress: handleGSTConfig,
-          disabled: !gstSettings.tds_enabled
+          onPress: handleTDSConfig,
+          disabled: !gstSettings.tds_tcs_enabled
         },
       ]
     },
@@ -483,8 +692,8 @@ export default function SettingsScreen() {
         },
         {
           key: 'numbering_config',
-          label: 'Numbering Configuration',
-          description: `Format: ${numberingSettings.numbering_prefix}${String(numberingSettings.numbering_start).padStart(numberingSettings.numbering_padding, '0')}`,
+          label: 'Numbering Series',
+          description: 'Configure numbering series for different voucher types',
           type: 'navigation',
           icon: 'settings-outline',
           onPress: handleNumberingConfig,
@@ -492,7 +701,8 @@ export default function SettingsScreen() {
         },
       ]
     },
-    {
+    // Only show Barcode Settings for retail business type
+    ...(companyInfo.business_type === 'retail' ? [{
       title: 'Barcode Settings',
       items: [
         {
@@ -513,7 +723,7 @@ export default function SettingsScreen() {
           disabled: !barcodeSettings.barcode_enabled
         },
       ]
-    },
+    }] : []),
     {
       title: 'App Preferences',
       items: [
@@ -893,14 +1103,15 @@ export default function SettingsScreen() {
               </>
             )}
 
-            {/* TDS Settings */}
-            {gstSettings.tds_enabled && (
+            {/* TDS/TCS Settings */}
+            {gstSettings.tds_tcs_enabled && (
               <>
-                <Text style={styles.sectionHeader}>TDS Settings</Text>
+                <Text style={styles.sectionHeader}>TDS/TCS Settings</Text>
+                
                 <View style={styles.formGroup}>
-                  <Text style={styles.label}>Default TDS Section</Text>
+                  <Text style={styles.label}>Default TDS Section (Purchase)</Text>
                   <View style={styles.radioGroup}>
-                    {['194C', '194J', '194I', '194H', '194A'].map((section) => (
+                    {['194Q', '194C', '194J', '194I', '194H', '194A'].map((section) => (
                       <TouchableOpacity
                         key={section}
                         style={styles.radioOption}
@@ -920,6 +1131,32 @@ export default function SettingsScreen() {
                   </View>
                   <Text style={styles.helpText}>
                     This section will be pre-selected in TDS calculations
+                  </Text>
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Default TCS Section (Sales)</Text>
+                  <View style={styles.radioGroup}>
+                    {['206C(1H)', '206C(1)', '206C(1F)'].map((section) => (
+                      <TouchableOpacity
+                        key={section}
+                        style={styles.radioOption}
+                        onPress={() => setTempGSTSettings(prev => ({ ...prev, default_tcs_section: section }))}
+                      >
+                        <View style={[
+                          styles.radioCircle,
+                          tempGSTSettings.default_tcs_section === section && styles.radioCircleSelected
+                        ]}>
+                          {tempGSTSettings.default_tcs_section === section && (
+                            <View style={styles.radioInner} />
+                          )}
+                        </View>
+                        <Text style={styles.radioLabel}>Section {section}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <Text style={styles.helpText}>
+                    This section will be pre-selected in TCS calculations
                   </Text>
                 </View>
               </>
@@ -949,18 +1186,18 @@ export default function SettingsScreen() {
         </View>
       </Modal>
 
-      {/* Voucher Numbering Configuration Modal */}
+      {/* TDS/TCS Configuration Modal */}
       <Modal
-        visible={showNumberingModal}
+        visible={showTDSConfigModal}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={() => setShowNumberingModal(false)}
+        onRequestClose={() => setShowTDSConfigModal(false)}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Voucher Numbering Configuration</Text>
+            <Text style={styles.modalTitle}>TDS/TCS Configuration</Text>
             <TouchableOpacity 
-              onPress={() => setShowNumberingModal(false)}
+              onPress={() => setShowTDSConfigModal(false)}
               style={styles.closeButton}
             >
               <Ionicons name="close" size={24} color="#6b7280" />
@@ -968,66 +1205,121 @@ export default function SettingsScreen() {
           </View>
           
           <ScrollView style={styles.modalContent}>
+            <Text style={styles.infoText}>
+              Configure your TDS/TCS details. This information will be used for TDS/TCS calculations and reporting.
+            </Text>
+
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Numbering Prefix</Text>
+              <Text style={styles.label}>TAN Number *</Text>
               <TextInput
                 style={styles.input}
-                value={tempNumberingSettings.numbering_prefix}
-                onChangeText={(text) => setTempNumberingSettings(prev => ({ ...prev, numbering_prefix: text }))}
-                placeholder="Enter prefix (e.g., FV)"
+                value={tempTDSConfig.tan_number}
+                onChangeText={(text) => setTempTDSConfig(prev => ({ ...prev, tan_number: text.toUpperCase() }))}
+                placeholder="Enter TAN Number (e.g., ABCD12345E)"
                 placeholderTextColor="#9ca3af"
                 maxLength={10}
+                autoCapitalize="characters"
               />
               <Text style={styles.helpText}>
-                This prefix will be added to all voucher numbers
+                Tax Deduction Account Number (10 alphanumeric characters)
               </Text>
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Starting Number</Text>
+              <Text style={styles.label}>TDS Circle/Ward</Text>
               <TextInput
                 style={styles.input}
-                value={String(tempNumberingSettings.numbering_start)}
-                onChangeText={(text) => setTempNumberingSettings(prev => ({ ...prev, numbering_start: parseInt(text) || 1 }))}
-                placeholder="Enter starting number"
+                value={tempTDSConfig.tds_circle}
+                onChangeText={(text) => setTempTDSConfig(prev => ({ ...prev, tds_circle: text }))}
+                placeholder="Enter TDS Circle/Ward"
                 placeholderTextColor="#9ca3af"
-                keyboardType="numeric"
+                maxLength={100}
               />
               <Text style={styles.helpText}>
-                Voucher numbering will start from this number
+                TDS Circle or Ward under which you are registered
               </Text>
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Number Padding</Text>
+              <Text style={styles.label}>TDS AO Code</Text>
+              <TextInput
+                style={styles.input}
+                value={tempTDSConfig.tds_ao_code}
+                onChangeText={(text) => setTempTDSConfig(prev => ({ ...prev, tds_ao_code: text }))}
+                placeholder="Enter AO Code"
+                placeholderTextColor="#9ca3af"
+                maxLength={50}
+              />
+              <Text style={styles.helpText}>
+                Assessing Officer Code for your jurisdiction
+              </Text>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Deductor Type</Text>
               <View style={styles.radioGroup}>
-                {[3, 4, 5, 6].map((padding) => (
+                {[
+                  { value: 'individual', label: 'Individual' },
+                  { value: 'company', label: 'Company' },
+                  { value: 'government', label: 'Government' },
+                  { value: 'others', label: 'Others' }
+                ].map((type) => (
                   <TouchableOpacity
-                    key={padding}
+                    key={type.value}
                     style={styles.radioOption}
-                    onPress={() => setTempNumberingSettings(prev => ({ ...prev, numbering_padding: padding }))}
+                    onPress={() => setTempTDSConfig(prev => ({ ...prev, tds_deductor_type: type.value }))}
                   >
                     <View style={[
                       styles.radioCircle,
-                      tempNumberingSettings.numbering_padding === padding && styles.radioCircleSelected
+                      tempTDSConfig.tds_deductor_type === type.value && styles.radioCircleSelected
                     ]}>
-                      {tempNumberingSettings.numbering_padding === padding && (
+                      {tempTDSConfig.tds_deductor_type === type.value && (
                         <View style={styles.radioInner} />
                       )}
                     </View>
-                    <Text style={styles.radioLabel}>{padding} digits (e.g., {String(1).padStart(padding, '0')})</Text>
+                    <Text style={styles.radioLabel}>{type.label}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
               <Text style={styles.helpText}>
-                Preview: {tempNumberingSettings.numbering_prefix}{String(tempNumberingSettings.numbering_start).padStart(tempNumberingSettings.numbering_padding, '0')}
+                Type of entity deducting TDS
+              </Text>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Responsible Person Name</Text>
+              <TextInput
+                style={styles.input}
+                value={tempTDSConfig.tds_responsible_person}
+                onChangeText={(text) => setTempTDSConfig(prev => ({ ...prev, tds_responsible_person: text }))}
+                placeholder="Enter name of responsible person"
+                placeholderTextColor="#9ca3af"
+                maxLength={200}
+              />
+              <Text style={styles.helpText}>
+                Name of person responsible for TDS compliance
+              </Text>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Responsible Person Designation</Text>
+              <TextInput
+                style={styles.input}
+                value={tempTDSConfig.tds_responsible_designation}
+                onChangeText={(text) => setTempTDSConfig(prev => ({ ...prev, tds_responsible_designation: text }))}
+                placeholder="Enter designation (e.g., Director, Manager)"
+                placeholderTextColor="#9ca3af"
+                maxLength={100}
+              />
+              <Text style={styles.helpText}>
+                Designation of the responsible person
               </Text>
             </View>
 
             <View style={styles.actionButtons}>
               <TouchableOpacity 
                 style={[styles.actionButton, styles.cancelButton]}
-                onPress={() => setShowNumberingModal(false)}
+                onPress={() => setShowTDSConfigModal(false)}
                 disabled={loading}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -1035,8 +1327,8 @@ export default function SettingsScreen() {
               
               <TouchableOpacity 
                 style={[styles.actionButton, styles.saveButton, loading && styles.saveButtonDisabled]}
-                onPress={saveNumberingConfig}
-                disabled={loading}
+                onPress={saveTDSConfig}
+                disabled={loading || !tempTDSConfig.tan_number || tempTDSConfig.tan_number.length !== 10}
               >
                 <Ionicons name="save" size={20} color="white" />
                 <Text style={styles.saveButtonText}>

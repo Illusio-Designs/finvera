@@ -75,9 +75,17 @@ class LedgerValidator {
         errors.push('TDS deductor type (Individual/Company) is required when TDS is applicable');
       }
 
-      // Validate TDS section exists
-      if (data.tds_section_code) {
-        const tdsSection = await masterModels.TDSSection.findOne({
+      // Validate TDS section based on account group
+      if (data.tds_section_code && accountGroup) {
+        // For Purchase ledgers (Sundry Creditors), only 194Q is allowed
+        if (accountGroup.name?.toLowerCase().includes('sundry creditor')) {
+          if (data.tds_section_code !== '194Q') {
+            errors.push('Only TDS Section 194Q (Purchase of Goods) is allowed for Purchase/Sundry Creditor ledgers. For other TDS sections (194C, 194J, 194H, etc.), use Expense ledgers with Journal/Expense vouchers.');
+          }
+        }
+        
+        // Validate TDS section exists
+        const tdsSection = await masterModels.TDSSectionMaster.findOne({
           where: { section_code: data.tds_section_code, is_active: true },
         });
         if (!tdsSection) {

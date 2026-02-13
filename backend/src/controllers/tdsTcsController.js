@@ -38,7 +38,20 @@ module.exports = {
    */
   async getCompanyConfig(req, res, next) {
     try {
-      const { companyId } = req.params;
+      let { companyId } = req.params;
+      
+      // If companyId is 'current', use the company from request context
+      if (companyId === 'current' || !companyId) {
+        companyId = req.company?.id;
+      }
+      
+      if (!companyId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Company ID is required' 
+        });
+      }
+      
       const config = await tdsService.getCompanyTDSTCSConfig(req.masterModels, companyId);
       res.json({ success: true, data: config });
     } catch (error) {

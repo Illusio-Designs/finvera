@@ -189,15 +189,47 @@ export default function CreateLedgerModal({
     }
   };
 
+  // Filter TDS sections based on account group
+  const getFilteredTdsSections = () => {
+    if (!formData.account_group_id) return tdsSections;
+    
+    const selectedGroup = accountGroups.find(g => g.id === formData.account_group_id);
+    if (!selectedGroup) return tdsSections;
+    
+    const groupName = selectedGroup.name?.toLowerCase() || '';
+    
+    // For Sundry Creditors (Purchase ledgers), only show 194Q
+    if (groupName.includes('sundry creditor') || groupName.includes('purchase')) {
+      return tdsSections.filter(section => section.section_code === '194Q');
+    }
+    
+    // For Expense ledgers, show all except 194Q
+    if (groupName.includes('expense') || groupName.includes('indirect expense') || groupName.includes('direct expense')) {
+      return tdsSections.filter(section => section.section_code !== '194Q');
+    }
+    
+    // Default: show all
+    return tdsSections;
+  };
+
   const fetchCompanyConfig = async () => {
     try {
-      // Get current company from context or storage
-      // For now, we'll assume TDS/TCS is enabled
-      // You can fetch this from company settings API
-      setCompanyTdsEnabled(true);
-      setCompanyTcsEnabled(true);
+      // Fetch company/tenant settings to check if TDS/TCS is enabled
+      const response = await accountingAPI.tdsTcs.getCompanyConfig();
+      const config = response?.data?.data || response?.data || {};
+      
+      setCompanyTdsEnabled(config.is_tds_enabled === true || config.tds_enabled === true);
+      setCompanyTcsEnabled(config.is_tcs_enabled === true || config.tcs_enabled === true);
+      
+      console.log('Company TDS/TCS Config:', {
+        tds_enabled: config.is_tds_enabled || config.tds_enabled,
+        tcs_enabled: config.is_tcs_enabled || config.tcs_enabled
+      });
     } catch (error) {
       console.error('Company config fetch error:', error);
+      // Default to false if fetch fails
+      setCompanyTdsEnabled(false);
+      setCompanyTcsEnabled(false);
     }
   };
 
@@ -646,6 +678,18 @@ export default function CreateLedgerModal({
 
                       {formData.is_tds_applicable && (
                         <>
+                          {/* Info box explaining TDS section rules */}
+                          <View style={[styles.infoBox, { backgroundColor: '#fef3c7', borderColor: '#f59e0b' }]}>
+                            <Ionicons name="alert-circle" size={20} color="#f59e0b" />
+                            <Text style={[styles.infoText, { color: '#92400e' }]}>
+                              {selectedAccountGroup.name?.toLowerCase().includes('sundry creditor') || 
+                               selectedAccountGroup.name?.toLowerCase().includes('purchase') ? 
+                                'For Purchase ledgers, only TDS Section 194Q (Purchase of Goods) is allowed. TDS will be adjusted inside Purchase Voucher automatically.' :
+                                'For Expense ledgers, use sections like 194C (Contract), 194J (Professional), 194H (Commission). TDS will be adjusted through Journal/Expense vouchers.'
+                              }
+                            </Text>
+                          </View>
+
                           <View style={styles.inputGroup}>
                             <Text style={styles.inputLabel}>TDS Section *</Text>
                             <TouchableOpacity
@@ -872,27 +916,35 @@ export default function CreateLedgerModal({
           </View>
           
           <ScrollView style={styles.accountGroupList}>
-            {tdsSections.map((section) => (
-              <TouchableOpacity
-                key={section.id}
-                style={styles.accountGroupItem}
-                onPress={() => {
-                  setFormData(prev => ({ ...prev, tds_section_code: section.section_code }));
-                  setShowTdsSectionModal(false);
-                }}
-              >
-                <View style={styles.accountGroupContent}>
-                  <Text style={styles.accountGroupName}>{section.section_code}</Text>
-                  <Text style={styles.accountGroupDetail}>{section.description}</Text>
-                  <Text style={styles.accountGroupParent}>
-                    Individual: {section.rate_individual}% | Company: {section.rate_company}%
-                  </Text>
-                </View>
-                {formData.tds_section_code === section.section_code && (
-                  <Ionicons name="checkmark-circle" size={24} color="#10b981" />
-                )}
-              </TouchableOpacity>
-            ))}
+            {getFilteredTdsSections().length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>
+                  No TDS sections available for this account group
+                </Text>
+              </View>
+            ) : (
+              getFilteredTdsSections().map((section) => (
+                <TouchableOpacity
+                  key={section.id}
+                  style={styles.accountGroupItem}
+                  onPress={() => {
+                    setFormData(prev => ({ ...prev, tds_section_code: section.section_code }));
+                    setShowTdsSectionModal(false);
+                  }}
+                >
+                  <View style={styles.accountGroupContent}>
+                    <Text style={styles.accountGroupName}>{section.section_code}</Text>
+                    <Text style={styles.accountGroupDetail}>{section.description}</Text>
+                    <Text style={styles.accountGroupParent}>
+                      Individual: {section.rate_individual}% | Company: {section.rate_company}%
+                    </Text>
+                  </View>
+                  {formData.tds_section_code === section.section_code && (
+                    <Ionicons name="checkmark-circle" size={24} color="#10b981" />
+                  )}
+                </TouchableOpacity>
+              ))
+            )}
           </ScrollView>
         </View>
       </Modal>

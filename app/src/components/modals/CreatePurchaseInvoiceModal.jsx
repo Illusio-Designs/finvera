@@ -738,6 +738,46 @@ export default function CreatePurchaseInvoiceModal({
                       ).toFixed(2)}
                     </Text>
                   </View>
+                  
+                  {/* TDS Info - Show if supplier has TDS enabled */}
+                  {(() => {
+                    const selectedSupplier = suppliers.find(s => s.id === formData.party_ledger_id);
+                    if (selectedSupplier?.is_tds_applicable && selectedSupplier?.tds_section_code === '194Q') {
+                      const tdsRate = selectedSupplier.tds_deductor_type === 'individual' ? 0.1 : 0.1; // 0.1% for 194Q
+                      const grandTotal = items.reduce((sum, item) => 
+                        sum + parseFloat(item.amount || 0) + 
+                        parseFloat(item.cgst_amount || 0) + 
+                        parseFloat(item.sgst_amount || 0) + 
+                        parseFloat(item.igst_amount || 0), 0
+                      );
+                      const tdsAmount = (grandTotal * tdsRate) / 100;
+                      const netPayable = grandTotal - tdsAmount;
+                      
+                      return (
+                        <>
+                          <View style={[styles.infoBox, { backgroundColor: '#fef3c7', borderColor: '#f59e0b', marginTop: 12 }]}>
+                            <Ionicons name="information-circle" size={20} color="#f59e0b" />
+                            <Text style={[styles.infoText, { color: '#92400e' }]}>
+                              TDS 194Q @ {tdsRate}% will be automatically deducted
+                            </Text>
+                          </View>
+                          <View style={styles.totalRow}>
+                            <Text style={[styles.totalLabel, { color: '#f59e0b' }]}>Less: TDS 194Q ({tdsRate}%):</Text>
+                            <Text style={[styles.totalValue, { color: '#f59e0b' }]}>
+                              ₹{tdsAmount.toFixed(2)}
+                            </Text>
+                          </View>
+                          <View style={[styles.totalRow, { borderTopWidth: 1, borderTopColor: '#e5e7eb', paddingTop: 8, marginTop: 4 }]}>
+                            <Text style={[styles.grandTotalLabel, { color: '#059669' }]}>Net Payable:</Text>
+                            <Text style={[styles.grandTotalValue, { color: '#059669' }]}>
+                              ₹{netPayable.toFixed(2)}
+                            </Text>
+                          </View>
+                        </>
+                      );
+                    }
+                    return null;
+                  })()}
                 </View>
               </View>
             )}

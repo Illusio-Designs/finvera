@@ -204,6 +204,37 @@ models.Company = masterSequelize.define('Company', {
     allowNull: false,
     comment: 'Enable TCS (Tax Collected at Source) compliance',
   },
+  tan_number: {
+    type: DataTypes.STRING(10),
+    allowNull: true,
+    comment: 'Tax Deduction and Collection Account Number (TAN)',
+  },
+  tds_circle: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    comment: 'TDS Circle/Ward',
+  },
+  tds_ao_code: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    comment: 'TDS Assessing Officer Code',
+  },
+  tds_deductor_type: {
+    type: DataTypes.ENUM('individual', 'company', 'government', 'others'),
+    allowNull: true,
+    defaultValue: 'company',
+    comment: 'Type of TDS Deductor',
+  },
+  tds_responsible_person: {
+    type: DataTypes.STRING(200),
+    allowNull: true,
+    comment: 'Person responsible for TDS compliance',
+  },
+  tds_responsible_designation: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    comment: 'Designation of responsible person',
+  },
 
   is_active: {
     type: DataTypes.BOOLEAN,

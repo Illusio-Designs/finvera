@@ -107,11 +107,11 @@ export const accountingAPI = {
   },
   // TDS/TCS APIs
   tdsTcs: {
-    getTDSSections: () => apiClient.get('/tds-tcs/sections/tds'),
-    getTCSSections: () => apiClient.get('/tds-tcs/sections/tcs'),
-    getCompanyConfig: (companyId) => apiClient.get(`/tds-tcs/company/${companyId}/config`),
-    createTDSLedgers: () => apiClient.post('/tds-tcs/ledgers/tds'),
-    createTCSLedgers: () => apiClient.post('/tds-tcs/ledgers/tcs'),
+    getTDSSections: () => apiClient.get('/tds/sections/tds'),
+    getTCSSections: () => apiClient.get('/tds/sections/tcs'),
+    getCompanyConfig: (companyId) => apiClient.get(companyId ? `/tds/company/${companyId}/config` : '/tds/company/current/config'),
+    createTDSLedgers: () => apiClient.post('/tds/ledgers/tds'),
+    createTCSLedgers: () => apiClient.post('/tds/ledgers/tcs'),
   },
 };
 

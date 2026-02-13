@@ -234,6 +234,8 @@ async function generateSalesInvoiceEntries(tenantModels, masterModels, voucher, 
 
 /**
  * Generate ledger entries for Purchase Invoice
+ * TDS 194Q is now calculated in voucherService.createPurchaseInvoice
+ * This function just validates the ledger entries
  */
 async function generatePurchaseInvoiceEntries(tenantModels, masterModels, voucher, items, transaction) {
   const ledgerEntries = [];
@@ -303,16 +305,11 @@ async function generatePurchaseInvoiceEntries(tenantModels, masterModels, vouche
     });
   }
   
-  // 5. Credit Supplier Account (Sundry Creditor - Liability)
-  if (voucher.party_ledger_id) {
-    ledgerEntries.push({
-      voucher_id: voucher.id,
-      ledger_id: voucher.party_ledger_id,
-      debit_amount: 0,
-      credit_amount: totalAmount,
-      tenant_id: voucher.tenant_id,
-    });
-  }
+  // 5. TDS and Party entries are already calculated in voucherService.createPurchaseInvoice
+  // They come through voucher.ledger_entries, so we don't duplicate them here
+  // This function is called by postVoucher which uses the ledger_entries from createPurchaseInvoice
+  
+  logger.info('Purchase invoice entries generated (TDS handled in voucherService)');
   
   return ledgerEntries;
 }
