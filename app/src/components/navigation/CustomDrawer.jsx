@@ -167,7 +167,6 @@ export default function CustomDrawer({ visible, onClose }) {
         { name: 'Receivables', icon: 'people-outline', color: '#059669', screen: 'Receivables' },
         { name: 'Payables', icon: 'card-outline', color: '#dc2626', screen: 'Payables' },
         { name: 'Trial Balance', icon: 'list-outline', color: '#8b5cf6', screen: 'TrialBalance' },
-        { name: 'Cash Flow', icon: 'water-outline', color: '#06b6d4', screen: 'CashFlow' },
       ]
     },
     {
