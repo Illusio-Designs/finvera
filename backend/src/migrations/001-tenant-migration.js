@@ -18,6 +18,60 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
+    // ============================================
+    // DATABASE TYPE DETECTION
+    // ============================================
+    // This migration should ONLY run on tenant databases
+    // NOT on finvera_master or finvera_db
+    
+    const detectDatabaseType = async () => {
+      try {
+        const [dbNameResult] = await queryInterface.sequelize.query("SELECT DATABASE() as db_name");
+        const databaseName = (dbNameResult[0]?.db_name || '').toLowerCase();
+        
+        console.log(`🔍 Detected database: ${databaseName}`);
+        
+        // Skip if it's master or admin database
+        if (databaseName === 'finvera_master' || databaseName.includes('master')) {
+          return 'master';
+        }
+        
+        if (databaseName === 'finvera_db' || databaseName === 'finvera_main') {
+          return 'admin';
+        }
+        
+        // Any other finvera_* database is a tenant database
+        if (databaseName.startsWith('finvera_')) {
+          return 'tenant';
+        }
+        
+        // Default: assume tenant if not master or admin
+        return 'tenant';
+      } catch (error) {
+        console.warn('Could not detect database type:', error.message);
+        return 'unknown';
+      }
+    };
+
+    const dbType = await detectDatabaseType();
+    
+    // CRITICAL: Skip this migration if running on master or admin database
+    if (dbType === 'master') {
+      console.log('⚠️  SKIPPING: This is finvera_master database. Tenant migration will not run here.');
+      return;
+    }
+    
+    if (dbType === 'admin') {
+      console.log('⚠️  SKIPPING: This is finvera_db (admin) database. Tenant migration will not run here.');
+      return;
+    }
+    
+    if (dbType === 'unknown') {
+      console.log('⚠️  WARNING: Could not detect database type. Proceeding with caution...');
+    }
+    
+    console.log('✅ Proceeding with tenant migration...\n');
+    
     // Helper function to safely add column
     const addColumnIfNotExists = async (tableName, columnName, columnDefinition) => {
       try {

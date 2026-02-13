@@ -28,15 +28,48 @@ function encrypt(text) {
 module.exports = {
   async up(queryInterface, Sequelize) {
     const now = new Date();
-    const masterDbName = process.env.MASTER_DB_NAME || 'finvera_master';
-    const mainDbName = process.env.DB_NAME || 'finvera_main';
     
-    // Detect which database we're running on
-    const currentDbName = queryInterface.sequelize.config.database;
-    const isMasterDb = currentDbName === masterDbName;
-    const isMainDb = currentDbName === mainDbName;
+    // ============================================
+    // DATABASE TYPE DETECTION (same as migrations)
+    // ============================================
+    const detectDatabaseType = async () => {
+      try {
+        const [dbNameResult] = await queryInterface.sequelize.query("SELECT DATABASE() as db_name");
+        const databaseName = (dbNameResult[0]?.db_name || '').toLowerCase();
+        
+        console.log(`🔍 Detected database: ${databaseName}`);
+        
+        // Exact matches for known databases
+        if (databaseName === 'finvera_master') return 'master';
+        if (databaseName === 'finvera_db' || databaseName === 'finvera_main') return 'admin';
+        
+        // Any other finvera_* database is a TENANT database
+        if (databaseName.startsWith('finvera_')) return 'tenant';
+        
+        return 'unknown';
+      } catch (error) {
+        console.warn('Could not detect database type:', error.message);
+        return 'unknown';
+      }
+    };
 
-    console.log(`🔄 Running seeder on database: ${currentDbName} (Master: ${isMasterDb}, Main: ${isMainDb})`);
+    const dbType = await detectDatabaseType();
+    const isMasterDb = dbType === 'master';
+    const isMainDb = dbType === 'admin';
+
+    console.log(`🔄 Running seeder on database (Type: ${dbType}, Master: ${isMasterDb}, Admin: ${isMainDb})`);
+    
+    // Skip if unknown database
+    if (dbType === 'unknown') {
+      console.log('⚠️  Unknown database type, skipping seeder for safety');
+      return;
+    }
+    
+    // Skip tenant databases - they have their own seeder
+    if (dbType === 'tenant') {
+      console.log('⚠️  SKIPPING: This is a tenant database. Use tenant seeder instead.');
+      return;
+    }
 
     // ============================================
     // MASTER DATABASE SEEDERS (only run on master DB)

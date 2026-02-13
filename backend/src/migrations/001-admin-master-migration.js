@@ -19,14 +19,24 @@ module.exports = {
         const [dbNameResult] = await queryInterface.sequelize.query("SELECT DATABASE() as db_name");
         const databaseName = (dbNameResult[0]?.db_name || '').toLowerCase();
         
+        console.log(`🔍 Detected database: ${databaseName}`);
+        
         // Check if it's master database by name
-        if (databaseName.includes('master') || databaseName === 'finvera_master') {
+        if (databaseName === 'finvera_master' || databaseName.includes('_master')) {
           return 'master';
         }
         
-        // Check if it's admin/main database by name
-        if (databaseName.includes('finvera') && !databaseName.includes('master')) {
+        // Check if it's admin/main database by name (exact match)
+        if (databaseName === 'finvera_db' || databaseName === 'finvera_main') {
           return 'admin';
+        }
+        
+        // Any other finvera_* database is a TENANT database
+        if (databaseName.startsWith('finvera_') && 
+            databaseName !== 'finvera_master' && 
+            databaseName !== 'finvera_db' && 
+            databaseName !== 'finvera_main') {
+          return 'tenant';
         }
         
         // If database name doesn't help, check for existing tables
@@ -40,28 +50,41 @@ module.exports = {
           // Table check failed, continue
         }
         
-        // Check if users table exists but no tenant_master (indicates admin DB)
+        // Check if distributors/salesmen tables exist (indicates admin DB)
         try {
-          const [usersCheck] = await queryInterface.sequelize.query("SHOW TABLES LIKE 'users'");
-          if (usersCheck && usersCheck.length > 0) {
+          const [distributorsCheck] = await queryInterface.sequelize.query("SHOW TABLES LIKE 'distributors'");
+          const [salesmenCheck] = await queryInterface.sequelize.query("SHOW TABLES LIKE 'salesmen'");
+          if (distributorsCheck && distributorsCheck.length > 0 && salesmenCheck && salesmenCheck.length > 0) {
             return 'admin';
           }
         } catch (e) {
           // Table check failed, continue
         }
         
-        // Default: check database name or assume admin
-        return databaseName.includes('master') ? 'master' : 'admin';
+        // Default: unknown
+        return 'unknown';
       } catch (error) {
-        // Default to admin if detection fails
-        console.warn('Could not detect database type, defaulting to admin:', error.message);
-        return 'admin';
+        console.warn('Could not detect database type:', error.message);
+        return 'unknown';
       }
     };
 
     const dbType = await detectDatabaseType();
     const isMasterDB = dbType === 'master';
     const isAdminDB = dbType === 'admin';
+    
+    // CRITICAL: Skip this migration if running on tenant database
+    if (dbType === 'tenant') {
+      console.log('⚠️  SKIPPING: This is a tenant database. Admin/Master migration will not run here.');
+      return;
+    }
+    
+    if (dbType === 'unknown') {
+      console.log('⚠️  WARNING: Could not detect database type. Skipping migration for safety.');
+      return;
+    }
+    
+    console.log(`✅ Proceeding with ${dbType} database migration...\n`);
 
     // Helper function to check if column exists
     const columnExists = async (tableName, columnName) => {

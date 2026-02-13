@@ -35,6 +35,22 @@ async function startServer() {
     
     logger.info('🔄 Initializing databases...');
     
+    // Run automatic database initialization (migrations + seeders) if enabled
+    const autoDbInit = process.env.AUTO_DB_INIT === 'true';
+    
+    if (autoDbInit) {
+      logger.info('🔧 Auto database initialization enabled');
+      const databaseInitializer = require('./src/utils/databaseInitializer');
+      try {
+        await databaseInitializer.initialize();
+      } catch (initError) {
+        logger.error('❌ Database initialization failed:', initError.message);
+        logger.warn('⚠️  Attempting to continue with manual initialization...');
+      }
+    } else {
+      logger.info('ℹ️  Auto database initialization disabled (set AUTO_DB_INIT=true to enable)');
+    }
+    
     // 1. Initialize Master Database (for tenant metadata)
     logger.info('📦 Setting up master database for tenant metadata...');
     
