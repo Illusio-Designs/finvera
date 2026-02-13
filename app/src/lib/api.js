@@ -209,7 +209,7 @@ export const gstAPI = {
     setDefault: (id) => apiClient.post(`/gst/gstins/${id}/set-default`),
   },
   rates: {
-    get: (hsn) => apiClient.get(`/gst/rate?hsn=${hsn}`),
+    get: (hsn) => apiClient.get(`/gst/rate`, { params: { hsn_code: hsn } }),
   },
   returns: {
     list: () => apiClient.get('/gst/returns'),
@@ -217,14 +217,17 @@ export const gstAPI = {
     gstr3b: (data) => apiClient.post('/gst/returns/gstr3b', data),
   },
   einvoice: {
-    generate: (data) => apiClient.post('/gst/einvoice/generate', data),
-    cancel: (id) => apiClient.post(`/gst/einvoice/${id}/cancel`),
-    list: (params) => apiClient.get('/gst/einvoice', { params }),
+    generate: (data) => apiClient.post('/einvoice/generate', data),
+    cancel: (voucherId, data) => apiClient.post(`/einvoice/cancel/${voucherId}`, data),
+    list: (params) => apiClient.get('/einvoice', { params }),
+    getByVoucher: (voucherId) => apiClient.get(`/einvoice/voucher/${voucherId}`),
   },
   ewaybill: {
-    generate: (data) => apiClient.post('/gst/ewaybill/generate', data),
-    cancel: (id) => apiClient.post(`/gst/ewaybill/${id}/cancel`),
-    list: (params) => apiClient.get('/gst/ewaybill', { params }),
+    generate: (data) => apiClient.post('/ewaybill/generate', data),
+    cancel: (voucherId, data) => apiClient.post(`/ewaybill/cancel/${voucherId}`, data),
+    list: (params) => apiClient.get('/ewaybill', { params }),
+    getByVoucher: (voucherId) => apiClient.get(`/ewaybill/voucher/${voucherId}`),
+    updateVehicle: (id, data) => apiClient.put(`/ewaybill/${id}/vehicle`, data),
   },
   validate: (gstin) => apiClient.post('/gst/validate', { gstin }),
   details: (gstin) => apiClient.get(`/gst/details/${gstin}`),
@@ -392,8 +395,8 @@ export const referralAPI = {
 // E-Invoice APIs
 export const eInvoiceAPI = {
   generate: (data) => apiClient.post('/einvoice/generate', data),
-  cancel: (voucherId, data) => apiClient.delete(`/einvoice/${voucherId}`, { data }),
-  getStatus: (voucherId) => apiClient.get(`/einvoice/${voucherId}`),
+  cancel: (voucherId, data) => apiClient.post(`/einvoice/cancel/${voucherId}`, data),
+  getStatus: (voucherId) => apiClient.get(`/einvoice/voucher/${voucherId}`),
   retry: (id) => apiClient.post(`/einvoice/${id}/retry`),
   list: (params) => apiClient.get('/einvoice', { params }),
 };
@@ -401,8 +404,8 @@ export const eInvoiceAPI = {
 // E-Way Bill APIs
 export const eWayBillAPI = {
   generate: (data) => apiClient.post('/ewaybill/generate', data),
-  cancel: (voucherId, data) => apiClient.delete(`/ewaybill/${voucherId}`, { data }),
-  getStatus: (voucherId) => apiClient.get(`/ewaybill/${voucherId}`),
+  cancel: (voucherId, data) => apiClient.post(`/ewaybill/cancel/${voucherId}`, data),
+  getStatus: (voucherId) => apiClient.get(`/ewaybill/voucher/${voucherId}`),
   updateVehicle: (id, data) => apiClient.put(`/ewaybill/${id}/vehicle`, data),
   retry: (id) => apiClient.post(`/ewaybill/${id}/retry`),
   list: (params) => apiClient.get('/ewaybill', { params }),

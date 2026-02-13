@@ -50,6 +50,7 @@ import GSTScreen from './src/screens/client/gst/GSTScreen.jsx';
 import MoreScreen from './src/screens/client/profile/MoreScreen.jsx';
 import ProfileScreen from './src/screens/client/profile/ProfileScreen.jsx';
 import SettingsScreen from './src/screens/client/profile/SettingsScreen.jsx';
+import NumberingSeriesScreen from './src/screens/client/settings/NumberingSeriesScreen.jsx';
 import NotificationPreferencesScreen from './src/screens/client/profile/NotificationPreferencesScreen.jsx';
 import ChangePasswordScreen from './src/screens/client/profile/ChangePasswordScreen.jsx';
 import SubscriptionScreen from './src/screens/client/profile/SubscriptionScreen.jsx';
@@ -69,7 +70,6 @@ import WarehousesScreen from './src/screens/client/inventory/WarehousesScreen.js
 import AttributesScreen from './src/screens/client/inventory/AttributesScreen.jsx';
 
 // Phase 3: Advanced GST Screens
-import GSTINsScreen from './src/screens/client/gst/GSTINsScreen.jsx';
 import GSTRatesScreen from './src/screens/client/gst/GSTRatesScreen.jsx';
 import EInvoiceScreen from './src/screens/client/gst/EInvoiceScreen.jsx';
 import EWayBillScreen from './src/screens/client/gst/EWayBillScreen.jsx';
@@ -326,6 +326,7 @@ function AppNavigator() {
             {/* Profile & Settings */}
             <Stack.Screen name="Profile" component={ProfileScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="NumberingSeries" component={NumberingSeriesScreen} />
             <Stack.Screen name="NotificationPreferences" component={NotificationPreferencesScreen} />
             <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
             <Stack.Screen name="Subscription" component={SubscriptionScreen} />
@@ -346,7 +347,6 @@ function AppNavigator() {
             <Stack.Screen name="Attributes" component={AttributesScreen} />
             
             {/* Phase 3: Advanced GST Screens */}
-            <Stack.Screen name="GSTINs" component={GSTINsScreen} />
             <Stack.Screen name="GSTRates" component={GSTRatesScreen} />
             <Stack.Screen name="EInvoice" component={EInvoiceScreen} />
             <Stack.Screen name="EWayBill" component={EWayBillScreen} />

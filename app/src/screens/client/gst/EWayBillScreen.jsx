@@ -1,21 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'
-import { FONT_STYLES } from '../../../utils/fonts';;
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
-import { gstAPI } from '../../../lib/api';
-import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
+import { eWayBillAPI } from '../../../lib/api';
+import { FONT_STYLES } from '../../../utils/fonts';
+import TableSkeleton from '../../../components/ui/skeletons/TableSkeleton';
 
 export default function EWayBillScreen() {
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
   const [ewaybills, setEwaybills] = useState([]);
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedEwaybill, setSelectedEwaybill] = useState(null);
+  const [filter, setFilter] = useState('all');
 
   const handleMenuPress = () => {
     openDrawer();
@@ -26,9 +26,18 @@ export default function EWayBillScreen() {
     const startTime = Date.now();
     
     try {
-      const response = await gstAPI.ewaybill.list({ limit: 50 });
+      const params = { limit: 100 };
+      
+      if (filter !== 'all') {
+        params.status = filter.toUpperCase();
+      }
+      
+      const response = await eWayBillAPI.list(params);
       const data = response.data?.data || response.data || [];
+      const summaryData = response.data?.summary || null;
+      
       setEwaybills(Array.isArray(data) ? data : []);
+      setSummary(summaryData);
     } catch (error) {
       console.error('E-way bills fetch error:', error);
       showNotification({
@@ -37,8 +46,8 @@ export default function EWayBillScreen() {
         message: 'Failed to load e-way bills'
       });
       setEwaybills([]);
+      setSummary(null);
     } finally {
-      // Ensure skeleton shows for at least 3 seconds
       const elapsedTime = Date.now() - startTime;
       const remainingTime = Math.max(0, 3000 - elapsedTime);
       
@@ -46,11 +55,11 @@ export default function EWayBillScreen() {
         setLoading(false);
       }, remainingTime);
     }
-  }, [showNotification]);
+  }, [filter, showNotification]);
 
   useEffect(() => {
     fetchEwaybills();
-  }, [fetchEwaybills]);
+  }, [filter]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -58,19 +67,13 @@ export default function EWayBillScreen() {
     setRefreshing(false);
   }, [fetchEwaybills]);
 
-  const handleEwaybillPress = (ewaybill) => {
-    setSelectedEwaybill(ewaybill);
-    setShowDetailModal(true);
-  };
-
   const formatDate = (dateString) => {
-    if (!dateString) return 'Unknown';
+    if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
+    return `${day}/${month}/${year}`;
   };
 
   const formatCurrency = (amount) => {
@@ -92,26 +95,6 @@ export default function EWayBillScreen() {
     return colors[status?.toLowerCase()] || '#6b7280';
   };
 
-  const getStatusIcon = (status) => {
-    const icons = {
-      'active': 'checkmark-circle',
-      'cancelled': 'close-circle',
-      'expired': 'time',
-      'rejected': 'ban',
-    };
-    return icons[status?.toLowerCase()] || 'help-circle';
-  };
-
-  const getTransportModeIcon = (mode) => {
-    const icons = {
-      'road': 'car',
-      'rail': 'train',
-      'air': 'airplane',
-      'ship': 'boat',
-    };
-    return icons[mode?.toLowerCase()] || 'car';
-  };
-
   return (
     <View style={styles.container}>
       <TopBar 
@@ -126,354 +109,218 @@ export default function EWayBillScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* Header Section */}
-        <View style={styles.headerSection}>
-          <Text style={styles.sectionTitle}>E-Way Bill Management</Text>
-          <Text style={styles.sectionSubtitle}>
-            Generate and track electronic way bills for goods transportation
-          </Text>
-        </View>
-
-        {/* Stats Cards */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <View style={[styles.statIcon, { backgroundColor: '#dbeafe' }]}>
-              <Ionicons name="car" size={24} color="#3e60ab" />
-            </View>
-            <View style={styles.statInfo}>
-              <Text style={styles.statValue}>{ewaybills.length}</Text>
-              <Text style={styles.statLabel}>Total E-Way Bills</Text>
-            </View>
-          </View>
-          
-          <View style={styles.statCard}>
-            <View style={[styles.statIcon, { backgroundColor: '#d1fae5' }]}>
-              <Ionicons name="checkmark-circle" size={24} color="#10b981" />
-            </View>
-            <View style={styles.statInfo}>
-              <Text style={styles.statValue}>
-                {ewaybills.filter(e => e.status === 'active').length}
-              </Text>
-              <Text style={styles.statLabel}>Active</Text>
-            </View>
-          </View>
-          
-          <View style={styles.statCard}>
-            <View style={[styles.statIcon, { backgroundColor: '#fee2e2' }]}>
-              <Ionicons name="close-circle" size={24} color="#ef4444" />
-            </View>
-            <View style={styles.statInfo}>
-              <Text style={styles.statValue}>
-                {ewaybills.filter(e => e.status === 'cancelled').length}
-              </Text>
-              <Text style={styles.statLabel}>Cancelled</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* E-Way Bills List */}
-        {loading ? (
-          <View style={styles.ewaybillsList}>
-            <SkeletonListItem />
-            <SkeletonListItem />
-            <SkeletonListItem />
-            <SkeletonListItem />
-            <SkeletonListItem />
-          </View>
-        ) : ewaybills.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <View style={styles.emptyCard}>
-              <View style={styles.emptyIcon}>
-                <Ionicons name="car-outline" size={64} color="#94a3b8" />
-              </View>
-              <Text style={styles.emptyTitle}>No E-Way Bills Found</Text>
-              <Text style={styles.emptySubtitle}>
-                No electronic way bills have been generated yet
-              </Text>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.ewaybillsList}>
-            {ewaybills.map((ewaybill, index) => (
-              <TouchableOpacity
-                key={ewaybill.id || index}
-                style={styles.ewaybillCard}
-                onPress={() => handleEwaybillPress(ewaybill)}
-                activeOpacity={0.95}
-              >
-                <View style={styles.ewaybillCardGradient}>
-                  <View style={styles.ewaybillCardContent}>
-                    <View style={styles.ewaybillCardHeader}>
-                      <View style={[
-                        styles.ewaybillIcon,
-                        { backgroundColor: getStatusColor(ewaybill.status) + '20' }
-                      ]}>
-                        <Ionicons 
-                          name={getTransportModeIcon(ewaybill.transport_mode)} 
-                          size={24} 
-                          color={getStatusColor(ewaybill.status)} 
-                        />
-                      </View>
-                      <View style={styles.ewaybillInfo}>
-                        <Text style={styles.ewaybillNumber}>
-                          EWB: {ewaybill.ewb_number || 'N/A'}
-                        </Text>
-                        <Text style={styles.ewaybillDate}>
-                          {formatDate(ewaybill.generated_date || ewaybill.created_at)}
-                        </Text>
-                      </View>
-                      <View style={styles.ewaybillStatus}>
-                        <View style={[
-                          styles.statusBadge,
-                          { backgroundColor: getStatusColor(ewaybill.status) }
-                        ]}>
-                          <Text style={styles.statusText}>
-                            {ewaybill.status?.toUpperCase() || 'ACTIVE'}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                    
-                    <View style={styles.ewaybillCardBody}>
-                      <View style={styles.ewaybillDetail}>
-                        <Ionicons name="business-outline" size={16} color="#64748b" />
-                        <Text style={styles.ewaybillDetailText}>
-                          Consignee: {ewaybill.consignee_name || 'N/A'}
-                        </Text>
-                      </View>
-                      <View style={styles.ewaybillDetail}>
-                        <Ionicons name="location-outline" size={16} color="#64748b" />
-                        <Text style={styles.ewaybillDetailText}>
-                          From: {ewaybill.from_place || 'N/A'} → To: {ewaybill.to_place || 'N/A'}
-                        </Text>
-                      </View>
-                      <View style={styles.ewaybillDetail}>
-                        <Ionicons name="cash-outline" size={16} color="#64748b" />
-                        <Text style={styles.ewaybillDetailText}>
-                          Value: {formatCurrency(ewaybill.total_value)}
-                        </Text>
-                      </View>
-                      <View style={styles.ewaybillDetail}>
-                        <Ionicons name="speedometer-outline" size={16} color="#64748b" />
-                        <Text style={styles.ewaybillDetailText}>
-                          Distance: {ewaybill.distance || 0} km
-                        </Text>
-                      </View>
-                      {ewaybill.vehicle_number && (
-                        <View style={styles.ewaybillDetail}>
-                          <Ionicons name="car-outline" size={16} color="#64748b" />
-                          <Text style={styles.ewaybillDetailText}>
-                            Vehicle: {ewaybill.vehicle_number}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-
-                    <View style={styles.ewaybillCardFooter}>
-                      <View style={styles.ewaybillMeta}>
-                        <Text style={styles.ewaybillExpiry}>
-                          {ewaybill.valid_until 
-                            ? `Valid until: ${formatDate(ewaybill.valid_until)}`
-                            : 'Validity not specified'
-                          }
-                        </Text>
-                      </View>
-                      <TouchableOpacity style={styles.ewaybillAction}>
-                        <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                  
-                  {/* Decorative elements */}
-                  <View style={[
-                    styles.decorativeCircle, 
-                    { backgroundColor: getStatusColor(ewaybill.status) + '20' }
-                  ]} />
-                  <View style={[
-                    styles.decorativeLine, 
-                    { backgroundColor: getStatusColor(ewaybill.status) }
-                  ]} />
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
-        {/* Information Section */}
-        <View style={styles.infoSection}>
-          <View style={styles.infoCard}>
-            <View style={styles.infoHeader}>
-              <Ionicons name="information-circle" size={24} color="#3e60ab" />
-              <Text style={styles.infoTitle}>About E-Way Bill</Text>
-            </View>
-            <View style={styles.infoContent}>
-              <View style={styles.infoPoint}>
-                <View style={styles.infoBullet} />
-                <Text style={styles.infoText}>
-                  E-Way Bill is required for goods movement above ₹50,000
-                </Text>
-              </View>
-              <View style={styles.infoPoint}>
-                <View style={styles.infoBullet} />
-                <Text style={styles.infoText}>
-                  Valid for specific time periods based on distance
-                </Text>
-              </View>
-              <View style={styles.infoPoint}>
-                <View style={styles.infoBullet} />
-                <Text style={styles.infoText}>
-                  Can be generated by supplier, recipient, or transporter
-                </Text>
-              </View>
-              <View style={styles.infoPoint}>
-                <View style={styles.infoBullet} />
-                <Text style={styles.infoText}>
-                  Required for inter-state and intra-state movement
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-      </ScrollView>
-
-      {/* E-Way Bill Detail Modal */}
-      <Modal
-        visible={showDetailModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowDetailModal(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <View style={styles.modalHeaderContent}>
-              <View style={[
-                styles.modalIcon,
-                { backgroundColor: selectedEwaybill ? getStatusColor(selectedEwaybill.status) + '20' : '#dbeafe' }
-              ]}>
-                <Ionicons 
-                  name={selectedEwaybill ? getTransportModeIcon(selectedEwaybill.transport_mode) : 'car'} 
-                  size={20} 
-                  color={selectedEwaybill ? getStatusColor(selectedEwaybill.status) : '#3e60ab'} 
-                />
-              </View>
-              <View>
-                <Text style={styles.modalTitle}>E-Way Bill Details</Text>
-                <Text style={styles.modalSubtitle}>
-                  {selectedEwaybill?.ewb_number || 'E-Way Bill Information'}
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity 
-              onPress={() => setShowDetailModal(false)}
-              style={styles.closeButton}
-            >
-              <Ionicons name="close" size={24} color="#64748b" />
+        <View style={styles.headerActions}>
+          <View style={styles.actionButtonsRow}>
+            <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
+              <Ionicons name="refresh" size={16} color="#3e60ab" />
+              <Text style={styles.refreshButtonText}>Refresh</Text>
             </TouchableOpacity>
           </View>
-          
-          {selectedEwaybill && (
-            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
-              <View style={styles.detailCard}>
-                <Text style={styles.detailCardTitle}>E-Way Bill Information</Text>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>EWB Number:</Text>
-                  <Text style={styles.detailValue}>{selectedEwaybill.ewb_number || 'N/A'}</Text>
+        </View>
+
+        {/* Filter Tabs */}
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterTabsContainer}
+          contentContainerStyle={styles.filterTabs}
+        >
+          <TouchableOpacity 
+            style={[styles.filterTab, filter === 'all' && styles.filterTabActive]}
+            onPress={() => setFilter('all')}
+          >
+            <Text style={[styles.filterTabText, filter === 'all' && styles.filterTabTextActive]}>
+              All
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.filterTab, filter === 'active' && styles.filterTabActive]}
+            onPress={() => setFilter('active')}
+          >
+            <Text style={[styles.filterTabText, filter === 'active' && styles.filterTabTextActive]}>
+              Active
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.filterTab, filter === 'cancelled' && styles.filterTabActive]}
+            onPress={() => setFilter('cancelled')}
+          >
+            <Text style={[styles.filterTabText, filter === 'cancelled' && styles.filterTabTextActive]}>
+              Cancelled
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.filterTab, filter === 'expired' && styles.filterTabActive]}
+            onPress={() => setFilter('expired')}
+          >
+            <Text style={[styles.filterTabText, filter === 'expired' && styles.filterTabTextActive]}>
+              Expired
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {loading ? (
+          <View style={styles.reportContainer}>
+            <TableSkeleton rows={10} columns={5} />
+          </View>
+        ) : !ewaybills || ewaybills.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="car-outline" size={64} color="#d1d5db" />
+            <Text style={styles.emptyTitle}>No E-Way Bills Found</Text>
+            <Text style={styles.emptySubtitle}>
+              No electronic way bills available for the selected filter
+            </Text>
+          </View>
+        ) : (
+          <>
+            <View style={styles.reportHeader}>
+              <Text style={styles.reportTitle}>E-Way Bill Report</Text>
+              <Text style={styles.reportSubtitle}>Electronic Way Bill Management</Text>
+            </View>
+
+            <View style={styles.summarySection}>
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryCard}>
+                  <View style={styles.summaryCardIcon}>
+                    <Ionicons name="car" size={24} color="#3e60ab" />
+                  </View>
+                  <View style={styles.summaryCardContent}>
+                    <Text style={styles.summaryCardLabel}>Total E-Way Bills</Text>
+                    <Text style={styles.summaryCardValue}>{summary?.total || ewaybills.length}</Text>
+                  </View>
                 </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Status:</Text>
-                  <View style={[
-                    styles.statusBadge,
-                    { backgroundColor: getStatusColor(selectedEwaybill.status) }
-                  ]}>
-                    <Text style={styles.statusText}>
-                      {selectedEwaybill.status?.toUpperCase() || 'ACTIVE'}
+              </View>
+
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryCard}>
+                  <View style={styles.summaryCardIcon}>
+                    <Ionicons name="checkmark-circle" size={24} color="#10b981" />
+                  </View>
+                  <View style={styles.summaryCardContent}>
+                    <Text style={styles.summaryCardLabel}>Active</Text>
+                    <Text style={[styles.summaryCardValue, { color: '#10b981' }]}>
+                      {summary?.active || ewaybills.filter(e => e.status?.toLowerCase() === 'active').length}
                     </Text>
                   </View>
                 </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Generated Date:</Text>
-                  <Text style={styles.detailValue}>
-                    {formatDate(selectedEwaybill.generated_date || selectedEwaybill.created_at)}
-                  </Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Valid Until:</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedEwaybill.valid_until 
-                      ? formatDate(selectedEwaybill.valid_until)
-                      : 'Not specified'
-                    }
-                  </Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Total Value:</Text>
-                  <Text style={styles.detailValue}>
-                    {formatCurrency(selectedEwaybill.total_value)}
-                  </Text>
-                </View>
               </View>
 
-              <View style={styles.detailCard}>
-                <Text style={styles.detailCardTitle}>Consignment Details</Text>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Consignor:</Text>
-                  <Text style={styles.detailValue}>{selectedEwaybill.consignor_name || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Consignee:</Text>
-                  <Text style={styles.detailValue}>{selectedEwaybill.consignee_name || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>From Place:</Text>
-                  <Text style={styles.detailValue}>{selectedEwaybill.from_place || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>To Place:</Text>
-                  <Text style={styles.detailValue}>{selectedEwaybill.to_place || 'N/A'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Distance:</Text>
-                  <Text style={styles.detailValue}>{selectedEwaybill.distance || 0} km</Text>
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryCard}>
+                  <View style={styles.summaryCardIcon}>
+                    <Ionicons name="close-circle" size={24} color="#ef4444" />
+                  </View>
+                  <View style={styles.summaryCardContent}>
+                    <Text style={styles.summaryCardLabel}>Cancelled</Text>
+                    <Text style={styles.summaryCardValue}>
+                      {summary?.cancelled || ewaybills.filter(e => e.status?.toLowerCase() === 'cancelled').length}
+                    </Text>
+                  </View>
                 </View>
               </View>
+            </View>
 
-              <View style={styles.detailCard}>
-                <Text style={styles.detailCardTitle}>Transport Details</Text>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Transport Mode:</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedEwaybill.transport_mode?.toUpperCase() || 'ROAD'}
-                  </Text>
+            <View style={styles.tableContainer}>
+              <Text style={styles.tableTitle}>E-Way Bill List</Text>
+              <ScrollView 
+                horizontal={true}
+                showsHorizontalScrollIndicator={true}
+                style={styles.tableScrollView}
+              >
+                <View style={styles.table}>
+                  <View style={styles.tableHeader}>
+                    <View style={[styles.tableHeaderCell, styles.ewbColumn]}>
+                      <Text style={styles.tableHeaderText}>EWB Number</Text>
+                    </View>
+                    <View style={[styles.tableHeaderCell, styles.dateColumn]}>
+                      <Text style={styles.tableHeaderText}>Date</Text>
+                    </View>
+                    <View style={[styles.tableHeaderCell, styles.partyColumn]}>
+                      <Text style={styles.tableHeaderText}>Consignee</Text>
+                    </View>
+                    <View style={[styles.tableHeaderCell, styles.routeColumn]}>
+                      <Text style={styles.tableHeaderText}>Route</Text>
+                    </View>
+                    <View style={[styles.tableHeaderCell, styles.vehicleColumn]}>
+                      <Text style={styles.tableHeaderText}>Vehicle</Text>
+                    </View>
+                    <View style={[styles.tableHeaderCell, styles.amountColumn]}>
+                      <Text style={styles.tableHeaderText}>Value</Text>
+                    </View>
+                    <View style={styles.tableHeaderStatus}>
+                      <Text style={styles.tableHeaderText}>Status</Text>
+                    </View>
+                  </View>
+
+                  <ScrollView 
+                    style={styles.tableBodyScrollView}
+                    showsVerticalScrollIndicator={true}
+                    nestedScrollEnabled={true}
+                  >
+                    <View style={styles.tableBody}>
+                      {ewaybills.map((item, index) => (
+                        <View key={index} style={styles.tableRow}>
+                          <View style={[styles.tableCell, styles.ewbColumn]}>
+                            <Text style={styles.tableCellText}>
+                              {item.ewb_number || 'N/A'}
+                            </Text>
+                          </View>
+                          <View style={[styles.tableCell, styles.dateColumn]}>
+                            <Text style={styles.tableCellText}>
+                              {formatDate(item.ewb_date || item.voucher?.voucher_date || item.createdAt)}
+                            </Text>
+                          </View>
+                          <View style={[styles.tableCell, styles.partyColumn]}>
+                            <Text style={styles.tableCellText}>
+                              {item.consignee_name || item.voucher?.party_name || 'N/A'}
+                            </Text>
+                            {item.consignee_gstin && (
+                              <Text style={styles.detailText}>GSTIN: {item.consignee_gstin}</Text>
+                            )}
+                          </View>
+                          <View style={[styles.tableCell, styles.routeColumn]}>
+                            <Text style={styles.tableCellText}>
+                              {item.from_place || 'N/A'} → {item.to_place || 'N/A'}
+                            </Text>
+                            {item.distance && (
+                              <Text style={styles.detailText}>{item.distance} km</Text>
+                            )}
+                          </View>
+                          <View style={[styles.tableCell, styles.vehicleColumn]}>
+                            <Text style={styles.tableCellText}>
+                              {item.vehicle_number || 'Not Assigned'}
+                            </Text>
+                            {item.transport_mode && (
+                              <Text style={styles.detailText}>
+                                Mode: {item.transport_mode.toUpperCase()}
+                              </Text>
+                            )}
+                          </View>
+                          <View style={[styles.tableCell, styles.amountColumn]}>
+                            <Text style={styles.tableCellAmountText}>
+                              {formatCurrency(item.total_value || item.voucher?.total_amount || 0)}
+                            </Text>
+                          </View>
+                          <View style={[styles.tableCell, styles.statusColumn]}>
+                            <View style={[
+                              styles.statusBadge,
+                              { backgroundColor: getStatusColor(item.status) }
+                            ]}>
+                              <Text style={styles.statusText}>
+                                {item.status?.toUpperCase() || 'ACTIVE'}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  </ScrollView>
                 </View>
-                {selectedEwaybill.vehicle_number && (
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Vehicle Number:</Text>
-                    <Text style={styles.detailValue}>{selectedEwaybill.vehicle_number}</Text>
-                  </View>
-                )}
-                {selectedEwaybill.transporter_name && (
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Transporter:</Text>
-                    <Text style={styles.detailValue}>{selectedEwaybill.transporter_name}</Text>
-                  </View>
-                )}
-                {selectedEwaybill.transporter_id && (
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Transporter ID:</Text>
-                    <Text style={styles.detailValue}>{selectedEwaybill.transporter_id}</Text>
-                  </View>
-                )}
-                {selectedEwaybill.document_number && (
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Document Number:</Text>
-                    <Text style={styles.detailValue}>{selectedEwaybill.document_number}</Text>
-                  </View>
-                )}
-              </View>
-            </ScrollView>
-          )}
-        </View>
-      </Modal>
+              </ScrollView>
+            </View>
+          </>
+        )}
+      </ScrollView>
     </View>
   );
 }
@@ -487,94 +334,64 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
-  headerSection: {
-    padding: 20,
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    ...FONT_STYLES.h1,
-    color: '#0f172a',
-    marginBottom: 8,
-    letterSpacing: -0.5
-  },
-  sectionSubtitle: {
-    ...FONT_STYLES.h5,
-    color: '#64748b',
-    lineHeight: 24
-  },
-  statsContainer: {
-    flexDirection: 'row',
+  headerActions: {
     paddingHorizontal: 20,
-    marginBottom: 24,
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
+    paddingVertical: 16,
     backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  refreshButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-    gap: 12,
-  },
-  statIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  statInfo: {
-    flex: 1,
-  },
-  statValue: {
-    ...FONT_STYLES.h3,
-    color: '#0f172a'
-  },
-  statLabel: {
-    ...FONT_STYLES.caption,
-    color: '#64748b',
-    marginTop: 2
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  loadingCard: {
     backgroundColor: 'white',
-    paddingHorizontal: 32,
-    paddingVertical: 24,
-    borderRadius: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#3e60ab',
+    gap: 8,
   },
-  spinner: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 3,
+  refreshButtonText: {
+    ...FONT_STYLES.button,
+    color: '#3e60ab',
+  },
+  filterTabsContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  filterTabs: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingRight: 20,
+  },
+  filterTab: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: 'white',
+    borderWidth: 1,
     borderColor: '#e2e8f0',
-    borderTopColor: '#3e60ab',
-    marginBottom: 12,
+    minWidth: 80,
+    alignItems: 'center',
   },
-  loadingText: {
-    ...FONT_STYLES.h5,
-    color: '#64748b'
+  filterTabActive: {
+    backgroundColor: '#3e60ab',
+    borderColor: '#3e60ab',
+  },
+  filterTabText: {
+    ...FONT_STYLES.label,
+    color: '#64748b',
+  },
+  filterTabTextActive: {
+    color: 'white',
   },
   emptyContainer: {
     flex: 1,
@@ -583,294 +400,191 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 40,
   },
-  emptyCard: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 32,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-    width: '100%',
-  },
-  emptyIcon: {
-    marginBottom: 20,
-  },
   emptyTitle: {
-    ...FONT_STYLES.h2,
-    color: '#0f172a',
+    ...FONT_STYLES.h4,
+    color: '#111827',
+    marginTop: 16,
     marginBottom: 8,
-    textAlign: 'center'
   },
   emptySubtitle: {
-    ...FONT_STYLES.h5,
-    color: '#64748b',
+    ...FONT_STYLES.body,
+    color: '#6b7280',
     textAlign: 'center',
-    lineHeight: 24
   },
-  ewaybillsList: {
-    paddingHorizontal: 20,
-    gap: 16,
-    marginBottom: 24,
-  },
-  ewaybillCard: {
+  reportHeader: {
     backgroundColor: 'white',
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-    overflow: 'hidden',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    alignItems: 'center',
   },
-  ewaybillCardGradient: {
-    position: 'relative',
-    padding: 20,
+  reportTitle: {
+    ...FONT_STYLES.h4,
+    color: '#111827',
+    marginBottom: 4,
+    textAlign: 'center',
   },
-  ewaybillCardContent: {
-    position: 'relative',
-    zIndex: 2,
+  reportSubtitle: {
+    ...FONT_STYLES.bodySmall,
+    color: '#6b7280',
   },
-  ewaybillCardHeader: {
+  reportContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  summarySection: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 12,
+  },
+  summaryRow: {
+    width: '100%',
+  },
+  summaryCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  ewaybillIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+  summaryCardIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#f0f9ff',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
   },
-  ewaybillInfo: {
+  summaryCardContent: {
     flex: 1,
   },
-  ewaybillNumber: {
-    ...FONT_STYLES.h5,
-    color: '#0f172a',
+  summaryCardLabel: {
+    ...FONT_STYLES.caption,
+    color: '#6b7280',
     marginBottom: 4,
-    letterSpacing: -0.3
   },
-  ewaybillDate: {
+  summaryCardValue: {
+    ...FONT_STYLES.h4,
+    color: '#111827',
+    fontWeight: '600',
+  },
+  tableContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  tableTitle: {
+    ...FONT_STYLES.h5,
+    color: '#111827',
+    marginBottom: 12,
+  },
+  tableScrollView: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  table: {
+    backgroundColor: 'white',
+    minWidth: 1000,
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#f3f4f6',
+    borderBottomWidth: 2,
+    borderBottomColor: '#d1d5db',
+    minHeight: 50,
+  },
+  tableHeaderCell: {
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRightWidth: 1,
+    borderRightColor: '#d1d5db',
+    justifyContent: 'center',
+  },
+  tableHeaderStatus: {
+    width: 120,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ewbColumn: {
+    width: 140,
+  },
+  dateColumn: {
+    width: 100,
+  },
+  partyColumn: {
+    width: 180,
+  },
+  routeColumn: {
+    width: 180,
+  },
+  vehicleColumn: {
+    width: 140,
+  },
+  amountColumn: {
+    width: 140,
+  },
+  statusColumn: {
+    width: 120,
+  },
+  tableHeaderText: {
     ...FONT_STYLES.label,
-    color: '#64748b'
+    color: '#374151',
+    textAlign: 'center',
   },
-  ewaybillStatus: {
-    alignItems: 'flex-end',
+  tableBodyScrollView: {
+    maxHeight: 500,
+  },
+  tableBody: {
+    backgroundColor: 'white',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+    minHeight: 50,
+  },
+  tableCell: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRightWidth: 1,
+    borderRightColor: '#f3f4f6',
+    justifyContent: 'center',
+  },
+  tableCellText: {
+    ...FONT_STYLES.bodySmall,
+    color: '#374151',
+    lineHeight: 18,
+  },
+  tableCellAmountText: {
+    ...FONT_STYLES.bodySmall,
+    color: '#059669',
+    textAlign: 'right',
+    fontWeight: '600',
+  },
+  detailText: {
+    ...FONT_STYLES.captionSmall,
+    color: '#6b7280',
+    marginTop: 2,
   },
   statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    alignItems: 'center',
   },
   statusText: {
     ...FONT_STYLES.captionSmall,
-    color: 'white'
-  },
-  ewaybillCardBody: {
-    marginBottom: 16,
-    gap: 8,
-  },
-  ewaybillDetail: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  ewaybillDetailText: {
-    ...FONT_STYLES.label,
-    color: '#64748b',
-    flex: 1
-  },
-  ewaybillCardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
-  },
-  ewaybillMeta: {
-    flex: 1,
-  },
-  ewaybillExpiry: {
-    ...FONT_STYLES.caption,
-    color: '#64748b'
-  },
-  ewaybillAction: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#f8fafc',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  decorativeCircle: {
-    position: 'absolute',
-    top: -20,
-    right: -20,
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    opacity: 0.1,
-    zIndex: 1,
-  },
-  decorativeLine: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 4,
-    opacity: 0.3,
-    zIndex: 1,
-  },
-  infoSection: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
-  },
-  infoCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  infoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    gap: 12,
-  },
-  infoTitle: {
-    ...FONT_STYLES.h5,
-    color: '#0f172a'
-  },
-  infoContent: {
-    gap: 12,
-  },
-  infoPoint: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  infoBullet: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#3e60ab',
-    marginTop: 6,
-  },
-  infoText: {
-    ...FONT_STYLES.label,
-    color: '#64748b',
-    lineHeight: 20,
-    flex: 1
-  },
-  // Modal Styles
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  modalHeaderContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  modalIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalTitle: {
-    ...FONT_STYLES.h5,
-    color: '#0f172a'
-  },
-  modalSubtitle: {
-    ...FONT_STYLES.label,
-    color: '#64748b',
-    marginTop: 2
-  },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#f8fafc',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    flex: 1,
-    padding: 20,
-  },
-  detailCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  detailCardTitle: {
-    ...FONT_STYLES.h5,
-    color: '#0f172a',
-    marginBottom: 16
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  detailLabel: {
-    ...FONT_STYLES.label,
-    color: '#64748b',
-    width: 120
-  },
-  detailValue: {
-    ...FONT_STYLES.label,
-    color: '#0f172a',
-    flex: 1
+    color: 'white',
+    fontWeight: '600',
   },
 });

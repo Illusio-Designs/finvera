@@ -53,21 +53,59 @@ module.exports = {
 
   async listEInvoices(req, res, next) {
     try {
-      const { page = 1, limit = 20, status } = req.query;
+      const { page = 1, limit = 20, status, from_date, to_date } = req.query;
       const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
 
       const where = {};
       if (status) where.status = status;
+      
+      if (from_date || to_date) {
+        where.createdAt = {};
+        if (from_date) where.createdAt[req.tenantModels.Sequelize.Op.gte] = from_date;
+        if (to_date) where.createdAt[req.tenantModels.Sequelize.Op.lte] = to_date;
+      }
 
       const eInvoices = await req.tenantModels.EInvoice.findAndCountAll({
         where,
         limit: parseInt(limit, 10),
         offset,
         order: [['createdAt', 'DESC']],
+        attributes: [
+          'id',
+          'voucher_id',
+          'irn',
+          'ack_number',
+          'ack_date',
+          'status',
+          'qr_code',
+          'signed_invoice',
+          'error_message',
+          'tenant_id',
+          'createdAt',
+          'updatedAt'
+        ],
+        include: [
+          {
+            model: req.tenantModels.Voucher,
+            as: 'voucher',
+            attributes: ['id', 'voucher_number', 'voucher_date', 'total_amount'],
+            required: false,
+          },
+        ],
       });
 
+      // Calculate summary statistics
+      const summary = {
+        total: eInvoices.count,
+        generated: await req.tenantModels.EInvoice.count({ where: { ...where, status: 'generated' } }),
+        pending: await req.tenantModels.EInvoice.count({ where: { ...where, status: 'pending' } }),
+        cancelled: await req.tenantModels.EInvoice.count({ where: { ...where, status: 'cancelled' } }),
+        failed: await req.tenantModels.EInvoice.count({ where: { ...where, status: 'failed' } }),
+      };
+
       res.json({
-        eInvoices: eInvoices.rows,
+        data: eInvoices.rows,
+        summary,
         pagination: {
           total: eInvoices.count,
           page: parseInt(page, 10),

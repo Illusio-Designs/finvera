@@ -1,44 +1,23 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, TextInput } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'
-import { FONT_STYLES } from '../../../utils/fonts';;
+import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../../components/navigation/TopBar';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { gstAPI } from '../../../lib/api';
-import TableSkeleton from '../../../components/ui/skeletons/TableSkeleton';
+import { FONT_STYLES } from '../../../utils/fonts';
 
 export default function GSTRatesScreen() {
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [rateResult, setRateResult] = useState(null);
 
   const handleMenuPress = () => {
     openDrawer();
   };
-
-  useEffect(() => {
-    // Simulate initial data load with 3-second minimum display
-    const startTime = Date.now();
-    
-    const loadData = async () => {
-      // Simulate data loading
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Ensure skeleton shows for at least 3 seconds
-      const elapsedTime = Date.now() - startTime;
-      const remainingTime = Math.max(0, 3000 - elapsedTime);
-      
-      setTimeout(() => {
-        setLoading(false);
-      }, remainingTime);
-    };
-    
-    loadData();
-  }, []);
 
   const handleSearch = async (hsn) => {
     if (!hsn || hsn.length < 4) {
@@ -49,13 +28,26 @@ export default function GSTRatesScreen() {
     setLoading(true);
     try {
       const response = await gstAPI.rates.get(hsn);
-      setRateResult(response.data);
+      
+      // Handle the response from Sandbox API
+      const data = response.data;
+      
+      if (data.success) {
+        // Transform the response to match our UI expectations
+        setRateResult({
+          hsn_code: data.hsnCode || data.hsn_code || hsn,
+          description: data.description || data.hsnDescription || 'Description not available',
+          gst_rate: data.gstRate || data.gst_rate || 0,
+        });
+      } else {
+        throw new Error(data.message || 'Failed to fetch GST rate');
+      }
     } catch (error) {
       console.error('GST rate fetch error:', error);
       showNotification({
         type: 'error',
         title: 'Error',
-        message: 'Failed to fetch GST rate for HSN code'
+        message: error.response?.data?.message || error.message || 'Failed to fetch GST rate for HSN code'
       });
       setRateResult(null);
     } finally {
@@ -115,34 +107,44 @@ export default function GSTRatesScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* Header Section */}
-        <View style={styles.headerSection}>
-          <Text style={styles.sectionTitle}>GST Rate Lookup</Text>
-          <Text style={styles.sectionSubtitle}>
-            Find GST rates for HSN/SAC codes and product categories
-          </Text>
+        <View style={styles.headerActions}>
+          <View style={styles.actionButtonsRow}>
+            <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
+              <Ionicons name="refresh" size={16} color="#3e60ab" />
+              <Text style={styles.refreshButtonText}>Refresh</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.reportHeader}>
+          <Text style={styles.reportTitle}>GST Rate Lookup</Text>
+          <Text style={styles.reportSubtitle}>Find GST rates for HSN/SAC codes using Sandbox API</Text>
         </View>
 
         {/* Search Section */}
         <View style={styles.searchSection}>
           <View style={styles.searchCard}>
-            <Text style={styles.searchCardTitle}>HSN/SAC Code Lookup</Text>
+            <View style={styles.searchHeader}>
+              <Ionicons name="search" size={24} color="#3e60ab" />
+              <Text style={styles.searchCardTitle}>HSN/SAC Code Lookup</Text>
+            </View>
             <View style={styles.searchBar}>
-              <Ionicons name="search" size={20} color="#64748b" />
+              <Ionicons name="barcode-outline" size={20} color="#64748b" />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Enter HSN/SAC code (e.g., 8471)"
+                placeholder="Enter HSN/SAC code (minimum 4 digits)"
                 value={searchQuery}
                 onChangeText={handleSearchInput}
                 placeholderTextColor="#9ca3af"
                 keyboardType="numeric"
+                maxLength={8}
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => {
                   setSearchQuery('');
                   setRateResult(null);
                 }}>
-                  <Ionicons name="close" size={20} color="#64748b" />
+                  <Ionicons name="close-circle" size={20} color="#64748b" />
                 </TouchableOpacity>
               )}
             </View>
@@ -150,7 +152,7 @@ export default function GSTRatesScreen() {
             {loading && (
               <View style={styles.loadingIndicator}>
                 <View style={styles.spinner} />
-                <Text style={styles.loadingText}>Looking up GST rate...</Text>
+                <Text style={styles.loadingText}>Fetching GST rate from Sandbox API...</Text>
               </View>
             )}
 
@@ -177,17 +179,19 @@ export default function GSTRatesScreen() {
                 </View>
                 
                 <View style={styles.rateBreakdown}>
-                  <View style={styles.rateRow}>
-                    <Text style={styles.rateLabel}>CGST:</Text>
-                    <Text style={styles.rateValue}>{(rateResult.gst_rate / 2)}%</Text>
-                  </View>
-                  <View style={styles.rateRow}>
-                    <Text style={styles.rateLabel}>SGST:</Text>
-                    <Text style={styles.rateValue}>{(rateResult.gst_rate / 2)}%</Text>
-                  </View>
-                  <View style={styles.rateRow}>
-                    <Text style={styles.rateLabel}>IGST:</Text>
-                    <Text style={styles.rateValue}>{rateResult.gst_rate}%</Text>
+                  <View style={styles.breakdownRow}>
+                    <View style={styles.breakdownItem}>
+                      <Text style={styles.breakdownLabel}>CGST</Text>
+                      <Text style={styles.breakdownValue}>{(rateResult.gst_rate / 2).toFixed(2)}%</Text>
+                    </View>
+                    <View style={styles.breakdownItem}>
+                      <Text style={styles.breakdownLabel}>SGST</Text>
+                      <Text style={styles.breakdownValue}>{(rateResult.gst_rate / 2).toFixed(2)}%</Text>
+                    </View>
+                    <View style={styles.breakdownItem}>
+                      <Text style={styles.breakdownLabel}>IGST</Text>
+                      <Text style={styles.breakdownValue}>{rateResult.gst_rate}%</Text>
+                    </View>
                   </View>
                 </View>
               </View>
@@ -234,33 +238,30 @@ export default function GSTRatesScreen() {
         {/* Common HSN Codes */}
         <View style={styles.commonSection}>
           <Text style={styles.commonTitle}>Common HSN Codes</Text>
-          {loading ? (
-            <TableSkeleton rows={10} columns={3} />
-          ) : (
-            <View style={styles.commonList}>
-              {commonHsnCodes.map((item, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.commonCard}
-                  onPress={() => handleSearchInput(item.hsn)}
-                  activeOpacity={0.95}
-                >
-                  <View style={styles.commonCardContent}>
-                    <View style={styles.commonInfo}>
-                      <Text style={styles.commonHsn}>HSN: {item.hsn}</Text>
-                      <Text style={styles.commonDescription}>{item.description}</Text>
-                    </View>
-                    <View style={[
-                      styles.commonRate,
-                      { backgroundColor: getRateColor(item.rate) }
-                    ]}>
-                      <Text style={styles.commonRateText}>{item.rate}%</Text>
-                    </View>
+          <Text style={styles.commonSubtitle}>Click on any code to view its GST rate</Text>
+          <View style={styles.commonList}>
+            {commonHsnCodes.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.commonCard}
+                onPress={() => handleSearchInput(item.hsn)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.commonCardContent}>
+                  <View style={styles.commonInfo}>
+                    <Text style={styles.commonHsn}>HSN: {item.hsn}</Text>
+                    <Text style={styles.commonDescription}>{item.description}</Text>
                   </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+                  <View style={[
+                    styles.commonRate,
+                    { backgroundColor: getRateColor(item.rate) }
+                  ]}>
+                    <Text style={styles.commonRateText}>{item.rate}%</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
         {/* Information Section */}
@@ -312,178 +313,233 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
-  headerSection: {
-    padding: 20,
-    marginBottom: 8,
+  headerActions: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
-  sectionTitle: {
-    ...FONT_STYLES.h1,
-    color: '#0f172a',
-    marginBottom: 8,
-    letterSpacing: -0.5
+  actionButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
   },
-  sectionSubtitle: {
-    ...FONT_STYLES.h5,
-    color: '#64748b',
-    lineHeight: 24
+  refreshButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#3e60ab',
+    gap: 8,
+  },
+  refreshButtonText: {
+    ...FONT_STYLES.button,
+    color: '#3e60ab',
+  },
+  reportHeader: {
+    backgroundColor: 'white',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    alignItems: 'center',
+  },
+  reportTitle: {
+    ...FONT_STYLES.h4,
+    color: '#111827',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  reportSubtitle: {
+    ...FONT_STYLES.bodySmall,
+    color: '#6b7280',
+    textAlign: 'center',
   },
   searchSection: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
   searchCard: {
     backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 12,
+    padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  searchHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 12,
   },
   searchCardTitle: {
     ...FONT_STYLES.h5,
-    color: '#0f172a',
-    marginBottom: 16
+    color: '#111827',
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
-    gap: 12,
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    gap: 8,
   },
   searchInput: {
-    ...FONT_STYLES.h5,
+    ...FONT_STYLES.body,
     flex: 1,
-    color: '#0f172a'
+    color: '#111827',
+    paddingVertical: 0,
   },
   loadingIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 20,
-    gap: 12,
+    paddingVertical: 16,
+    gap: 8,
   },
   spinner: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: '#e5e7eb',
     borderTopColor: '#3e60ab',
   },
   loadingText: {
-    ...FONT_STYLES.label,
-    color: '#64748b'
+    ...FONT_STYLES.bodySmall,
+    color: '#6b7280',
   },
   rateResultCard: {
-    marginTop: 16,
+    marginTop: 12,
     padding: 16,
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#e5e7eb',
   },
   rateResultHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
   rateIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
   ratePercentage: {
-    ...FONT_STYLES.h4,
+    ...FONT_STYLES.h3,
+    fontWeight: '700',
   },
   rateInfo: {
     flex: 1,
   },
   rateHsn: {
     ...FONT_STYLES.h5,
-    color: '#0f172a',
-    marginBottom: 4
+    color: '#111827',
+    marginBottom: 4,
   },
   rateDescription: {
-    ...FONT_STYLES.label,
-    color: '#64748b'
+    ...FONT_STYLES.bodySmall,
+    color: '#6b7280',
+    lineHeight: 18,
   },
   rateBreakdown: {
-    gap: 8,
+    gap: 12,
   },
-  rateRow: {
+  breakdownRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: 12,
+  },
+  breakdownItem: {
+    flex: 1,
+    backgroundColor: 'white',
+    padding: 12,
+    borderRadius: 8,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
-  rateLabel: {
-    ...FONT_STYLES.label,
-    color: '#64748b'
+  breakdownLabel: {
+    ...FONT_STYLES.caption,
+    color: '#6b7280',
+    marginBottom: 4,
   },
-  rateValue: {
-    ...FONT_STYLES.label,
-    color: '#0f172a'
+  breakdownValue: {
+    ...FONT_STYLES.h5,
+    color: '#111827',
+    fontWeight: '600',
   },
   slabsSection: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
   slabsTitle: {
-    ...FONT_STYLES.h3,
-    color: '#0f172a',
-    marginBottom: 16
+    ...FONT_STYLES.h5,
+    color: '#111827',
+    marginBottom: 12,
   },
   slabsGrid: {
     gap: 12,
   },
   slabCard: {
     backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 8,
+    padding: 12,
     borderLeftWidth: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   slabRate: {
-    ...FONT_STYLES.h2,
-    marginBottom: 4
+    ...FONT_STYLES.h4,
+    marginBottom: 4,
+    fontWeight: '700',
   },
   slabLabel: {
-    ...FONT_STYLES.h5,
-    color: '#0f172a',
-    marginBottom: 4
+    ...FONT_STYLES.label,
+    color: '#111827',
+    marginBottom: 4,
+    fontWeight: '600',
   },
   slabDescription: {
-    ...FONT_STYLES.label,
-    color: '#64748b',
-    lineHeight: 20
+    ...FONT_STYLES.bodySmall,
+    color: '#6b7280',
+    lineHeight: 18,
   },
   commonSection: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
   commonTitle: {
-    ...FONT_STYLES.h3,
-    color: '#0f172a',
-    marginBottom: 16
+    ...FONT_STYLES.h5,
+    color: '#111827',
+    marginBottom: 4,
+  },
+  commonSubtitle: {
+    ...FONT_STYLES.bodySmall,
+    color: '#6b7280',
+    marginBottom: 12,
   },
   commonList: {
     gap: 12,

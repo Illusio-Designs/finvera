@@ -46,20 +46,59 @@ module.exports = {
 
   async list(req, res, next) {
     try {
-      const { page = 1, limit = 20, status } = req.query;
+      const { page = 1, limit = 20, status, from_date, to_date } = req.query;
       const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
       const where = {};
+      
       if (status) where.status = status;
+      
+      if (from_date || to_date) {
+        where.ewb_date = {};
+        if (from_date) where.ewb_date[req.tenantModels.Sequelize.Op.gte] = from_date;
+        if (to_date) where.ewb_date[req.tenantModels.Sequelize.Op.lte] = to_date;
+      }
 
       const rows = await req.tenantModels.EWayBill.findAndCountAll({
         where,
         limit: parseInt(limit, 10),
         offset,
         order: [['createdAt', 'DESC']],
+        attributes: [
+          'id',
+          'voucher_id',
+          'ewb_number',
+          'ewb_date',
+          'status',
+          'vehicle_no',
+          'transporter_id',
+          'transporter_name',
+          'transport_mode',
+          'distance',
+          'tenant_id',
+          'createdAt',
+          'updatedAt'
+        ],
+        include: [
+          {
+            model: req.tenantModels.Voucher,
+            as: 'voucher',
+            attributes: ['id', 'voucher_number', 'voucher_date', 'total_amount'],
+            required: false,
+          },
+        ],
       });
 
+      // Calculate summary statistics
+      const summary = {
+        total: rows.count,
+        active: await req.tenantModels.EWayBill.count({ where: { ...where, status: 'active' } }),
+        cancelled: await req.tenantModels.EWayBill.count({ where: { ...where, status: 'cancelled' } }),
+        expired: await req.tenantModels.EWayBill.count({ where: { ...where, status: 'expired' } }),
+      };
+
       res.json({
-        eWayBills: rows.rows,
+        data: rows.rows,
+        summary,
         pagination: {
           total: rows.count,
           page: parseInt(page, 10),

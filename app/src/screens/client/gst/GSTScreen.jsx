@@ -1,6 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, TextInput, FlatList } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'
 import { FONT_STYLES } from '../../../utils/fonts';;
 import TopBar from '../../../components/navigation/TopBar';
@@ -8,21 +7,34 @@ import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { gstAPI } from '../../../lib/api';
 import { formatCurrency } from '../../../utils/businessLogic';
-import { SkeletonStatCard } from '../../../components/ui/SkeletonLoader';
-
-const GST_TABS = [
-  { id: 'gstr2a', label: 'GSTR-2A Reconciliation', icon: 'document-text' },
-  { id: 'upload', label: 'Upload Purchase Ledger', icon: 'cloud-upload' },
-  { id: 'analytics', label: 'GST Analytics', icon: 'analytics' },
-];
 
 export default function GSTScreen() {
-  const navigation = useNavigation();
   const { openDrawer } = useDrawer();
   const { showNotification } = useNotification();
-  const [activeTab, setActiveTab] = useState('gstr2a');
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Modal states
+  const [showGSTR1Modal, setShowGSTR1Modal] = useState(false);
+  const [showGSTR3BModal, setShowGSTR3BModal] = useState(false);
+  const [showGSTR2AModal, setShowGSTR2AModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  
+  // Loading states
+  const [loading, setLoading] = useState(false);
+  
+  // GSTR-1 Form State
+  const [gstr1Form, setGstr1Form] = useState({
+    gstin: '',
+    period: `${new Date().getMonth() + 1 < 10 ? '0' : ''}${new Date().getMonth() + 1}-${new Date().getFullYear()}`
+  });
+  const [gstr1Result, setGstr1Result] = useState(null);
+  
+  // GSTR-3B Form State
+  const [gstr3bForm, setGstr3bForm] = useState({
+    gstin: '',
+    period: `${new Date().getMonth() + 1 < 10 ? '0' : ''}${new Date().getMonth() + 1}-${new Date().getFullYear()}`
+  });
+  const [gstr3bResult, setGstr3bResult] = useState(null);
   
   // GSTR-2A Form State
   const [gstr2aForm, setGstr2aForm] = useState({
@@ -55,31 +67,81 @@ export default function GSTScreen() {
     openDrawer();
   };
 
-  useEffect(() => {
-    // Simulate initial data load with 3-second minimum display
-    const startTime = Date.now();
-    
-    const loadData = async () => {
-      // Simulate data loading
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Ensure skeleton shows for at least 3 seconds
-      const elapsedTime = Date.now() - startTime;
-      const remainingTime = Math.max(0, 3000 - elapsedTime);
-      
-      setTimeout(() => {
-        setLoading(false);
-      }, remainingTime);
-    };
-    
-    loadData();
-  }, []);
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    // Add any refresh logic here
+    // Reset all states
+    setGstr1Result(null);
+    setGstr3bResult(null);
+    setGstr2aJob(null);
+    setJobStatus(null);
     setTimeout(() => setRefreshing(false), 1000);
   }, []);
+
+  // GSTR-1 Handlers
+  const handleGSTR1Submit = async () => {
+    if (!gstr1Form.gstin || !gstr1Form.period) {
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Please enter GSTIN and period'
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await gstAPI.returns.generateGSTR1(gstr1Form);
+      const data = response.data?.data || response.data;
+      setGstr1Result(data);
+      showNotification({
+        type: 'success',
+        title: 'Success',
+        message: 'GSTR-1 generated successfully'
+      });
+    } catch (error) {
+      console.error('GSTR-1 generation error:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: error.response?.data?.message || 'Failed to generate GSTR-1'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // GSTR-3B Handlers
+  const handleGSTR3BSubmit = async () => {
+    if (!gstr3bForm.gstin || !gstr3bForm.period) {
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Please enter GSTIN and period'
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await gstAPI.returns.generateGSTR3B(gstr3bForm);
+      const data = response.data?.data || response.data;
+      setGstr3bResult(data);
+      showNotification({
+        type: 'success',
+        title: 'Success',
+        message: 'GSTR-3B generated successfully'
+      });
+    } catch (error) {
+      console.error('GSTR-3B generation error:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: error.response?.data?.message || 'Failed to generate GSTR-3B'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleGSTR2ASubmit = async () => {
     if (!gstr2aForm.gstin) {
@@ -520,76 +582,6 @@ export default function GSTScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* GST Management Cards */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>GST Management</Text>
-          </View>
-          
-          {loading ? (
-            <View style={styles.managementGrid}>
-              <SkeletonStatCard />
-              <SkeletonStatCard />
-              <SkeletonStatCard />
-              <SkeletonStatCard />
-            </View>
-          ) : (
-            <View style={styles.managementGrid}>
-              <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('GSTINs', { mode: 'create' })}>
-                <View style={[styles.managementIcon, { backgroundColor: '#10b981' }]}>
-                  <Ionicons name="card" size={24} color="white" />
-                </View>
-                <View style={styles.managementInfo}>
-                  <Text style={styles.managementTitle}>GSTIN Records</Text>
-                  <Text style={styles.managementSubtitle}>Create & manage GSTIN</Text>
-                </View>
-                <View style={styles.managementArrow}>
-                  <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('GSTRates', { mode: 'create' })}>
-                <View style={[styles.managementIcon, { backgroundColor: '#f59e0b' }]}>
-                  <Ionicons name="calculator" size={24} color="white" />
-                </View>
-                <View style={styles.managementInfo}>
-                  <Text style={styles.managementTitle}>GST Rates</Text>
-                  <Text style={styles.managementSubtitle}>Create & manage tax rates</Text>
-                </View>
-                <View style={styles.managementArrow}>
-                  <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('EInvoice', { mode: 'create' })}>
-                <View style={[styles.managementIcon, { backgroundColor: '#3b82f6' }]}>
-                  <Ionicons name="document-text" size={24} color="white" />
-                </View>
-                <View style={styles.managementInfo}>
-                  <Text style={styles.managementTitle}>E-Invoice</Text>
-                  <Text style={styles.managementSubtitle}>Create electronic invoices</Text>
-                </View>
-                <View style={styles.managementArrow}>
-                  <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.managementCard} onPress={() => navigation.navigate('EWayBill', { mode: 'create' })}>
-                <View style={[styles.managementIcon, { backgroundColor: '#ef4444' }]}>
-                  <Ionicons name="car" size={24} color="white" />
-                </View>
-                <View style={styles.managementInfo}>
-                  <Text style={styles.managementTitle}>E-Way Bill</Text>
-                  <Text style={styles.managementSubtitle}>Create transport documents</Text>
-                </View>
-                <View style={styles.managementArrow}>
-                  <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
-                </View>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
         {/* Tabs */}
         <View style={styles.tabsContainer}>
           <FlatList
@@ -870,58 +862,5 @@ const styles = StyleSheet.create({
     ...FONT_STYLES.label,
     color: '#6b7280',
     textAlign: 'center'
-  },
-  section: {
-    paddingHorizontal: 16,
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    ...FONT_STYLES.h5,
-    color: '#111827'
-  },
-  managementGrid: {
-    gap: 12,
-  },
-  managementCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-    marginBottom: 8,
-  },
-  managementIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  managementInfo: {
-    flex: 1,
-  },
-  managementTitle: {
-    ...FONT_STYLES.h5,
-    color: '#111827'
-  },
-  managementSubtitle: {
-    ...FONT_STYLES.caption,
-    color: '#6b7280',
-    marginTop: 2
-  },
-  managementArrow: {
-    padding: 8,
   },
 });

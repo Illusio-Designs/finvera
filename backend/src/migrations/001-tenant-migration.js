@@ -1332,73 +1332,110 @@ module.exports = {
     // ============================================
     // 4. CREATE DEFAULT NUMBERING SERIES
     // ============================================
-    console.log('Creating default numbering series...');
+    console.log('Creating default numbering series for all voucher types...');
     
     // Get tenant_id from the database name or context
     const [dbResult] = await queryInterface.sequelize.query('SELECT DATABASE() as db_name');
     const dbName = dbResult[0].db_name;
     const tenantId = dbName.replace('tenant_', ''); // Extract tenant ID from database name
     
-    // Check and create Delivery Challan numbering series
-    const [existingDC] = await queryInterface.sequelize.query(
-      `SELECT id FROM numbering_series WHERE tenant_id = :tenantId AND voucher_type = 'delivery_challan' AND is_default = true`,
-      { replacements: { tenantId }, type: queryInterface.sequelize.QueryTypes.SELECT }
-    );
-    
-    if (!existingDC) {
-      await queryInterface.bulkInsert('numbering_series', [{
-        id: Sequelize.literal('UUID()'),
-        tenant_id: tenantId,
+    // Define all voucher types with their default configurations
+    const defaultNumberingSeries = [
+      {
+        voucher_type: 'Sales Invoice',
+        series_name: 'Sales Invoice Default',
+        prefix: 'SI',
+        format: '{PREFIX}{SEPARATOR}{YEAR}{SEPARATOR}{SEQUENCE}',
+      },
+      {
+        voucher_type: 'Purchase Invoice',
+        series_name: 'Purchase Invoice Default',
+        prefix: 'PI',
+        format: '{PREFIX}{SEPARATOR}{YEAR}{SEPARATOR}{SEQUENCE}',
+      },
+      {
+        voucher_type: 'Payment',
+        series_name: 'Payment Default',
+        prefix: 'PAY',
+        format: '{PREFIX}{SEPARATOR}{YEAR}{SEPARATOR}{SEQUENCE}',
+      },
+      {
+        voucher_type: 'Receipt',
+        series_name: 'Receipt Default',
+        prefix: 'REC',
+        format: '{PREFIX}{SEPARATOR}{YEAR}{SEPARATOR}{SEQUENCE}',
+      },
+      {
+        voucher_type: 'Journal',
+        series_name: 'Journal Default',
+        prefix: 'JV',
+        format: '{PREFIX}{SEPARATOR}{YEAR}{SEPARATOR}{SEQUENCE}',
+      },
+      {
+        voucher_type: 'Contra',
+        series_name: 'Contra Default',
+        prefix: 'CNT',
+        format: '{PREFIX}{SEPARATOR}{YEAR}{SEPARATOR}{SEQUENCE}',
+      },
+      {
+        voucher_type: 'Debit Note',
+        series_name: 'Debit Note Default',
+        prefix: 'DN',
+        format: '{PREFIX}{SEPARATOR}{YEAR}{SEPARATOR}{SEQUENCE}',
+      },
+      {
+        voucher_type: 'Credit Note',
+        series_name: 'Credit Note Default',
+        prefix: 'CN',
+        format: '{PREFIX}{SEPARATOR}{YEAR}{SEPARATOR}{SEQUENCE}',
+      },
+      {
         voucher_type: 'delivery_challan',
         series_name: 'Delivery Challan Default',
         prefix: 'DC',
-        format: 'PREFIX-SEPARATOR-YEAR-SEPARATOR-SEQUENCE',
-        separator: '-',
-        sequence_length: 4,
-        current_sequence: 0,
-        start_number: 1,
-        end_number: null,
-        reset_frequency: 'yearly',
-        last_reset_date: null,
-        is_default: true,
-        is_active: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }]);
-      console.log('✓ Created default Delivery Challan numbering series');
-    } else {
-      console.log('ℹ️  Delivery Challan numbering series already exists');
-    }
-    
-    // Check and create Proforma Invoice numbering series
-    const [existingPI] = await queryInterface.sequelize.query(
-      `SELECT id FROM numbering_series WHERE tenant_id = :tenantId AND voucher_type = 'proforma_invoice' AND is_default = true`,
-      { replacements: { tenantId }, type: queryInterface.sequelize.QueryTypes.SELECT }
-    );
-    
-    if (!existingPI) {
-      await queryInterface.bulkInsert('numbering_series', [{
-        id: Sequelize.literal('UUID()'),
-        tenant_id: tenantId,
+        format: '{PREFIX}{SEPARATOR}{YEAR}{SEPARATOR}{SEQUENCE}',
+      },
+      {
         voucher_type: 'proforma_invoice',
         series_name: 'Proforma Invoice Default',
-        prefix: 'PI',
-        format: 'PREFIX-SEPARATOR-YEAR-SEPARATOR-SEQUENCE',
-        separator: '-',
-        sequence_length: 4,
-        current_sequence: 0,
-        start_number: 1,
-        end_number: null,
-        reset_frequency: 'yearly',
-        last_reset_date: null,
-        is_default: true,
-        is_active: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }]);
-      console.log('✓ Created default Proforma Invoice numbering series');
-    } else {
-      console.log('ℹ️  Proforma Invoice numbering series already exists');
+        prefix: 'PRO',
+        format: '{PREFIX}{SEPARATOR}{YEAR}{SEPARATOR}{SEQUENCE}',
+      },
+    ];
+    
+    // Create numbering series for each voucher type
+    for (const seriesConfig of defaultNumberingSeries) {
+      const [existing] = await queryInterface.sequelize.query(
+        `SELECT id FROM numbering_series WHERE tenant_id = :tenantId AND voucher_type = :voucherType AND is_default = true`,
+        { 
+          replacements: { tenantId, voucherType: seriesConfig.voucher_type }, 
+          type: queryInterface.sequelize.QueryTypes.SELECT 
+        }
+      );
+      
+      if (!existing) {
+        await queryInterface.bulkInsert('numbering_series', [{
+          id: Sequelize.literal('UUID()'),
+          tenant_id: tenantId,
+          voucher_type: seriesConfig.voucher_type,
+          series_name: seriesConfig.series_name,
+          prefix: seriesConfig.prefix,
+          format: seriesConfig.format,
+          separator: '-',
+          sequence_length: 4,
+          current_sequence: 0,
+          start_number: 1,
+          reset_frequency: 'yearly',
+          last_reset_date: null,
+          is_default: true,
+          is_active: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }]);
+        console.log(`✓ Created default ${seriesConfig.voucher_type} numbering series`);
+      } else {
+        console.log(`ℹ️  ${seriesConfig.voucher_type} numbering series already exists`);
+      }
     }
 
     console.log('✅ All tenant tables created successfully');

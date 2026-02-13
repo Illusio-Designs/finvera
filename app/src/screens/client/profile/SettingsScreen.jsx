@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, RefreshControl, Image, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { FONT_STYLES } from '../../../utils/fonts';
 import * as LocalAuthentication from 'expo-local-authentication';
 import TopBar from '../../../components/navigation/TopBar';
@@ -12,6 +13,7 @@ import { buildUploadUrl } from '../../../config/env';
 import { SkeletonListItem } from '../../../components/ui/SkeletonLoader';
 
 export default function SettingsScreen() {
+  const navigation = useNavigation();
   const { openDrawer } = useDrawer();
   const { user } = useAuth();
   const { showNotification } = useNotification();
@@ -21,6 +23,7 @@ export default function SettingsScreen() {
   const [showBarcodeModal, setShowBarcodeModal] = useState(false);
   const [showGSTModal, setShowGSTModal] = useState(false);
   const [showTDSConfigModal, setShowTDSConfigModal] = useState(false);
+  const [showGSTINModal, setShowGSTINModal] = useState(false);
   
   const [companyInfo, setCompanyInfo] = useState({
     id: null,
@@ -89,6 +92,23 @@ export default function SettingsScreen() {
     tds_responsible_designation: '',
     default_tds_section: '',
     default_tcs_section: '',
+  });
+  
+  // GSTIN Configuration (from Company)
+  const [gstinConfig, setGstinConfig] = useState({
+    gstin: '',
+    legal_name: '',
+    trade_name: '',
+    state_code: '',
+    state_name: '',
+  });
+  
+  const [tempGSTINConfig, setTempGSTINConfig] = useState({
+    gstin: '',
+    legal_name: '',
+    trade_name: '',
+    state_code: '',
+    state_name: '',
   });
 
   const handleMenuPress = () => {
@@ -178,6 +198,23 @@ export default function SettingsScreen() {
             tds_responsible_designation: company.tds_responsible_designation || '',
             default_tds_section: compliance.default_tds_section || '',
             default_tcs_section: compliance.default_tcs_section || '',
+          });
+          
+          // GSTIN Configuration (from Company)
+          setGstinConfig({
+            gstin: company.gstin || '',
+            legal_name: company.legal_name || '',
+            trade_name: company.trade_name || '',
+            state_code: company.state_code || '',
+            state_name: company.state_name || '',
+          });
+          
+          setTempGSTINConfig({
+            gstin: company.gstin || '',
+            legal_name: company.legal_name || '',
+            trade_name: company.trade_name || '',
+            state_code: company.state_code || '',
+            state_name: company.state_name || '',
           });
         }
       } catch (companyError) {
@@ -562,6 +599,17 @@ export default function SettingsScreen() {
     setShowTDSConfigModal(true);
   };
   
+  const handleGSTINConfig = () => {
+    setTempGSTINConfig({
+      gstin: gstinConfig.gstin,
+      legal_name: gstinConfig.legal_name,
+      trade_name: gstinConfig.trade_name,
+      state_code: gstinConfig.state_code,
+      state_name: gstinConfig.state_name,
+    });
+    setShowGSTINModal(true);
+  };
+  
   const saveTDSConfig = async () => {
     try {
       setLoading(true);
@@ -597,6 +645,42 @@ export default function SettingsScreen() {
       setLoading(false);
     }
   };
+  
+  const saveGSTINConfig = async () => {
+    try {
+      setLoading(true);
+      
+      if (!companyInfo.id) {
+        showNotification({
+          type: 'error',
+          title: 'Error',
+          message: 'Company information not loaded'
+        });
+        return;
+      }
+      
+      // Update company with GSTIN config
+      await companyAPI.update(companyInfo.id, tempGSTINConfig);
+      
+      setGstinConfig(prev => ({ ...prev, ...tempGSTINConfig }));
+      setShowGSTINModal(false);
+      
+      showNotification({
+        type: 'success',
+        title: 'Success',
+        message: 'GSTIN configuration updated successfully'
+      });
+    } catch (error) {
+      console.error('Error saving GSTIN config:', error);
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: error.response?.data?.message || 'Failed to update GSTIN configuration'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const saveGSTConfig = async () => {
     const updateData = {
@@ -609,12 +693,16 @@ export default function SettingsScreen() {
   };
   
   const handleNumberingConfig = () => {
-    // Show informative message about numbering series
-    showNotification({
-      type: 'info',
-      title: 'Advanced Numbering',
-      message: 'Voucher numbering is managed through Numbering Series. Each voucher type can have its own numbering format with prefixes, sequences, and automatic resets.'
-    });
+    try {
+      navigation.navigate('NumberingSeries');
+    } catch (error) {
+      console.error('Navigation error:', error);
+      showNotification({
+        type: 'info',
+        title: 'Advanced Numbering',
+        message: 'Voucher numbering is managed through Numbering Series. Each voucher type can have its own numbering format.'
+      });
+    }
   };
 
   const saveNumberingConfig = async () => {
@@ -623,6 +711,19 @@ export default function SettingsScreen() {
   };
 
   const settingSections = [
+    {
+      title: 'Company Information',
+      items: [
+        {
+          key: 'gstin_config',
+          label: 'GSTIN Configuration',
+          description: gstinConfig.gstin ? `GSTIN: ${gstinConfig.gstin}` : 'Not configured',
+          type: 'navigation',
+          icon: 'receipt-outline',
+          onPress: handleGSTINConfig,
+        },
+      ]
+    },
     {
       title: 'GST & Compliance',
       items: [
@@ -1329,6 +1430,130 @@ export default function SettingsScreen() {
                 style={[styles.actionButton, styles.saveButton, loading && styles.saveButtonDisabled]}
                 onPress={saveTDSConfig}
                 disabled={loading || !tempTDSConfig.tan_number || tempTDSConfig.tan_number.length !== 10}
+              >
+                <Ionicons name="save" size={20} color="white" />
+                <Text style={styles.saveButtonText}>
+                  {loading ? 'Saving...' : 'Save Changes'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* GSTIN Configuration Modal */}
+      <Modal
+        visible={showGSTINModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowGSTINModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>GSTIN Configuration</Text>
+            <TouchableOpacity 
+              onPress={() => setShowGSTINModal(false)}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color="#6b7280" />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.modalContent}>
+            <Text style={styles.infoText}>
+              Configure your company's GST Identification Number (GSTIN). This information will be used in all GST-related transactions and reports.
+            </Text>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>GSTIN *</Text>
+              <TextInput
+                style={styles.input}
+                value={tempGSTINConfig.gstin}
+                onChangeText={(text) => setTempGSTINConfig(prev => ({ ...prev, gstin: text.toUpperCase() }))}
+                placeholder="Enter GSTIN (e.g., 27AABCU9603R1ZM)"
+                placeholderTextColor="#9ca3af"
+                maxLength={15}
+                autoCapitalize="characters"
+              />
+              <Text style={styles.helpText}>
+                15-character GST Identification Number
+              </Text>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Legal Name *</Text>
+              <TextInput
+                style={styles.input}
+                value={tempGSTINConfig.legal_name}
+                onChangeText={(text) => setTempGSTINConfig(prev => ({ ...prev, legal_name: text }))}
+                placeholder="Enter legal name as per GST registration"
+                placeholderTextColor="#9ca3af"
+                maxLength={200}
+              />
+              <Text style={styles.helpText}>
+                Legal name of the business as registered with GST
+              </Text>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Trade Name</Text>
+              <TextInput
+                style={styles.input}
+                value={tempGSTINConfig.trade_name}
+                onChangeText={(text) => setTempGSTINConfig(prev => ({ ...prev, trade_name: text }))}
+                placeholder="Enter trade name (if different)"
+                placeholderTextColor="#9ca3af"
+                maxLength={200}
+              />
+              <Text style={styles.helpText}>
+                Trade name or brand name (optional)
+              </Text>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>State Code *</Text>
+              <TextInput
+                style={styles.input}
+                value={tempGSTINConfig.state_code}
+                onChangeText={(text) => setTempGSTINConfig(prev => ({ ...prev, state_code: text }))}
+                placeholder="Enter state code (e.g., 27 for Maharashtra)"
+                placeholderTextColor="#9ca3af"
+                maxLength={2}
+                keyboardType="numeric"
+              />
+              <Text style={styles.helpText}>
+                2-digit state code from GSTIN
+              </Text>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>State Name *</Text>
+              <TextInput
+                style={styles.input}
+                value={tempGSTINConfig.state_name}
+                onChangeText={(text) => setTempGSTINConfig(prev => ({ ...prev, state_name: text }))}
+                placeholder="Enter state name (e.g., Maharashtra)"
+                placeholderTextColor="#9ca3af"
+                maxLength={100}
+              />
+              <Text style={styles.helpText}>
+                Name of the state where business is registered
+              </Text>
+            </View>
+
+            <View style={styles.actionButtons}>
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.cancelButton]}
+                onPress={() => setShowGSTINModal(false)}
+                disabled={loading}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.saveButton, loading && styles.saveButtonDisabled]}
+                onPress={saveGSTINConfig}
+                disabled={loading || !tempGSTINConfig.gstin || tempGSTINConfig.gstin.length !== 15 || !tempGSTINConfig.legal_name}
               >
                 <Ionicons name="save" size={20} color="white" />
                 <Text style={styles.saveButtonText}>
