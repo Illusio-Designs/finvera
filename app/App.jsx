@@ -11,6 +11,7 @@ import { DrawerProvider, useDrawer } from './src/contexts/DrawerContext.jsx';
 import { SubscriptionProvider } from './src/contexts/SubscriptionContext.jsx';
 import { SettingsProvider } from './src/contexts/SettingsContext.jsx';
 import { VoucherProvider } from './src/contexts/VoucherContext.jsx';
+import { SearchProvider } from './src/contexts/SearchContext.jsx';
 import CustomDrawer from './src/components/navigation/CustomDrawer.jsx';
 import BottomTabBar from './src/components/navigation/BottomTabBar.jsx';
 import { navigationRef } from './src/services/navigationService';
@@ -418,9 +419,11 @@ export default function App() {
           <SubscriptionProvider>
             <SettingsProvider>
               <VoucherProvider>
-                <DrawerProvider>
-                  <AppNavigator />
-                </DrawerProvider>
+                <SearchProvider>
+                  <DrawerProvider>
+                    <AppNavigator />
+                  </DrawerProvider>
+                </SearchProvider>
               </VoucherProvider>
             </SettingsProvider>
           </SubscriptionProvider>

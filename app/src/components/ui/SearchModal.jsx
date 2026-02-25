@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import { FONT_STYLES } from '../../utils/fonts';;
 import { useNavigation } from '@react-navigation/native';
+import { useSearch } from '../../contexts/SearchContext';
 
 export default function SearchModal({ 
   visible = false,
@@ -21,10 +22,15 @@ export default function SearchModal({
   placeholder = "Search ledgers, vouchers, inventory...",
 }) {
   const navigation = useNavigation();
+  const {
+    searchResults,
+    isSearching,
+    recentSearches,
+    performSearch,
+    clearSearch,
+  } = useSearch();
+  
   const [localQuery, setLocalQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [recentSearches, setRecentSearches] = useState([]);
   const searchInputRef = useRef(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -58,70 +64,23 @@ export default function SearchModal({
       }, 500);
       return () => clearTimeout(debounceTimer);
     } else {
-      setSearchResults([]);
+      clearSearch();
     }
   }, [localQuery]);
 
   const handleSearch = async (query) => {
     if (!query.trim()) {
-      setSearchResults([]);
+      clearSearch();
       return;
     }
     
-    try {
-      setIsSearching(true);
-      
-      // Mock search results for demo
-      const mockResults = [
-        {
-          type: 'ledger',
-          title: `Cash Account - ${query}`,
-          subtitle: 'Current Account',
-          description: 'Sample cash ledger'
-        },
-        {
-          type: 'voucher',
-          title: `Sales Invoice - ${query}`,
-          subtitle: 'INV-001',
-          description: 'Sample sales invoice'
-        },
-        {
-          type: 'inventory',
-          title: `Product - ${query}`,
-          subtitle: 'SKU: PROD001',
-          description: 'Sample inventory item'
-        },
-        {
-          type: 'company',
-          title: `Company - ${query}`,
-          subtitle: 'Private Limited',
-          description: 'Sample company'
-        }
-      ];
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      setSearchResults(mockResults);
-      
-      // Add to recent searches
-      setRecentSearches(prev => {
-        const newRecent = [query, ...prev.filter(item => item !== query)];
-        return newRecent.slice(0, 5);
-      });
-      
-    } catch (error) {
-      console.error('Search error:', error);
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
+    await performSearch(query);
   };
 
   const handleClose = () => {
     Keyboard.dismiss();
     setLocalQuery('');
-    setSearchResults([]);
+    clearSearch();
     if (onClose) onClose();
   };
 
@@ -129,17 +88,45 @@ export default function SearchModal({
     try {
       switch (result.type) {
         case 'ledger':
+        case 'ledgers':
           navigation.navigate('Ledgers');
           break;
         case 'voucher':
+        case 'vouchers':
           navigation.navigate('Vouchers');
           break;
         case 'inventory':
           navigation.navigate('Inventory');
           break;
+        case 'warehouse':
+        case 'warehouses':
+          navigation.navigate('Warehouses');
+          break;
         case 'company':
+        case 'companies':
           navigation.navigate('Companies');
           break;
+        case 'tenant':
+        case 'tenants':
+          // Admin only - might need different navigation
+          console.log('Tenant result:', result);
+          break;
+        case 'distributor':
+        case 'distributors':
+          // Admin only
+          console.log('Distributor result:', result);
+          break;
+        case 'salesman':
+        case 'salesmen':
+          // Admin only
+          console.log('Salesman result:', result);
+          break;
+        case 'user':
+        case 'users':
+          // Admin only
+          console.log('User result:', result);
+          break;
+        case 'support_ticket':
         case 'support':
           navigation.navigate('Support');
           break;
@@ -169,9 +156,23 @@ export default function SearchModal({
   const getResultIcon = (type) => {
     const icons = {
       ledger: 'folder-outline',
+      ledgers: 'folder-outline',
       voucher: 'document-text-outline',
+      vouchers: 'document-text-outline',
       inventory: 'cube-outline',
-      company: 'business-outline',
+      warehouse: 'business-outline',
+      warehouses: 'business-outline',
+      company: 'briefcase-outline',
+      companies: 'briefcase-outline',
+      tenant: 'business-outline',
+      tenants: 'business-outline',
+      distributor: 'people-outline',
+      distributors: 'people-outline',
+      salesman: 'person-outline',
+      salesmen: 'person-outline',
+      user: 'person-circle-outline',
+      users: 'person-circle-outline',
+      support_ticket: 'help-circle-outline',
       support: 'help-circle-outline',
       notification: 'notifications-outline',
     };
@@ -181,9 +182,23 @@ export default function SearchModal({
   const getResultColor = (type) => {
     const colors = {
       ledger: '#3e60ab',
+      ledgers: '#3e60ab',
       voucher: '#10b981',
+      vouchers: '#10b981',
       inventory: '#8b5cf6',
+      warehouse: '#f59e0b',
+      warehouses: '#f59e0b',
       company: '#f59e0b',
+      companies: '#f59e0b',
+      tenant: '#3b82f6',
+      tenants: '#3b82f6',
+      distributor: '#06b6d4',
+      distributors: '#06b6d4',
+      salesman: '#14b8a6',
+      salesmen: '#14b8a6',
+      user: '#6366f1',
+      users: '#6366f1',
+      support_ticket: '#ef4444',
       support: '#ef4444',
       notification: '#6b7280',
     };

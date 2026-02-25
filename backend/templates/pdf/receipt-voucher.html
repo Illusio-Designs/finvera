@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt Voucher - {{voucher_number}}</title>
+    <style>
+        @page { size: A4; margin: 0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Arial', sans-serif; font-size: 12px; line-height: 1.5; color: #333; padding: 20mm; }
+        .header { text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 3px solid #10b981; }
+        .header h1 { font-size: 32px; color: #10b981; margin-bottom: 5px; }
+        .header .doc-type { font-size: 16px; color: #065f46; font-weight: 600; }
+        .voucher-box { border: 3px solid #34d399; border-radius: 12px; padding: 20px; background: #ecfdf5; }
+        .voucher-header { display: flex; justify-content: space-between; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #34d399; }
+        .voucher-header div { flex: 1; }
+        .voucher-header h3 { color: #065f46; font-size: 14px; margin-bottom: 8px; }
+        .voucher-header p { margin: 5px 0; }
+        .receipt-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #a7f3d0; }
+        .receipt-details h3 { color: #10b981; font-size: 16px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #a7f3d0; }
+        .detail-row { display: flex; padding: 12px 0; border-bottom: 1px solid #d1fae5; }
+        .detail-row:last-child { border-bottom: none; }
+        .detail-label { flex: 0 0 200px; font-weight: 600; color: #064e3b; }
+        .detail-value { flex: 1; color: #1f2937; }
+        .amount-box { background: linear-gradient(135deg, #34d399 0%, #10b981 100%); color: white; padding: 25px; border-radius: 12px; margin: 25px 0; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .amount-box .label { font-size: 14px; margin-bottom: 10px; opacity: 0.9; }
+        .amount-box .amount { font-size: 36px; font-weight: bold; margin-bottom: 10px; }
+        .amount-box .words { font-size: 13px; font-style: italic; opacity: 0.95; }
+        .ledger-entries { margin: 25px 0; }
+        .ledger-entries h3 { color: #10b981; font-size: 15px; margin-bottom: 15px; }
+        .ledger-table { width: 100%; border-collapse: collapse; }
+        .ledger-table thead { background: #10b981; color: white; }
+        .ledger-table th { padding: 12px; text-align: left; font-weight: 600; }
+        .ledger-table td { padding: 12px; border-bottom: 1px solid #a7f3d0; }
+        .ledger-table tbody tr:hover { background: #ecfdf5; }
+        .text-right { text-align: right; }
+        .signature-section { display: flex; justify-content: space-between; margin-top: 50px; padding-top: 20px; border-top: 2px solid #a7f3d0; }
+        .signature-box { text-align: center; width: 200px; }
+        .signature-line { border-top: 2px solid #333; margin-top: 70px; padding-top: 8px; font-weight: 600; }
+        .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #064e3b; padding-top: 15px; border-top: 1px solid #a7f3d0; }
+        .badge { display: inline-block; padding: 5px 15px; border-radius: 15px; font-size: 11px; font-weight: 600; }
+        .badge-success { background: #dcfce7; color: #166534; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💵 RECEIPT VOUCHER</h1>
+        <p class="doc-type">{{company_name}}</p>
+    </div>
+    
+    <div class="voucher-box">
+        <div class="voucher-header">
+            <div>
+                <h3>📄 Voucher Details</h3>
+                <p><strong>Voucher No:</strong> {{voucher_number}}</p>
+                <p><strong>Date:</strong> {{voucher_date}}</p>
+                <p><span class="badge badge-success">{{status}}</span></p>
+            </div>
+            <div style="text-align: right;">
+                <h3>🏢 Company</h3>
+                <p><strong>{{company_name}}</strong></p>
+                <p>{{company_address}}</p>
+            </div>
+        </div>
+        
+        <div class="receipt-details">
+            <h3>💰 Receipt Information</h3>
+            <div class="detail-row">
+                <div class="detail-label">Received From:</div>
+                <div class="detail-value"><strong>{{party_name}}</strong></div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Payment Mode:</div>
+                <div class="detail-value">{{payment_mode}}</div>
+            </div>
+            {{#if reference_number}}
+            <div class="detail-row">
+                <div class="detail-label">Reference No:</div>
+                <div class="detail-value">{{reference_number}}</div>
+            </div>
+            {{/if}}
+            {{#if bank_name}}
+            <div class="detail-row">
+                <div class="detail-label">Bank:</div>
+                <div class="detail-value">{{bank_name}}</div>
+            </div>
+            {{/if}}
+            {{#if narration}}
+            <div class="detail-row">
+                <div class="detail-label">Narration:</div>
+                <div class="detail-value">{{narration}}</div>
+            </div>
+            {{/if}}
+        </div>
+        
+        <div class="amount-box">
+            <div class="label">AMOUNT RECEIVED</div>
+            <div class="amount">₹ {{formatNumber total_amount}}</div>
+            <div class="words">{{amount_in_words}}</div>
+        </div>
+        
+        <div class="ledger-entries">
+            <h3>📊 Ledger Entries</h3>
+            <table class="ledger-table">
+                <thead>
+                    <tr>
+                        <th>Particulars</th>
+                        <th class="text-right">Debit (₹)</th>
+                        <th class="text-right">Credit (₹)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each ledger_entries}}
+                    <tr>
+                        <td>{{this.ledger_name}}</td>
+                        <td class="text-right">{{#if this.debit_amount}}₹{{formatNumber this.debit_amount}}{{/if}}</td>
+                        <td class="text-right">{{#if this.credit_amount}}₹{{formatNumber this.credit_amount}}{{/if}}</td>
+                    </tr>
+                    {{/each}}
+                    <tr style="background: #d1fae5; font-weight: bold;">
+                        <td>TOTAL</td>
+                        <td class="text-right">₹{{formatNumber total_debit}}</td>
+                        <td class="text-right">₹{{formatNumber total_credit}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="signature-section">
+        <div class="signature-box">
+            <div class="signature-line">Received By</div>
+        </div>
+        <div class="signature-box">
+            <div class="signature-line">Checked By</div>
+        </div>
+        <div class="signature-box">
+            <div class="signature-line">Authorized Signatory</div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>This is a computer-generated receipt voucher.</p>
+        <p>Generated on {{generated_at}} | Powered by Finvera</p>
+    </div>
+</body>
+</html>

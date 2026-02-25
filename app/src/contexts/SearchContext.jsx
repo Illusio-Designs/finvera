@@ -28,50 +28,31 @@ export const SearchProvider = ({ children }) => {
     try {
       setIsSearching(true);
       
-      // For demo purposes, if API fails, return mock data
-      let results = [];
+      const response = await searchAPI.universal({
+        q: query,
+        ...filters
+      });
       
-      try {
-        const response = await searchAPI.universal({
-          q: query,
-          ...filters
-        });
-        results = response.data?.data || response.data || [];
-      } catch (apiError) {
-        console.log('API search failed, using mock data:', apiError.message);
-        
-        // Mock search results for demo
-        results = [
-          {
-            type: 'ledger',
-            title: `Ledger: ${query}`,
-            subtitle: 'Sample ledger result',
-            description: 'This is a sample ledger search result'
-          },
-          {
-            type: 'voucher',
-            title: `Voucher: ${query}`,
-            subtitle: 'Sample voucher result',
-            description: 'This is a sample voucher search result'
-          },
-          {
-            type: 'inventory',
-            title: `Item: ${query}`,
-            subtitle: 'Sample inventory result',
-            description: 'This is a sample inventory search result'
-          }
-        ].filter(item => 
-          item.title.toLowerCase().includes(query.toLowerCase()) ||
-          item.subtitle.toLowerCase().includes(query.toLowerCase())
-        );
-      }
+      // Backend returns { success, query, results, summary, total }
+      const backendResults = response.data?.results || [];
+      
+      // Transform backend results to match UI format
+      const formattedResults = backendResults.map(item => ({
+        id: item.id,
+        type: item.type,
+        title: item.name || item.subject || 'Untitled',
+        subtitle: item.code || item.email || item.location || item.status || '',
+        description: item.gstin || item.role || item.priority || '',
+        url: item.url,
+        ...item // Keep all original data
+      }));
 
-      setSearchResults(results);
+      setSearchResults(formattedResults);
       
       // Add to search history
       addToSearchHistory(query);
       
-      return results;
+      return formattedResults;
     } catch (error) {
       console.error('Search error:', error);
       setSearchResults([]);
@@ -87,30 +68,19 @@ export const SearchProvider = ({ children }) => {
     
     try {
       setIsSearching(true);
+      const response = await searchAPI.universal({
+        q: query,
+        type: 'ledgers'
+      });
       
-      try {
-        const response = await searchAPI.universal({
-          q: query,
-          type: 'ledger'
-        });
-        return response.data?.data || response.data || [];
-      } catch (apiError) {
-        console.log('Ledger search API failed, using mock data');
-        return [
-          {
-            type: 'ledger',
-            title: `Cash Account - ${query}`,
-            subtitle: 'Current Account',
-            description: 'Sample cash ledger'
-          },
-          {
-            type: 'ledger', 
-            title: `Bank Account - ${query}`,
-            subtitle: 'Savings Account',
-            description: 'Sample bank ledger'
-          }
-        ];
-      }
+      const results = response.data?.results || [];
+      return results.map(item => ({
+        id: item.id,
+        type: 'ledger',
+        title: item.name,
+        subtitle: item.code || '',
+        ...item
+      }));
     } catch (error) {
       console.error('Ledger search error:', error);
       return [];
@@ -124,30 +94,19 @@ export const SearchProvider = ({ children }) => {
     
     try {
       setIsSearching(true);
+      const response = await searchAPI.universal({
+        q: query,
+        type: 'vouchers'
+      });
       
-      try {
-        const response = await searchAPI.universal({
-          q: query,
-          type: 'voucher'
-        });
-        return response.data?.data || response.data || [];
-      } catch (apiError) {
-        console.log('Voucher search API failed, using mock data');
-        return [
-          {
-            type: 'voucher',
-            title: `Sales Invoice - ${query}`,
-            subtitle: 'INV-001',
-            description: 'Sample sales invoice'
-          },
-          {
-            type: 'voucher',
-            title: `Purchase Invoice - ${query}`,
-            subtitle: 'PINV-001', 
-            description: 'Sample purchase invoice'
-          }
-        ];
-      }
+      const results = response.data?.results || [];
+      return results.map(item => ({
+        id: item.id,
+        type: 'voucher',
+        title: item.name,
+        subtitle: item.subtype || item.date || '',
+        ...item
+      }));
     } catch (error) {
       console.error('Voucher search error:', error);
       return [];
@@ -161,24 +120,19 @@ export const SearchProvider = ({ children }) => {
     
     try {
       setIsSearching(true);
+      const response = await searchAPI.universal({
+        q: query,
+        type: 'inventory'
+      });
       
-      try {
-        const response = await searchAPI.universal({
-          q: query,
-          type: 'inventory'
-        });
-        return response.data?.data || response.data || [];
-      } catch (apiError) {
-        console.log('Inventory search API failed, using mock data');
-        return [
-          {
-            type: 'inventory',
-            title: `Product - ${query}`,
-            subtitle: 'SKU: PROD001',
-            description: 'Sample inventory item'
-          }
-        ];
-      }
+      const results = response.data?.results || [];
+      return results.map(item => ({
+        id: item.id,
+        type: 'inventory',
+        title: item.name,
+        subtitle: item.code || item.hsn || '',
+        ...item
+      }));
     } catch (error) {
       console.error('Inventory search error:', error);
       return [];
@@ -192,24 +146,19 @@ export const SearchProvider = ({ children }) => {
     
     try {
       setIsSearching(true);
+      const response = await searchAPI.universal({
+        q: query,
+        type: 'companies'
+      });
       
-      try {
-        const response = await searchAPI.universal({
-          q: query,
-          type: 'company'
-        });
-        return response.data?.data || response.data || [];
-      } catch (apiError) {
-        console.log('Company search API failed, using mock data');
-        return [
-          {
-            type: 'company',
-            title: `Company - ${query}`,
-            subtitle: 'Private Limited',
-            description: 'Sample company'
-          }
-        ];
-      }
+      const results = response.data?.results || [];
+      return results.map(item => ({
+        id: item.id,
+        type: 'company',
+        title: item.name,
+        subtitle: item.gstin || '',
+        ...item
+      }));
     } catch (error) {
       console.error('Company search error:', error);
       return [];

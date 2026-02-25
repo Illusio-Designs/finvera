@@ -854,8 +854,8 @@ module.exports = (sequelize) => {
         key: 'id',
       },
     },
-    section_code: {
-      type: DataTypes.STRING(10),
+    tds_section: {
+      type: DataTypes.STRING,
       allowNull: false,
       comment: 'TDS section code like 194C, 194I, 194J, 194H',
     },
@@ -866,33 +866,28 @@ module.exports = (sequelize) => {
     },
     taxable_amount: {
       type: DataTypes.DECIMAL(15, 2),
-      allowNull: false,
+      allowNull: true,
+      defaultValue: 0,
       comment: 'Amount on which TDS is calculated',
     },
     tds_amount: {
       type: DataTypes.DECIMAL(15, 2),
-      allowNull: false,
+      allowNull: true,
+      defaultValue: 0,
       comment: 'TDS amount deducted',
     },
     deductee_pan: {
-      type: DataTypes.STRING(10),
+      type: DataTypes.STRING,
       allowNull: true,
       comment: 'PAN of the deductee',
-      validate: {
-        isPAN(value) {
-          if (value && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value)) {
-            throw new Error('Invalid PAN format. Expected format: AAAAA9999A');
-          }
-        },
-      },
     },
     deductee_name: {
-      type: DataTypes.STRING(100),
+      type: DataTypes.STRING,
       allowNull: true,
       comment: 'Name of the deductee',
     },
-    certificate_no: {
-      type: DataTypes.STRING(20),
+    certificate_number: {
+      type: DataTypes.STRING,
       allowNull: true,
       comment: 'TDS certificate number',
     },
@@ -902,12 +897,12 @@ module.exports = (sequelize) => {
       comment: 'TDS certificate generation date',
     },
     quarter: {
-      type: DataTypes.STRING(10),
+      type: DataTypes.STRING,
       allowNull: true,
       comment: 'Quarter for TDS return (Q1, Q2, Q3, Q4)',
     },
     financial_year: {
-      type: DataTypes.STRING(10),
+      type: DataTypes.STRING,
       allowNull: true,
       comment: 'Financial year (e.g., 2024-25)',
     },

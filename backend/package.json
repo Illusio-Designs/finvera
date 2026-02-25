@@ -45,7 +45,7 @@
     "node-cron": "^4.2.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
-    "puppeteer": "^22.0.0",
+    "html-pdf-node": "^1.0.8",
     "razorpay": "^2.9.6",
     "redis": "^5.10.0",
     "sequelize": "^6.37.7",

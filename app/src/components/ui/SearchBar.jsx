@@ -117,17 +117,45 @@ export default function SearchBar({
     try {
       switch (result.type) {
         case 'ledger':
+        case 'ledgers':
           navigation.navigate('Ledgers');
           break;
         case 'voucher':
+        case 'vouchers':
           navigation.navigate('Vouchers');
           break;
         case 'inventory':
           navigation.navigate('Inventory');
           break;
+        case 'warehouse':
+        case 'warehouses':
+          navigation.navigate('Warehouses');
+          break;
         case 'company':
+        case 'companies':
           navigation.navigate('Companies');
           break;
+        case 'tenant':
+        case 'tenants':
+          // Admin only - might need different navigation
+          console.log('Tenant result:', result);
+          break;
+        case 'distributor':
+        case 'distributors':
+          // Admin only
+          console.log('Distributor result:', result);
+          break;
+        case 'salesman':
+        case 'salesmen':
+          // Admin only
+          console.log('Salesman result:', result);
+          break;
+        case 'user':
+        case 'users':
+          // Admin only
+          console.log('User result:', result);
+          break;
+        case 'support_ticket':
         case 'support':
           navigation.navigate('Support');
           break;
@@ -157,9 +185,23 @@ export default function SearchBar({
   const getResultIcon = (type) => {
     const icons = {
       ledger: 'folder-outline',
+      ledgers: 'folder-outline',
       voucher: 'document-text-outline',
+      vouchers: 'document-text-outline',
       inventory: 'cube-outline',
-      company: 'business-outline',
+      warehouse: 'business-outline',
+      warehouses: 'business-outline',
+      company: 'briefcase-outline',
+      companies: 'briefcase-outline',
+      tenant: 'business-outline',
+      tenants: 'business-outline',
+      distributor: 'people-outline',
+      distributors: 'people-outline',
+      salesman: 'person-outline',
+      salesmen: 'person-outline',
+      user: 'person-circle-outline',
+      users: 'person-circle-outline',
+      support_ticket: 'help-circle-outline',
       support: 'help-circle-outline',
       notification: 'notifications-outline',
     };
@@ -169,9 +211,23 @@ export default function SearchBar({
   const getResultColor = (type) => {
     const colors = {
       ledger: '#3e60ab',
+      ledgers: '#3e60ab',
       voucher: '#10b981',
+      vouchers: '#10b981',
       inventory: '#8b5cf6',
+      warehouse: '#f59e0b',
+      warehouses: '#f59e0b',
       company: '#f59e0b',
+      companies: '#f59e0b',
+      tenant: '#3b82f6',
+      tenants: '#3b82f6',
+      distributor: '#06b6d4',
+      distributors: '#06b6d4',
+      salesman: '#14b8a6',
+      salesmen: '#14b8a6',
+      user: '#6366f1',
+      users: '#6366f1',
+      support_ticket: '#ef4444',
       support: '#ef4444',
       notification: '#6b7280',
     };

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Invoice - {{voucher_number}}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #333;
+            padding: 20mm;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #2563eb;
+        }
+        .header h1 {
+            font-size: 28px;
+            color: #2563eb;
+            margin-bottom: 5px;
+        }
+        .header .doc-type {
+            font-size: 14px;
+            color: #64748b;
+            font-weight: 600;
+        }
+        .company-section {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .company-section h2 {
+            font-size: 18px;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+        .company-section p {
+            margin: 3px 0;
+            color: #475569;
+        }
+        .invoice-details {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 20px;
+        }
+        .party-box, .invoice-box {
+            flex: 1;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .party-box h3, .invoice-box h3 {
+            font-size: 13px;
+            color: #2563eb;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .party-box p, .invoice-box p {
+            margin: 5px 0;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .items-table thead {
+            background: #2563eb;
+            color: white;
+        }
+        .items-table th {
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 11px;
+        }
+        .items-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .items-table tbody tr:hover {
+            background: #f8fafc;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .totals-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        .totals-table {
+            width: 350px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .totals-table tr {
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .totals-table tr:last-child {
+            border-bottom: none;
+            background: #2563eb;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .totals-table td {
+            padding: 10px 15px;
+        }
+        .amount-words {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #2563eb;
+        }
+        .amount-words strong {
+            color: #2563eb;
+        }
+        .terms {
+            margin-top: 30px;
+            padding: 15px;
+            background: #fef3c7;
+            border-radius: 8px;
+            border-left: 4px solid #f59e0b;
+        }
+        .terms h4 {
+            color: #92400e;
+            margin-bottom: 8px;
+        }
+        .terms ul {
+            margin-left: 20px;
+            color: #78350f;
+        }
+        .terms li {
+            margin: 5px 0;
+        }
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #e2e8f0;
+        }
+        .signature-box {
+            text-align: center;
+            width: 200px;
+        }
+        .signature-line {
+            border-top: 2px solid #333;
+            margin-top: 60px;
+            padding-top: 8px;
+            font-weight: 600;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+            color: #64748b;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .badge-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{company_name}}</h1>
+        <p class="doc-type">TAX INVOICE</p>
+    </div>
+    
+    <div class="company-section">
+        <h2>{{company_name}}</h2>
+        <p><strong>Address:</strong> {{company_address}}</p>
+        <p><strong>GSTIN:</strong> {{company_gstin}} | <strong>PAN:</strong> {{company_pan}}</p>
+        <p><strong>Phone:</strong> {{company_phone}} | <strong>Email:</strong> {{company_email}}</p>
+        <p><strong>State:</strong> {{company_state}} | <strong>State Code:</strong> {{company_state_code}}</p>
+    </div>
+    
+    <div class="invoice-details">
+        <div class="party-box">
+            <h3>📋 Bill To</h3>
+            <p><strong>{{party_name}}</strong></p>
+            <p>{{party_address}}</p>
+            <p><strong>GSTIN:</strong> {{party_gstin}}</p>
+            <p><strong>PAN:</strong> {{party_pan}}</p>
+            <p><strong>State:</strong> {{party_state}}</p>
+        </div>
+        <div class="invoice-box">
+            <h3>📄 Invoice Details</h3>
+            <p><strong>Invoice No:</strong> {{voucher_number}}</p>
+            <p><strong>Date:</strong> {{voucher_date}}</p>
+            <p><strong>Due Date:</strong> {{due_date}}</p>
+            <p><strong>Place of Supply:</strong> {{place_of_supply}}</p>
+            <p><span class="badge badge-success">{{status}}</span></p>
+        </div>
+    </div>
+    
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">#</th>
+                <th style="width: 30%;">Description</th>
+                <th style="width: 10%;">HSN/SAC</th>
+                <th style="width: 8%;" class="text-center">Qty</th>
+                <th style="width: 8%;" class="text-right">Rate</th>
+                <th style="width: 10%;" class="text-right">Taxable Amt</th>
+                <th style="width: 8%;" class="text-center">GST %</th>
+                <th style="width: 10%;" class="text-right">GST Amt</th>
+                <th style="width: 11%;" class="text-right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#each items}}
+            <tr>
+                <td class="text-center">{{add @index 1}}</td>
+                <td>{{this.item_name}}</td>
+                <td>{{this.hsn_code}}</td>
+                <td class="text-center">{{this.quantity}} {{this.uqc}}</td>
+                <td class="text-right">₹{{formatNumber this.rate}}</td>
+                <td class="text-right">₹{{formatNumber this.taxable_amount}}</td>
+                <td class="text-center">{{this.gst_rate}}%</td>
+                <td class="text-right">₹{{formatNumber this.gst_amount}}</td>
+                <td class="text-right"><strong>₹{{formatNumber this.amount}}</strong></td>
+            </tr>
+            {{/each}}
+        </tbody>
+    </table>
+    
+    <div class="totals-section">
+        <table class="totals-table">
+            <tr>
+                <td>Taxable Amount:</td>
+                <td class="text-right">₹{{formatNumber taxable_amount}}</td>
+            </tr>
+            {{#if is_intrastate}}
+            <tr>
+                <td>CGST:</td>
+                <td class="text-right">₹{{formatNumber cgst_amount}}</td>
+            </tr>
+            <tr>
+                <td>SGST:</td>
+                <td class="text-right">₹{{formatNumber sgst_amount}}</td>
+            </tr>
+            {{else}}
+            <tr>
+                <td>IGST:</td>
+                <td class="text-right">₹{{formatNumber igst_amount}}</td>
+            </tr>
+            {{/if}}
+            {{#if tds_amount}}
+            <tr>
+                <td>TDS Deducted ({{tds_section}}):</td>
+                <td class="text-right">- ₹{{formatNumber tds_amount}}</td>
+            </tr>
+            {{/if}}
+            {{#if round_off}}
+            <tr>
+                <td>Round Off:</td>
+                <td class="text-right">₹{{formatNumber round_off}}</td>
+            </tr>
+            {{/if}}
+            <tr>
+                <td><strong>TOTAL AMOUNT:</strong></td>
+                <td class="text-right"><strong>₹{{formatNumber total_amount}}</strong></td>
+            </tr>
+        </table>
+    </div>
+    
+    <div class="amount-words">
+        <strong>Amount in Words:</strong> {{amount_in_words}}
+    </div>
+    
+    {{#if narration}}
+    <div style="margin: 15px 0; padding: 10px; background: #f1f5f9; border-radius: 6px;">
+        <strong>Narration:</strong> {{narration}}
+    </div>
+    {{/if}}
+    
+    <div class="terms">
+        <h4>Terms & Conditions:</h4>
+        <ul>
+            <li>Payment is due within {{payment_terms}} days from the invoice date</li>
+            <li>Interest @ 18% p.a. will be charged on delayed payments</li>
+            <li>All disputes are subject to {{company_state}} jurisdiction</li>
+            <li>Goods once sold will not be taken back</li>
+        </ul>
+    </div>
+    
+    <div class="signature-section">
+        <div class="signature-box">
+            <div class="signature-line">Customer's Signature</div>
+        </div>
+        <div class="signature-box">
+            <div class="signature-line">Authorized Signatory</div>
+            <p style="margin-top: 5px; font-size: 10px;">For {{company_name}}</p>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>This is a computer-generated invoice and does not require a physical signature.</p>
+        <p>Generated on {{generated_at}} | Powered by Finvera</p>
+    </div>
+</body>
+</html>

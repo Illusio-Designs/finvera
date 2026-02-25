@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Journal Voucher - {{voucher_number}}</title>
+    <style>
+        @page { size: A4; margin: 0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Arial', sans-serif; font-size: 12px; line-height: 1.5; color: #333; padding: 20mm; }
+        .header { text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 3px solid #8b5cf6; }
+        .header h1 { font-size: 32px; color: #8b5cf6; margin-bottom: 5px; }
+        .header .doc-type { font-size: 16px; color: #5b21b6; font-weight: 600; }
+        .voucher-box { border: 3px solid #a78bfa; border-radius: 12px; padding: 20px; background: #faf5ff; }
+        .voucher-header { display: flex; justify-content: space-between; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #a78bfa; }
+        .voucher-header div { flex: 1; }
+        .voucher-header h3 { color: #5b21b6; font-size: 14px; margin-bottom: 8px; }
+        .voucher-header p { margin: 5px 0; }
+        .ledger-entries { margin: 25px 0; }
+        .ledger-entries h3 { color: #8b5cf6; font-size: 16px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #c4b5fd; }
+        .ledger-table { width: 100%; border-collapse: collapse; }
+        .ledger-table thead { background: #8b5cf6; color: white; }
+        .ledger-table th { padding: 12px; text-align: left; font-weight: 600; }
+        .ledger-table td { padding: 12px; border-bottom: 1px solid #ddd6fe; }
+        .ledger-table tbody tr:hover { background: #f5f3ff; }
+        .text-right { text-align: right; }
+        .totals-row { background: #ede9fe; font-weight: bold; font-size: 14px; }
+        .narration-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #c4b5fd; }
+        .narration-box h3 { color: #8b5cf6; font-size: 14px; margin-bottom: 10px; }
+        .narration-box p { color: #1f2937; line-height: 1.6; }
+        .signature-section { display: flex; justify-content: space-between; margin-top: 50px; padding-top: 20px; border-top: 2px solid #ddd6fe; }
+        .signature-box { text-align: center; width: 200px; }
+        .signature-line { border-top: 2px solid #333; margin-top: 70px; padding-top: 8px; font-weight: 600; }
+        .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #5b21b6; padding-top: 15px; border-top: 1px solid #ddd6fe; }
+        .badge { display: inline-block; padding: 5px 15px; border-radius: 15px; font-size: 11px; font-weight: 600; }
+        .badge-success { background: #dcfce7; color: #166534; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📝 JOURNAL VOUCHER</h1>
+        <p class="doc-type">{{company_name}}</p>
+    </div>
+    
+    <div class="voucher-box">
+        <div class="voucher-header">
+            <div>
+                <h3>📄 Voucher Details</h3>
+                <p><strong>Voucher No:</strong> {{voucher_number}}</p>
+                <p><strong>Date:</strong> {{voucher_date}}</p>
+                <p><span class="badge badge-success">{{status}}</span></p>
+            </div>
+            <div style="text-align: right;">
+                <h3>🏢 Company</h3>
+                <p><strong>{{company_name}}</strong></p>
+                <p>{{company_address}}</p>
+            </div>
+        </div>
+        
+        <div class="ledger-entries">
+            <h3>📊 Journal Entries</h3>
+            <table class="ledger-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50%;">Particulars</th>
+                        <th style="width: 25%;" class="text-right">Debit (₹)</th>
+                        <th style="width: 25%;" class="text-right">Credit (₹)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each ledger_entries}}
+                    <tr>
+                        <td>{{this.ledger_name}}</td>
+                        <td class="text-right">{{#if this.debit_amount}}₹{{formatNumber this.debit_amount}}{{/if}}</td>
+                        <td class="text-right">{{#if this.credit_amount}}₹{{formatNumber this.credit_amount}}{{/if}}</td>
+                    </tr>
+                    {{/each}}
+                    <tr class="totals-row">
+                        <td>TOTAL</td>
+                        <td class="text-right">₹{{formatNumber total_debit}}</td>
+                        <td class="text-right">₹{{formatNumber total_credit}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        {{#if narration}}
+        <div class="narration-box">
+            <h3>📋 Narration</h3>
+            <p>{{narration}}</p>
+        </div>
+        {{/if}}
+    </div>
+    
+    <div class="signature-section">
+        <div class="signature-box">
+            <div class="signature-line">Prepared By</div>
+        </div>
+        <div class="signature-box">
+            <div class="signature-line">Checked By</div>
+        </div>
+        <div class="signature-box">
+            <div class="signature-line">Authorized Signatory</div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>This is a computer-generated journal voucher.</p>
+        <p>Generated on {{generated_at}} | Powered by Finvera</p>
+    </div>
+</body>
+</html>
