@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 
 /**
- * Environment Configuration for Finvera Mobile App
+ * Environment Configuration for Fintranzact Mobile App
  * 
  * This file centralizes all environment variables and provides
  * type-safe access to configuration values.
@@ -31,17 +31,17 @@ export const API_CONFIG = {
 
 // Security Configuration
 export const SECURITY_CONFIG = {
-  ENCRYPTION_KEY: getEnvVar('EXPO_PUBLIC_PAYLOAD_ENCRYPTION_KEY', 'finvera-default-encryption-key'),
+  ENCRYPTION_KEY: getEnvVar('EXPO_PUBLIC_PAYLOAD_ENCRYPTION_KEY', 'fintranzact-default-encryption-key'),
   ENABLE_BIOMETRIC_AUTH: getEnvVar('EXPO_PUBLIC_ENABLE_BIOMETRIC_AUTH', 'true') === 'true',
 };
 
 // App Configuration
 export const APP_CONFIG = {
-  NAME: getEnvVar('EXPO_PUBLIC_APP_NAME', 'Finvera Mobile'),
+  NAME: getEnvVar('EXPO_PUBLIC_APP_NAME', 'Fintranzact Mobile'),
   VERSION: getEnvVar('EXPO_PUBLIC_APP_VERSION', '1.0.0'),
   ENVIRONMENT: getEnvVar('NODE_ENV', 'development'),
-  COMPANY_NAME: getEnvVar('EXPO_PUBLIC_COMPANY_NAME', 'Finvera Solutions'),
-  COMPANY_WEBSITE: getEnvVar('EXPO_PUBLIC_COMPANY_WEBSITE', 'https://finvera.solutions'),
+  COMPANY_NAME: getEnvVar('EXPO_PUBLIC_COMPANY_NAME', 'Fintranzact Solutions'),
+  COMPANY_WEBSITE: getEnvVar('EXPO_PUBLIC_COMPANY_WEBSITE', 'https://fintranzact.com'),
   SUPPORT_EMAIL: getEnvVar('EXPO_PUBLIC_SUPPORT_EMAIL', 'support@finvera.solutions'),
   SUPPORT_PHONE: getEnvVar('EXPO_PUBLIC_SUPPORT_PHONE', '+91-9876543210'),
 };

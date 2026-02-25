@@ -76,7 +76,7 @@ export default function LoadingScreen() {
         </Animated.View>
 
         {/* Brand Name */}
-        <Text style={styles.brandName}>Finvera Mobile</Text>
+        <Text style={styles.brandName}>Fintranzact Mobile</Text>
         <Text style={styles.loadingText}>Loading your workspace...</Text>
       </View>
     </LinearGradient>

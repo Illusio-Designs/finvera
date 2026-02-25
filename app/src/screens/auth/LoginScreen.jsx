@@ -404,7 +404,7 @@ export default function LoginScreen() {
             resizeMode="contain"
           />
         </View>
-        <Text style={styles.appName}>Finvera</Text>
+        <Text style={styles.appName}>Fintranzact</Text>
         <Text style={styles.tagline}>Simplify Your Business</Text>
       </View>
 

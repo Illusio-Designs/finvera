@@ -60,7 +60,7 @@ export default function DrawerContent() {
             resizeMode="contain"
           />
         </View>
-        <Text style={styles.appName}>Finvera</Text>
+        <Text style={styles.appName}>Fintranzact</Text>
         <Text style={styles.tagline}>Simplify Your Business</Text>
         
         {user && (
@@ -99,7 +99,7 @@ export default function DrawerContent() {
         </TouchableOpacity>
         
         <View style={styles.versionInfo}>
-          <Text style={styles.versionText}>Finvera Mobile v1.0.0</Text>
+          <Text style={styles.versionText}>Fintranzact Mobile v1.0.0</Text>
         </View>
       </View>
     </View>

@@ -952,9 +952,9 @@ export default function SettingsScreen() {
 
         {/* App Version */}
         <View style={styles.versionSection}>
-          <Text style={styles.versionText}>Finvera Mobile</Text>
+          <Text style={styles.versionText}>Fintranzact Mobile</Text>
           <Text style={styles.versionNumber}>Version 1.0.0</Text>
-          <Text style={styles.copyright}>© 2024 Finvera Solutions</Text>
+          <Text style={styles.copyright}>© 2024 Fintranzact Solutions</Text>
         </View>
       </ScrollView>
 

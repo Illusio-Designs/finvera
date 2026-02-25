@@ -308,9 +308,9 @@ export default function CustomDrawer({ visible, onClose }) {
 
             {/* App Info */}
             <View style={styles.appInfo}>
-              <Text style={styles.appName}>Finvera Mobile</Text>
+              <Text style={styles.appName}>Fintranzact Mobile</Text>
               <Text style={styles.appVersion}>Version 1.0.0</Text>
-              <Text style={styles.appCopyright}>© 2024 Finvera Solutions</Text>
+              <Text style={styles.appCopyright}>© 2024 Fintranzact Solutions</Text>
             </View>
           </ScrollView>
         </View>

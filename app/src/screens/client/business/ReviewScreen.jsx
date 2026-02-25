@@ -297,7 +297,7 @@ export default function ReviewScreen() {
           </View>
           <Text style={styles.headerTitle}>Reviews & Feedback</Text>
           <Text style={styles.headerSubtitle}>
-            Share your experience and read what others say about Finvera
+            Share your experience and read what others say about Fintranzact
           </Text>
         </View>
 
@@ -353,7 +353,7 @@ export default function ReviewScreen() {
                 </View>
                 <Text style={styles.noReviewTitle}>Share Your Experience</Text>
                 <Text style={styles.noReviewDescription}>
-                  Help others by sharing your experience with Finvera
+                  Help others by sharing your experience with Fintranzact
                 </Text>
                 <TouchableOpacity 
                   style={styles.writeReviewButton}
@@ -443,7 +443,7 @@ export default function ReviewScreen() {
               <View style={styles.appStoreIcon}>
                 <Ionicons name="storefront" size={32} color="#3e60ab" />
               </View>
-              <Text style={styles.appStoreTitle}>Love using Finvera?</Text>
+              <Text style={styles.appStoreTitle}>Love using Fintranzact?</Text>
               <Text style={styles.appStoreDescription}>
                 Help others discover us by leaving a review on the app stores.
               </Text>
@@ -553,7 +553,7 @@ export default function ReviewScreen() {
               <Text style={styles.label}>Your Review *</Text>
               <TextInput
                 style={[styles.input, styles.textArea, errors.comment && styles.inputError]}
-                placeholder="Share your experience with Finvera..."
+                placeholder="Share your experience with Fintranzact..."
                 placeholderTextColor="#9ca3af"
                 value={reviewForm.comment}
                 onChangeText={(text) => handleInputChange('comment', text)}
@@ -562,7 +562,7 @@ export default function ReviewScreen() {
                 textAlignVertical="top"
               />
               <Text style={styles.formHint}>
-                Tell us what you like about Finvera and how it has helped your business.
+                Tell us what you like about Fintranzact and how it has helped your business.
               </Text>
               {errors.comment && <Text style={styles.errorText}>{errors.comment}</Text>}
             </View>

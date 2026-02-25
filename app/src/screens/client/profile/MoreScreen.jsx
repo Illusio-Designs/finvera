@@ -284,8 +284,8 @@ export default function MoreScreen() {
 
         {/* App Info */}
         <View style={styles.appInfo}>
-          <Text style={styles.appVersion}>Finvera Mobile v1.0.0</Text>
-          <Text style={styles.appCopyright}>© 2024 Finvera Solutions</Text>
+          <Text style={styles.appVersion}>Fintranzact Mobile v1.0.0</Text>
+          <Text style={styles.appCopyright}>© 2024 Fintranzact Solutions</Text>
         </View>
       </ScrollView>
     </View>

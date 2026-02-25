@@ -205,7 +205,7 @@ export default function LoanScreen() {
       const sessionResponse = await finboxAPI.generateSessionToken({
         customer_id: user?.id,
         loan_amount: parseFloat(applicationData.amount),
-        redirect_url: 'finvera://loan-status'
+        redirect_url: 'fintranzact://loan-status'
       });
       
       showNotification({

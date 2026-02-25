@@ -6,7 +6,7 @@ import SearchModal from '../ui/SearchModal';
 import { FONT_STYLES } from '../../utils/fonts';
 
 export default function TopBar({ 
-  title = 'Finvera', 
+  title = 'Fintranzact', 
   onMenuPress, 
   onSearchPress,
   showSearch = true, 

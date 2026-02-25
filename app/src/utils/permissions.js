@@ -9,7 +9,7 @@ import { Audio } from 'expo-av';
 import { Alert, Platform } from 'react-native';
 
 /**
- * Permission utility functions for the Finvera mobile app
+ * Permission utility functions for the Fintranzact mobile app
  */
 
 export const PermissionTypes = {
@@ -333,7 +333,7 @@ export const openAppSettings = () => {
     import('expo-intent-launcher').then(({ IntentLauncher }) => {
       IntentLauncher.startActivityAsync(
         IntentLauncher.ActivityAction.APPLICATION_DETAILS_SETTINGS,
-        { data: 'package:com.finvera.mobile' }
+        { data: 'package:com.fintranzact.mobile' }
       );
     });
   }
@@ -365,31 +365,31 @@ export const showPermissionRationale = (permissionType, onAccept, onDecline) => 
   const messages = {
     [PermissionTypes.CAMERA]: {
       title: 'Camera Access Needed',
-      message: 'Finvera needs camera access to capture profile pictures and document photos for GST and accounting purposes.',
+      message: 'Fintranzact needs camera access to capture profile pictures and document photos for GST and accounting purposes.',
     },
     [PermissionTypes.MEDIA_LIBRARY]: {
       title: 'Photo Library Access Needed',
-      message: 'Finvera needs photo library access to select images for your profile and business documents.',
+      message: 'Fintranzact needs photo library access to select images for your profile and business documents.',
     },
     [PermissionTypes.LOCATION]: {
       title: 'Location Access Needed',
-      message: 'Finvera uses location to provide location-based business services and GST compliance features.',
+      message: 'Fintranzact uses location to provide location-based business services and GST compliance features.',
     },
     [PermissionTypes.CONTACTS]: {
       title: 'Contacts Access Needed',
-      message: 'Finvera needs contacts access to help you manage customer and vendor information for your business.',
+      message: 'Fintranzact needs contacts access to help you manage customer and vendor information for your business.',
     },
     [PermissionTypes.CALENDAR]: {
       title: 'Calendar Access Needed',
-      message: 'Finvera needs calendar access to schedule business meetings and GST filing reminders.',
+      message: 'Fintranzact needs calendar access to schedule business meetings and GST filing reminders.',
     },
     [PermissionTypes.NOTIFICATIONS]: {
       title: 'Notification Permission Needed',
-      message: 'Finvera needs notification access to send you important updates about GST filings, payments, and business activities.',
+      message: 'Fintranzact needs notification access to send you important updates about GST filings, payments, and business activities.',
     },
     [PermissionTypes.AUDIO]: {
       title: 'Microphone Access Needed',
-      message: 'Finvera needs microphone access for voice notes and audio recordings related to business transactions.',
+      message: 'Fintranzact needs microphone access for voice notes and audio recordings related to business transactions.',
     },
   };
   

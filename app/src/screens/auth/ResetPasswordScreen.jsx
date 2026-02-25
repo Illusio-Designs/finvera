@@ -91,7 +91,7 @@ export default function ResetPasswordScreen() {
           <View style={styles.logoCircle}>
             <Text style={styles.logoText}>F</Text>
           </View>
-          <Text style={styles.brandName}>Finvera</Text>
+          <Text style={styles.brandName}>Fintranzact</Text>
         </View>
 
         {/* Instructions */}

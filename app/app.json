@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "Finvera Mobile",
-    "slug": "finvera",
+    "name": "Fintranzact Mobile",
+    "slug": "fintranzact",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "description": "Complete GST & Accounting Mobile App for Businesses",
-    "scheme": "finvera",
+    "scheme": "fintranzact",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -29,17 +29,17 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.finvera.mobile",
+      "bundleIdentifier": "com.fintranzact.mobile",
       "associatedDomains": [
-        "applinks:finvera.solutions",
-        "applinks:api.finvera.solutions"
+        "applinks:fintranzact.com",
+        "applinks:api.fintranzact.com"
       ],
       "infoPlist": {
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
-              "finvera",
-              "com.finvera.mobile",
+              "fintranzact",
+              "com.fintranzact.mobile",
               "com.googleusercontent.apps.1065810673450-6mntdfquhqtdjj6hvamkkc6ahekiknng"
             ]
           }
@@ -66,7 +66,7 @@
         "backgroundColor": "#3e60ab"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.finvera.mobile",
+      "package": "com.fintranzact.mobile",
       "usesCleartextTraffic": true,
       "networkSecurityConfig": "./android/app/src/main/res/xml/network_security_config.xml",
       "intentFilters": [
@@ -76,12 +76,12 @@
           "data": [
             {
               "scheme": "https",
-              "host": "finvera.solutions",
+              "host": "fintranzact.com",
               "pathPrefix": "/auth/callback"
             },
             {
               "scheme": "https",
-              "host": "api.finvera.solutions",
+              "host": "api.fintranzact.com",
               "pathPrefix": "/auth/callback"
             }
           ],
@@ -94,10 +94,10 @@
           "action": "VIEW",
           "data": [
             {
-              "scheme": "finvera"
+              "scheme": "fintranzact"
             },
             {
-              "scheme": "com.finvera.mobile"
+              "scheme": "com.fintranzact.mobile"
             },
             {
               "scheme": "com.googleusercontent.apps.1065810673450-6mntdfquhqtdjj6hvamkkc6ahekiknng"
@@ -158,11 +158,11 @@
       "eas": {
         "projectId": "c01c18e3-b193-4f24-ae44-3e5bf7c72736"
       },
-      "EXPO_PUBLIC_APP_NAME": "Finvera Mobile",
+      "EXPO_PUBLIC_APP_NAME": "Fintranzact Mobile",
       "EXPO_PUBLIC_APP_VERSION": "1.0.0",
-      "EXPO_PUBLIC_COMPANY_NAME": "Finvera Solutions",
-      "EXPO_PUBLIC_COMPANY_WEBSITE": "https://finvera.solutions",
-      "EXPO_PUBLIC_SUPPORT_EMAIL": "support@finvera.solutions",
+      "EXPO_PUBLIC_COMPANY_NAME": "Fintranzact Solutions",
+      "EXPO_PUBLIC_COMPANY_WEBSITE": "https://fintranzact.com",
+      "EXPO_PUBLIC_SUPPORT_EMAIL": "support@fintranzact.com",
       "EXPO_PUBLIC_SUPPORT_PHONE": "+91-9876543210",
       "EXPO_PUBLIC_ENABLE_BIOMETRIC_AUTH": "true",
       "EXPO_PUBLIC_ENABLE_PUSH_NOTIFICATIONS": "true",
@@ -176,12 +176,12 @@
       "EXPO_PUBLIC_REQUEST_TIMEOUT": "30000",
       "EXPO_PUBLIC_MAX_RETRY_ATTEMPTS": "3",
       "EXPO_PUBLIC_RETRY_DELAY": "1000",
-      "EXPO_PUBLIC_STORAGE_PREFIX": "finvera_",
+      "EXPO_PUBLIC_STORAGE_PREFIX": "fintranzact_",
       "EXPO_PUBLIC_AUTH_TOKEN_KEY": "auth_token",
       "EXPO_PUBLIC_REFRESH_TOKEN_KEY": "refresh_token",
       "EXPO_PUBLIC_USER_DATA_KEY": "user_data",
       "EXPO_PUBLIC_NOTIFICATION_ICON_COLOR": "#3e60ab",
-      "EXPO_PUBLIC_DEFAULT_NOTIFICATION_CHANNEL": "finvera_default",
+      "EXPO_PUBLIC_DEFAULT_NOTIFICATION_CHANNEL": "fintranzact_default",
       "EXPO_PUBLIC_DEFAULT_LANGUAGE": "en",
       "EXPO_PUBLIC_SUPPORTED_LANGUAGES": "en,hi",
       "EXPO_PUBLIC_DEFAULT_CURRENCY": "INR",
@@ -194,7 +194,7 @@
       "EXPO_PUBLIC_API_BASE_URL": "http://192.168.1.40:3000",
       "EXPO_PUBLIC_UPLOADS_BASE_URL": "http://192.168.1.40:3000",
       "EXPO_PUBLIC_DEV_FALLBACK_IPS": "10.230.131.128,192.168.1.100,192.168.0.100,192.168.0.103",
-      "EXPO_PUBLIC_PAYLOAD_ENCRYPTION_KEY": "finvera-default-encryption-key-change-this-in-production",
+      "EXPO_PUBLIC_PAYLOAD_ENCRYPTION_KEY": "fintranzact-default-encryption-key-change-this-in-production",
       "EXPO_PUBLIC_DEBUG_NAVIGATION": "false",
       "EXPO_PUBLIC_ENABLE_ANALYTICS": "false",
       "EXPO_PUBLIC_ENABLE_CRASH_REPORTING": "false",
@@ -218,9 +218,9 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow Finvera to use your location for location-based business services and GST compliance features.",
-          "locationAlwaysPermission": "Allow Finvera to use your location for background business services and automated GST compliance.",
-          "locationWhenInUsePermission": "Allow Finvera to use your location for location-based business services and GST compliance features.",
+          "locationAlwaysAndWhenInUsePermission": "Allow Fintranzact to use your location for location-based business services and GST compliance features.",
+          "locationAlwaysPermission": "Allow Fintranzact to use your location for background business services and automated GST compliance.",
+          "locationWhenInUsePermission": "Allow Fintranzact to use your location for location-based business services and GST compliance features.",
           "isIosBackgroundLocationEnabled": true,
           "isAndroidBackgroundLocationEnabled": true
         }
@@ -228,13 +228,13 @@
       [
         "expo-contacts",
         {
-          "contactsPermission": "Allow Finvera to access your contacts to help you manage customer and vendor information for your business."
+          "contactsPermission": "Allow Fintranzact to access your contacts to help you manage customer and vendor information for your business."
         }
       ],
       [
         "expo-calendar",
         {
-          "calendarPermission": "Allow Finvera to access your calendar to schedule business meetings and GST filing reminders."
+          "calendarPermission": "Allow Fintranzact to access your calendar to schedule business meetings and GST filing reminders."
         }
       ],
       [
@@ -251,14 +251,14 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Allow Finvera to use Face ID for secure authentication and to protect your financial data."
+          "faceIDPermission": "Allow Fintranzact to use Face ID for secure authentication and to protect your financial data."
         }
       ],
       [
         "expo-media-library",
         {
-          "photosPermission": "Allow Finvera to access your photo library to save and manage business-related documents and images.",
-          "savePhotosPermission": "Allow Finvera to save business documents and receipts to your photo library.",
+          "photosPermission": "Allow Fintranzact to access your photo library to save and manage business-related documents and images.",
+          "savePhotosPermission": "Allow Fintranzact to save business documents and receipts to your photo library.",
           "isAccessMediaLocationEnabled": true
         }
       ],
@@ -271,7 +271,7 @@
       [
         "expo-barcode-scanner",
         {
-          "cameraPermission": "Allow Finvera to use the camera for scanning barcodes and QR codes for inventory management and GST compliance."
+          "cameraPermission": "Allow Fintranzact to use the camera for scanning barcodes and QR codes for inventory management and GST compliance."
         }
       ]
     ]

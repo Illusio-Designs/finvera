@@ -113,8 +113,8 @@ export default function ReferralScreen() {
       // Fallback to share if clipboard fails
       try {
         await Share.share({
-          message: `Join Finvera using my referral code "${referralCode?.code}" and get ${referralCode?.discount_value || 10}% discount plus ${referralCode?.free_trial_days || 30} days free trial! ${getReferralLink()}`,
-          title: 'Join Finvera with my referral',
+          message: `Join Fintranzact using my referral code "${referralCode?.code}" and get ${referralCode?.discount_value || 10}% discount plus ${referralCode?.free_trial_days || 30} days free trial! ${getReferralLink()}`,
+          title: 'Join Fintranzact with my referral',
         });
         showNotification({
           type: 'success',
@@ -134,12 +134,12 @@ export default function ReferralScreen() {
   const handleShareReferral = async () => {
     try {
       const referralLink = getReferralLink();
-      const message = `Join Finvera using my referral code "${referralCode?.code}" and get ${referralCode?.discount_value || 10}% discount plus ${referralCode?.free_trial_days || 30} days free trial! ${referralLink}`;
+      const message = `Join Fintranzact using my referral code "${referralCode?.code}" and get ${referralCode?.discount_value || 10}% discount plus ${referralCode?.free_trial_days || 30} days free trial! ${referralLink}`;
       
       await Share.share({
         message: message,
         url: referralLink,
-        title: 'Join Finvera with my referral',
+        title: 'Join Fintranzact with my referral',
       });
     } catch (error) {
       console.error('Share error:', error);
@@ -152,7 +152,7 @@ export default function ReferralScreen() {
   };
 
   const getReferralLink = () => {
-    const baseUrl = 'https://finvera.com/register';
+    const baseUrl = 'https://fintranzact.com/register';
     const code = referralCode?.code || 'DEMO123';
     return `${baseUrl}?ref=${code}`;
   };
@@ -222,7 +222,7 @@ export default function ReferralScreen() {
           </View>
           <Text style={styles.headerTitle}>Referral Program</Text>
           <Text style={styles.headerSubtitle}>
-            Earn rewards by referring friends and colleagues to Finvera
+            Earn rewards by referring friends and colleagues to Fintranzact
           </Text>
         </View>
 

@@ -156,7 +156,7 @@ export default function PermissionsScreen({ navigation }) {
           </View>
           <Text style={styles.title}>App Permissions</Text>
           <Text style={styles.subtitle}>
-            Manage permissions to enhance your Finvera experience
+            Manage permissions to enhance your Fintranzact experience
           </Text>
         </View>
 
@@ -232,7 +232,7 @@ export default function PermissionsScreen({ navigation }) {
             <Text style={styles.infoTitle}>About Permissions</Text>
           </View>
           <Text style={styles.infoText}>
-            Finvera requests permissions only when needed to provide you with the best experience. 
+            Fintranzact requests permissions only when needed to provide you with the best experience. 
             You can change these permissions anytime in your device settings.
           </Text>
           

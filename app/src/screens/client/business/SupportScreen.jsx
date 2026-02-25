@@ -427,7 +427,7 @@ export default function SupportScreen() {
               </View>
               <View style={styles.contactInfo}>
                 <Text style={styles.contactLabel}>Email Support</Text>
-                <Text style={styles.contactValue}>support@finvera.com</Text>
+                <Text style={styles.contactValue}>support@fintranzact.com</Text>
               </View>
             </View>
             <View style={styles.contactItem}>

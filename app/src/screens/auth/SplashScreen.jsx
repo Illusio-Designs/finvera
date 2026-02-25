@@ -68,7 +68,7 @@ export default function SplashScreen() {
         </View>
 
         {/* Brand Name */}
-        <Text style={styles.brandName}>Finvera</Text>
+        <Text style={styles.brandName}>Fintranzact</Text>
         <Text style={styles.tagline}>Financial Excellence Simplified</Text>
 
         {/* Animated Loading Dots */}
@@ -96,7 +96,7 @@ export default function SplashScreen() {
 
       {/* Footer */}
       <View style={styles.footer}>
-        <Text style={styles.footerText}>© 2024 Finvera Solutions</Text>
+        <Text style={styles.footerText}>© 2024 Fintranzact Solutions</Text>
         <Text style={styles.versionText}>Version 1.0.0</Text>
       </View>
     </LinearGradient>
