@@ -44,7 +44,7 @@ export default function TopBar({
               <Ionicons name="menu" size={24} color="white" />
             </TouchableOpacity>
           )}
-          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">{title}</Text>
         </View>
         
         <View style={styles.rightSection}>
@@ -83,6 +83,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    marginRight: 8,
   },
   menuButton: {
     padding: 8,
@@ -95,6 +96,8 @@ const styles = StyleSheet.create({
   title: {
     ...FONT_STYLES.h3,
     color: 'white',
+    flex: 1,
+    numberOfLines: 1,
   },
   rightSection: {
     flexDirection: 'row',

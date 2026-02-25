@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, M
 import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../../components/navigation/TopBar';
 import CreateSalesInvoiceModal from '../../../components/modals/CreateSalesInvoiceModal';
+import VoucherActionButtons from '../../../components/ui/VoucherActionButtons';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useConfirmation } from '../../../contexts/ConfirmationContext';
@@ -292,40 +293,13 @@ export default function SalesInvoiceScreen() {
                   </View>
                 </View>
                 
-                <View style={styles.voucherCardActions}>
-                  <TouchableOpacity 
-                    style={styles.actionButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleVoucherPress(voucher);
-                    }}
-                  >
-                    <Ionicons name="eye-outline" size={16} color="#3e60ab" />
-                    <Text style={styles.actionButtonText}>View</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={styles.actionButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleEditVoucher(voucher);
-                    }}
-                  >
-                    <Ionicons name="create-outline" size={16} color="#059669" />
-                    <Text style={styles.actionButtonText}>Edit</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={styles.actionButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleDeleteVoucher(voucher);
-                    }}
-                  >
-                    <Ionicons name="trash-outline" size={16} color="#dc2626" />
-                    <Text style={styles.actionButtonText}>Delete</Text>
-                  </TouchableOpacity>
-                </View>
+                <VoucherActionButtons
+                  voucher={voucher}
+                  onView={handleVoucherPress}
+                  onEdit={handleEditVoucher}
+                  onDelete={handleDeleteVoucher}
+                  showNotification={showNotification}
+                />
               </TouchableOpacity>
             ))}
           </View>
@@ -485,9 +459,6 @@ const styles = StyleSheet.create({
   voucherTotal: { ...FONT_STYLES.h5, color: '#111827', marginBottom: 4 },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
   statusText: { ...FONT_STYLES.captionSmall },
-  voucherCardActions: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
-  actionButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f9fafb' },
-  actionButtonText: { ...FONT_STYLES.captionSmall, marginLeft: 4 },
   modalContainer: { flex: 1, backgroundColor: '#f9fafb' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
   modalTitle: { ...FONT_STYLES.h4, color: '#111827', flex: 1 },

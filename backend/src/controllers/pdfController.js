@@ -360,5 +360,126 @@ module.exports = {
       logger.error('Error generating test debit note PDF:', error);
       next(error);
     }
+  },
+
+  /**
+   * Generate PDF for actual voucher
+   */
+  async generateVoucherPDF(req, res, next) {
+    try {
+      const { voucherId } = req.params;
+
+      // Fetch voucher with all related data
+      const voucher = await req.tenantModels.Voucher.findByPk(voucherId, {
+        include: [
+          {
+            model: req.tenantModels.Ledger,
+            as: 'partyLedger',
+            attributes: ['id', 'ledger_name', 'address', 'gstin', 'pan', 'state']
+          },
+          {
+            model: req.tenantModels.VoucherItem,
+            as: 'items'
+          }
+        ]
+      });
+
+      if (!voucher) {
+        return res.status(404).json({ success: false, message: 'Voucher not found' });
+      }
+
+      // Get company details from tenant context
+      const companyData = req.user?.company || {};
+
+      // Map voucher type to template name
+      const templateMap = {
+        'sales_invoice': 'sales-invoice',
+        'purchase_invoice': 'purchase-invoice',
+        'receipt': 'receipt-voucher',
+        'payment': 'payment-voucher',
+        'journal': 'journal-voucher',
+        'contra': 'contra-voucher',
+        'credit_note': 'credit-note',
+        'debit_note': 'debit-note'
+      };
+
+      const templateName = templateMap[voucher.voucher_type];
+      if (!templateName) {
+        return res.status(400).json({ success: false, message: 'Invalid voucher type for PDF generation' });
+      }
+
+      // Format date helper
+      const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = String(date.getFullYear()).slice(-2);
+        return `${day}/${month}/${year}`;
+      };
+
+      // Prepare PDF data
+      const pdfData = {
+        company_name: companyData.company_name || 'Company Name',
+        company_address: companyData.address || '',
+        company_gstin: companyData.gstin || '',
+        company_pan: companyData.pan || '',
+        company_phone: companyData.phone || '',
+        company_email: companyData.email || '',
+        company_state: companyData.state || '',
+        company_state_code: companyData.state_code || '',
+        party_name: voucher.partyLedger?.ledger_name || 'N/A',
+        party_address: voucher.partyLedger?.address || '',
+        party_gstin: voucher.partyLedger?.gstin || '',
+        party_pan: voucher.partyLedger?.pan || '',
+        party_state: voucher.partyLedger?.state || '',
+        voucher_number: voucher.voucher_number || 'N/A',
+        voucher_date: formatDate(voucher.voucher_date),
+        due_date: formatDate(voucher.due_date),
+        place_of_supply: voucher.place_of_supply || '',
+        status: voucher.status?.toUpperCase() || 'DRAFT',
+        items: voucher.items?.map(item => ({
+          item_name: item.item_name || item.item_description || item.description || 'Item',
+          hsn_code: item.hsn_code || item.hsn_sac_code || '',
+          quantity: item.quantity || 0,
+          uqc: item.uqc || item.unit || 'PCS',
+          rate: parseFloat(item.rate || item.unit_price || 0),
+          taxable_amount: parseFloat(item.taxable_amount || item.amount || 0),
+          gst_rate: parseFloat(item.gst_rate || item.tax_rate || 0),
+          gst_amount: parseFloat(item.gst_amount || item.tax_amount || 0),
+          amount: parseFloat(item.total_amount || item.amount || 0)
+        })) || [],
+        taxable_amount: parseFloat(voucher.subtotal || voucher.taxable_amount || 0),
+        is_intrastate: voucher.is_intrastate || false,
+        cgst_amount: parseFloat(voucher.cgst_amount || 0),
+        sgst_amount: parseFloat(voucher.sgst_amount || 0),
+        igst_amount: parseFloat(voucher.igst_amount || 0),
+        tds_amount: parseFloat(voucher.tds_amount || 0),
+        tds_section: voucher.tds_section || '',
+        tds_rate: parseFloat(voucher.tds_rate || 0),
+        total_amount: parseFloat(voucher.total_amount || 0),
+        amount_in_words: voucher.amount_in_words || '',
+        narration: voucher.narration || '',
+        payment_terms: voucher.payment_terms || 0,
+        payment_mode: voucher.payment_mode || '',
+        reference_number: voucher.reference_number || '',
+        bank_name: voucher.bank_name || '',
+        generated_at: new Date().toLocaleString('en-IN')
+      };
+
+      // Generate PDF
+      const result = await pdfService.generatePDFBuffer(templateName, pdfData);
+      
+      if (result.success) {
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${voucher.voucher_number || 'voucher'}.pdf"`);
+        res.send(result.buffer);
+      } else {
+        res.status(500).json({ success: false, message: 'Failed to generate PDF', error: result.error });
+      }
+    } catch (error) {
+      logger.error('Error generating voucher PDF:', error);
+      next(error);
+    }
   }
 };

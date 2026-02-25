@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const pdfController = require('../controllers/pdfController');
 const { authenticate } = require('../middleware/auth');
+const { resolveTenant } = require('../middleware/tenant');
 
 const router = Router();
 
@@ -16,8 +17,9 @@ router.get('/test/debit-note', pdfController.testDebitNote);
 
 // Authenticated routes (for actual voucher PDFs)
 router.use(authenticate);
+router.use(resolveTenant);
 
-// Voucher PDFs (to be implemented)
-// router.get('/voucher/:voucherId/pdf', pdfController.generateVoucherPDF);
+// Voucher PDF generation
+router.get('/voucher/:voucherId', pdfController.generateVoucherPDF);
 
 module.exports = router;

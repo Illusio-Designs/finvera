@@ -457,3 +457,14 @@ export const settingsAPI = {
 
 // Legacy export for backward compatibility
 export { apiClient as api };
+
+// PDF APIs
+export const pdfAPI = {
+  exportVoucher: (voucherId) => {
+    // Create a custom axios instance for PDF downloads to bypass response interceptor
+    return apiClient.get(`/pdf/voucher/${voucherId}`, { 
+      responseType: 'blob',
+      transformResponse: [(data) => data] // Prevent any transformation
+    });
+  },
+};

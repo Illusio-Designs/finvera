@@ -1,4 +1,4 @@
-const htmlPdf = require('html-pdf-node');
+const { chromium } = require('playwright');
 const handlebars = require('../utils/handlebarsHelpers');
 const fs = require('fs').promises;
 const path = require('path');
@@ -9,6 +9,7 @@ class PDFService {
     // Storage paths
     this.outputDir = path.join(__dirname, '../../generated-pdfs');
     this.templateDir = path.join(__dirname, '../../templates/pdf');
+    this.browser = null;
 
     // Initialize
     this.initPromise = this.initialize();
@@ -20,7 +21,13 @@ class PDFService {
       await fs.mkdir(this.outputDir, { recursive: true });
       await fs.mkdir(this.templateDir, { recursive: true });
 
-      logger.info('PDF Service initialized successfully');
+      // Launch browser once
+      this.browser = await chromium.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+
+      logger.info('PDF Service initialized successfully with Playwright');
     } catch (error) {
       logger.error('Failed to initialize PDF Service:', error);
       throw error;
@@ -43,31 +50,36 @@ class PDFService {
       const filename = options.filename || `${templateName}_${timestamp}_${random}.pdf`;
       const filepath = path.join(this.outputDir, filename);
 
-      // PDF options
-      const pdfOptions = {
-        format: options.format || 'A4',
-        printBackground: true,
-        margin: options.margin || {
-          top: '0mm',
-          right: '0mm',
-          bottom: '0mm',
-          left: '0mm'
-        },
-        path: filepath
-      };
+      // Create new page
+      const page = await this.browser.newPage();
 
-      // Generate PDF using html-pdf-node
-      const file = { content: html };
-      await htmlPdf.generatePdf(file, pdfOptions);
+      try {
+        // Set content and generate PDF
+        await page.setContent(html, { waitUntil: 'networkidle' });
 
-      logger.info(`PDF generated successfully: ${filename}`);
+        await page.pdf({
+          path: filepath,
+          format: options.format || 'A4',
+          printBackground: true,
+          margin: options.margin || {
+            top: '0mm',
+            right: '0mm',
+            bottom: '0mm',
+            left: '0mm'
+          }
+        });
 
-      return {
-        success: true,
-        filename,
-        filepath,
-        url: `/api/downloads/${filename}`
-      };
+        logger.info(`PDF generated successfully: ${filename}`);
+
+        return {
+          success: true,
+          filename,
+          filepath,
+          url: `/api/downloads/${filename}`
+        };
+      } finally {
+        await page.close();
+      }
     } catch (error) {
       logger.error('PDF Generation Error:', error);
       return {
@@ -87,28 +99,32 @@ class PDFService {
       const template = handlebars.compile(templateContent);
       const html = template(data);
 
-      // PDF options
-      const pdfOptions = {
-        format: options.format || 'A4',
-        printBackground: true,
-        margin: options.margin || {
-          top: '0mm',
-          right: '0mm',
-          bottom: '0mm',
-          left: '0mm'
-        }
-      };
+      // Create new page
+      const page = await this.browser.newPage();
 
-      // Generate PDF buffer using html-pdf-node
-      const file = { content: html };
-      const pdfBuffer = await htmlPdf.generatePdf(file, pdfOptions);
+      try {
+        await page.setContent(html, { waitUntil: 'networkidle' });
 
-      logger.info(`PDF buffer generated successfully for template: ${templateName}`);
+        const buffer = await page.pdf({
+          format: options.format || 'A4',
+          printBackground: true,
+          margin: options.margin || {
+            top: '0mm',
+            right: '0mm',
+            bottom: '0mm',
+            left: '0mm'
+          }
+        });
 
-      return {
-        success: true,
-        buffer: pdfBuffer
-      };
+        logger.info(`PDF buffer generated successfully for template: ${templateName}`);
+
+        return {
+          success: true,
+          buffer
+        };
+      } finally {
+        await page.close();
+      }
     } catch (error) {
       logger.error('PDF Buffer Generation Error:', error);
       return {
@@ -157,6 +173,9 @@ class PDFService {
 
   async shutdown() {
     logger.info('Shutting down PDF Service...');
+    if (this.browser) {
+      await this.browser.close();
+    }
     logger.info('PDF Service shutdown complete');
   }
 }
