@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, M
 import { Ionicons } from '@expo/vector-icons';
 import TopBar from '../../../components/navigation/TopBar';
 import CreatePurchaseInvoiceModal from '../../../components/modals/CreatePurchaseInvoiceModal';
+import VoucherActionButtons from '../../../components/ui/VoucherActionButtons';
 import { useDrawer } from '../../../contexts/DrawerContext.jsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useConfirmation } from '../../../contexts/ConfirmationContext';
@@ -292,40 +293,13 @@ export default function PurchaseInvoiceScreen() {
                   </View>
                 </View>
                 
-                <View style={styles.voucherCardActions}>
-                  <TouchableOpacity 
-                    style={styles.actionButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleVoucherPress(voucher);
-                    }}
-                  >
-                    <Ionicons name="eye-outline" size={16} color="#3e60ab" />
-                    <Text style={styles.actionButtonText}>View</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={styles.actionButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleEditVoucher(voucher);
-                    }}
-                  >
-                    <Ionicons name="create-outline" size={16} color="#059669" />
-                    <Text style={styles.actionButtonText}>Edit</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={styles.actionButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleDeleteVoucher(voucher);
-                    }}
-                  >
-                    <Ionicons name="trash-outline" size={16} color="#dc2626" />
-                    <Text style={styles.actionButtonText}>Delete</Text>
-                  </TouchableOpacity>
-                </View>
+                <VoucherActionButtons
+                  voucher={voucher}
+                  onView={handleVoucherPress}
+                  onEdit={handleEditVoucher}
+                  onDelete={handleDeleteVoucher}
+                  showNotification={showNotification}
+                />
               </TouchableOpacity>
             ))}
           </View>
