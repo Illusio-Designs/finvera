@@ -48,7 +48,7 @@ module.exports = {
             role: req.user.role
           });
           
-          // Users are stored in the tenant database (finvera_db)
+          // Users are stored in the tenant database (fintranzact_db)
           // Use tenantModels if available (from tenant middleware)
           let user = null;
           
@@ -60,7 +60,7 @@ module.exports = {
             console.log('🎫 Tenant models not available, connecting to tenant database manually...');
             const tenantConnection = await tenantConnectionManager.getConnection({
               id: req.user.tenant_id || 'tenant_db',
-              db_name: process.env.DB_NAME || 'finvera_db',
+              db_name: process.env.DB_NAME || 'fintranzact_db',
               db_host: process.env.DB_HOST || 'localhost',
               db_port: parseInt(process.env.DB_PORT) || 3306,
               db_user: process.env.DB_USER || 'root',

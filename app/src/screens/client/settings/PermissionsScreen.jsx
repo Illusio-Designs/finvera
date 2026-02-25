@@ -7,7 +7,6 @@ import { useDrawer } from '../../../contexts/DrawerContext';
 import { useNotification } from '../../../contexts/NotificationContext';
 import usePermissions, { 
   useCameraPermissions, 
-  useLocationPermissions, 
   useNotificationPermissions 
 } from '../../../hooks/usePermissions';
 import { PermissionTypes, openAppSettings } from '../../../utils/permissions';
@@ -17,7 +16,6 @@ export default function PermissionsScreen({ navigation }) {
   const { showNotification } = useNotification();
   const { permissions, loading, checkAllPermissions, requestPermission } = usePermissions();
   const { requestCameraAccess, requestMediaLibraryAccess } = useCameraPermissions();
-  const { requestLocationAccess } = useLocationPermissions();
   const { requestNotificationAccess } = useNotificationPermissions();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -40,9 +38,6 @@ export default function PermissionsScreen({ navigation }) {
         break;
       case PermissionTypes.MEDIA_LIBRARY:
         granted = await requestMediaLibraryAccess();
-        break;
-      case PermissionTypes.LOCATION:
-        granted = await requestLocationAccess();
         break;
       case PermissionTypes.NOTIFICATIONS:
         granted = await requestNotificationAccess();
@@ -73,12 +68,7 @@ export default function PermissionsScreen({ navigation }) {
     const icons = {
       [PermissionTypes.CAMERA]: 'camera-outline',
       [PermissionTypes.MEDIA_LIBRARY]: 'image-outline',
-      [PermissionTypes.LOCATION]: 'location-outline',
-      [PermissionTypes.CONTACTS]: 'people-outline',
-      [PermissionTypes.CALENDAR]: 'calendar-outline',
       [PermissionTypes.NOTIFICATIONS]: 'notifications-outline',
-      [PermissionTypes.AUDIO]: 'mic-outline',
-      [PermissionTypes.BACKGROUND_LOCATION]: 'navigate-outline',
     };
     return icons[permissionType] || 'help-outline';
   };
@@ -87,12 +77,7 @@ export default function PermissionsScreen({ navigation }) {
     const titles = {
       [PermissionTypes.CAMERA]: 'Camera',
       [PermissionTypes.MEDIA_LIBRARY]: 'Photo Library',
-      [PermissionTypes.LOCATION]: 'Location',
-      [PermissionTypes.CONTACTS]: 'Contacts',
-      [PermissionTypes.CALENDAR]: 'Calendar',
       [PermissionTypes.NOTIFICATIONS]: 'Notifications',
-      [PermissionTypes.AUDIO]: 'Microphone',
-      [PermissionTypes.BACKGROUND_LOCATION]: 'Background Location',
     };
     return titles[permissionType] || permissionType;
   };
@@ -101,12 +86,7 @@ export default function PermissionsScreen({ navigation }) {
     const descriptions = {
       [PermissionTypes.CAMERA]: 'Take photos for profile pictures and documents',
       [PermissionTypes.MEDIA_LIBRARY]: 'Select images from your photo library',
-      [PermissionTypes.LOCATION]: 'Provide location-based business services',
-      [PermissionTypes.CONTACTS]: 'Manage customer and vendor information',
-      [PermissionTypes.CALENDAR]: 'Schedule meetings and GST filing reminders',
       [PermissionTypes.NOTIFICATIONS]: 'Receive important business updates',
-      [PermissionTypes.AUDIO]: 'Record voice notes for transactions',
-      [PermissionTypes.BACKGROUND_LOCATION]: 'Automated location-based services',
     };
     return descriptions[permissionType] || 'Required for app functionality';
   };
@@ -127,10 +107,6 @@ export default function PermissionsScreen({ navigation }) {
     PermissionTypes.NOTIFICATIONS,
     PermissionTypes.CAMERA,
     PermissionTypes.MEDIA_LIBRARY,
-    PermissionTypes.LOCATION,
-    PermissionTypes.CONTACTS,
-    PermissionTypes.CALENDAR,
-    PermissionTypes.AUDIO,
   ];
 
   return (

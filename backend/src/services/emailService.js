@@ -112,7 +112,7 @@ async function sendNotificationEmail(notification, user) {
             ${notification.action_url ? `<a href="${process.env.FRONTEND_URL}${notification.action_url}" class="button">View Details</a>` : ''}
           </div>
           <div class="footer">
-            <p>This is an automated notification from ${process.env.APP_NAME || 'Finvera'}</p>
+            <p>This is an automated notification from ${process.env.APP_NAME || 'Fintranzact'}</p>
             <p>You can manage your notification preferences in your account settings.</p>
           </div>
         </div>
@@ -128,7 +128,7 @@ ${notification.message || ''}
 ${notification.action_url ? `View Details: ${process.env.FRONTEND_URL}${notification.action_url}` : ''}
 
 ---
-This is an automated notification from ${process.env.APP_NAME || 'Finvera'}
+This is an automated notification from ${process.env.APP_NAME || 'Fintranzact'}
 You can manage your notification preferences in your account settings.
     `.trim();
 

@@ -3,8 +3,8 @@
  * Supports environment variables and dynamic domain matching
  */
 
-// Get main domain from environment or default to finvera.solutions
-const mainDomain = process.env.MAIN_DOMAIN || process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
+// Get main domain from environment or default to fintranzact.com
+const mainDomain = process.env.MAIN_DOMAIN || process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'fintranzact.com';
 
 // Build allowed origins list from environment variables and defaults
 const ALLOWED_ORIGINS = [

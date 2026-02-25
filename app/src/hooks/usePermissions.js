@@ -4,11 +4,7 @@ import {
   checkPermission,
   requestCameraPermission,
   requestMediaLibraryPermission,
-  requestLocationPermission,
-  requestContactsPermission,
-  requestCalendarPermission,
   requestNotificationPermission,
-  requestAudioPermission,
   requestMultiplePermissions,
   showPermissionRationale,
 } from '../utils/permissions';
@@ -56,18 +52,8 @@ export const usePermissions = () => {
             return await requestCameraPermission();
           case PermissionTypes.MEDIA_LIBRARY:
             return await requestMediaLibraryPermission();
-          case PermissionTypes.LOCATION:
-            return await requestLocationPermission();
-          case PermissionTypes.CONTACTS:
-            return await requestContactsPermission();
-          case PermissionTypes.CALENDAR:
-            return await requestCalendarPermission();
           case PermissionTypes.NOTIFICATIONS:
             return await requestNotificationPermission();
-          case PermissionTypes.AUDIO:
-            return await requestAudioPermission();
-          case PermissionTypes.BACKGROUND_LOCATION:
-            return await requestLocationPermission(true);
           default:
             return false;
         }
@@ -190,25 +176,7 @@ export const useCameraPermissions = () => {
   };
 };
 
-/**
- * Hook for location permissions
- */
-export const useLocationPermissions = () => {
-  const { requestPermission, hasPermission, getPermissionStatus } = usePermissions();
 
-  const requestLocationAccess = useCallback(async (background = false, showRationale = true) => {
-    const permissionType = background ? PermissionTypes.BACKGROUND_LOCATION : PermissionTypes.LOCATION;
-    return await requestPermission(permissionType, showRationale);
-  }, [requestPermission]);
-
-  return {
-    requestLocationAccess,
-    hasLocationPermission: hasPermission(PermissionTypes.LOCATION),
-    hasBackgroundLocationPermission: hasPermission(PermissionTypes.BACKGROUND_LOCATION),
-    locationStatus: getPermissionStatus(PermissionTypes.LOCATION),
-    backgroundLocationStatus: getPermissionStatus(PermissionTypes.BACKGROUND_LOCATION),
-  };
-};
 
 /**
  * Hook for notification permissions

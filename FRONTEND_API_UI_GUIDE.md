@@ -2,7 +2,7 @@
 
 ## 📱 Overview
 
-This document provides comprehensive guidance for developing features in the Finvera mobile app (React Native + Expo), including API integration patterns, UI component usage, and best practices.
+This document provides comprehensive guidance for developing features in the Fintranzact mobile app (React Native + Expo), including API integration patterns, UI component usage, and best practices.
 
 ---
 

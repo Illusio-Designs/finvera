@@ -164,7 +164,7 @@ class TallyImportService {
             data.groups.push({
               name: groupName,
               parent: group.PARENT || null,
-              nature: this.mapTallyNatureToFinvera(groupName),
+              nature: this.mapTallyNatureToFintranzact(groupName),
             });
           }
         }
@@ -319,7 +319,7 @@ class TallyImportService {
         data.groups = groupsData.map(row => ({
           name: row.Name || row.NAME,
           parent: row.Parent || row.PARENT || null,
-          nature: this.mapTallyNatureToFinvera(row.Name || row.NAME),
+          nature: this.mapTallyNatureToFintranzact(row.Name || row.NAME),
         }));
       }
 
@@ -420,7 +420,7 @@ class TallyImportService {
           data.groups = results.groups.map(row => ({
             name: row.Name || row.NAME,
             parent: row.Parent || row.PARENT || null,
-            nature: this.mapTallyNatureToFinvera(row.Name || row.NAME),
+            nature: this.mapTallyNatureToFintranzact(row.Name || row.NAME),
           }));
 
           // Process ledgers
@@ -468,9 +468,9 @@ class TallyImportService {
   }
 
   /**
-   * Map Tally nature to Finvera nature
+   * Map Tally nature to Fintranzact nature
    */
-  mapTallyNatureToFinvera(tallyGroupName) {
+  mapTallyNatureToFintranzact(tallyGroupName) {
     const name = (tallyGroupName || '').toLowerCase();
     
     // More specific patterns first (to avoid conflicts)
@@ -540,7 +540,7 @@ class TallyImportService {
   }
 
   /**
-   * Map Tally voucher type to Finvera voucher type
+   * Map Tally voucher type to Fintranzact voucher type
    */
   mapTallyVoucherType(tallyType) {
     const type = (tallyType || '').toLowerCase();

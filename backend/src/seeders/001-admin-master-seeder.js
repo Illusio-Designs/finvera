@@ -40,11 +40,11 @@ module.exports = {
         console.log(`🔍 Detected database: ${databaseName}`);
         
         // Exact matches for known databases
-        if (databaseName === 'finvera_master') return 'master';
-        if (databaseName === 'finvera_db' || databaseName === 'finvera_main') return 'admin';
+        if (databaseName === 'fintranzact_master') return 'master';
+        if (databaseName === 'fintranzact_db' || databaseName === 'fintranzact_main') return 'admin';
         
-        // Any other finvera_* database is a TENANT database
-        if (databaseName.startsWith('finvera_')) return 'tenant';
+        // Any other fintranzact_* database is a TENANT database
+        if (databaseName.startsWith('fintranzact_')) return 'tenant';
         
         return 'unknown';
       } catch (error) {
@@ -99,8 +99,8 @@ module.exports = {
                 'System',
                 'system',
                 'STARTER',
-                'system@finvera.com',
-                `finvera_tenant_${tenantId.replace(/-/g, '_')}`,
+                'system@fintranzact.com',
+                `fintranzact_tenant_${tenantId.replace(/-/g, '_')}`,
                 process.env.DB_HOST || 'localhost',
                 process.env.DB_USER || 'root',
                 dbPassword,
@@ -193,7 +193,7 @@ module.exports = {
       try {
         // Check for existing admin user
         const existingRishi = await queryInterface.sequelize.query(
-          `SELECT id FROM users WHERE email = 'rishi@finvera.com'`,
+          `SELECT id FROM users WHERE email = 'rishi@fintranzact.com'`,
           { type: Sequelize.QueryTypes.SELECT }
         );
 
@@ -205,7 +205,7 @@ module.exports = {
           usersToCreate.push({
             id: uuid.v4(),
             tenant_id: null, // Platform admin doesn't need tenant_id
-            email: 'rishi@finvera.com',
+            email: 'rishi@fintranzact.com',
             password: rishiPasswordHash,
             name: 'Rishi Kumar',
             role: 'super_admin',
@@ -219,20 +219,20 @@ module.exports = {
           // User exists, but update password to ensure it's correct
           const rishiPasswordHash = await bcrypt.hash('Rishi@1995', 10);
           await queryInterface.sequelize.query(
-            `UPDATE users SET password = ?, updatedAt = ? WHERE email = 'rishi@finvera.com'`,
+            `UPDATE users SET password = ?, updatedAt = ? WHERE email = 'rishi@fintranzact.com'`,
             {
               replacements: [rishiPasswordHash, now],
               type: Sequelize.QueryTypes.UPDATE,
             }
           );
-          console.log('✓ Updated password for rishi@finvera.com');
+          console.log('✓ Updated password for rishi@fintranzact.com');
         }
 
         if (usersToCreate.length > 0) {
           await queryInterface.bulkInsert('users', usersToCreate);
           
           console.log('✓ Platform Admin User Created:');
-          console.log(`  - Email: rishi@finvera.com`);
+          console.log(`  - Email: rishi@fintranzact.com`);
           console.log(`  - Password: Rishi@1995`);
           console.log(`  - Role: super_admin (platform-wide)`);
         }
@@ -463,10 +463,10 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    const masterDbName = process.env.MASTER_DB_NAME || 'finvera_master';
+    const masterDbName = process.env.MASTER_DB_NAME || 'fintranzact_master';
     const currentDbName = queryInterface.sequelize.config.database;
     const isMasterDb = currentDbName === masterDbName;
-    const isMainDb = currentDbName === (process.env.DB_NAME || 'finvera_main');
+    const isMainDb = currentDbName === (process.env.DB_NAME || 'fintranzact_main');
     const { Op } = Sequelize;
     
     if (isMainDb) {
@@ -481,7 +481,7 @@ module.exports = {
       // Remove admin users
       await queryInterface.bulkDelete('users', {
         email: {
-          [Op.in]: ['rishi@finvera.com']
+          [Op.in]: ['rishi@fintranzact.com']
         }
       }, {});
     }

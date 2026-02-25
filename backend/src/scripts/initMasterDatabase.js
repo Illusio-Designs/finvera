@@ -15,7 +15,7 @@ const logger = require('../utils/logger');
  */
 async function initMasterDatabase() {
   const masterSequelize = require('../config/masterDatabase');
-  const masterDbName = process.env.MASTER_DB_NAME || 'finvera_master';
+  const masterDbName = process.env.MASTER_DB_NAME || 'fintranzact_master';
   
   try {
     logger.info(`[INIT] Starting master database initialization for: ${masterDbName}`);

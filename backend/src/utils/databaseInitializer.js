@@ -24,8 +24,8 @@ class DatabaseInitializer {
     };
     
     this.databases = {
-      master: process.env.MASTER_DB_NAME || 'finvera_master',
-      admin: process.env.DB_NAME || 'finvera_db',
+      master: process.env.MASTER_DB_NAME || 'fintranzact_master',
+      admin: process.env.DB_NAME || 'fintranzact_db',
     };
   }
 

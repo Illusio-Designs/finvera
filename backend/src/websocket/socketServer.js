@@ -11,8 +11,8 @@ let io = null;
  * @returns {Server} Socket.IO server instance
  */
 function initSocketServer(server) {
-  // Get main domain from environment or default to finvera.solutions
-  const mainDomain = process.env.MAIN_DOMAIN || process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
+  // Get main domain from environment or default to fintranzact.com
+  const mainDomain = process.env.MAIN_DOMAIN || process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'fintranzact.com';
   
   const corsOptions = {
     origin: function (origin, callback) {

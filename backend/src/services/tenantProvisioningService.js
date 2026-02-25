@@ -110,12 +110,12 @@ class TenantProvisioningService {
    */
   async provisionDatabase(tenant, plainPassword) {
     // Get database credentials from environment
-    // DB_USER on server is 'informative_finvera' (already exists, created by default)
-    const dbUser = process.env.DB_USER || 'informative_finvera';
+    // DB_USER on server is 'informative_fintranzact' (already exists, created by default)
+    const dbUser = process.env.DB_USER || 'informative_fintranzact';
     const dbPassword = process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : null;
     
     // Use root/admin user for database creation (needs CREATE DATABASE privilege)
-    // If DB_ROOT_USER is not set, try using DB_USER (informative_finvera) - it might have CREATE privilege
+    // If DB_ROOT_USER is not set, try using DB_USER (informative_fintranzact) - it might have CREATE privilege
     const rootUser = process.env.DB_ROOT_USER || dbUser;
     const rootPassword = process.env.DB_ROOT_PASSWORD !== undefined ? process.env.DB_ROOT_PASSWORD : dbPassword;
     
@@ -235,7 +235,7 @@ class TenantProvisioningService {
         logger.warn(`[PROVISION] Could not verify privileges: ${verifyError.message}`);
       }
       
-      // Test connection with informative_finvera before closing root connection
+      // Test connection with informative_fintranzact before closing root connection
       logger.info(`[PROVISION] Testing connection with ${dbUser}...`);
       try {
         const testConnection = new Sequelize(tenant.db_name, dbUser, dbPassword, {
@@ -258,7 +258,7 @@ class TenantProvisioningService {
       await rootConnection.close();
       logger.info(`[PROVISION] Connection closed`);
 
-      // Initialize schema using informative_finvera
+      // Initialize schema using informative_fintranzact
       await this.initializeTenantSchema(tenant, plainPassword);
       
       await tenant.update({
@@ -340,7 +340,7 @@ class TenantProvisioningService {
    */
   async initializeTenantSchema(tenant, plainPassword) {
     const dbPassword = process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : null;
-    const dbUser = process.env.DB_USER || 'informative_finvera';
+    const dbUser = process.env.DB_USER || 'informative_fintranzact';
     
     if (dbPassword === null) {
       throw new Error('DB_PASSWORD environment variable must be set (can be empty string for no password)');
@@ -860,8 +860,8 @@ class TenantProvisioningService {
   generateDatabaseName(subdomain) {
     const sanitized = subdomain.toLowerCase().replace(/[^a-z0-9]/g, '_');
     // MySQL database name limit is 64 characters
-    // Format: finvera_<company_name> (no timestamp, no "informative" prefix)
-    const prefix = 'finvera_';
+    // Format: fintranzact_<company_name> (no timestamp, no "informative" prefix)
+    const prefix = 'fintranzact_';
     const maxNameLength = 64 - prefix.length;
     const truncatedName = sanitized.substring(0, maxNameLength);
     const dbName = `${prefix}${truncatedName}`;

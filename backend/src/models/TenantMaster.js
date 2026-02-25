@@ -22,7 +22,7 @@ const TenantMaster = masterSequelize.define(
     subdomain: {
       type: DataTypes.STRING(50),
       allowNull: false,
-      comment: 'Unique subdomain for tenant (e.g., acme.finvera.com)',
+      comment: 'Unique subdomain for tenant (e.g., acme.fintranzact.com)',
       // Note: unique constraint removed to avoid MySQL 64-index limit
       // Uniqueness is enforced at application level
     },

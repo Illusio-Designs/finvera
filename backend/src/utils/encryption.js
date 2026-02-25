@@ -2,7 +2,7 @@ const CryptoJS = require('crypto-js');
 
 // Use a strong secret key (store in .env)
 const SECRET_KEY =
-  process.env.PAYLOAD_ENCRYPTION_KEY || 'finvera-default-encryption-key-change-this-in-production';
+  process.env.PAYLOAD_ENCRYPTION_KEY || 'fintranzact-default-encryption-key-change-this-in-production';
 
 /**
  * Encrypt payload

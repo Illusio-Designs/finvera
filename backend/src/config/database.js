@@ -5,7 +5,7 @@ if (process.env.NODE_ENV !== 'production') {
 const { Sequelize } = require('sequelize');
 const logger = require('../utils/logger');
 
-const dbName = process.env.DB_NAME || 'finvera_main';
+const dbName = process.env.DB_NAME || 'fintranzact_main';
 
 // Support Railway's MYSQL_URL connection string or individual variables
 let sequelize;

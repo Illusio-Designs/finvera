@@ -1,6 +1,6 @@
 <div align="center">
 
-# 💼 Finvera
+# 💼 Fintranzact
 
 ### Multi-Tenant Accounting SaaS Platform
 
@@ -41,7 +41,7 @@
 
 ## 🎯 Overview
 
-**Finvera** is a comprehensive, multi-tenant accounting SaaS platform built specifically for Indian businesses. It provides complete financial management with built-in GST compliance, TDS management, and advanced sales/distribution tracking.
+**Fintranzact** is a comprehensive, multi-tenant accounting SaaS platform built specifically for Indian businesses. It provides complete financial management with built-in GST compliance, TDS management, and advanced sales/distribution tracking.
 
 ### Key Highlights
 
@@ -212,8 +212,8 @@
 
 ```bash
 # Clone repository
-git clone https://github.com/Illusio-Designs/finvera.git
-cd finvera/backend
+git clone https://github.com/Illusio-Designs/fintranzact.git
+cd fintranzact/backend
 
 # Install dependencies
 npm install
@@ -277,7 +277,7 @@ Scan the QR code with Expo Go app (Android) or Camera app (iOS) to run on your d
 ## 📁 Project Structure
 
 ```
-finvera/
+fintranzact/
 ├── 📂 backend/                    # Express.js Backend API
 │   ├── 📂 docs/                   # Documentation
 │   │   ├── � README.md          # Documentation index
@@ -368,8 +368,8 @@ DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=your_password
-DB_NAME=finvera_main
-MASTER_DB_NAME=finvera_master
+DB_NAME=fintranzact_main
+MASTER_DB_NAME=fintranzact_master
 
 # Redis
 REDIS_HOST=localhost
@@ -427,7 +427,7 @@ NEXT_PUBLIC_PAYLOAD_ENCRYPTION_KEY=your-very-strong-secret-key-at-least-32-chars
 
 ```env
 NEXT_PUBLIC_WS_URL=ws://localhost:3000
-NEXT_PUBLIC_APP_NAME=Finvera
+NEXT_PUBLIC_APP_NAME=Fintranzact
 ```
 
 ### Mobile App Environment Variables
@@ -674,7 +674,7 @@ curl http://localhost:3000/api/health
 
 ## 🖥️ Desktop Application
 
-Finvera is available as a native desktop application for **macOS** and **Windows** using Electron.
+Fintranzact is available as a native desktop application for **macOS** and **Windows** using Electron.
 
 ### Development
 
@@ -723,7 +723,7 @@ Build outputs are in the `frontend/dist-electron/` directory:
 
 ## 📱 Mobile Application
 
-Finvera mobile app is built with **React Native** and **Expo** for iOS and Android.
+Fintranzact mobile app is built with **React Native** and **Expo** for iOS and Android.
 
 ### Development
 
@@ -1046,7 +1046,7 @@ By using this software, you acknowledge that you have read, understood, and agre
 
 ### 🎉 Production Ready
 
-**Finvera is a complete, production-ready multi-tenant accounting platform with full GST compliance, TDS management, and sales distribution features.**
+**Fintranzact is a complete, production-ready multi-tenant accounting platform with full GST compliance, TDS management, and sales distribution features.**
 
 **Key Achievements:**
 - ✅ 32+ database models with complete multi-tenant isolation
@@ -1067,6 +1067,6 @@ By using this software, you acknowledge that you have read, understood, and agre
 
 **Made with ❤️ by [Illusio Designs](https://illusiodesigns.agency)**
 
-[⬆ Back to Top](#-finvera)
+[⬆ Back to Top](#-fintranzact)
 
 </div>

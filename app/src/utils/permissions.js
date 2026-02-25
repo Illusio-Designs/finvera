@@ -1,11 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location';
-import * as Contacts from 'expo-contacts';
-import * as Calendar from 'expo-calendar';
 import * as Notifications from 'expo-notifications';
 import * as MediaLibrary from 'expo-media-library';
 import { Camera } from 'expo-camera';
-import { Audio } from 'expo-av';
 import { Alert, Platform } from 'react-native';
 
 /**
@@ -15,12 +11,7 @@ import { Alert, Platform } from 'react-native';
 export const PermissionTypes = {
   CAMERA: 'camera',
   MEDIA_LIBRARY: 'mediaLibrary',
-  LOCATION: 'location',
-  CONTACTS: 'contacts',
-  CALENDAR: 'calendar',
   NOTIFICATIONS: 'notifications',
-  AUDIO: 'audio',
-  BACKGROUND_LOCATION: 'backgroundLocation',
 };
 
 /**
@@ -71,94 +62,7 @@ export const requestMediaLibraryPermission = async () => {
   }
 };
 
-/**
- * Request location permission
- */
-export const requestLocationPermission = async (background = false) => {
-  try {
-    let { status } = await Location.requestForegroundPermissionsAsync();
-    
-    if (status !== 'granted') {
-      Alert.alert(
-        'Location Permission Required',
-        'Please enable location access to provide location-based business services and GST compliance features.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Settings', onPress: () => openAppSettings() }
-        ]
-      );
-      return false;
-    }
 
-    if (background) {
-      const backgroundStatus = await Location.requestBackgroundPermissionsAsync();
-      if (backgroundStatus.status !== 'granted') {
-        Alert.alert(
-          'Background Location Permission',
-          'Background location access helps provide automated business services and GST compliance features.',
-          [
-            { text: 'Skip', style: 'cancel' },
-            { text: 'Settings', onPress: () => openAppSettings() }
-          ]
-        );
-        return false;
-      }
-    }
-
-    return true;
-  } catch (error) {
-    console.error('Error requesting location permission:', error);
-    return false;
-  }
-};
-
-/**
- * Request contacts permission
- */
-export const requestContactsPermission = async () => {
-  try {
-    const { status } = await Contacts.requestPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert(
-        'Contacts Permission Required',
-        'Please enable contacts access to help you manage customer and vendor information for your business.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Settings', onPress: () => openAppSettings() }
-        ]
-      );
-      return false;
-    }
-    return true;
-  } catch (error) {
-    console.error('Error requesting contacts permission:', error);
-    return false;
-  }
-};
-
-/**
- * Request calendar permission
- */
-export const requestCalendarPermission = async () => {
-  try {
-    const { status } = await Calendar.requestCalendarPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert(
-        'Calendar Permission Required',
-        'Please enable calendar access to schedule business meetings and GST filing reminders.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Settings', onPress: () => openAppSettings() }
-        ]
-      );
-      return false;
-    }
-    return true;
-  } catch (error) {
-    console.error('Error requesting calendar permission:', error);
-    return false;
-  }
-};
 
 /**
  * Request notification permission
@@ -184,29 +88,7 @@ export const requestNotificationPermission = async () => {
   }
 };
 
-/**
- * Request audio recording permission
- */
-export const requestAudioPermission = async () => {
-  try {
-    const { status } = await Audio.requestPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert(
-        'Microphone Permission Required',
-        'Please enable microphone access for voice notes and audio recordings related to business transactions.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Settings', onPress: () => openAppSettings() }
-        ]
-      );
-      return false;
-    }
-    return true;
-  } catch (error) {
-    console.error('Error requesting audio permission:', error);
-    return false;
-  }
-};
+
 
 /**
  * Request media library write permission
@@ -246,29 +128,9 @@ export const checkPermission = async (permissionType) => {
         const mediaStatus = await ImagePicker.getMediaLibraryPermissionsAsync();
         return mediaStatus.status === 'granted';
         
-      case PermissionTypes.LOCATION:
-        const locationStatus = await Location.getForegroundPermissionsAsync();
-        return locationStatus.status === 'granted';
-        
-      case PermissionTypes.CONTACTS:
-        const contactsStatus = await Contacts.getPermissionsAsync();
-        return contactsStatus.status === 'granted';
-        
-      case PermissionTypes.CALENDAR:
-        const calendarStatus = await Calendar.getCalendarPermissionsAsync();
-        return calendarStatus.status === 'granted';
-        
       case PermissionTypes.NOTIFICATIONS:
         const notificationStatus = await Notifications.getPermissionsAsync();
         return notificationStatus.status === 'granted';
-        
-      case PermissionTypes.AUDIO:
-        const audioStatus = await Audio.getPermissionsAsync();
-        return audioStatus.status === 'granted';
-        
-      case PermissionTypes.BACKGROUND_LOCATION:
-        const bgLocationStatus = await Location.getBackgroundPermissionsAsync();
-        return bgLocationStatus.status === 'granted';
         
       default:
         return false;
@@ -293,23 +155,8 @@ export const requestMultiplePermissions = async (permissions) => {
       case PermissionTypes.MEDIA_LIBRARY:
         results[permission] = await requestMediaLibraryPermission();
         break;
-      case PermissionTypes.LOCATION:
-        results[permission] = await requestLocationPermission();
-        break;
-      case PermissionTypes.CONTACTS:
-        results[permission] = await requestContactsPermission();
-        break;
-      case PermissionTypes.CALENDAR:
-        results[permission] = await requestCalendarPermission();
-        break;
       case PermissionTypes.NOTIFICATIONS:
         results[permission] = await requestNotificationPermission();
-        break;
-      case PermissionTypes.AUDIO:
-        results[permission] = await requestAudioPermission();
-        break;
-      case PermissionTypes.BACKGROUND_LOCATION:
-        results[permission] = await requestLocationPermission(true);
         break;
       default:
         results[permission] = false;
@@ -371,25 +218,9 @@ export const showPermissionRationale = (permissionType, onAccept, onDecline) => 
       title: 'Photo Library Access Needed',
       message: 'Fintranzact needs photo library access to select images for your profile and business documents.',
     },
-    [PermissionTypes.LOCATION]: {
-      title: 'Location Access Needed',
-      message: 'Fintranzact uses location to provide location-based business services and GST compliance features.',
-    },
-    [PermissionTypes.CONTACTS]: {
-      title: 'Contacts Access Needed',
-      message: 'Fintranzact needs contacts access to help you manage customer and vendor information for your business.',
-    },
-    [PermissionTypes.CALENDAR]: {
-      title: 'Calendar Access Needed',
-      message: 'Fintranzact needs calendar access to schedule business meetings and GST filing reminders.',
-    },
     [PermissionTypes.NOTIFICATIONS]: {
       title: 'Notification Permission Needed',
       message: 'Fintranzact needs notification access to send you important updates about GST filings, payments, and business activities.',
-    },
-    [PermissionTypes.AUDIO]: {
-      title: 'Microphone Access Needed',
-      message: 'Fintranzact needs microphone access for voice notes and audio recordings related to business transactions.',
     },
   };
   
@@ -412,11 +243,7 @@ export default {
   PermissionTypes,
   requestCameraPermission,
   requestMediaLibraryPermission,
-  requestLocationPermission,
-  requestContactsPermission,
-  requestCalendarPermission,
   requestNotificationPermission,
-  requestAudioPermission,
   requestMediaLibraryWritePermission,
   checkPermission,
   requestMultiplePermissions,

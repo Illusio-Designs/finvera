@@ -677,7 +677,7 @@ module.exports = {
       
       if (isMobileRequest) {
         // Mobile app redirect using custom scheme
-        const mobileScheme = process.env.MOBILE_OAUTH_REDIRECT || 'finvera://oauth/google';
+        const mobileScheme = process.env.MOBILE_OAUTH_REDIRECT || 'fintranzact://oauth/google';
         const params = new URLSearchParams({
           token: tokens.accessToken,
           refreshToken: tokens.refreshToken,
@@ -693,7 +693,7 @@ module.exports = {
         console.log('📱 Mobile OAuth redirect URL:', redirectUrl);
       } else {
         // Web frontend redirect
-        const mainDomain = process.env.MAIN_DOMAIN || process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'finvera.solutions';
+        const mainDomain = process.env.MAIN_DOMAIN || process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'fintranzact.com';
         const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
         let frontendUrl;
         
@@ -1336,7 +1336,7 @@ module.exports = {
               </div>
               <div class="content">
                 <p>Hello,</p>
-                <p>You requested to reset your password for your Finvera account.</p>
+                <p>You requested to reset your password for your Fintranzact account.</p>
                 <p>Click the button below to reset your password:</p>
                 <div style="text-align: center;">
                   <a href="${resetUrl}" class="button">Reset Password</a>
@@ -1347,7 +1347,7 @@ module.exports = {
                 <p>If you didn't request this password reset, please ignore this email.</p>
               </div>
               <div class="footer">
-                <p>This is an automated email from ${process.env.APP_NAME || 'Finvera'}</p>
+                <p>This is an automated email from ${process.env.APP_NAME || 'Fintranzact'}</p>
               </div>
             </div>
           </body>
@@ -1359,7 +1359,7 @@ Password Reset Request
 
 Hello,
 
-You requested to reset your password for your Finvera account.
+You requested to reset your password for your Fintranzact account.
 
 Click this link to reset your password:
 ${resetUrl}
@@ -1369,12 +1369,12 @@ This link will expire in 1 hour.
 If you didn't request this password reset, please ignore this email.
 
 ---
-This is an automated email from ${process.env.APP_NAME || 'Finvera'}
+This is an automated email from ${process.env.APP_NAME || 'Fintranzact'}
         `.trim();
 
         await emailService.sendEmail({
           to: user.email,
-          subject: 'Password Reset Request - Finvera',
+          subject: 'Password Reset Request - Fintranzact',
           html: emailHtml,
           text: emailText,
         });
